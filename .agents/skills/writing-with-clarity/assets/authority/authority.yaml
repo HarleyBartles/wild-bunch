@@ -1,0 +1,53 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-source
+authority:
+  title: The Elements of Style (1918)
+  canonical_url: https://www.gutenberg.org/ebooks/37134
+  pinned_source_url: https://gutenberg.org/files/37134/37134.txt
+  latest_check_url: https://www.gutenberg.org/ebooks/37134
+  revision: '37134'
+  retrieved_at: '2026-07-30'
+  content_sha256: dd6ce8de3be796f400f600ebf681b9a298f623c2c4139f9d5049a7c58c65d277
+  license: Public Domain
+  license_url: https://www.gutenberg.org/license
+decomposition:
+  reconciled_against: dd6ce8de3be796f400f600ebf681b9a298f623c2c4139f9d5049a7c58c65d277
+  references:
+    - path: references/sentence-mechanics.md
+      source_sections:
+        - "elementary-rules-of-usage.md: II. Elementary Rules Of Usage"
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when correcting sentence-level mechanics.
+    - path: references/composition-and-flow.md
+      source_sections:
+        - "elementary-principles-of-composition.md: III. Elementary Principles Of Composition"
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when improving paragraph and document flow.
+    - path: references/clarity-and-concision.md
+      source_sections:
+        - "elementary-principles-of-composition.md: III. Elementary Principles Of Composition"
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when making prose clearer and more concise.
+    - path: references/usage-and-word-choice.md
+      source_sections:
+        - "words-and-expressions-commonly-misused.md: V. Words And Expressions Commonly Misused"
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when resolving word choice or usage questions.
+    - path: references/format-and-markup.md
+      source_sections:
+        - "a-few-matters-of-form.md: IV. A Few Matters Of Form"
+        - "spelling.md: VI. Spelling"
+      content_mode: licensed_adaptation
+      load_when:
+        - Use when formatting Markdown, UI, or structured copy.
+    - path: references/final-edit.md
+      source_sections:
+        - "elementary-principles-of-composition.md: III. Elementary Principles Of Composition"
+      content_mode: first_party_synthesis
+      load_when:
+        - Use when performing a final review pass.

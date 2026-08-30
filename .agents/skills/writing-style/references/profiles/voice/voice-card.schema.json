@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HarleyBartles/agent-asset-marketplace/writing-style/voice-card.schema.json",
+  "title": "Bounded writing voice card",
+  "description": "Stores observable current-task writing tendencies and explicit choices without retaining source prose or making person-level claims.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "version",
+    "scope",
+    "derivation",
+    "tendencies",
+    "choices",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_boundary", "genres", "audiences"],
+      "properties": {
+        "task_boundary": {
+          "type": "string",
+          "enum": ["current_task", "synthetic_example"]
+        },
+        "genres": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1, "maxLength": 80},
+          "uniqueItems": true,
+          "maxItems": 8
+        },
+        "audiences": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1, "maxLength": 80},
+          "uniqueItems": true,
+          "maxItems": 8
+        }
+      }
+    },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "authorization",
+        "sample_count",
+        "derived_at",
+        "source_retained",
+        "retention_boundary"
+      ],
+      "properties": {
+        "basis": {
+          "type": "string",
+          "enum": ["current_task_text", "explicit_preferences", "synthetic_default"]
+        },
+        "authorization": {
+          "type": "string",
+          "enum": ["current_task_user", "explicit_user_preference", "synthetic_fixture"]
+        },
+        "sample_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "derived_at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "source_retained": {
+          "type": "boolean",
+          "const": false
+        },
+        "retention_boundary": {
+          "type": "string",
+          "enum": ["no_source_storage", "task_memory_only"]
+        }
+      }
+    },
+    "tendencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sentence_range",
+        "directness",
+        "vocabulary_register",
+        "tolerated_fragments",
+        "rhetorical_devices",
+        "formatting_norms"
+      ],
+      "properties": {
+        "sentence_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["typical_min_words", "typical_max_words"],
+          "properties": {
+            "typical_min_words": {"type": "integer", "minimum": 1, "maximum": 100},
+            "typical_max_words": {"type": "integer", "minimum": 1, "maximum": 100}
+          }
+        },
+        "directness": {
+          "type": "string",
+          "enum": ["low", "balanced", "high"]
+        },
+        "vocabulary_register": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["plain", "technical", "formal", "informal", "domain-specific"]
+          },
+          "uniqueItems": true,
+          "maxItems": 5
+        },
+        "tolerated_fragments": {
+          "type": "boolean"
+        },
+        "rhetorical_devices": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["contrast", "em-dash", "parallelism", "refrain", "rhetorical-question", "triad", "understatement"]
+          },
+          "uniqueItems": true,
+          "maxItems": 7
+        },
+        "formatting_norms": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1, "maxLength": 80},
+          "uniqueItems": true,
+          "maxItems": 8
+        }
+      }
+    },
+    "choices": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefer", "avoid"],
+      "properties": {
+        "prefer": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1, "maxLength": 120},
+          "uniqueItems": true,
+          "maxItems": 12
+        },
+        "avoid": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1, "maxLength": 120},
+          "uniqueItems": true,
+          "maxItems": 12
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 180},
+      "minItems": 1,
+      "uniqueItems": true,
+      "maxItems": 8
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "derivation": {
+            "properties": {"basis": {"const": "synthetic_default"}},
+            "required": ["basis"]
+          }
+        },
+        "required": ["derivation"]
+      },
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {"task_boundary": {"const": "synthetic_example"}}
+          },
+          "derivation": {
+            "properties": {
+              "authorization": {"const": "synthetic_fixture"},
+              "sample_count": {"const": 0},
+              "source_retained": {"const": false},
+              "retention_boundary": {"const": "no_source_storage"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "derivation": {
+            "properties": {"basis": {"const": "current_task_text"}},
+            "required": ["basis"]
+          }
+        },
+        "required": ["derivation"]
+      },
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {"task_boundary": {"const": "current_task"}}
+          },
+          "derivation": {
+            "properties": {
+              "authorization": {"const": "current_task_user"},
+              "sample_count": {"minimum": 1},
+              "source_retained": {"const": false},
+              "retention_boundary": {"const": "no_source_storage"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "derivation": {
+            "properties": {"basis": {"const": "explicit_preferences"}},
+            "required": ["basis"]
+          }
+        },
+        "required": ["derivation"]
+      },
+      "then": {
+        "properties": {
+          "scope": {
+            "properties": {"task_boundary": {"const": "current_task"}}
+          },
+          "derivation": {
+            "properties": {
+              "authorization": {"const": "explicit_user_preference"},
+              "sample_count": {"const": 0},
+              "source_retained": {"const": false},
+              "retention_boundary": {"const": "no_source_storage"}
+            }
+          }
+        }
+      }
+    }
+  ]
+}

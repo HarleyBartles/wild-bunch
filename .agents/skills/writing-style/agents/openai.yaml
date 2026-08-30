@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: writing-style
+  source_category: first_party
+interface:
+  display_name: Writing Style
+  short_description: Review prose against authorised voice and contextual fatigue profiles.
+  default_prompt: Use $writing-style to review supplied prose against an authorised voice card or a dated reader-fatigue profile while preserving facts, clarity, and deliberate devices.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

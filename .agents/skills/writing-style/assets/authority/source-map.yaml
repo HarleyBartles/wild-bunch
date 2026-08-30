@@ -1,0 +1,55 @@
+schema_version: 1
+reconciled_against: 9988374c03d47258c0bf586ebd78d2849b2e9ef0d5868f1c6a244651cb8a22e7
+references:
+- path: references/profile-contract.md
+  source_sections:
+  - Derivation boundary - contextual thresholds, typed findings, lifecycle, and prohibited semantics
+  load_when:
+  - Use when authoring, reviewing, or consuming writing profile data.
+  content_mode: first_party_synthesis
+- path: references/voice-card.md
+  source_sections:
+  - Derivation boundary - bounded voice-card contract and private-corpus exclusion
+  - Agarwal 2025 and Sourati 2026 - bounded preservation implications
+  load_when:
+  - Use when deriving or applying an authorised current-task voice card.
+  content_mode: first_party_synthesis
+- path: references/profiles/voice/voice-card.schema.json
+  source_sections:
+  - Derivation boundary - bounded voice-card contract and private-corpus exclusion
+  load_when:
+  - Use when validating a machine-readable voice card.
+  content_mode: first_party_synthesis
+- path: references/profiles/voice/default-voice-card.json
+  source_sections:
+  - Derivation boundary - synthetic examples and no retained source prose
+  load_when:
+  - Use when inspecting the safe synthetic voice-card shape.
+  content_mode: first_party_synthesis
+- path: references/profiles/fatigue/ai-prose-fatigue/profile.md
+  source_sections:
+  - Scholarly citation - all five registered primary sources
+  - Derivation boundary - contextual fatigue profile and hard exclusions
+  load_when:
+  - Use when reviewing supplied prose for contextual reader-fatigue patterns.
+  content_mode: first_party_synthesis
+- path: references/profiles/fatigue/ai-prose-fatigue/patterns.json
+  source_sections:
+  - Scholarly citation - all five registered primary sources
+  - Derivation boundary - thresholds, preserve conditions, limitations, and refresh policy
+  load_when:
+  - Use when inspecting or validating fatigue pattern records.
+  content_mode: first_party_synthesis
+- path: references/profiles/fatigue/ai-prose-fatigue/goldens.json
+  source_sections:
+  - Derivation boundary - golden decision boundaries and synthetic fixtures
+  load_when:
+  - Use when validating repair, preserve, and abstention behavior.
+  content_mode: first_party_synthesis
+- path: references/profiles/fatigue/ai-prose-fatigue/sources.md
+  source_sections:
+  - Scholarly citation - all five registered primary sources
+  - Derivation boundary - measured findings, bounded inferences, and limitations
+  load_when:
+  - Use when inspecting evidence scope or refreshing the dated profile.
+  content_mode: first_party_synthesis

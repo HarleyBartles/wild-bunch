@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: writing
+  source_category: first_party
+interface:
+  display_name: Writing
+  short_description: Compose clear, evidence-conscious revisions for human-facing prose.
+  default_prompt: Use $writing for ordinary drafting, revision, or review of human-facing prose. Establish facts and constraints first; then route through clarity, authorised voice, evidence-backed fatigue review, and the final clarity gate.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

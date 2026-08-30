@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "profile_id": "synthetic-default-voice",
+  "version": "1.0.0",
+  "scope": {
+    "task_boundary": "synthetic_example",
+    "genres": [],
+    "audiences": []
+  },
+  "derivation": {
+    "basis": "synthetic_default",
+    "authorization": "synthetic_fixture",
+    "sample_count": 0,
+    "derived_at": "2026-08-25",
+    "source_retained": false,
+    "retention_boundary": "no_source_storage"
+  },
+  "tendencies": {
+    "sentence_range": {
+      "typical_min_words": 5,
+      "typical_max_words": 35
+    },
+    "directness": "balanced",
+    "vocabulary_register": ["plain"],
+    "tolerated_fragments": false,
+    "rhetorical_devices": [],
+    "formatting_norms": []
+  },
+  "choices": {
+    "prefer": ["Preserve verified meaning and necessary qualification."],
+    "avoid": ["Inventing a personal tendency when no current-task sample supports it."]
+  },
+  "limitations": [
+    "Synthetic shape example only; it is not an inferred or authorised personal voice.",
+    "Replace its bounded fields only from current-task text or explicit user preferences."
+  ]
+}

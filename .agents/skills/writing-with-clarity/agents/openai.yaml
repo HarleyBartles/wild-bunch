@@ -1,0 +1,15 @@
+version: 1
+metadata:
+  skill_name: writing-with-clarity
+  source_category: first_party
+interface:
+  display_name: Writing With Clarity
+  short_description: Clear, direct, specific, and audience-aware guidance for all human-facing prose.
+  default_prompt: Use $writing for ordinary drafting, revision, or review of prose intended for human readers. Invoke $writing-with-clarity directly for a clarity-only or final-edit review; route to the smallest relevant reference and preserve meaning, verified facts, and project style.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

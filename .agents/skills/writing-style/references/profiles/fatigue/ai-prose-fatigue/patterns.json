@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "profile_id": "ai-prose-fatigue",
+  "profile_kind": "fatigue",
+  "version": "1.0.0",
+  "reviewed_at": "2026-08-25",
+  "review_after": "2027-02-25",
+  "patterns": [
+    {
+      "id": "low-information-affirmation-cluster",
+      "family": "low_information_affirmation",
+      "rationale": "Repeated unsupported affirmation or significance language can make emphasis predictable while giving this audience little new evidence.",
+      "observable_signals": [
+        "Two or more evaluative clauses repeat the same importance claim without adding evidence or consequence.",
+        "Several nearby intensifiers or affirmation frames can be removed without changing the proposition.",
+        "A term such as real is repeated without marking a real-versus-simulated, hypothetical, apparent, or bogus distinction."
+      ],
+      "evidence_class": "plausible_emerging",
+      "contextual_threshold": {
+        "unit": "local_cluster",
+        "minimum_count": 2,
+        "minimum_distinct_signals": 2,
+        "window_words": 80,
+        "decision_rule": "Require recurrence plus an identified evidence or information gap; an isolated word or supported evaluation is not actionable."
+      },
+      "rules": [
+        {
+          "id": "affirmation-phrases",
+          "kind": "normalized_phrase_occurrence",
+          "phrases": ["truly important", "deeply meaningful", "meaningful shift", "important shift", "real opportunity", "game-changing", "transformative", "remarkable", "significant", "real"]
+        }
+      ],
+      "preserve_predicates": [
+        {"id": "real-simulated-distinction", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["real", "simulated"]},
+        {"id": "records-fixtures-distinction", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["customer records", "generated fixtures"]}
+      ],
+      "preserve_conditions": [
+        "The evaluation is supported by a named result, source, or consequence.",
+        "The wording distinguishes real from simulated, hypothetical, apparent, or bogus states.",
+        "Repetition is an intentional refrain with a clear rhetorical purpose."
+      ],
+      "repair_guidance": "Delete one redundant evaluator or replace it with the specific evidence, consequence, or distinction that earns the emphasis.",
+      "source_ids": [
+        "kobak-2025-excess-vocabulary",
+        "miletic-falk-2026-scientific-communication"
+      ],
+      "scope": "Local clusters in supplied general or scholarly prose; evidence is strongest only in the registered scholarly domains.",
+      "limitations": "The sources measure domain-level lexical change, not unsupported affirmation as a universal fatigue cause or a named word as a defect.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-affirmation-and-contrast-cluster",
+        "preserve-precise-distinction-and-contrast",
+        "abstain-without-audience-context"
+      ]
+    },
+    {
+      "id": "repeated-contrast-profundity",
+      "family": "synthetic_profundity",
+      "rationale": "Repeated contrast frames can simulate argumentative movement while restating the same broad claim, tiring readers who need a concrete distinction.",
+      "observable_signals": [
+        "Two or more nearby contrast frames restate rather than narrow or test the claim.",
+        "Abstract oppositions appear without actors, evidence, conditions, or consequences.",
+        "Removing one contrast leaves the argument unchanged."
+      ],
+      "evidence_class": "weak_or_folk_heuristic",
+      "contextual_threshold": {
+        "unit": "section",
+        "minimum_count": 2,
+        "minimum_distinct_signals": 2,
+        "decision_rule": "Require repeated contrast plus semantic duplication and a reader need for a concrete distinction."
+      },
+      "rules": [
+        {
+          "id": "contrast-phrases",
+          "kind": "normalized_phrase_occurrence",
+          "phrases": ["not merely", "not just", "not only", "but rather", "more than", "not a", "but a"]
+        }
+      ],
+      "preserve_predicates": [
+        {"id": "real-simulated-distinction", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["real", "simulated"]},
+        {"id": "records-fixtures-distinction", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["customer records", "generated fixtures"]}
+      ],
+      "preserve_conditions": [
+        "The contrast distinguishes materially different states, choices, or evidence.",
+        "The form carries deliberate cadence or emphasis without obscuring the claim.",
+        "Parallel opposition makes a complex comparison easier to follow."
+      ],
+      "repair_guidance": "Keep the strongest contrast and replace the repeated frame with the actor, condition, evidence, or consequence that advances the argument.",
+      "source_ids": [
+        "miletic-falk-2026-scientific-communication"
+      ],
+      "scope": "A drafting hypothesis for repeated local contrast; no registered study isolates the device as a causal fatigue mechanism.",
+      "limitations": "Contrast is ordinary human rhetoric, and the cited source does not establish a universal defect or threshold for it.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-affirmation-and-contrast-cluster",
+        "preserve-precise-distinction-and-contrast",
+        "abstain-without-audience-context"
+      ]
+    },
+    {
+      "id": "audience-cue-overload",
+      "family": "manufactured_conversationality",
+      "rationale": "Repeated questions, second-person nudges, or asides can make the reader perform a conversation that the task does not need.",
+      "observable_signals": [
+        "Several nearby rhetorical questions have predictable answers and do not structure a decision.",
+        "Repeated direct-address cues interrupt rather than support the reader's task.",
+        "Conversational asides add tone but no relationship, orientation, or information."
+      ],
+      "evidence_class": "weak_or_folk_heuristic",
+      "contextual_threshold": {
+        "unit": "section",
+        "minimum_count": 3,
+        "minimum_distinct_signals": 2,
+        "decision_rule": "Require a visible cluster and a concrete mismatch with the declared audience, genre, or reader task."
+      },
+      "rules": [
+        {
+          "id": "audience-cue-phrases",
+          "kind": "normalized_phrase_occurrence",
+          "phrases": ["you might", "you can", "you'll", "ready to", "can you", "as you", "what changes"]
+        }
+      ],
+      "preserve_predicates": [
+        {"id": "teaching-context", "kind": "any_phrase", "scope": "context", "phrases": ["tutorial", "newcomer", "trust boundary"]}
+      ],
+      "preserve_conditions": [
+        "Direct address supports an existing relationship or explicit product voice.",
+        "A question structures reflection, teaching, accessibility, or a real decision.",
+        "The audience expects an intentionally conversational genre."
+      ],
+      "repair_guidance": "Retain the audience cue that does useful work and convert only redundant cues into a direct claim or instruction.",
+      "source_ids": [
+        "miletic-falk-2026-scientific-communication"
+      ],
+      "scope": "Context-dependent prose review; the registered evidence does not directly measure conversational cue fatigue.",
+      "limitations": "Questions and direct address are legitimate devices, and no source supports a universal density limit.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-conversation-and-preface-cluster",
+        "preserve-teaching-question-and-signpost",
+        "abstain-without-audience-context"
+      ]
+    },
+    {
+      "id": "editorial-preface-density",
+      "family": "editorial_throat_clearing",
+      "rationale": "Repeated editorial prefaces can delay the claim or evidence for readers who need a decision or instruction quickly.",
+      "observable_signals": [
+        "Multiple sentences open with meta-commentary about noting, considering, or remembering the point.",
+        "The preface can be removed without changing scope, uncertainty, attribution, or relationship.",
+        "The actual claim repeatedly arrives after low-information orientation."
+      ],
+      "evidence_class": "weak_or_folk_heuristic",
+      "contextual_threshold": {
+        "unit": "section",
+        "minimum_count": 2,
+        "minimum_distinct_signals": 2,
+        "decision_rule": "Require repeated delay plus an audience need for earlier claims; preserve necessary orientation and qualification."
+      },
+      "rules": [
+        {
+          "id": "editorial-preface-phrases",
+          "kind": "normalized_phrase_occurrence",
+          "phrases": ["it is worth noting", "it is important to remember", "it's worth noting", "let's be clear", "at its core", "the key thing is", "it is worth pausing"]
+        }
+      ],
+      "preserve_predicates": [
+        {"id": "orientation-context", "kind": "any_phrase", "scope": "context", "phrases": ["tutorial", "newcomer", "trust boundary"]}
+      ],
+      "preserve_conditions": [
+        "The preface marks attribution, uncertainty, legal scope, or a change in reasoning.",
+        "A long or technical document needs reader orientation or recap.",
+        "The phrase maintains a deliberate relationship or register."
+      ],
+      "repair_guidance": "Move the claim or evidence to the start and retain only the qualification or transition that changes its meaning.",
+      "source_ids": [
+        "miletic-falk-2026-scientific-communication"
+      ],
+      "scope": "A reader-task drafting hypothesis; no registered source isolates editorial prefaces as a causal fatigue mechanism.",
+      "limitations": "Signposting may improve accessibility and navigation, especially in long, technical, or unfamiliar material.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-conversation-and-preface-cluster",
+        "preserve-teaching-question-and-signpost",
+        "abstain-without-audience-context"
+      ]
+    },
+    {
+      "id": "structural-cadence-uniformity",
+      "family": "predictable_cadence",
+      "rationale": "Locally identical sentence or paragraph shapes can flatten hierarchy and make different ideas feel interchangeable to this audience.",
+      "observable_signals": [
+        "Three or more adjacent sentences share materially similar length and syntax.",
+        "Consecutive paragraphs repeat the same setup, enumeration, and concluding cadence.",
+        "Structural regularity obscures which claim, exception, or action matters most."
+      ],
+      "evidence_class": "plausible_emerging",
+      "contextual_threshold": {
+        "unit": "local_cluster",
+        "minimum_count": 3,
+        "minimum_distinct_signals": 2,
+        "window_words": 100,
+        "decision_rule": "Require repeated local shape plus a demonstrated hierarchy or attention cost; regularity alone remains an observation."
+      },
+      "rules": [
+        {"id": "sentence-shape-repetition", "kind": "sentence_repetition", "minimum_sentences": 3, "opening_words": 2, "maximum_word_count_spread": 3},
+        {"id": "parallel-runbook-steps", "kind": "normalized_phrase_occurrence", "phrases": ["back up", "rotate the key", "restart the worker"]}
+      ],
+      "preserve_predicates": [
+        {"id": "runbook-context", "kind": "any_phrase", "scope": "context", "phrases": ["runbook"]},
+        {"id": "measured-recovery", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["42 jobs", "without data loss"]}
+      ],
+      "preserve_conditions": [
+        "Parallel form makes comparison, instruction, legal precision, accessibility, or argument sequence clearer.",
+        "The rhythm is an intentional refrain or genre convention.",
+        "Variation would separate ideas that readers should compare directly."
+      ],
+      "repair_guidance": "Change the shape of the one sentence or paragraph whose role differs, using hierarchy or consequence rather than arbitrary variation.",
+      "source_ids": [
+        "miletic-falk-2026-scientific-communication",
+        "sourati-2026-linguistic-diversity"
+      ],
+      "scope": "Local regularity in supplied prose; measured complexity and syntax results remain model-, prompt-, corpus-, and definition-dependent.",
+      "limitations": "The evidence does not show that varied sentence shape is inherently better or that a local pattern identifies text origin.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-cadence-and-affect-cluster",
+        "preserve-parallel-steps-and-earned-affect",
+        "abstain-without-audience-context"
+      ]
+    },
+    {
+      "id": "positivity-affect-saturation",
+      "family": "synthetic_affect",
+      "rationale": "A cluster of unearned positivity or emotional cues can displace the evidence, stakes, or mixed result this audience needs.",
+      "observable_signals": [
+        "Several nearby positive or emotional evaluations lack a named cause, result, or consequence.",
+        "The tone stays uniformly upbeat despite material uncertainty, cost, or mixed evidence.",
+        "Removing one affective clause leaves the factual content unchanged."
+      ],
+      "evidence_class": "weak_or_folk_heuristic",
+      "contextual_threshold": {
+        "unit": "local_cluster",
+        "minimum_count": 3,
+        "minimum_distinct_signals": 2,
+        "window_words": 100,
+        "decision_rule": "Require density plus a mismatch with the evidence, stakes, audience, or declared tone."
+      },
+      "rules": [
+        {
+          "id": "positive-affect-phrases",
+          "kind": "normalized_phrase_occurrence",
+          "phrases": ["fantastic", "wonderful", "incredible", "amazing", "exciting", "delighted", "thrilled", "positive", "opportunity", "empowering", "relieved"]
+        }
+      ],
+      "preserve_predicates": [
+        {"id": "runbook-context", "kind": "any_phrase", "scope": "context", "phrases": ["runbook"]},
+        {"id": "measured-recovery", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["42 jobs", "without data loss"]}
+      ],
+      "preserve_conditions": [
+        "The draft names evidence or a consequence that earns the evaluation.",
+        "Celebration, reassurance, warmth, or advocacy is the declared genre and remains accurate.",
+        "The affect belongs to an authorised voice card or relationship."
+      ],
+      "repair_guidance": "Keep the affective statement that is earned and ground or remove only the redundant evaluation, preserving any uncertainty or mixed result.",
+      "source_ids": [
+        "miletic-falk-2026-scientific-communication"
+      ],
+      "scope": "A context-specific drafting hypothesis informed by scholarly-domain reading results, not a general emotion rule.",
+      "limitations": "The registered studies do not establish positivity as intrinsically tiring or supply a universal affect threshold.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-cadence-and-affect-cluster",
+        "preserve-parallel-steps-and-earned-affect",
+        "abstain-without-audience-context"
+      ]
+    },
+    {
+      "id": "polished-low-information-density",
+      "family": "semantic_emptiness",
+      "rationale": "Polished abstract prose can consume attention without naming the actors, actions, evidence, conditions, or decisions this audience needs.",
+      "observable_signals": [
+        "Two or more polished clauses repeat an abstract benefit without a concrete actor or action.",
+        "Evaluation or transition density is high while evidence, examples, or decisions remain absent.",
+        "The paragraph cannot answer what changed, for whom, under which condition, or with what result."
+      ],
+      "evidence_class": "weak_or_folk_heuristic",
+      "contextual_threshold": {
+        "unit": "paragraph",
+        "minimum_count": 2,
+        "minimum_distinct_signals": 2,
+        "decision_rule": "Require multiple abstract signals and identify the concrete information the reader needs before recommending repair."
+      },
+      "rules": [
+        {
+          "id": "abstract-benefit-phrases",
+          "kind": "normalized_phrase_occurrence",
+          "phrases": ["comprehensive approach", "meaningful value", "seamless framework", "impactful outcomes", "robust", "thoughtful journey", "unlock", "transformative", "new way forward", "evidence is incomplete", "third is missing"]
+        }
+      ],
+      "preserve_predicates": [
+        {"id": "bounded-evidence-summary", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["evidence is incomplete", "third is missing"]}
+      ],
+      "preserve_conditions": [
+        "The passage is a deliberate high-level summary followed by accessible detail.",
+        "Specificity is unavailable and the uncertainty is stated plainly.",
+        "The audience already shares the referenced actors, actions, and evidence."
+      ],
+      "repair_guidance": "Replace one abstract clause with the available actor, action, evidence, condition, example, or decision; do not invent missing facts.",
+      "source_ids": [
+        "kobak-2025-excess-vocabulary",
+        "miletic-falk-2026-scientific-communication"
+      ],
+      "scope": "A drafting hypothesis about information density; registered sources describe lexical and syntactic change but do not directly measure semantic emptiness.",
+      "limitations": "High-level or abstract prose can be appropriate, and missing facts must be requested or left uncertain rather than fabricated.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-abstraction-and-voice-flattening",
+        "preserve-clear-summary-and-authorised-voice",
+        "abstain-without-audience-context"
+      ]
+    },
+    {
+      "id": "task-voice-convergence",
+      "family": "voice_flattening",
+      "rationale": "Generic revision can override authorised directness, qualification, register, rhythm, or culturally meaningful choices and make the draft less like its declared task voice.",
+      "observable_signals": [
+        "The revision diverges from two or more explicit voice-card tendencies without a higher-authority reason.",
+        "Distinctive current-task choices are replaced by generic register or cadence.",
+        "The rewrite removes qualification, cultural context, relationship, humour, or tolerated roughness that the user authorised."
+      ],
+      "evidence_class": "plausible_emerging",
+      "contextual_threshold": {
+        "unit": "draft",
+        "minimum_count": 2,
+        "minimum_distinct_signals": 2,
+        "decision_rule": "Require an authorised current-task voice card and at least two observable divergences not required by facts, safety, accessibility, project style, or clarity."
+      },
+      "rules": [
+        {"id": "bounded-evidence-language", "kind": "normalized_phrase_occurrence", "phrases": ["evidence is incomplete", "third is missing"]},
+        {
+          "id": "directness-comparison",
+          "kind": "voice_card_comparison",
+          "field": "tendencies.directness",
+          "card_values": ["high"],
+          "comparison": {"kind": "normalized_phrase_occurrence", "phrases": ["it is worth noting", "it is important to remember", "at its core", "the key thing is"]}
+        },
+        {
+          "id": "plain-register-comparison",
+          "kind": "voice_card_comparison",
+          "field": "tendencies.vocabulary_register",
+          "card_values": ["plain"],
+          "comparison": {"kind": "normalized_phrase_occurrence", "phrases": ["comprehensive approach", "meaningful value", "seamless framework", "impactful outcomes", "robust", "thoughtful journey", "unlock", "transformative", "new way forward"]}
+        },
+        {
+          "id": "sentence-range-comparison",
+          "kind": "voice_card_comparison",
+          "field": "tendencies.sentence_range",
+          "comparison": {"kind": "sentence_length_outside_range"}
+        }
+      ],
+      "preserve_predicates": [
+        {"id": "bounded-evidence-summary", "kind": "all_phrases", "scope": "text_and_context", "phrases": ["evidence is incomplete", "third is missing"]}
+      ],
+      "preserve_conditions": [
+        "The change is required for factual accuracy, safety, law, accessibility, explicit project style, or material clarity.",
+        "No authorised voice card or current-task preference exists.",
+        "The sample is too narrow to support the alleged tendency."
+      ],
+      "repair_guidance": "Restore the smallest authorised choice that does not conflict with a higher-authority requirement and keep the source sample out of the result.",
+      "source_ids": [
+        "agarwal-2025-cultural-homogenization",
+        "sourati-2026-linguistic-diversity"
+      ],
+      "scope": "Current-task text and explicit preferences only; no private corpus, cultural inference, or person-level classification.",
+      "limitations": "The studies do not identify a person's culture or make every convergence harmful; a small sample supports only narrow tendencies.",
+      "version": "1.0.0",
+      "status": "active",
+      "first_observed": "2026-08-25",
+      "reviewed_at": "2026-08-25",
+      "review_after": "2027-02-25",
+      "golden_case_ids": [
+        "repair-abstraction-and-voice-flattening",
+        "preserve-clear-summary-and-authorised-voice",
+        "abstain-without-audience-context"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "description": "Bundled durable source-ID authority for portable writing-profile validation. Full citations remain with the profile evidence package.",
+  "sources": [
+    {"id": "agarwal-2025-cultural-homogenization", "evidence_kind": "primary_empirical_controlled_study"},
+    {"id": "kobak-2025-excess-vocabulary", "evidence_kind": "primary_empirical_corpus_study"},
+    {"id": "miletic-falk-2026-scientific-communication", "evidence_kind": "primary_empirical_domain_specific"},
+    {"id": "sourati-2026-linguistic-diversity", "evidence_kind": "primary_empirical_multidomain"},
+    {"id": "weber-wulff-2023-detection-tools", "evidence_kind": "primary_empirical_tool_audit"}
+  ]
+}

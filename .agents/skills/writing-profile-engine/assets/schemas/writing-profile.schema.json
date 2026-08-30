@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HarleyBartles/agent-asset-marketplace/writing-profile.schema.json",
+  "title": "Executable writing profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile_id", "profile_kind", "version", "reviewed_at", "review_after", "patterns"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile_id": {"$ref": "#/$defs/stableId"},
+    "profile_kind": {"enum": ["fatigue", "voice"]},
+    "version": {"$ref": "#/$defs/semver"},
+    "reviewed_at": {"type": "string", "format": "date"},
+    "review_after": {"type": "string", "format": "date"},
+    "patterns": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/pattern"}}
+  },
+  "$defs": {
+    "stableId": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "nonEmptyString": {"type": "string", "minLength": 1},
+    "stringSet": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/nonEmptyString"}},
+    "threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit", "minimum_count", "minimum_distinct_signals", "decision_rule"],
+      "properties": {
+        "unit": {"enum": ["draft", "section", "paragraph", "local_cluster"]},
+        "minimum_count": {"type": "integer", "minimum": 1},
+        "minimum_distinct_signals": {"type": "integer", "minimum": 1},
+        "window_words": {"type": "integer", "minimum": 1},
+        "decision_rule": {"$ref": "#/$defs/nonEmptyString"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"unit": {"const": "local_cluster"}}, "required": ["unit"]},
+          "then": {"required": ["window_words"]},
+          "else": {"not": {"required": ["window_words"]}}
+        }
+      ]
+    },
+    "phraseRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "phrases"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "kind": {"const": "normalized_phrase_occurrence"},
+        "phrases": {"$ref": "#/$defs/stringSet"}
+      }
+    },
+    "repetitionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "opening_words", "maximum_word_count_spread"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "kind": {"enum": ["sentence_repetition", "paragraph_repetition"]},
+        "minimum_sentences": {"type": "integer", "minimum": 2},
+        "minimum_paragraphs": {"type": "integer", "minimum": 2},
+        "opening_words": {"type": "integer", "minimum": 1},
+        "maximum_word_count_spread": {"type": "integer", "minimum": 0}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "sentence_repetition"}}, "required": ["kind"]},
+          "then": {"required": ["minimum_sentences"], "not": {"required": ["minimum_paragraphs"]}},
+          "else": {"required": ["minimum_paragraphs"], "not": {"required": ["minimum_sentences"]}}
+        }
+      ]
+    },
+    "voiceComparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "field", "comparison"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "kind": {"const": "voice_card_comparison"},
+        "field": {"enum": ["tendencies.directness", "tendencies.vocabulary_register", "tendencies.sentence_range"]},
+        "card_values": {"$ref": "#/$defs/stringSet"},
+        "comparison": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "phrases"],
+              "properties": {
+                "kind": {"const": "normalized_phrase_occurrence"},
+                "phrases": {"$ref": "#/$defs/stringSet"}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind"],
+              "properties": {"kind": {"const": "sentence_length_outside_range"}}
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"field": {"const": "tendencies.sentence_range"}}, "required": ["field"]},
+          "then": {
+            "not": {"required": ["card_values"]},
+            "properties": {"comparison": {"properties": {"kind": {"const": "sentence_length_outside_range"}}}}
+          },
+          "else": {
+            "required": ["card_values"],
+            "properties": {"comparison": {"properties": {"kind": {"const": "normalized_phrase_occurrence"}}}}
+          }
+        }
+      ]
+    },
+    "rule": {"oneOf": [{"$ref": "#/$defs/phraseRule"}, {"$ref": "#/$defs/repetitionRule"}, {"$ref": "#/$defs/voiceComparison"}]},
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "scope", "phrases"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "kind": {"enum": ["all_phrases", "any_phrase"]},
+        "scope": {"enum": ["text", "context", "text_and_context"]},
+        "phrases": {"$ref": "#/$defs/stringSet"}
+      }
+    },
+    "pattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "family", "rationale", "observable_signals", "evidence_class", "contextual_threshold",
+        "rules", "preserve_conditions", "preserve_predicates", "repair_guidance", "source_ids", "scope",
+        "limitations", "version", "status", "first_observed", "reviewed_at", "review_after", "golden_case_ids"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "family": {"$ref": "#/$defs/nonEmptyString"},
+        "rationale": {"$ref": "#/$defs/nonEmptyString"},
+        "observable_signals": {"$ref": "#/$defs/stringSet"},
+        "evidence_class": {"enum": ["well_supported_reader_fatigue", "plausible_emerging", "author_specific_preference", "weak_or_folk_heuristic"]},
+        "contextual_threshold": {"$ref": "#/$defs/threshold"},
+        "rules": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/rule"}},
+        "preserve_conditions": {"$ref": "#/$defs/stringSet"},
+        "preserve_predicates": {"type": "array", "items": {"$ref": "#/$defs/predicate"}},
+        "repair_guidance": {"$ref": "#/$defs/nonEmptyString"},
+        "source_ids": {"$ref": "#/$defs/stringSet"},
+        "scope": {"$ref": "#/$defs/nonEmptyString"},
+        "limitations": {"$ref": "#/$defs/nonEmptyString"},
+        "version": {"$ref": "#/$defs/semver"},
+        "status": {"enum": ["active", "retired", "rejected"]},
+        "first_observed": {"type": "string", "format": "date"},
+        "reviewed_at": {"type": "string", "format": "date"},
+        "review_after": {"type": "string", "format": "date"},
+        "golden_case_ids": {"$ref": "#/$defs/stringSet"}
+      }
+    }
+  }
+}

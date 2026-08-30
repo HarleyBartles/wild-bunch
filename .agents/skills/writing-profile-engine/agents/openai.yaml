@@ -1,0 +1,4 @@
+interface:
+  display_name: "Writing Profile Engine"
+  short_description: "Validate and evaluate writing-specific profiles"
+  default_prompt: "Use $writing-profile-engine to inspect writing-profile findings without authorship or detector claims."

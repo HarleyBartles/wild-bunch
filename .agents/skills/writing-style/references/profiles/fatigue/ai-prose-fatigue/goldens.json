@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "fatigue_profile_id": "ai-prose-fatigue",
+  "profile_version": "1.0.0",
+  "fixture_provenance": "Synthetic public test copy created for this profile; no private author corpus is retained.",
+  "cases": [
+    {
+      "id": "repair-affirmation-and-contrast-cluster",
+      "input": "This is a truly important shift. It is a deeply meaningful change. It is not merely an update; it is a transformation. It is not just a feature; it is a new way forward.",
+      "context": "An evidence note for readers who need the measured result and consequence quickly; no supporting result is supplied.",
+      "tags": ["pattern-cluster"],
+      "expected_classification": "repair",
+      "applicable_pattern_ids": ["low-information-affirmation-cluster", "repeated-contrast-profundity"],
+      "expected_findings": [
+        {
+          "type": "repair",
+          "pattern_ids": ["low-information-affirmation-cluster", "repeated-contrast-profundity"],
+          "evidence": "Repeated unsupported evaluation and two contrast frames restate the same claim without evidence.",
+          "rationale": "The cluster delays the result this audience needs."
+        }
+      ],
+      "rationale": "Both thresholds are met as a local cluster, and no preserve condition supplies evidence or a material distinction.",
+      "expected_repair_principle": "Keep one bounded claim and replace repeated emphasis with the available result or consequence; do not invent evidence."
+    },
+    {
+      "id": "repair-conversation-and-preface-cluster",
+      "input": "Ready to begin? You might be wondering what comes next. Can you see the opportunity? It is worth noting that the service starts at 09:00. It is important to remember that requests close at 09:15.",
+      "context": "An operational alert for experienced staff who need two times immediately.",
+      "tags": ["pattern-cluster", "clarity-protection"],
+      "expected_classification": "repair",
+      "applicable_pattern_ids": ["audience-cue-overload", "editorial-preface-density"],
+      "expected_findings": [
+        {
+          "type": "repair",
+          "pattern_ids": ["audience-cue-overload", "editorial-preface-density"],
+          "evidence": "Three predictable questions and two removable prefaces delay the operating times.",
+          "rationale": "The alert's reader task requires the times before conversational framing."
+        }
+      ],
+      "rationale": "The declared genre makes the cluster a concrete navigation cost rather than a tone preference.",
+      "expected_repair_principle": "Lead with the opening and closing times; remove only redundant questions and prefaces."
+    },
+    {
+      "id": "repair-cadence-and-affect-cluster",
+      "input": "The team shipped the update, and it was fantastic. The team reviewed the update, and it was wonderful. The team announced the update, and it was incredible. The team monitored the update, and it was amazing.",
+      "context": "A neutral incident timeline whose audience needs sequence, outcomes, and any remaining uncertainty.",
+      "tags": ["pattern-cluster"],
+      "expected_classification": "repair",
+      "applicable_pattern_ids": ["structural-cadence-uniformity", "positivity-affect-saturation"],
+      "expected_findings": [
+        {
+          "type": "repair",
+          "pattern_ids": ["structural-cadence-uniformity", "positivity-affect-saturation"],
+          "evidence": "Four identical sentence frames end in unsupported positive evaluation.",
+          "rationale": "Uniform cadence and ungrounded affect hide the event hierarchy and outcome."
+        }
+      ],
+      "rationale": "The local structural and affective clusters exceed their thresholds in a neutral evidence genre.",
+      "expected_repair_principle": "Combine the sequence, name the observed outcome, and retain only evaluation supported by evidence."
+    },
+    {
+      "id": "repair-abstraction-and-voice-flattening",
+      "input": "Our comprehensive approach unlocks meaningful value through a seamless framework. It enables impactful outcomes through a robust and thoughtful journey.",
+      "context": "The user explicitly prefers claim-first, evidence-first prose with plain uncertainty; the rewrite has no actors, evidence, decision, or qualification.",
+      "voice_card": {"schema_version": 1, "profile_id": "explicit-plain-direct-voice", "version": "1.0.0", "scope": {"task_boundary": "current_task", "genres": ["operational prose"], "audiences": ["current-task readers"]}, "derivation": {"basis": "explicit_preferences", "authorization": "explicit_user_preference", "sample_count": 0, "derived_at": "2026-08-25", "source_retained": false, "retention_boundary": "no_source_storage"}, "tendencies": {"sentence_range": {"typical_min_words": 3, "typical_max_words": 30}, "directness": "high", "vocabulary_register": ["plain"], "tolerated_fragments": true, "rhetorical_devices": [], "formatting_norms": []}, "choices": {"prefer": ["State claims directly and qualify uncertainty."], "avoid": ["Abstract benefit language."]}, "limitations": ["Applies only to this synthetic current-task fixture."]},
+      "tags": ["pattern-cluster", "author-voice-protection", "clarity-protection"],
+      "expected_classification": "repair",
+      "applicable_pattern_ids": ["polished-low-information-density", "task-voice-convergence"],
+      "expected_findings": [
+        {
+          "type": "repair",
+          "pattern_ids": ["polished-low-information-density", "task-voice-convergence"],
+          "evidence": "Two abstract benefit clauses omit concrete content and diverge from two declared voice tendencies.",
+          "rationale": "The rewrite removes the authorised order and qualification while giving the reader no testable claim."
+        }
+      ],
+      "rationale": "Both profiles supply a concrete context and the repair can preserve meaning without inventing facts.",
+      "expected_repair_principle": "Restore claim-first order and plain uncertainty, adding only facts that the source material supplies."
+    },
+    {
+      "id": "preserve-precise-distinction-and-contrast",
+      "input": "The real environment uses customer records; the simulated environment uses generated fixtures. This is not a cosmetic difference but a change in data-handling risk.",
+      "context": "A security note that must distinguish real from simulated data and explain the material contrast.",
+      "tags": ["legitimate-device", "clarity-protection"],
+      "expected_classification": "preserve",
+      "applicable_pattern_ids": ["low-information-affirmation-cluster", "repeated-contrast-profundity"],
+      "expected_findings": [
+        {
+          "type": "preserve",
+          "pattern_ids": ["low-information-affirmation-cluster", "repeated-contrast-profundity"],
+          "evidence": "Real marks a precise data distinction and the contrast names the changed risk.",
+          "rationale": "Both devices carry factual meaning and satisfy explicit preserve conditions."
+        }
+      ],
+      "rationale": "Removing either device would reduce factual precision.",
+      "expected_repair_principle": ""
+    },
+    {
+      "id": "preserve-teaching-question-and-signpost",
+      "input": "What changes when the token expires? The next section traces the request from the expired token to the 401 response. It is worth pausing here because the refresh path uses a different trust boundary.",
+      "context": "A tutorial for newcomers; the question structures learning and the signpost marks a security boundary.",
+      "tags": ["legitimate-device", "clarity-protection"],
+      "expected_classification": "preserve",
+      "applicable_pattern_ids": ["audience-cue-overload", "editorial-preface-density"],
+      "expected_findings": [
+        {
+          "type": "preserve",
+          "pattern_ids": ["audience-cue-overload", "editorial-preface-density"],
+          "evidence": "One teaching question and one signpost each perform a declared reader job.",
+          "rationale": "The devices orient a novice and preserve a material security distinction."
+        }
+      ],
+      "rationale": "Neither contextual threshold is met, and both uses match preserve conditions.",
+      "expected_repair_principle": ""
+    },
+    {
+      "id": "preserve-parallel-steps-and-earned-affect",
+      "input": "Back up the database. Rotate the key. Restart the worker. The recovery succeeded: all 42 jobs resumed without data loss, and the team is relieved.",
+      "context": "A runbook closeout where parallel commands support execution and the result earns the brief affective statement.",
+      "tags": ["legitimate-device", "clarity-protection"],
+      "expected_classification": "preserve",
+      "applicable_pattern_ids": ["structural-cadence-uniformity", "positivity-affect-saturation"],
+      "expected_findings": [
+        {
+          "type": "preserve",
+          "pattern_ids": ["structural-cadence-uniformity", "positivity-affect-saturation"],
+          "evidence": "Parallel imperatives aid execution, and the reported job count and absence of data loss ground the emotion.",
+          "rationale": "Regularity and affect are useful and supported in this genre."
+        }
+      ],
+      "rationale": "The preserve conditions protect both the command sequence and the earned conclusion.",
+      "expected_repair_principle": ""
+    },
+    {
+      "id": "preserve-clear-summary-and-authorised-voice",
+      "input": "The evidence is incomplete. Two logs show the retry; the third is missing. We can ship the fix, but we cannot claim the cause is confirmed.",
+      "context": "An authorised task voice prefers direct claims, evidence-first order, tolerated fragments, and plain qualification.",
+      "voice_card": {"schema_version": 1, "profile_id": "explicit-plain-direct-voice", "version": "1.0.0", "scope": {"task_boundary": "current_task", "genres": ["operational prose"], "audiences": ["current-task readers"]}, "derivation": {"basis": "explicit_preferences", "authorization": "explicit_user_preference", "sample_count": 0, "derived_at": "2026-08-25", "source_retained": false, "retention_boundary": "no_source_storage"}, "tendencies": {"sentence_range": {"typical_min_words": 3, "typical_max_words": 30}, "directness": "high", "vocabulary_register": ["plain"], "tolerated_fragments": true, "rhetorical_devices": [], "formatting_norms": []}, "choices": {"prefer": ["State claims directly and qualify uncertainty."], "avoid": ["Abstract benefit language."]}, "limitations": ["Applies only to this synthetic current-task fixture."]},
+      "tags": ["author-voice-protection", "clarity-protection", "legitimate-device"],
+      "expected_classification": "preserve",
+      "applicable_pattern_ids": ["polished-low-information-density", "task-voice-convergence"],
+      "expected_findings": [
+        {
+          "type": "preserve",
+          "pattern_ids": ["polished-low-information-density", "task-voice-convergence"],
+          "evidence": "The passage names evidence, a missing record, a decision, and a bounded conclusion in the authorised direct voice.",
+          "rationale": "Changing the terse rhythm or qualification would weaken clarity and declared voice."
+        }
+      ],
+      "rationale": "Specificity and voice are already present; the counterexample protects clarity from needless style churn.",
+      "expected_repair_principle": ""
+    },
+    {
+      "id": "abstain-without-audience-context",
+      "input": "It matters — not only now, but later. Ready? We begin. The work is real, and the work is good.",
+      "context": "No audience, genre, purpose, evidence, voice card, or surrounding draft is supplied.",
+      "tags": ["boundary", "legitimate-device"],
+      "expected_classification": "abstain",
+      "applicable_pattern_ids": [
+        "low-information-affirmation-cluster",
+        "repeated-contrast-profundity",
+        "audience-cue-overload",
+        "editorial-preface-density",
+        "structural-cadence-uniformity",
+        "positivity-affect-saturation",
+        "polished-low-information-density",
+        "task-voice-convergence"
+      ],
+      "expected_findings": [
+        {
+          "type": "abstain",
+          "pattern_ids": [
+            "low-information-affirmation-cluster",
+            "repeated-contrast-profundity",
+            "audience-cue-overload",
+            "editorial-preface-density",
+            "structural-cadence-uniformity",
+            "positivity-affect-saturation",
+            "polished-low-information-density",
+            "task-voice-convergence"
+          ],
+          "evidence": "Several possible signals appear, but the declared contextual predicates cannot be evaluated.",
+          "rationale": "A phrase or device match alone cannot establish reader cost, voice divergence, or a supported repair."
+        }
+      ],
+      "rationale": "Missing audience and task context makes every style judgment underdetermined.",
+      "expected_repair_principle": ""
+    }
+  ]
+}
