@@ -4,12 +4,12 @@ metadata:
   source_category: first_party
 interface:
   display_name: Iterative Review
-  short_description: Use when a draft PR is ready for subagent review before being marked ready for CI and human review.
-  default_prompt: Use /iterative-review when a draft PR is ready for subagent review before being marked ready for CI and human review.
+  short_description: Human-approved legacy review assistance for non-frontier orchestrators.
+  default_prompt: Ask whether to use /iterative-review for this PR. Do not use it with Sol or another harness-designated frontier model.
 policy:
   products:
   - chatgpt
   - codex
   - api
   - atlas
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

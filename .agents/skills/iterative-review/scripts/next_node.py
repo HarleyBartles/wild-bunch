@@ -237,7 +237,8 @@ def _condition_holds(condition: str, state: dict, ledger: Path, current_node: st
     if condition == "always":
         return True
     if condition == "after_lens_dispatch":
-        return previous_node == "lens-dispatch"
+        expected_previous = "normalize-inputs" if current_node == "lens-triage" else "lens-dispatch"
+        return previous_node == expected_previous and not unresolved
     if condition == "after_setup":
         return previous_node == "setup"
     if condition == "ready":
@@ -314,8 +315,6 @@ def _condition_holds(condition: str, state: dict, ledger: Path, current_node: st
         return not unresolved and not regressions
     if condition == "after_reviewer_fast":
         return previous_node == "reviewer-fast" and not unresolved
-    if condition == "after_lens_dispatch":
-        return previous_node == "lens-dispatch" and not unresolved
     if condition == "fast_origin":
         findings = _load_jsonl(scratch / "findings.jsonl")
         resolved_ids = {r["finding_id"] for r in _load_jsonl(scratch / "resolutions.jsonl")}

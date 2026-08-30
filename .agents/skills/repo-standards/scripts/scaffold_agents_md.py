@@ -36,7 +36,7 @@ def _skill_root() -> Path:
 
 
 def _template() -> str:
-    template = _skill_root() / "templates" / "AGENTS.md"
+    template = _skill_root() / "templates" / "agents-md.template.md"
     return template.read_text(encoding="utf-8")
 
 

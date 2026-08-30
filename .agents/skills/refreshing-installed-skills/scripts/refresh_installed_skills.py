@@ -754,7 +754,7 @@ def main(argv: list[str] | None = None) -> int:
     collisions = _reserved_marketplace_skill_collisions(installed_plugins, prefixes)
     if collisions:
         for plugin_name, skill_name in collisions:
-            print(f"ERROR: Marketplace plugin '{plugin_name}' exposes reserved local skill prefix '{skill_name}'")
+            print(f"ERROR: Marketplace plugin '{plugin_name}' exposes declared local skill name '{skill_name}'")
         return 1
 
     # Compute the deterministic vendor-profile provenance record for the

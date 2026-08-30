@@ -1,6 +1,6 @@
 ---
 name: iterative-review
-description: Use when a draft PR is ready for subagent review before being marked ready for CI and human review.
+description: Use only after human approval when an orchestrator not known to be frontier-capable needs legacy subagent review assistance for a draft PR. Do not use with Sol or another harness-designated frontier model.
 metadata:
   source-id: iterative-review
   source-path: codex-marketplace/plugins/superpowers-plus/skills/iterative-review/SKILL.md
@@ -8,10 +8,13 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when a draft PR is ready for subagent review before being marked ready for CI and human review.
+  scope: Human-approved legacy review assistance for orchestrators not known to be frontier-capable reviewing a draft PR.
   use_when:
-  - Use when a draft PR is ready for subagent review before being marked ready for CI and human review.
+  - Use only when the human explicitly approves this workflow for the current PR.
+  - Use only when the orchestrator is non-frontier, or its classification is unknown and the human approves after being told that limitation.
   do_not_use_when:
+  - Do not use when the orchestrator is gpt-5.6-sol or another model the harness designates as frontier-capable; use ordinary self-review and canonical validation instead.
+  - Do not start the graph when model capability is unknown or human approval is absent.
   - Do not use when the PR has no changes to review.
   - Do not use as a substitute for the repo's canonical CI preflight.
   related_skills:
@@ -27,9 +30,35 @@ license: MIT
 
 This skill is a first-party skill authored for this repository. It is not derived from an upstream snapshot.
 
-## Quick start
+## Mandatory entry gate
 
-Do not read the whole skill or the graph reference before starting. `next_node.py` enforces the graph: it only allows the single next node. You cannot make an invalid move.
+Run this gate before reading graph recipes, creating review state, dispatching a
+subagent, or invoking any script in this skill.
+
+1. Determine the orchestrator's effective model classification from trusted
+   harness context. Do not infer strength from marketing language or a profile
+   name.
+2. If the orchestrator is `gpt-5.6-sol` or another model the harness explicitly
+   designates as frontier-capable, **stop and do not use this skill**. Perform
+   ordinary whole-change self-review and the repository's canonical validation.
+3. If the orchestrator is non-frontier or its classification is unknown, tell
+   the human that this is the legacy review-assistance graph: it can add useful
+   review coverage, but it is not proof of exhaustive review or trustworthy
+   green. Ask whether they want it used for this PR.
+4. Continue only after a new affirmative answer for this PR. Silence, prior use
+   on another PR, general autonomy, or merely discovering this skill is not
+   approval. If approval is declined or unavailable, use ordinary self-review
+   and canonical validation instead.
+
+The graph's terminal `ready` value means only that the legacy sequence
+completed. It does not authorize a `reviewed-green` claim or independently
+authorize moving the PR out of draft.
+
+## Quick start after approval
+
+After the entry gate permits use, do not read the whole graph reference before
+starting. `next_node.py` constrains graph sequencing, but it does not prove that
+the review was complete or that every issue was found.
 
 1. Identify the PR number.
 2. From the branch worktree, run:
@@ -39,17 +68,21 @@ Do not read the whole skill or the graph reference before starting. `next_node.p
 3. The script prints the one allowed next node, the recipe file to read, and the command to authorize it.
 4. Open that one `references/node-<node>.md` file and follow it.
 5. When the recipe says "next check", run `next_node.py` again. It will tell you the next node.
-6. Continue until `next_node.py` prints `ready` or `blocked`.
+6. Continue until `next_node.py` prints `ready` or `blocked`. Treat `ready` as
+   legacy-loop completion only.
 
 `start_review.py` performs the `setup` and `normalize-inputs` nodes and leaves the graph pointing at `preflight`.
 
 # Iterative Review
 
-Run the review state graph on a draft PR before it is marked ready for CI and human review.
+Run the legacy review-assistance graph on a draft PR only after the mandatory
+entry gate permits it.
 
 ## When to Use
 
-Use when a draft PR exists and needs an automated subagent review loop before being marked ready for CI and human review.
+Use only when the current human explicitly approves the legacy graph for a
+non-frontier or unknown-capability orchestrator. Frontier orchestrators do not
+use this workflow.
 
 ## Core Pattern
 
@@ -80,7 +113,8 @@ The Devin Desktop agents search path is: user-global `~/.config/devin/agents/` (
    ```
    py -3 .agents/skills/iterative-review/scripts/next_node.py --propose <node> --state <scratch_dir>/review-state.json
    ```
-6. Stop when `next_node.py` prints `ready` or `blocked`.
+6. Stop when `next_node.py` prints `ready` or `blocked`; neither value proves
+   exhaustive review, and `ready` does not itself authorize a green claim.
 
 ## Recording `review-metrics.json`
 

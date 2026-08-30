@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import re
 import shutil
@@ -103,8 +104,8 @@ def _run_index_mesh_extra_hook(repo_root: Path, check: bool) -> list[str]:
 
 # Set at import from git. Use configure_root() or --repo-root to override before any work runs.
 ROOT = _repo_root()
-EXCLUDED_DIR_NAMES = {".git", ".worktrees", "__pycache__", ".pytest_cache", ".superpowers"}
-EXCLUDED_ROOT_NAMES = {".git", ".worktrees", "__pycache__", ".superpowers"}
+EXCLUDED_DIR_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".pytest_cache", ".superpowers"}
+EXCLUDED_ROOT_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".superpowers"}
 EXCLUDED_FILE_NAMES = {".git", ".gitkeep"}
 INDEX_FILE_NAMES = {"INDEX.md", "INDEX.json"}
 THIRD_PARTY_ROOT = ROOT / "sources" / "third_party"
@@ -359,6 +360,30 @@ def walk_index_targets() -> list[IndexTarget]:
     return targets
 
 
+def _load_exclusions(exclusions_path: Path | None) -> tuple[set[str], set[str]]:
+    """Load optional declarative exclusions from a JSON file.
+
+    The file must contain a JSON object with optional keys:
+      - "exclude_dir_names": list of directory names to skip during traversal
+      - "exclude_file_names": list of file names to skip in the index
+
+    These are merged with the built-in standard exclusions before any
+    directory traversal or index rendering occurs.
+    """
+    if exclusions_path is None or not exclusions_path.is_file():
+        return set(), set()
+    data = json.loads(exclusions_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{exclusions_path}: exclusions must be a JSON object")
+    extra_dir_names = data.get("exclude_dir_names", [])
+    extra_file_names = data.get("exclude_file_names", [])
+    if not isinstance(extra_dir_names, list) or not all(isinstance(n, str) for n in extra_dir_names):
+        raise ValueError(f"{exclusions_path}: exclude_dir_names must be a list of strings")
+    if not isinstance(extra_file_names, list) or not all(isinstance(n, str) for n in extra_file_names):
+        raise ValueError(f"{exclusions_path}: exclude_file_names must be a list of strings")
+    return set(extra_dir_names), set(extra_file_names)
+
+
 def configure_root(repo_root: Path) -> None:
     global ROOT, THIRD_PARTY_ROOT, SKILL_ZIPS_ROOT, NON_CANONICAL_GUARD_ROOTS, TRACKED_DIRS, TRACKED_FILES, CONTENT_DIRS, IGNORED_INDEX_PATHS  # noqa: E501
     ROOT = repo_root
@@ -380,10 +405,21 @@ def main(argv: list[str] | None = None) -> int:
         "Only pass this if you intend to mutate this checkout.",
     )
     parser.add_argument("--repo-root", type=Path, default=None, help="repo root to process")
+    parser.add_argument(
+        "--exclusions",
+        type=Path,
+        default=None,
+        help="path to a JSON file with additional pre-traversal exclusions",
+    )
     args = parser.parse_args(argv)
 
     if args.repo_root:
         configure_root(args.repo_root.resolve())
+
+    extra_dirs, extra_files = _load_exclusions(args.exclusions)
+    EXCLUDED_DIR_NAMES.update(extra_dirs)
+    EXCLUDED_ROOT_NAMES.update(extra_dirs)
+    EXCLUDED_FILE_NAMES.update(extra_files)
 
     # Re-validate we are not in a submodule
     result = subprocess.run(

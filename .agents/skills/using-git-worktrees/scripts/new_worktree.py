@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
 
 def _stripped_env() -> dict[str, str]:
@@ -132,7 +133,7 @@ def _is_under_repo(repo_root: Path, candidate: Path) -> bool:
     return True
 
 
-def _find_skill_core(repo_root: Path, skill_name: str, core_name: str) -> Path | None:
+def _find_skill_core(repo_root: Path, skill_name: str, core_name: str) -> Optional[Path]:
     """Return the path to a skill's core script, searching installed plugins first.
 
     This helper is intentionally self-contained in each skill script so the
@@ -171,34 +172,187 @@ def _find_skill_core(repo_root: Path, skill_name: str, core_name: str) -> Path |
     return None
 
 
-def _find_refresh_script(worktree_root: Path) -> Path | None:
+def _find_refresh_script(worktree_root: Path) -> Optional[Path]:
     """Return the path to the new worktree's refreshing-installed-skills script."""
     return _find_skill_core(worktree_root, "refreshing-installed-skills", "refresh_installed_skills.py")
 
 
-def _find_mesh_script(worktree_root: Path) -> Path | None:
+def _find_mesh_script(worktree_root: Path) -> Optional[Path]:
     """Return the path to the new worktree's generate-index-mesh script."""
     return _find_skill_core(worktree_root, "generating-agent-mesh", "generate_index_mesh.py")
 
 
-def _remove_worktree(worktree_root: Path, main_repo_root: Path, branch: str) -> None:
-    """Remove a newly created worktree and its branch so failed runs can be retried."""
-    remove = subprocess.run(
-        ["git", "worktree", "remove", "--force", str(worktree_root)],
-        cwd=main_repo_root,
+def _find_command_bus(repo_root: Path) -> Optional[Path]:
+    """Return the repo's canonical command-bus entry point if one exists.
+
+    Prefer the concrete Python bus so the dispatch can run it directly; fall
+    back to platform wrappers only when the Python bus is absent.
+    """
+    for name in ("run.py", "run", "run.ps1"):
+        candidate = repo_root / "tools" / name
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _dispatch_capability(
+    repo_root: Path,
+    capability: str,
+    *extra: str,
+) -> Optional[int]:
+    """Run a named capability through the repo's command bus, or return None to fall back.
+
+    Returns the command's exit code when the bus owns the capability. Returns
+    None when the repo has no command bus or the bus does not advertise the
+    capability, signalling the caller to use the bundled implementation. A
+    repo-owned command that fails is never silently retried.
+    """
+    bus = _find_command_bus(repo_root)
+    if bus is None:
+        return None
+
+    if bus.suffix == ".py":
+        cmd = [sys.executable, str(bus), capability, *extra]
+    elif bus.suffix == ".ps1":
+        ps = shutil.which("pwsh") or shutil.which("powershell")
+        if not ps:
+            return None
+        cmd = [ps, "-ExecutionPolicy", "Bypass", "-File", str(bus), capability, *extra]
+    else:
+        shell = shutil.which("bash") or shutil.which("sh")
+        if not shell:
+            return None
+        cmd = [shell, str(bus), capability, *extra]
+
+    result = subprocess.run(
+        cmd,
+        cwd=repo_root,
         env=_stripped_env(),
         capture_output=True,
+        text=True,
     )
-    if remove.returncode != 0 and worktree_root.exists():
-        shutil.rmtree(worktree_root, ignore_errors=True)
-    # The branch was created by `git worktree add -b` in this run; delete it so
-    # the caller can retry with the same branch name.
-    subprocess.run(
-        ["git", "branch", "-D", branch],
-        cwd=main_repo_root,
-        env=_stripped_env(),
-        capture_output=True,
-    )
+
+    is_unknown = result.returncode == 2 and "invalid choice" in (result.stdout + result.stderr).lower()
+
+    # Only surface bus output when the repo actually owns the capability.
+    if not is_unknown:
+        if result.stdout:
+            sys.stdout.write(result.stdout)
+        if result.stderr:
+            sys.stderr.write(result.stderr)
+
+    if is_unknown:
+        return None
+    return result.returncode
+
+
+def _run_command(cmd: list[str], cwd: Path) -> int:
+    """Run an external command, using the shell on Windows for .cmd/.bat tools."""
+    if sys.platform == "win32":
+        command = subprocess.list2cmdline([str(arg) for arg in cmd])
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            env=_stripped_env(),
+            shell=True,
+            text=True,
+        )
+    else:
+        result = subprocess.run(
+            [str(arg) for arg in cmd],
+            cwd=cwd,
+            env=_stripped_env(),
+            text=True,
+        )
+    return result.returncode
+
+
+def _is_poetry_project(repo_root: Path) -> bool:
+    """Return True when the repo's pyproject.toml is managed by Poetry."""
+    pyproject = repo_root / "pyproject.toml"
+    if not pyproject.is_file():
+        return False
+    if (repo_root / "poetry.lock").is_file():
+        return True
+    try:
+        text = pyproject.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return re.search(r"^\[tool\.poetry\]", text, re.MULTILINE) is not None
+
+
+def _install_dependencies(repo_root: Path) -> int:
+    """Install dependencies for common package managers when not repo-owned.
+
+    Runs every recognised installer so mixed-language worktrees get all of their
+    dependencies. Returns 0 when there is nothing to do or every installation
+    succeeds. A failed installation or a recognised manifest without its required
+    installer returns a non-zero exit code so the worktree is not left broken.
+    """
+    package_lock = repo_root / "package-lock.json"
+    package_json = repo_root / "package.json"
+    yarn_lock = repo_root / "yarn.lock"
+    pnpm_lock = repo_root / "pnpm-lock.yaml"
+    requirements = repo_root / "requirements.txt"
+
+    exit_codes = []
+
+    if package_lock.is_file():
+        if not shutil.which("npm"):
+            print(f"error: package-lock.json present in {repo_root} but npm is not available", file=sys.stderr)
+            return 1
+        print(f"Installing npm dependencies (ci) in {repo_root}")
+        exit_codes.append(_run_command(["npm", "ci"], repo_root))
+    elif yarn_lock.is_file():
+        if not shutil.which("yarn"):
+            print(f"error: yarn.lock present in {repo_root} but yarn is not available", file=sys.stderr)
+            return 1
+        print(f"Installing yarn dependencies in {repo_root}")
+        exit_codes.append(_run_command(["yarn", "install", "--frozen-lockfile"], repo_root))
+    elif pnpm_lock.is_file():
+        if not shutil.which("pnpm"):
+            print(f"error: pnpm-lock.yaml present in {repo_root} but pnpm is not available", file=sys.stderr)
+            return 1
+        print(f"Installing pnpm dependencies in {repo_root}")
+        exit_codes.append(_run_command(["pnpm", "install", "--frozen-lockfile"], repo_root))
+    elif package_json.is_file():
+        if not shutil.which("npm"):
+            print(f"error: package.json present in {repo_root} but npm is not available", file=sys.stderr)
+            return 1
+        print(f"Installing npm dependencies in {repo_root}")
+        exit_codes.append(_run_command(["npm", "install"], repo_root))
+
+    if requirements.is_file():
+        pip = shutil.which("pip") or shutil.which("pip3")
+        if not pip:
+            # pip may be available only as `python -m pip` in some Python
+            # distributions. Do not delete the worktree for a missing pip
+            # executable; the user can install requirements manually.
+            print(
+                f"warning: requirements.txt present in {repo_root} but pip is not on PATH; "
+                "leaving the worktree for manual Python setup",
+                file=sys.stderr,
+            )
+        else:
+            print(f"Installing Python requirements in {repo_root}")
+            pip_code = _run_command([pip, "install", "-r", "requirements.txt"], repo_root)
+            if pip_code != 0:
+                # pip is often blocked on externally-managed Python installs. Do not
+                # delete a freshly created worktree for this; the worktree is still
+                # useful and the user can install dependencies into a venv later.
+                print(
+                    f"warning: pip install failed in {repo_root}; leaving the worktree for manual Python setup",
+                    file=sys.stderr,
+                )
+
+    if _is_poetry_project(repo_root):
+        if not shutil.which("poetry"):
+            print(f"error: Poetry project detected in {repo_root} but poetry is not available", file=sys.stderr)
+            return 1
+        print(f"Installing Poetry dependencies in {repo_root}")
+        exit_codes.append(_run_command(["poetry", "install", "--no-interaction"], repo_root))
+
+    return next((code for code in exit_codes if code != 0), 0)
 
 
 def _init_submodules(worktree_root: Path) -> int:
@@ -325,18 +479,30 @@ def _configure_worktree(
         if exit_code != 0:
             return exit_code
 
-        refresh_script = _find_refresh_script(worktree_root)
-        if refresh_script:
-            refresh_args = [str(refresh_script), "--apply", "--allow-shared-checkout"]
-            result = subprocess.run(
-                [sys.executable, *refresh_args],
-                cwd=worktree_root,
-                env=_stripped_env(),
-            )
-            if result.returncode != 0:
-                print(f"error: refreshing installed skills failed in {worktree_root}", file=sys.stderr)
-                return result.returncode
+        # Prefer the repo-owned command bus for cross-skill capabilities.
+        exit_code = _dispatch_capability(worktree_root, "refresh-skills", "--apply")
+        if exit_code is None:
+            refresh_script = _find_refresh_script(worktree_root)
+            if refresh_script:
+                refresh_args = [str(refresh_script), "--apply", "--allow-shared-checkout"]
+                result = subprocess.run(
+                    [sys.executable, *refresh_args],
+                    cwd=worktree_root,
+                    env=_stripped_env(),
+                )
+                exit_code = result.returncode
+            else:
+                print(
+                    "warning: refreshing-installed-skills not found; worktree created but skills were not refreshed",
+                    file=sys.stderr,
+                )
+                exit_code = 0
+        if exit_code != 0:
+            print(f"error: refreshing installed skills failed in {worktree_root}", file=sys.stderr)
+            return exit_code
 
+        exit_code = _dispatch_capability(worktree_root, "index-mesh", "--apply")
+        if exit_code is None:
             mesh_script = _find_mesh_script(worktree_root)
             if mesh_script:
                 mesh_args = [str(mesh_script), "--apply", "--allow-shared-checkout"]
@@ -345,19 +511,26 @@ def _configure_worktree(
                     cwd=worktree_root,
                     env=_stripped_env(),
                 )
-                if result.returncode != 0:
-                    print(f"error: generating index mesh failed in {worktree_root}", file=sys.stderr)
-                    return result.returncode
+                exit_code = result.returncode
             else:
                 print(
                     "warning: generate-index-mesh not found; worktree created but index mesh was not regenerated",
                     file=sys.stderr,
                 )
-        else:
-            print(
-                "warning: refreshing-installed-skills not found; worktree created but skills were not refreshed",
-                file=sys.stderr,
-            )
+                exit_code = 0
+        if exit_code != 0:
+            print(f"error: generating index mesh failed in {worktree_root}", file=sys.stderr)
+            return exit_code
+
+    # Make the worktree runnable by installing dependencies. A repo can own
+    # this via the command bus; otherwise the bundled default detects common
+    # package manager manifests and runs the appropriate installer.
+    exit_code = _dispatch_capability(worktree_root, "install-deps", "--apply")
+    if exit_code is None:
+        exit_code = _install_dependencies(worktree_root)
+    if exit_code != 0:
+        print(f"error: installing dependencies failed in {worktree_root}", file=sys.stderr)
+        return exit_code
 
     print(f"Worktree ready at {worktree_root}")
     return 0
@@ -379,7 +552,7 @@ def _default_base_ref(main_repo_root: Path) -> tuple[str, bool]:
 def _check_worktree(
     main_repo_root: Path,
     branch: str,
-    base_ref: str | None,
+    base_ref: Optional[str],
 ) -> tuple[int, str, str]:
     """Return (exit_code, human_summary, base_ref_to_use).
 
@@ -452,13 +625,8 @@ def _apply_worktree(
     if result.returncode != 0:
         return result.returncode
 
-    try:
-        exit_code = _configure_worktree(worktree_root, main_repo_root, no_skill_refresh)
-    except BaseException:
-        _remove_worktree(worktree_root, main_repo_root, branch)
-        raise
+    exit_code = _configure_worktree(worktree_root, main_repo_root, no_skill_refresh)
     if exit_code != 0:
-        _remove_worktree(worktree_root, main_repo_root, branch)
         return exit_code
 
     scratch_root = _canonical_scratch_root(main_repo_root, branch)
@@ -508,7 +676,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 

@@ -1,5 +1,5 @@
 {
-  "manifestSha": "52866dfb13b257c8d7d98fbb6155f96a7a8ca07e",
+  "manifestSha": "70dd30e2e65fd8f7aa89796a1a037da14235dd2a",
   "syncedPlugins": [
     "repo-worker-pack",
     "superpowers-plus",
@@ -9,7 +9,7 @@
     "frontend-pack",
     "mcp-usage-pack"
   ],
-  "syncedSkills": 62,
+  "syncedSkills": 60,
   "localSkills": [
     "wild-bunch-browser-game",
     "wild-bunch-domain-modeling",
@@ -29,5 +29,5 @@
   ],
   "marketplaceFile": ".agents/plugins/marketplace.json",
   "vendorProfiles": [],
-  "syncedAt": "2026-08-23T22:38:57.625173"
+  "syncedAt": "2026-08-30T16:42:57.093438"
 }
