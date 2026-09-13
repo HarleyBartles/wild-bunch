@@ -1,7 +1,7 @@
 ---
 name: test-driven-development
 description: Use when implementing any feature or bugfix, before writing implementation
-  code
+  code.
 metadata:
   source-id: test-driven-development
   source-path: codex-marketplace/plugins/superpowers-plus/skills/test-driven-development/SKILL.md
@@ -9,16 +9,14 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when implementing any feature or bugfix, before writing implementation
-    code
   use_when:
-  - Use when implementing any feature or bugfix before writing implementation code.
-  - Use when starting a red-green-refactor cycle.
-  - Use when behavior needs a failing test to define correctness.
+  - implementing any feature or bugfix before writing implementation code.
+  - starting a red-green-refactor cycle.
+  - behavior needs a failing test to define correctness.
   do_not_use_when:
-  - Do not use for throwaway prototypes unless the partner approves.
-  - Do not use when the codebase or language cannot be tested.
-  - Do not use as a substitute for writing-plans.
+  - throwaway prototypes unless the partner approves.
+  - the codebase or language cannot be tested.
+  - a substitute for writing-plans.
   related_skills:
   - brainstorming
   - writing-plans
@@ -29,7 +27,7 @@ license: MIT
 ---
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/test-driven-development/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Test-Driven Development (TDD)
 
@@ -43,16 +41,17 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 ## When to Use
 
-**Always:**
+**Always for independent behavior:**
 - New features
 - Bug fixes
 - Refactoring
 - Behavior changes
 
-**Exceptions (ask your human partner):**
+**Proportionate cases:**
 - Throwaway prototypes
 - Generated code
 - Configuration files
+- Pure glue with no independent behavior may rely on transitive coverage
 
 Thinking "skip TDD just this once"? Stop. That's rationalization.
 
@@ -312,7 +311,7 @@ Extract validation for multiple fields if needed.
 
 Before marking work complete:
 
-- [ ] Every new function/method has a test
+- [ ] Every new independent behavior has a meaningful test (pure glue may be covered transitively)
 - [ ] Watched each test fail before implementing
 - [ ] Each test failed for expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test

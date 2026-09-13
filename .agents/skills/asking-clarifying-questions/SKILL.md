@@ -1,22 +1,23 @@
 ---
 name: asking-clarifying-questions
-description: Use when an ambiguity remains after safe internal resolution and a single answer from your human partner would unblock the next action, without needing a full design session or a pre-action risk gate.
+description: Use when an ambiguity remains after safe internal resolution and one
+  human answer would materially determine the next action.
 metadata:
   source-id: asking-clarifying-questions
-  source-path: codex-marketplace/plugins/repo-worker-pack/skills/asking-clarifying-questions/SKILL.md
+  source-path: codex-marketplace/plugins/superpowers-plus/skills/asking-clarifying-questions/SKILL.md
   provenance-name: Asking Clarifying Questions first-party skill
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: mid-flight ambiguity resolution through a single clarifying question
+  scope: Mid-flight ambiguity resolution through a single clarifying question.
   use_when:
-  - Use when an ambiguity is internally unresolved and a single human decision would unblock the immediate next step.
-  - Use when the agent is mid-plan, mid-execution, or inside another skill and a missing fact, term, scope, boundary, or output shape prevents safe progress.
-  - Use when the answer is a concrete decision, not a design.
+  - an ambiguity is internally unresolved and a single human decision would unblock the immediate next step.
+  - the agent is mid-plan, mid-execution, or inside another skill and a missing fact, term, scope, boundary, or output shape prevents safe progress.
+  - the answer is a concrete decision, not a design.
   do_not_use_when:
-  - Do not use when the ambiguity needs a full spec or design; use brainstorming.
-  - Do not use when the next action could violate scope, authority, source truth, canon, safety, or involve irreversible mutation; use risk-gates.
-  - Do not use when the answer is already forced by durable source, policy, or a safe default; resolve internally.
+  - the ambiguity needs a full spec or design; use brainstorming.
+  - the next action could violate scope, authority, source truth, canon, safety, or involve irreversible mutation; use risk-gates.
+  - the answer is already forced by durable source, policy, or a safe default; resolve internally.
   use_instead:
   - brainstorming
   - risk-gates
@@ -42,8 +43,12 @@ This is an anytime escape hatch. If a single missing fact blocks the next step o
 3. State the risk of guessing.
 4. Give a concrete recommendation and the available options.
 5. Ask one question.
-6. Record the answer and continue.
-7. If another missing fact still blocks the next step, repeat from step 1 in the next turn.
+6. Record the answer. The decision remains human-owned. Stop when the human
+   explicitly defers the decision or asks to pause. A request to decide together
+   invites collaboration: offer a bounded recommendation or ask the next useful
+   question, without implementing an unresolved choice.
+7. Continue only when the answer resolves the immediate ambiguity.
+8. If another missing fact still blocks the next step, repeat from step 1 in the next turn.
 
 ## When to use
 
@@ -51,6 +56,10 @@ This is an anytime escape hatch. If a single missing fact blocks the next step o
 - A single missing decision separates the agent from the next action.
 - The cost of guessing is wasted motion or reversible rework, not a canon or authority mistake.
 - One fact is missing now; further missing facts can wait their own turn.
+- Human-owned taste words such as “premium,” “playful,” “bold,” or “more
+  polished” do not supply an implementation target. Ask one question about the
+  intended audience, artifact, or concrete quality before inspecting or editing
+  source; do not silently translate taste into copy, color, or architecture.
 
 ## When not to use
 
@@ -64,6 +73,8 @@ This is an anytime escape hatch. If a single missing fact blocks the next step o
 - Asking when the answer is already in durable source or policy.
 - Treating a clarifying question as a substitute for a missing design or risk gate.
 - Asking multiple questions in one turn — one fact per message, as many turns as needed.
+- Treating a request to decide together as a pause. Distinguish collaborative
+  discussion from an explicit deferral, and keep implementation behind the decision.
 
 ## Relation to other skills
 

@@ -1,6 +1,8 @@
 ---
 name: repo-worker-base
-description: Use when beginning or reviewing repo-backed work that needs portable worktree, source-custody, layout, validation, or publication guidance.
+description: Use when beginning or reviewing repo-backed work that needs portable
+  worktree, source-custody, validation, or publication guidance, especially when a
+  portable suggestion conflicts with repository policy.
 metadata:
   source-id: repo-worker-base
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/repo-worker-base/SKILL.md
@@ -10,9 +12,9 @@ metadata:
   owner: Harley Bartles
   scope: Portable repo-worker routing, hygiene, and publication boundaries.
   use_when:
-  - Use when repo work needs worktree, branch, scratch, source, layout, validation, evidence, review, closeout, or publication guidance.
+  - repo work needs worktree, branch, scratch, source, layout, validation, evidence, review, closeout, or publication guidance.
   do_not_use_when:
-  - Do not use when work is not repo-backed or a repository-specific policy alone owns the decision.
+  - work is not repo-backed or a repository-specific policy alone owns the decision.
   use_with:
   - using-superpowers-plus
   - brainstorming
@@ -38,6 +40,7 @@ by `using-superpowers-plus`; each stage skill owns its own baseline.
 | Repo work, worktree, branch, scratch, PR, or publication | [worktree-and-branch-policy.md](references/worktree-and-branch-policy.md) |
 | Running or changing a mutation script | [mutation-script-safety.md](references/mutation-script-safety.md) |
 | Creating an agent-facing script | [script-entrypoint-contract.md](references/script-entrypoint-contract.md) |
+| Focused validation, hooked commit proof, Draft/Ready publication, or CI parity | [repository-validation-contract.md](references/repository-validation-contract.md) |
 | Changing README, AGENTS.md, INDEX.md, doctrine, docs, plans, or mesh | [repository-layout-and-mesh.md](references/repository-layout-and-mesh.md) |
 | Finding or creating a repository-local stage runbook | [stage-guide-contract.md](references/stage-guide-contract.md) |
 

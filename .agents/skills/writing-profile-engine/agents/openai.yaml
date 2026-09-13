@@ -1,4 +1,8 @@
+version: 1
+metadata:
+  skill_name: writing-profile-engine
+  source_category: first_party
 interface:
   display_name: "Writing Profile Engine"
-  short_description: "Validate and evaluate writing-specific profiles"
-  default_prompt: "Use $writing-profile-engine to inspect writing-profile findings without authorship or detector claims."
+  short_description: "Validate and evaluate writing-specific profiles."
+  default_prompt: "Use writing-profile-engine to inspect writing-profile findings without authorship or detector claims."

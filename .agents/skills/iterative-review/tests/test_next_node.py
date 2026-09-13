@@ -120,5 +120,105 @@ class TestNextNodePropose(unittest.TestCase):
             self.assertIn("final-strong", result.stdout)
 
 
+REVIEWCTL = SKILL_DIR / "scripts" / "reviewctl.py"
+
+
+def _write_v1_state(scratch: Path, **overrides) -> Path:
+    state = {
+        "current_node": "setup",
+        "previous_node": "",
+        "round": 1,
+        "max_fix_rounds": 4,
+        "non_trivial_fix": False,
+        "pr": {"pr_number": 999, "base": "main", "branch": "test", "head_sha": "abc123"},
+        "scratch_dir": str(scratch),
+    }
+    state.update(overrides)
+    p = scratch / "review-state.json"
+    p.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+    return p
+
+
+def _reviewctl_validate(state: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["py", "-3", str(REVIEWCTL), "validate", "--state", str(state)],
+        capture_output=True,
+        text=True,
+    )
+
+
+def _assert_v1_cannot_seal(testcase: unittest.TestCase, state: Path, scratch: Path) -> None:
+    """Version-1 state must be refused by the v2 CLI and by v1 ready."""
+    result = _reviewctl_validate(state)
+    testcase.assertEqual(result.returncode, 1, result.stderr)
+    testcase.assertIn("version-1", result.stderr + result.stdout)
+    ready = _propose(state, "ready")
+    testcase.assertEqual(ready.returncode, 1)
+    testcase.assertIn("BLOCKED", ready.stderr)
+    testcase.assertIn("version-1", ready.stderr)
+    seal = scratch / "review-state.json"
+    testcase.assertNotIn('"green_seal"', seal.read_text(encoding="utf-8"))
+
+
+class TestV1DefectsCannotProduceV2Green(unittest.TestCase):
+    def test_v1_final_strong_without_report_cannot_produce_v2_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            # final-strong claims completion but its report artifact is absent.
+            state = _write_v1_state(scratch, current_node="final-strong", previous_node="resolved-ledger")
+            (scratch / "findings.jsonl").write_text("", encoding="utf-8")
+            (scratch / "resolutions.jsonl").write_text("", encoding="utf-8")
+            _assert_v1_cannot_seal(self, state, scratch)
+
+    def test_v1_circular_resolution_state_cannot_produce_v2_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            state = _write_v1_state(scratch, current_node="resolved-ledger")
+            (scratch / "findings.jsonl").write_text('{"finding_id": "f-1"}\n{"finding_id": "f-2"}', encoding="utf-8")
+            # f-1 resolved by f-2's fix and vice versa: no independent evidence.
+            (scratch / "resolutions.jsonl").write_text(
+                '{"finding_id": "f-1", "resolved_by": "f-2"}\n{"finding_id": "f-2", "resolved_by": "f-1"}',
+                encoding="utf-8",
+            )
+            _assert_v1_cannot_seal(self, state, scratch)
+
+    def test_v1_cumulative_preflight_state_cannot_produce_v2_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            # A preflight that merged results across epochs must not seal.
+            state = _write_v1_state(scratch, current_node="ready", preflight_mode="cumulative")
+            _assert_v1_cannot_seal(self, state, scratch)
+
+    def test_v1_lost_normalization_origin_cannot_produce_v2_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            # normalize-inputs ran but its origin record was lost/overwritten.
+            state = _write_v1_state(scratch, current_node="preflight", normalized_inputs_origin=None)
+            _assert_v1_cannot_seal(self, state, scratch)
+
+    def test_v1_blocked_state_cannot_produce_v2_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            state = _write_v1_state(scratch, current_node="blocked", blocker="unresolved-finding")
+            _assert_v1_cannot_seal(self, state, scratch)
+
+    def test_v1_round_state_cannot_produce_v2_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            state = _write_v1_state(scratch, current_node="ready", round=9, max_fix_rounds=4)
+            _assert_v1_cannot_seal(self, state, scratch)
+
+    def test_v1_unrepresentable_blocker_cannot_produce_v2_green(self):
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            # A blocker with no legal class in v2 vocabulary cannot migrate.
+            state = _write_v1_state(
+                scratch,
+                current_node="blocked",
+                blocker={"kind": "unrepresentable", "note": "no v2 blocker class exists"},
+            )
+            _assert_v1_cannot_seal(self, state, scratch)
+
+
 if __name__ == "__main__":
     unittest.main()

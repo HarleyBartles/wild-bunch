@@ -1,4 +1,4 @@
-﻿# Skill Authoring Policy
+# Skill Authoring Policy
 
 Status: active policy
 Owner: Wild Bunch repository

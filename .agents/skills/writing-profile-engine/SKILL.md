@@ -30,8 +30,8 @@ the input.
 3. Run `scripts/evaluate_profile.py --profile PATH --input PATH --json`.
 4. Read evidence, spans, rationale, preservation conditions, and the smallest
    repair. A `candidate` needs contextual review; `abstain` is a valid result.
-5. Apply any accepted repair through `$writing-style`, then run the final
-   `$writing-with-clarity` gate.
+5. Apply any accepted repair through `writing-style`, then run the final
+   `writing-with-clarity` gate.
 
 The commands are read-only. Run each command with `--help` for its bounded
 interface. Profiles carry their executable rules and preserve predicates; the

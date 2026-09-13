@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Subagent Driven Development
-  short_description: Use when executing implementation plans with independent tasks in the current session
-  default_prompt: Use /subagent-driven-development to use when executing implementation plans with independent tasks in the current session
+  short_description: Execute independent plan tasks through fresh subagents and review gates.
+  default_prompt: Use subagent-driven-development when executing implementation plans with independent tasks in the current session.
 policy:
   products:
   - codex

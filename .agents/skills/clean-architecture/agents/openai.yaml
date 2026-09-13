@@ -4,7 +4,7 @@ metadata:
   source_category: first_party
 interface:
   display_name: Clean Architecture
-  short_description: Use when designing testable, framework-independent applications with clear dependency rules. Do not use when the team is committed to a framework-centric stack and the cost of ports/adapters is unjustified.
-  default_prompt: Use when designing testable, framework-independent applications with clear dependency rules. Do not use when the team is committed to a framework-centric stack and the cost of ports/adapters is unjustified.
+  short_description: Design testable, framework-independent application boundaries.
+  default_prompt: Use clean-architecture when designing testable, framework-independent applications with clear dependency rules. Do not use when the team is committed to a framework-centric stack and the cost of ports/adapters is unjustified.
 policy:
   allow_implicit_invocation: true

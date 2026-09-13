@@ -5,7 +5,7 @@ metadata:
 interface:
   display_name: Subagent Workspace
   short_description: Resolve the off-repo scratch workspace for subagent tasks and short-lived artifacts.
-  default_prompt: Use /subagent-workspace when resolving the off-repo scratch workspace for subagent tasks and placing short-lived subagent inputs and outputs.
+  default_prompt: Use subagent-workspace when resolving the off-repo scratch workspace for subagent tasks and placing short-lived subagent inputs and outputs.
 policy:
   products:
   - chatgpt

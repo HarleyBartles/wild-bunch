@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Test Driven Development
-  short_description: Use when implementing any feature or bugfix, before writing implementation code
-  default_prompt: Use /test-driven-development to use when implementing any feature or bugfix, before writing implementation code
+  short_description: Implement features and fixes through red-green-refactor.
+  default_prompt: Use test-driven-development when implementing any feature or bugfix, before writing implementation code.
 policy:
   products:
   - codex

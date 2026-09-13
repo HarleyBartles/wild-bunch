@@ -1,7 +1,7 @@
 # node-re-preflight
 
 ## Purpose
-Re-run the consumer's canonical preflight after a fix to catch newly introduced deterministic issues. This is the consumer's `ci`/`preflight` command (e.g. `py -3 tools/run.py ci --check`), not the `reviewer-fast` pre-lens. Do not re-run `reviewer-fast` in this node.
+Re-run the consumer's canonical preflight after a fix to catch newly introduced deterministic issues. This is the consumer's own `ci`/`preflight` capability, not the `reviewer-fast` pre-lens. Do not re-run `reviewer-fast` in this node.
 
 ## Inputs
 - Post-fix branch working tree

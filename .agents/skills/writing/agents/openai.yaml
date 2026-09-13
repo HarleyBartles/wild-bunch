@@ -5,7 +5,7 @@ metadata:
 interface:
   display_name: Writing
   short_description: Compose clear, evidence-conscious revisions for human-facing prose.
-  default_prompt: Use $writing for ordinary drafting, revision, or review of human-facing prose. Establish facts and constraints first; then route through clarity, authorised voice, evidence-backed fatigue review, and the final clarity gate.
+  default_prompt: Use writing for ordinary drafting, revision, or review of human-facing prose. Establish facts and constraints first; then route through clarity, authorised voice, evidence-backed fatigue review, and the final clarity gate.
 policy:
   products:
   - chatgpt

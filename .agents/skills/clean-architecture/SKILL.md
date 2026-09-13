@@ -10,10 +10,8 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when designing testable, framework-independent applications with clear
-    dependency rules.
   use_when:
-  - Use when designing testable, framework-independent applications with clear dependency
+  - designing testable, framework-independent applications with clear dependency
     rules
   do_not_use_when:
   - the team is committed to a framework-centric stack and the cost of ports/adapters

@@ -5,7 +5,7 @@ metadata:
 interface:
   display_name: Using Discord MCP
   short_description: Pick the right Discord MCP tool and stay inside the bot's current permissions.
-  default_prompt: Use /using-discord-mcp when working with the Discord MCP server. Prefer references/authed-tool-map.md for read actions; ask the human partner before any write/moderation tool.
+  default_prompt: Use using-discord-mcp when working with the Discord MCP server. Prefer references/authed-tool-map.md for read actions; ask the human partner before any write/moderation tool.
 policy:
   products:
   - chatgpt

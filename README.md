@@ -10,14 +10,14 @@ A C#/.NET Western adventure game with a React/Vite web play surface, Onion/DDD/C
 
 ## Run the pre-alpha locally
 
-These steps assume a Windows PowerShell environment. Bash equivalents are in `docs/local-postgresql.md` and `scripts/README.md`.
+These steps assume a Windows PowerShell environment.
 
 ### 1. Prerequisites
 
 - .NET 10 SDK
 - Node.js (npm)
 - Git
-- PostgreSQL 16.14 command-line tools placed in `.local/postgresql16` (see step 3 for the first-run path)
+- Access to the shared PostgreSQL cluster under `Z:\_postgres-cluster`
 
 ### 2. Clone the repo
 
@@ -29,12 +29,12 @@ cd wild-bunch
 ### 3. Start the local PostgreSQL
 
 ```powershell
-.\scripts\postgres-dev.ps1 ensure
+.\tools\postgres-dev.ps1 ensure
 ```
 
-This creates or reuses the persistent dev database on `localhost:5434` and the `wildbunch_dev` app database. It is idempotent: re-run it safely any time you are unsure.
-
-**First-run failure and status check:** on a fresh checkout the command can fail with `Missing PostgreSQL binary: .\.local\postgresql16\bin\initdb.exe`. That means the PostgreSQL tooling root is missing. Download PostgreSQL 16.14 for Windows, extract it to `.\.local\postgresql16`, then re-run `ensure`. After that, you can check the cluster state with `.\scripts\postgres-dev.ps1 status`.
+This starts or reuses the shared service on `localhost:5435` and ensures the
+`wildbunch_dev` app database exists. It is idempotent. Use
+`.\tools\postgres-dev.ps1 status` for a read-only service check.
 
 ### 4. Install dependencies
 
@@ -64,7 +64,8 @@ The Vite dev server serves on `http://localhost:5173`. Open that URL to play.
 
 ### 7. Stop
 
-Use `Ctrl+C` in each terminal. The PostgreSQL service is shared and safe to leave running for the next session; when you do want it down, run `.\scripts\postgres-dev.ps1 stop`.
+Use `Ctrl+C` in each terminal. Leave the shared PostgreSQL service running;
+`stop` changes shared state and is reserved for explicit lifecycle work.
 
 ### Shortcuts and validation
 

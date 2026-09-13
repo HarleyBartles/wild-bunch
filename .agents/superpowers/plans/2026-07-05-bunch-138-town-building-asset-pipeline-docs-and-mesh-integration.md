@@ -1,4 +1,4 @@
-﻿# BUNCH-138: Town Building Asset Pipeline Docs and Mesh Integration Implementation Plan
+# BUNCH-138: Town Building Asset Pipeline Docs and Mesh Integration Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

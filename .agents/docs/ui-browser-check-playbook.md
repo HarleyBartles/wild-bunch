@@ -29,7 +29,7 @@ Use the repo-verified launch path. These are the canonical ports for browser pro
 - API URL: `http://localhost:5275` (from `Properties/launchSettings.json`, `http` profile `applicationUrl`)
 - Web: `npm run dev` from `src/WildBunch.Web`
 - Web URL: `http://localhost:5173` (from `vite.config.ts` `server.port`)
-- PostgreSQL: `localhost:5434` (repo-local shared service, via `.\scripts\postgres-dev.ps1 ensure`)
+- PostgreSQL: `localhost:5435` (shared service, via `.\tools\postgres-dev.ps1 ensure`)
 
 ### Dev servers are worktree-owned
 
@@ -59,16 +59,15 @@ When the canonical API port (`5275`) or Vite port (`5173`) is occupied by a diff
 
 ### Canonical topology is binding when ports are free
 
-- Browser proof must use the canonical dev topology (API `localhost:5275`, Vite `localhost:5173`, PostgreSQL `5434`) when those ports are free.
+- Browser proof must use the canonical dev topology (API `localhost:5275`, Vite `localhost:5173`, PostgreSQL `5435`) when those ports are free.
 - When canonical ports are occupied by another worktree's healthy server, alternate ports are allowed **if and only if** the worker reports the actual URLs, worktree path, and branch in the browser-proof return. Silent fallback is not allowed.
 - Screenshots from a miswired frontend/API setup (e.g. frontend pointing at a different worktree's API, or CORS blocking the request) do not count as evidence. Before taking screenshots, prove the frontend can reach the API through the configured base URL (e.g. the prologue or another known endpoint returns real data through the browser's fetch path).
 - Do not use a server from a different worktree as proof for this branch. Browser proof must exercise the code in the worker's current worktree.
 
-If the persistent PostgreSQL lane is not already ready, set it up first:
+If the shared PostgreSQL lane is not already ready, ensure it first:
 
 ```powershell
-.\scripts\postgres-dev.ps1 install-tools
-.\scripts\postgres-dev.ps1 setup
+.\tools\postgres-dev.ps1 ensure
 ```
 
 The API launch profile already injects `ConnectionStrings__WildBunchPostgresDb` for the normal local route.

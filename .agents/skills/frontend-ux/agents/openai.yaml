@@ -4,7 +4,7 @@ metadata:
   source_category: first_party
 interface:
   display_name: Frontend UX
-  short_description: Use when designing, reviewing, or debugging frontend user interfaces.
+  short_description: Guidance for designing, reviewing, or debugging frontend user interfaces.
   default_prompt: Use frontend-ux when designing, reviewing, or debugging frontend user interfaces.
 policy:
   allow_implicit_invocation: true

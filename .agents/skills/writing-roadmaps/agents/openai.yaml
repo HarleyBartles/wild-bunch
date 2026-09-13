@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Writing Roadmaps
-  short_description: Use when a goal is too large for one writing-plans plan and requires a sequenced roadmap of consecutive plans.
-  default_prompt: Use /writing-roadmaps when a goal is too large for one writing-plans plan. Decompose the goal into a roadmap at `.agents/plans/<epic-name>/roadmap.md`, write plans just-in-time, run each plan through `handoff-gates` plan-readiness, and update the roadmap as you go.
+  short_description: Decompose a large goal into a sequenced roadmap of plans.
+  default_prompt: Use writing-roadmaps when a goal is too large for one writing-plans plan. Decompose the goal into a roadmap at `.agents/plans/<epic-name>/roadmap.md`, write plans just-in-time, run each plan through `handoff-gates` plan-readiness, and update the roadmap as you go.
 policy:
   products:
   - chatgpt

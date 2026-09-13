@@ -1,7 +1,7 @@
 ---
 name: finishing-a-development-branch
 description: Use when implementation is complete, all tests pass, and you need to
-  decide how to integrate the work
+  decide how to integrate the work.
 metadata:
   source-id: finishing-a-development-branch
   source-path: codex-marketplace/plugins/superpowers-plus/skills/finishing-a-development-branch/SKILL.md
@@ -9,17 +9,15 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when implementation is complete, all tests pass, and you need to decide
-    how to integrate the work
   use_when:
-  - Use when implementation is complete, tests pass, and you need to decide how to
+  - implementation is complete, tests pass, and you need to decide how to
     integrate the work.
-  - Use after executing-plans or subagent-driven-development.
-  - Use when the branch needs merge, PR, keep, or discard.
+  - implementation through executing-plans or subagent-driven-development is complete.
+  - the branch needs merge, PR, keep, or discard.
   do_not_use_when:
-  - Do not use when tests are failing.
-  - Do not use when the work is incomplete.
-  - Do not use as a substitute for code review.
+  - tests are failing.
+  - the work is incomplete.
+  - a substitute for code review.
   related_skills:
   - executing-plans
   - subagent-driven-development
@@ -30,19 +28,52 @@ license: MIT
 ---
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/finishing-a-development-branch/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Finishing a Development Branch
 
 ## Overview
 
-**Core principle:** Verify tests → Detect environment → Present options → Execute choice → Clean up.
+**Core principle:** Verify state-bound evidence → Detect environment → Present options → Execute choice → Clean up.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
 ## Step 1: Verify Tests
 
-Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`).
+Before selecting or stating a finish route, inspect the current branch and status
+and identify the exact state-bound validation evidence being reused. A user's
+summary that work is committed or checks passed is context, not a substitute
+for these read-only observations.
+
+Complete all three observations before choosing a route:
+
+1. Read the current branch, `HEAD`, and status.
+2. Search the repository's declared evidence locations and bounded local
+   metadata (including `.agents/*evidence*` when present) for the focused and
+   broad validation receipts named by the request.
+3. Confirm that each receipt names the current `HEAD` and claim. Ignore
+   explicitly excluded harness/tool scaffolding when judging whether the
+   product tree changed; do not let such scaffolding substitute for reading the
+   evidence receipt.
+
+Hidden and Git-excluded evidence does not appear in a default `rg --files`
+listing. When `.agents/` exists, include it explicitly with a bounded read such
+as:
+
+```bash
+find .agents -maxdepth 2 -type f -iname '*evidence*' -print
+```
+
+Then read the matching receipt before selecting the route. Do not infer that
+evidence is absent from an empty default file listing.
+
+If the request says evidence exists but bounded discovery cannot find it, say
+that the evidence could not be verified and stop. Do not silently convert that
+state into a keep-local route.
+
+Use the repository's current canonical evidence. Reuse valid focused or hooked
+proof when the tested state and claim are unchanged; run the broad gate when
+the state changed, evidence is stale, or a different claim needs proof.
 
 **If tests fail**, report the failures and stop — the menu comes after a green suite:
 
@@ -52,7 +83,7 @@ Tests failing (<N> failures). Must fix before completing:
 [Show failures]
 ```
 
-**If tests pass:** continue to Step 2.
+**If the current evidence passes:** continue to Step 2.
 
 ## Step 2: Detect Environment
 
@@ -205,6 +236,29 @@ git worktree remove "$WORKTREE_PATH"
 git worktree prune  # Self-healing: clean up any stale registrations
 ```
 
+**If removal is refused** (`contains modified or untracked files`): the
+worktree holds files that exist nowhere else — uncommitted plans, notes,
+or scratch work. Never `--force` on your own initiative. Show your human
+partner what is at stake and ask:
+
+```bash
+git -C "$WORKTREE_PATH" status --porcelain -uall
+```
+
+```
+Worktree removal refused — these files were never committed:
+
+<file list>
+
+1. Commit them to <branch> before cleanup
+2. Move them into <main repo root>
+3. Delete them (unrecoverable)
+
+Which?
+```
+
+Carry out the choice, then remove the worktree.
+
 **Otherwise:** The host environment owns this workspace — leave it in
 place. If your platform provides a workspace-exit tool, use it.
 
@@ -227,6 +281,7 @@ place. If your platform provides a workspace-exit tool, use it.
 | "'Yeah, get rid of it' counts as confirmation" | Only the typed word `discard` authorizes deletion. |
 | "The PR is up, so the worktree is clutter now" | PR feedback gets fixed in that worktree. It stays until the work lands. |
 | "This other worktree looks stale — I'll clean it too" | Clean up only worktrees under `.worktrees/` or `worktrees/`. Everything else belongs to the host. |
+| "Removal refused — `--force` is just finishing the cleanup" | The refusal means files exist only in that worktree. `--force` destroys them permanently. Show your human partner and ask. |
 | "The merged-result failure is probably flaky" | A failing merged result stops everything. Branch and worktree stay put while you investigate. |
 | "The base branch is obviously main" | Confirm the fork point or ask. Merging into the wrong base is expensive to undo. |
 | "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request. |

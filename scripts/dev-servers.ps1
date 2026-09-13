@@ -11,7 +11,7 @@ $CanonicalApiPort = 5275
 $CanonicalVitePort = 5173
 $ApiProject = 'src/WildBunch.Api'
 $WebProject = 'src/WildBunch.Web'
-$PostgresConnectionString = 'Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres'
+$PostgresConnectionString = 'Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres'
 $HealthRetryDelaysSeconds = @(2, 4, 8, 16, 32)
 
 function Resolve-WorktreeRoot {

@@ -12,11 +12,8 @@ extensions that remain in `scripts/`.
 
 ## Shared requirements
 
-- `postgres-dev.ps1` requires PowerShell and the repo-local PostgreSQL 16.14
-  tooling under `.local/postgresql16`.
-- `postgres-dev.sh` is the Linux/bash entrypoint and requires native
-  PostgreSQL 16.14 command-line tools on `PATH` or a `POSTGRES_BIN_DIR`
-  override.
+- PostgreSQL lifecycle is owned by `tools/postgres-dev.ps1` and the shared
+  `Z:\_postgres-cluster` service.
 - `image_asset_pipeline.py` is a wrapper around the asset-local implementation
   under `src/WildBunch.Assets/scripts/` and requires Python 3.11+ with Pillow
   installed in the active environment.
@@ -24,16 +21,10 @@ extensions that remain in `scripts/`.
 ## Scripts
 
 ### ci-preflight.sh / ci-preflight.ps1
-**Use when** you need to run the same checks CI runs before marking a PR ready for review.
 
-- `bash scripts/ci-preflight.sh` - run all local CI preflight checks
-- `bash scripts/ci-preflight.sh --check` - run non-destructive pre-commit checks
-- `.\scripts\ci-preflight.ps1` - PowerShell entrypoint (`-Check` for pre-commit)
-
-This is the bundled `repo-standards` `ci-preflight` template. It runs
-repo-standards checks, scaffold checks, index mesh generation/validation,
-agent mesh validation, skill refresh validation, and then the repo-specific
-`ci-preflight-extra` hook for backend and frontend build/test lanes.
+These compatibility wrappers call the canonical
+`py -3 tools/run.py ci --check` lane. Pass `--diagnostics` in Bash or
+`-Diagnostics` in PowerShell to collect independent failures.
 
 **Use before** taking a PR out of draft. The `workflow-policy.md` requires the preflight to pass before marking a PR ready for review.
 
@@ -59,7 +50,7 @@ servers are running for local development or integration testing.
 The API runs on port 5275, Vite on port 5173. The script resolves the
 worktree root via `git rev-parse` so it works correctly from git worktrees.
 The PostgreSQL connection string is pinned to the shared dev instance at
-`localhost:5434`.
+`localhost:5435`.
 Startup probes use the dedicated API health endpoint and exponential backoff so
 the script retries quickly at first, then backs off to avoid flakey waits.
 Each `ensure` run rebuilds the API and web bundle before launch, and the script
@@ -69,30 +60,12 @@ will recycle stale or unhealthy recorded state instead of trusting it blindly.
 playtesting the browser game locally. **Use `stop`** when you need to free
 locked DLLs for a clean `dotnet build`.
 
-### postgres-dev.sh / postgres-dev.ps1
-**Use when** you need to set up, start, stop, reset, or validate the local
-PostgreSQL dev database used by integration tests.
+### Shared PostgreSQL
 
-- `bash scripts/postgres-dev.sh ensure` - initialize cluster + start + wait ready + ensure database (default)
-- `bash scripts/postgres-dev.sh setup` - same as ensure
-- `bash scripts/postgres-dev.sh start` - start the cluster if stopped
-- `bash scripts/postgres-dev.sh stop` - stop the cluster
-- `bash scripts/postgres-dev.sh reset` - drop and recreate the dev database (destructive - confirm before running)
-- `bash scripts/postgres-dev.sh status` - print cluster status
-- `bash scripts/postgres-dev.sh validate` - run schema validation against the dev database
-- `bash scripts/postgres-dev.sh test` - run connection test
-- `.\scripts\postgres-dev.ps1 ensure` - PowerShell entrypoint with the same commands
-
-The cluster runs on port 5434 with database `wildbunch_dev`. PostgreSQL
-tooling is expected under `.local/postgresql16` for the PowerShell path and as
-native Linux binaries on `PATH` for the bash path (or via `POSTGRES_BIN_DIR`).
-The script resolves the persistent main checkout root so the data directory is
-shared, not duplicated per worktree.
-
-**Use before** running `dotnet test` on `WildBunch.Integration.Tests` - the
-integration tests require this database to be running. Set the connection
-string environment variable:
-`$env:ConnectionStrings__WildBunchPostgresDb = "Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres"`
+Use `.\tools\postgres-dev.ps1 ensure` before PostgreSQL-backed work and
+`.\tools\postgres-dev.ps1 status` for a read-only check. The shared cluster
+runs on `localhost:5435`; leave it running during normal worker cleanup. See
+[`docs/local-postgresql.md`](../docs/local-postgresql.md).
 
 ### image_asset_pipeline.sh / image_asset_pipeline.ps1
 **Use when** you need to cut a generated image away from a flat background,

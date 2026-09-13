@@ -1,6 +1,7 @@
 ---
 name: publishing-source
-description: Use when deciding how to publish source work in this repo - whether to commit, tag, release, push source, or export a pack - and which publication sequence fits the change.
+description: Use when completed source work needs a decision about whether to commit,
+  push, tag, release, or export it.
 metadata:
   source-id: publishing-source
   source-path: codex-marketplace/plugins/superpowers-plus/skills/publishing-source/SKILL.md
@@ -8,15 +9,14 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when deciding how to publish source work in this repo - whether to commit, tag, release, push source, or export a pack - and which publication sequence fits the change.
   use_when:
-  - Use when source work is finished and you must decide whether to commit, tag, release, push source, or export a pack.
-  - Use when choosing between a direct-main commit, a PR, a tag/release, or a pack export for the current change.
-  - Use when publication proof is required and you must pick the right GitHub-visible surface.
+  - source work is finished and you must decide whether to commit, tag, release, push source, or export a pack.
+  - choosing between a direct-main commit, a PR, a tag/release, or a pack export for the current change.
+  - publication proof is required and you must pick the right GitHub-visible surface.
   do_not_use_when:
-  - Do not use when the change is not yet validated; finish verification-before-completion first.
-  - Do not use when the task is GitHub mechanics (PR/branch/commit reads or writes) rather than the publication decision; use using-github-mcp.
-  - Do not use when the task is release pipeline or CI/CD operation rather than the source-publication decision; use release-engineering.
+  - the change is not yet validated; finish verification-before-completion first.
+  - the task is GitHub mechanics (PR/branch/commit reads or writes) rather than the publication decision; use using-github-mcp.
+  - the task is release pipeline or CI/CD operation rather than the source-publication decision; use release-engineering.
   use_instead:
   - using-github-mcp
   - release-engineering
@@ -40,12 +40,15 @@ performs the mechanics.
 
 Run these in order. Stop at the first row that matches the change.
 
-1. **Validated?** If `tools/run ci --check` is not green on the staged tree,
-   stop and finish `verification-before-completion` first. Publication is not
+1. **Validated?** If the committed tree would not pass the pre-commit hook
+   (materialize staged snapshot, `ci --apply`, stage owned generated surfaces,
+   `ci --check --diagnostics`), stop and finish `verification-before-completion`
+   first. Do not run `ci --check` immediately before a normal commit. Publication is not
    a substitute for validation.
-2. **Marketplace source edited?** If `codex-marketplace/plugins/<plugin>/` skill content,
-   `codex-marketplace/plugin-roots.json`, `codex-marketplace/plugins/<plugin>/SOURCE.md`, or `references/bundle-manifest.json` changed,
-   regenerate with `py -3 tools/run.py marketplace --apply` before publishing.
+2. **Marketplace source edited?** If the consumer's canonical marketplace source,
+   inventory, provenance, or bundle manifest changed, regenerate with the
+   consumer repository's canonical marketplace-generation command before
+   publishing. Do not assume a particular repository layout or command name.
 3. **Pick the surface.** Choose the smallest sufficient surface from
    [`references/publishing-decisions.md`](references/publishing-decisions.md).
 4. **Publish.** Hand off to the owning skill for the mechanics
@@ -56,10 +59,14 @@ Run these in order. Stop at the first row that matches the change.
 
 ## Canonical sequences
 
-- **Direct-main commit (authorized only):** validate -> stage -> `ci --check`
-  -> commit -> push -> record SHA.
-- **PR (default):** validate -> stage -> `ci --check` -> branch -> push ->
-  open PR -> record PR URL and head SHA.
+- **Direct-main commit (authorized only):** regenerate -> stage intended tree
+  -> commit (pre-commit hook applies and checks) -> push -> record SHA.
+- **PR (default):** regenerate -> stage intended tree -> commit (pre-commit hook
+  applies and checks) -> branch -> push -> open a **Draft** PR -> record the PR
+  URL. Keep it Draft during local review and repair; move it to
+  Ready only when the current committed state has the required evidence and
+  review. Do not ask a second permission question when the publication route
+  was already authorized.
 - **Tag/release:** finish the source change and merge -> tag the merged commit
   -> publish release notes -> record tag URL.
 - **Pack export:** regenerate marketplace -> validate -> export the pack

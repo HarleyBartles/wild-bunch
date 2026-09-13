@@ -69,7 +69,8 @@ Keep routine worker posture boring, source-backed, and safe. The goal is to prev
 - After the PostgreSQL cutover, `dotnet test WildBunch.sln` requires the repo-local PostgreSQL connection string for the integration lane. If the first failure is only the missing `ConnectionStrings__WildBunchPostgresDb` variable, treat that as lane setup evidence rather than a product regression, then rerun with the documented local value before judging validation:
 
   ```powershell
-  $env:ConnectionStrings__WildBunchPostgresDb = 'Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres'
+  .\tools\postgres-dev.ps1 ensure
+  $env:ConnectionStrings__WildBunchPostgresDb = 'Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres'
   dotnet test WildBunch.sln
   ```
 

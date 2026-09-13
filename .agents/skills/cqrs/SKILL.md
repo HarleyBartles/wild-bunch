@@ -8,11 +8,10 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when separating read and write models in a distributed or high-scale system, or when event sourcing is under consideration.
   use_when:
-  - Use when separating read and write models in a distributed or high-scale system, or when event sourcing is under consideration.
+  - separating read and write models in a distributed or high-scale system, or when event sourcing is under consideration.
   do_not_use_when:
-  - Do not use when simple CRUD or single-model consistency is sufficient.
+  - simple CRUD or single-model consistency is sufficient.
   related_skills:
   - event-sourcing
 license: MIT

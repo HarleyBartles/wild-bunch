@@ -88,6 +88,12 @@ def _main(argv: list[str] | None = None) -> int:
 
     state_path = Path(args.state)
     state = _load(state_path)
+    if state.get("schema_version") == 2:
+        print(
+            "BLOCKED: version-2 state is controlled only by reviewctl.py",
+            file=sys.stderr,
+        )
+        return 1
     try:
         scratch = Path(state["scratch_dir"])
     except KeyError as e:

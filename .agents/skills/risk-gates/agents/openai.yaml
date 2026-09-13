@@ -4,7 +4,7 @@ metadata:
   source_category: first_party
 interface:
   display_name: Risk Gates
-  short_description: Use when a pre-action risk gate is needed before a mutation, dispatch, canon claim, analogy, resolution, or destructive operation.
+  short_description: Gate risky actions against scope, authority, truth, and safety.
   default_prompt: Use risk-gates before an action that could mutate a durable surface, dispatch work, make a canon claim, rely on an analogy, treat a claim as resolved, act on feedback, or run a destructive operation.
 policy:
   allow_implicit_invocation: true

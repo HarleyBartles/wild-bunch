@@ -43,8 +43,10 @@ echo '--- Backend preflight ---'
 dotnet restore WildBunch.sln
 dotnet build WildBunch.sln --no-restore --configuration Release
 dotnet tool restore
-bash "$script_dir/postgres-dev.sh" test -- dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release
-bash "$script_dir/postgres-dev.sh" test -- dotnet test WildBunch.sln --no-build --no-restore --configuration Release
+pwsh -File "$repo_root/tools/postgres-dev.ps1" ensure
+export ConnectionStrings__WildBunchPostgresDb='Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres'
+dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release
+dotnet test WildBunch.sln --no-build --no-restore --configuration Release
 
 echo '--- Frontend preflight ---'
 pushd src/WildBunch.Web >/dev/null

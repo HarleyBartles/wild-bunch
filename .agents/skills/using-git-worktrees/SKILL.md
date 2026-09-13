@@ -1,8 +1,6 @@
 ---
 name: using-git-worktrees
-description: Use when starting feature work that needs isolation from current
-  workspace or before executing implementation plans - ensures an isolated
-  workspace exists via native tools or git worktree fallback
+description: Use when feature work or plan execution needs an isolated Git workspace.
 metadata:
   source-id: using-git-worktrees
   source-path: codex-marketplace/plugins/superpowers-plus/skills/using-git-worktrees/SKILL.md
@@ -10,17 +8,14 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when starting feature work that needs isolation from current workspace
-    or before executing implementation plans - ensures an isolated workspace exists
-    via native tools or git worktree fallback
   use_when:
-  - Use when starting feature work that needs isolation from the current workspace.
-  - Use before executing implementation plans if no isolated workspace exists.
-  - Use when the repo declares or expects a canonical sibling-folder worktree root.
+  - starting feature work that needs isolation from the current workspace.
+  - an implementation plan is ready but no isolated workspace exists.
+  - the repo declares or expects a canonical sibling-folder worktree root.
   do_not_use_when:
-  - Do not use when already in an isolated workspace.
-  - Do not use when the user declines a worktree.
-  - Do not use when native tools already manage isolation.
+  - already in an isolated workspace.
+  - the user declines a worktree.
+  - native tools already manage isolation.
   related_skills:
   - using-superpowers-plus
   - refreshing-installed-skills
@@ -32,7 +27,7 @@ license: MIT
 
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/using-git-worktrees/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Using Git Worktrees
 
@@ -147,13 +142,11 @@ The dependency step depends on how the worktree was created:
 - **If you used `scripts/new_worktree.py --apply <branch>`:** dependencies were already installed while the worktree was being created. Do not run a separate install step.
 - **If you used `git worktree add` or any native/manual route:** dependencies have not been installed yet. Run them now before the baseline checks.
 
-For a manually created worktree, prefer the repo-owned capability if one exists:
-
-```bash
-py -3 tools/run.py install-deps --apply
-```
-
-If the repo has no `tools/run.py` command bus, or it does not own `install-deps`, use the bundled fallback. Detect the package-manager manifest and run the matching command:
+For a manually created worktree, inspect the consumer repository's local
+guidance for its canonical dependency-install capability and use it when one
+exists. If the repository does not own such a capability, use the bundled
+fallback by detecting the package-manager manifest and running the matching
+command:
 
 | manifest            | command                                        |
 | ------------------- | ---------------------------------------------- |
@@ -163,7 +156,9 @@ If the repo has no `tools/run.py` command bus, or it does not own `install-deps`
 | `package.json`      | `npm install`                                  |
 | `requirements.txt`  | `pip install -r requirements.txt`              |
 
-A repo that wants to own dependency installation can add an `install-deps` target to `tools/run.py`. If a recognised manifest is present but its required installer is missing, fail closed and do not claim the workspace is ready.
+If a recognised manifest is present but its required installer is missing, fail
+closed and do not claim the workspace is ready. The portable skill does not
+prescribe the consumer's command-bus name or target.
 
 ## Step 3: Verify Clean Baseline
 

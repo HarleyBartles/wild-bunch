@@ -7,36 +7,29 @@ Use this reference when running validation, debugging CI failures, or deciding t
 - Run `dotnet test`.
 - Run `dotnet tool restore` before EF validation commands when the repo-local tool manifest is used.
 - Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api` when persistence may be affected, or as standing validation unless clearly irrelevant.
-- Run `.\scripts\postgres-dev.ps1 ensure` before PostgreSQL-dependent tests or validation to reuse the shared local service (idempotent: no-op when already healthy).
-- Run `.\scripts\postgres-dev.ps1 validate` for the repo-local PostgreSQL-backed validation lane; it provisions the persistent cluster, exports the repo-local connection string for child `dotnet` commands, restores tools, and runs the EF and test checks together.
-- For targeted PostgreSQL-backed tests, use `.\scripts\postgres-dev.ps1 test -- <dotnet test args>` so the script sets `ConnectionStrings__WildBunchPostgresDb` in the same process before invoking `dotnet test`; do not rely on a standalone `$env:` assignment in a separate command.
-- Use `.\scripts\postgres-dev.ps1 status` to check whether the lane is already running, `setup` or `validate` to provision it, and `reset` for the destructive local app-database reset path. `stop` and `reset` are manual/destructive; do not stop the shared service during normal worker cleanup.
-- If PostgreSQL port `5434` is closed or connection setup fails, report the exact command and output after running the repo-local setup/status lane instead of treating it as a product regression.
+- Run `.\tools\postgres-dev.ps1 ensure` before PostgreSQL-dependent tests or validation to reuse the shared service on `localhost:5435`.
+- Use `py -3 tools\run.py ci --check` as the canonical fail-fast validation lane; the runner supplies the PostgreSQL connection string to child .NET tests.
+- For a targeted direct test, set `ConnectionStrings__WildBunchPostgresDb` to `Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres` in the same PowerShell process before invoking `dotnet test`.
+- Use `.\tools\postgres-dev.ps1 status` for a read-only service check. `stop` and `reset` change shared state and require explicit lifecycle intent.
+- If PostgreSQL port `5435` is closed, report the exact `status` and `ensure` output instead of treating it as a product regression.
 - Report warnings separately from failures.
 
 ## CI Preflight (run locally before marking a PR ready)
 
-Before moving a PR out of draft, run the local CI preflight:
+Before moving a PR out of draft, use the canonical runner:
 
 ```powershell
-.\scripts\ci-preflight.ps1
+py -3 tools\run.py ci --check
 ```
 
-This runs the bundled `repo-standards` `ci-preflight` template, which in turn runs:
-
-- `repo-standards` checks
-- `scaffold-all` checks
-- `generating-agent-mesh` `generate-index-mesh --check` (including the `scripts/generate_index_mesh_extra` hook)
-- `generating-agent-mesh` `validate-agent-mesh --check`
-- `refreshing-installed-skills` `--check` against the initialized private marketplace submodule (CI deliberately does not fetch the submodule)
-- `scripts/ci-preflight-extra` for backend/frontend build and test lanes
-
-Backend: `dotnet restore`, `dotnet build --configuration Release`, `dotnet tool restore`, `dotnet ef migrations list`, and `dotnet test --configuration Release` via the shared PostgreSQL service.
-Frontend: `npm ci`, `npm run typecheck`, `npm run test`, and `npm run build` in `src/WildBunch.Web`.
+This checks repo standards, installed skills, the generated mesh, .NET build and
+tests, frontend install/typecheck/tests/build, and diff hygiene. Use
+`--diagnostics` when diagnosing multiple independent failures.
 
 If the script fails, fix the issue and re-run before marking the PR ready. Iterate on individual lanes directly if you need a narrower loop.
 
-For changes that affect persistence, `.\scripts\postgres-dev.ps1 validate` remains the focused PostgreSQL validation lane.
+For persistence work, also run the relevant EF migration command after
+`.\tools\postgres-dev.ps1 ensure` with the documented connection string set.
 
 ## Index Mesh CI Failures
 

@@ -8,13 +8,12 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when designing, reviewing, or operating event-driven systems with asynchronous communication.
   use_when:
-  - Use when designing asynchronous communication between services.
-  - Use when choosing between choreography and orchestration.
-  - Use when implementing sagas, idempotent handlers, or event schema versioning.
+  - designing asynchronous communication between services.
+  - choosing between choreography and orchestration.
+  - implementing sagas, idempotent handlers, or event schema versioning.
   do_not_use_when:
-  - Do not use when the problem is better solved by synchronous RPC or a single monolith.
+  - the problem is better solved by synchronous RPC or a single monolith.
   related_skills:
   - event-sourcing
   - cqrs

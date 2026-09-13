@@ -36,13 +36,8 @@ def _template_path() -> Path:
 def _has_required_boilerplate(content: str) -> bool:
     lines = content.splitlines()
     has_heading = any(line.strip() == "# Contributing" for line in lines)
-    has_repo_standards = any(
-        "/repo-standards" in line and line.lstrip().startswith("-") for line in lines
-    )
-    has_repo_worker_base = any(
-        "/repo-worker-base" in line and line.lstrip().startswith("-") for line in lines
-    )
-    return has_heading and has_repo_standards and has_repo_worker_base
+    has_bootstrap = "using-superpowers-plus" in content
+    return has_heading and has_bootstrap
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -53,8 +48,8 @@ examples:
   %(prog)s --force               overwrite CONTRIBUTING.md with the template
 
 The template expects the file to keep the `# Contributing` heading and the
-required skill invocations (`/repo-standards`, `/repo-worker-base`). Use --force
-to restore the scaffold after heavy customization.
+`using-superpowers-plus` bootstrap route. Use --force to restore the scaffold
+after heavy customization.
 
 exit codes:
   0  CONTRIBUTING.md is present/valid or was written

@@ -60,7 +60,7 @@ time.
 Before any PostgreSQL-backed test lane, ensure the shared local service is up:
 
 ```bash
-bash scripts/postgres-dev.sh ensure
+pwsh -File tools/postgres-dev.ps1 ensure
 ```
 
 `ensure` reuses a healthy service and only starts one when down. The service is
@@ -70,7 +70,7 @@ The repo-local PostgreSQL validation lane then reuses that shared service and
 exports the repo-local connection string for the child `dotnet` commands:
 
 ```bash
-bash scripts/postgres-dev.sh validate
+py -3 tools/run.py ci --check
 ```
 
 That command provisions the local cluster if needed, exports the repo-local
@@ -78,24 +78,17 @@ connection string for child `dotnet` commands, restores tools, and runs the EF
 and test checks as one repeatable lane.
 
 For issue-specific PostgreSQL-backed acceptance or integration checks, ensure the
-shared service first (`bash scripts/postgres-dev.sh ensure`), then use the targeted
-script wrapper:
+shared service first, export the canonical connection string in the same
+PowerShell process, then run the targeted test:
 
 ```bash
-bash scripts/postgres-dev.sh test -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "SaloonConfrontationAcceptanceTests"
+$env:ConnectionStrings__WildBunchPostgresDb = 'Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres'
+dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "SaloonConfrontationAcceptanceTests"
 ```
 
-The wrapper starts or reuses the local cluster, sets
-`ConnectionStrings__WildBunchPostgresDb` in the same process, and then runs
-`dotnet test` with the arguments you pass after `--`. The wrapper tolerates
-whether the caller includes the `dotnet test` prefix: both
-`bash scripts/postgres-dev.sh test -- --no-build` and
-`bash scripts/postgres-dev.sh test -- dotnet test --no-build` run the same
-effective command.
-
-That wrapper is the supported repo-local PostgreSQL-backed test path. A direct
-`dotnet test` is only valid when the caller has already exported
-`ConnectionStrings__WildBunchPostgresDb` in the same shell session.
+A direct `dotnet test` is valid only when the caller has already exported
+`ConnectionStrings__WildBunchPostgresDb` in the same shell session; the
+canonical `tools/run.py` lane does this automatically.
 
 Normal worker cleanup must not stop the shared local PostgreSQL service. `stop`
 and `reset` are manual/destructive and only for explicit service lifecycle

@@ -17,8 +17,6 @@ import shared_checkout
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_NAME = "tools/run"
 WEB_DIR = ROOT / "src" / "WildBunch.Web"
-BASH = shutil.which("bash") or "bash"
-SCAFFOLD_ALL = ".agents/skills/repo-standards/scripts/scaffold-all.sh"
 
 
 @dataclass(frozen=True)
@@ -26,6 +24,11 @@ class Ctx:
     mode: str  # "apply" or "check"
     allow_shared: bool
     verbose: bool = False
+    diagnostics: bool = False
+
+
+class CiDiagnosticsError(RuntimeError):
+    """One or more independent CI checks failed in diagnostic mode."""
 
 
 def _run(cmd: list[str], ctx: Ctx) -> None:
@@ -76,21 +79,6 @@ def _mesh_validate_cmd() -> list[str]:
     ]
 
 
-def _scaffold_cmd(mode: str) -> list[str]:
-    cmd = [BASH, SCAFFOLD_ALL]
-    if mode == "check":
-        cmd.append("--check")
-    return cmd
-
-
-def _scaffold_apply(ctx: Ctx) -> None:
-    _run(_scaffold_cmd("apply"), ctx)
-
-
-def _scaffold_check(ctx: Ctx) -> None:
-    _run(_scaffold_cmd("check"), ctx)
-
-
 def _dotnet_build_cmd() -> list[str]:
     return ["dotnet", "build"]
 
@@ -110,6 +98,17 @@ def _repo_standards_apply(ctx: Ctx) -> None:
 
 def _repo_standards_check(ctx: Ctx) -> None:
     _run(_repo_standards_cmd("check", ctx.allow_shared), ctx)
+
+
+def _skill_scripts_check(ctx: Ctx) -> None:
+    _run(
+        [
+            sys.executable,
+            ".agents/skills/repo-standards/scripts/validate_skill_scripts.py",
+            "--check",
+        ],
+        ctx,
+    )
 
 
 def _skills_apply(ctx: Ctx) -> None:
@@ -152,9 +151,21 @@ def _diff_check(ctx: Ctx) -> None:
     _run(["git", "diff", "--check", "--", ".", ":(exclude).agents/skills"], ctx)
 
 
+CI_CHECKS = (
+    ("repo-standards", _repo_standards_check, "py -3 tools/run.py ci --apply"),
+    ("skill-scripts", _skill_scripts_check, "repair the reported skill script contracts"),
+    ("installed-skills", _skills_check, "py -3 tools/run.py ci --apply"),
+    ("agent-mesh", _mesh_check, "py -3 tools/run.py ci --apply"),
+    ("dotnet-build", _build_dotnet, "dotnet build"),
+    ("dotnet-test", _test_dotnet, "dotnet test"),
+    ("web", _build_web, "npm --prefix src/WildBunch.Web run build"),
+    ("diff-check", _diff_check, "git diff --check"),
+)
+
+
 def _ci_apply(ctx: Ctx) -> None:
     _repo_standards_apply(ctx)
-    _scaffold_apply(ctx)
+    _skill_scripts_check(ctx)
     _skills_apply(ctx)
     _mesh_apply(ctx)
     _build_dotnet(ctx)
@@ -164,14 +175,19 @@ def _ci_apply(ctx: Ctx) -> None:
 
 
 def _ci_check(ctx: Ctx) -> None:
-    _repo_standards_check(ctx)
-    _scaffold_check(ctx)
-    _skills_check(ctx)
-    _mesh_check(ctx)
-    _build_dotnet(ctx)
-    _test_dotnet(ctx)
-    _build_web(ctx)
-    _diff_check(ctx)
+    failures: list[tuple[str, str]] = []
+    for name, check, fix in CI_CHECKS:
+        try:
+            check(ctx)
+        except Exception:
+            if not ctx.diagnostics:
+                raise
+            failures.append((name, fix))
+    if failures:
+        print("[tools/run] diagnostic failures:", file=sys.stderr)
+        for name, fix in failures:
+            print(f"  {name}: {fix}", file=sys.stderr)
+        raise CiDiagnosticsError("one or more CI checks failed")
 
 
 TARGETS = {
@@ -196,6 +212,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="allow writes in a shared/main checkout",
     )
+    parser.add_argument(
+        "--diagnostics",
+        action="store_true",
+        help="collect all independent failures (ci --check only)",
+    )
     parser.add_argument("--verbose", "-v", action="store_true", help="print each sub-command")
     args = parser.parse_args(argv)
 
@@ -204,9 +225,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.allow_shared_checkout and not args.apply:
         print("error: --allow-shared-checkout requires --apply", file=sys.stderr)
         return 1
+    if args.diagnostics and (args.apply or not args.check):
+        print("error: --diagnostics requires ci --check", file=sys.stderr)
+        return 1
 
     mode = "apply" if args.apply else "check"
-    ctx = Ctx(mode=mode, allow_shared=args.allow_shared_checkout, verbose=args.verbose)
+    ctx = Ctx(
+        mode=mode,
+        allow_shared=args.allow_shared_checkout,
+        verbose=args.verbose,
+        diagnostics=args.diagnostics,
+    )
 
     if args.apply:
         if not shared_checkout.approve_mutation(ROOT, SCRIPT_NAME, args.allow_shared_checkout):
@@ -214,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         _run_target(args.target, ctx)
-    except subprocess.CalledProcessError as exc:
+    except (subprocess.CalledProcessError, CiDiagnosticsError) as exc:
         print(f"[tools/run] target '{args.target}' failed: {exc}", file=sys.stderr)
         return 1
 

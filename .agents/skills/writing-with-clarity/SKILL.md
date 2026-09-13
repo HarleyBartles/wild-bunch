@@ -12,10 +12,10 @@ metadata:
   owner: Harley Bartles
   scope: all prose intended for human readers
   use_when:
-  - Use when drafting, revising, or reviewing prose intended for human readers
-  - Use when clarity, structure, concision, tone, wording, or copyediting is material
+  - drafting, revising, or reviewing prose intended for human readers
+  - clarity, structure, concision, tone, wording, or copyediting is material
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
+  - another more specific skill owns this task.
 license: MIT
 ---
 

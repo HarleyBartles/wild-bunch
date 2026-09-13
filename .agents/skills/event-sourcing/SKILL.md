@@ -8,11 +8,10 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when the system needs an audit log, temporal queries, or event-driven state reconstruction.
   use_when:
-  - Use when the system needs an audit log, temporal queries, or event-driven state reconstruction.
+  - the system needs an audit log, temporal queries, or event-driven state reconstruction.
   do_not_use_when:
-  - Do not use when a simple relational model is enough or when strong immediate consistency is required.
+  - a simple relational model is enough or when strong immediate consistency is required.
   related_skills:
   - cqrs
 license: MIT

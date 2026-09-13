@@ -20,8 +20,8 @@ Every repo using this standard must have:
   11. `## Routing pointers` (repo-specific router table)
   12. `## Maintenance responsibility`
 
-- `REVIEW.md` — review entry point. It contains first-class review concerns and routes to `.agents/runbooks/code-review.md` for detailed review methodology and to `/requesting-code-review` for execution.
-- `CONTRIBUTING.md` — contributor entry point. It routes to the design, planning, implementation, and review runbooks and to the relevant repo-worker-pack and Superpowers skills. It may be a thin pointer to `.agents/runbooks/contributing.md` when the repo keeps detailed guidance there.
+- `REVIEW.md` — review entry point. It contains first-class review concerns and routes through `using-superpowers-plus` to the review owner, with `.agents/runbooks/code-review.md` supplying the local review delta.
+- `CONTRIBUTING.md` — contributor entry point. It routes through `using-superpowers-plus`; the selected owner reads the matching local runbook. It may be a thin pointer to `.agents/runbooks/contributing.md` when the repo keeps detailed guidance there.
 
 ## Core runbook set
 
@@ -35,20 +35,11 @@ Every repo using this standard must have:
 
 ## Pull request runbook policy
 
-Every repo using this standard must define a PR workflow in `.agents/runbooks/pr.md` that includes the following policy:
-
-- Open pull requests as **draft**.
-- Keep a PR in draft while iterating, running local validation, and performing self-review.
-- Only flip a PR out of draft when:
-  - self-review is complete,
-  - the relevant validation commands pass,
-  - the branch is ready for review or merge.
-- The repo's CI must not run on draft pull requests. For GitHub Actions, gate `pull_request` workflows so they run only when `github.event.pull_request.draft == false` or on `ready_for_review` activity.
-- After flipping a PR to ready, wait for the remote CI run to finish and pass. Do not report the PR as green or ready based only on a passing local `ci --check`. Address remote failures before requesting human review.
-- The PR body must include publication proof per the repo's `AGENTS.md`.
-- Each repo's `.agents/runbooks/pr.md` must map this policy to the repo's specific remote CI command (e.g., `gh pr checks`, the repository's status check API, or an external build link).
-
-This policy reduces wasted CI minutes while a branch is still being iterated on and ensures CI only runs on PRs the author believes are ready.
+Every repo using this standard must define a thin `.agents/runbooks/pr.md`
+overlay containing only its local base branch, validation and remote-check
+commands, draft-aware CI configuration, exceptions, and publication-proof
+surface. Generic Draft lifecycle, commit discipline, review sequencing, and
+publication handoff belong to `publishing-source` and `repo-worker-base`.
 
 ## Allowed additional runbooks
 
@@ -60,6 +51,10 @@ Additional `<topic>.md` files may live in `.agents/runbooks/`. They must be thin
 - `code-style.md`
 - `marketplace-generation.md`
 - `skill-authoring.md`
+
+For every runbook, retain only repository paths, commands, custody, exceptions,
+and local evidence requirements. Generic method, sequencing, self-review, and
+handoff behavior belong to the owning portable skill.
 
 ## Local overlay policy
 
@@ -78,18 +73,15 @@ The canonical stage order is:
 design -> planning -> implementing -> review
 ```
 
-At each stage:
-
-1. Read this standard.
-2. Read the repo's `.agents/doctrine/repo-runbook-policy.md`.
-3. Invoke `/repo-worker-base` for worktree, branch, validation, and publication boundaries.
-4. Read the repo-local runbook for the stage.
-5. Route to the matching Superpowers skill:
-   - design -> `/brainstorming`
-   - planning -> `/writing-plans`
-   - implementation -> `/executing-plans` or `/subagent-driven-development`
-   - review -> `/requesting-code-review`
+At every stage, `using-superpowers-plus` classifies the request and hands off
+to the required hygiene and workflow owners. The selected workflow owner reads
+this standard, the repo's `.agents/doctrine/repo-runbook-policy.md`, and the
+matching local runbook. Entry points and runbooks must not reproduce the skill
+selection table.
 
 ## Relationship to repo-worker-base
 
-`repo-standards` owns runbook layout, invocation, and workflow order. `repo-worker-base` owns worktree, branch, scratch, validation, and publication boundaries. Each stage skill owns its own baseline reference and reads it as part of its own first step. Use both together for every repo-backed stage.
+`repo-standards` owns runbook layout and stage order, not session composition.
+`repo-worker-base` owns worktree, branch, scratch, validation, and publication
+boundaries. Each stage skill owns its baseline and reads the matching local
+runbook. `using-superpowers-plus` composes those owners.

@@ -125,4 +125,6 @@ Dev-overlay work must provide:
 - Screenshots showing resolved names and domain meaning for displayed fields.
 - Test results for backend domain/application/API and frontend tests.
 
-Screenshots and other agent-generated evidence must be written under `.agents/superpowers/output/screenshots/` and must NOT be committed to the repo. See `.agents/docs/artifact-policy.md` for agent-generated artifact rules. PR/return notes may cite local evidence filenames/paths or attach screenshots through the review system.
+Screenshots and other agent-generated evidence belong in the branch-scoped
+`Z:\_agent-scratch\wild-bunch\<branch-name>` workspace and must not be committed.
+See `.agents/docs/artifact-policy.md` for artifact custody.

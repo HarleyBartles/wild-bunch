@@ -1,9 +1,8 @@
 ---
 name: inspecting-the-environment
-description: Use when about to take action and environment constraints could change
-  the next step — discovers shell syntax, worktree state, repo state, path style,
-  CLI availability, auth, connectors, mutation authority, and protected surfaces before
-  proceeding.
+description: Use when shell, repository, worktree, authentication, connector, or
+  mutation-authority facts could change the next safe action, including when a durable
+  checkpoint or missing destructive authority changes what may be inspected first.
 metadata:
   source-id: inspecting-the-environment
   source-path: codex-marketplace/plugins/superpowers-plus/skills/inspecting-the-environment/SKILL.md
@@ -11,16 +10,12 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when about to take action and environment constraints could change the
-    next step — discovers shell syntax, worktree state, repo state, path style, CLI
-    availability, auth, connectors, mutation authority, and protected surfaces before
-    proceeding.
   use_when:
-  - Use when about to take action and environment constraints could change the next
+  - about to take action and environment constraints could change the next
     step — discovers shell syntax, worktree state, repo state, path style, CLI availability,
     auth, connectors, mutation authority, and protected surfaces before proceeding.
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
+  - another more specific skill owns this task.
 license: MIT
 ---
 # Inspecting the Environment

@@ -8,7 +8,7 @@ state_file="$state_dir/state.env"
 log_dir="$state_dir/logs"
 canonical_api_port=5275
 canonical_vite_port=5173
-postgres_connection_string='Host=localhost;Port=5434;Database=wildbunch_dev;Username=postgres'
+postgres_connection_string='Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres'
 health_retry_delays=(2 4 8 16 32)
 
 usage() {

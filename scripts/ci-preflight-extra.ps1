@@ -44,10 +44,13 @@ try {
     dotnet tool restore
     Test-LastExitCode 'dotnet tool restore failed'
 
-    & "$ScriptDir/postgres-dev.ps1" test -- dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release
+    & "$RepoRoot\tools\postgres-dev.ps1" ensure
+    Test-LastExitCode 'shared PostgreSQL ensure failed'
+    $env:ConnectionStrings__WildBunchPostgresDb = 'Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres'
+    dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release
     Test-LastExitCode 'dotnet ef migrations list failed'
 
-    & "$ScriptDir/postgres-dev.ps1" test -- dotnet test WildBunch.sln --no-build --no-restore --configuration Release
+    dotnet test WildBunch.sln --no-build --no-restore --configuration Release
     Test-LastExitCode 'dotnet test failed'
 
     Write-Host '--- Frontend preflight ---'

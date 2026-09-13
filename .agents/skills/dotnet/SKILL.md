@@ -10,21 +10,19 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when building or reviewing .NET ecosystem applications, C# language patterns,
-    ASP.NET Core APIs, and common library choices.
   use_when:
-  - Use when building or reviewing .NET ecosystem applications in C#.
-  - Use when choosing C# language patterns such as records, pattern matching, async/await,
+  - building or reviewing .NET ecosystem applications in C#.
+  - choosing C# language patterns such as records, pattern matching, async/await,
     and nullable reference types.
-  - Use when configuring ASP.NET Core APIs with minimal APIs, middleware, routing, or
+  - configuring ASP.NET Core APIs with minimal APIs, middleware, routing, or
     validation.
-  - Use when deciding on common .NET runtime concerns such as dependency injection, logging,
+  - deciding on common .NET runtime concerns such as dependency injection, logging,
     and configuration.
-  - Use when selecting data access or testing approaches for .NET projects.
+  - selecting data access or testing approaches for .NET projects.
   do_not_use_when:
-  - Do not use when the work is SQL/EF deep tuning, cloud deployment, or a language other
+  - the work is SQL/EF deep tuning, cloud deployment, or a language other
     than C#/.NET.
-  - Do not use when another more specific skill owns the task.
+  - another more specific skill owns the task.
 license: MIT
 ---
 

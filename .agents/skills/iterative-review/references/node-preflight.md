@@ -9,7 +9,7 @@ Run the consumer's canonical preflight on the branch and gate on a clean result.
 - `<scan_findings>` file path
 
 ## Recipe
-1. Run the consumer's canonical preflight on the branch; for this repo use `py -3 tools/run.py ci --check`.
+1. Run the consumer's canonical preflight on the branch.
 2. For each deterministic finding, record it:
    ```bash
    py -3 .agents/skills/iterative-review/scripts/record_finding.py \

@@ -60,7 +60,7 @@ prompt: |
 ```
 
 **Placeholders:**
-- `<reviewer-profile>` — `reviewer`, `reviewer-strong`, or `reviewer-fixes`, chosen via `/selecting-a-subagent`.
+- `<reviewer-profile>` — `reviewer`, `reviewer-strong`, or `reviewer-fixes`, chosen via `selecting-a-subagent`.
 - `<diff_path>` — the prepared diff file.
 - `<pr_description>` — PR title/body and linked context.
 - `<base>` — base ref.

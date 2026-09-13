@@ -1,7 +1,7 @@
 ---
 name: dispatching-parallel-agents
 description: Use when facing 2+ independent tasks that can be worked on without shared
-  state or sequential dependencies
+  state or sequential dependencies.
 metadata:
   source-id: dispatching-parallel-agents
   source-path: codex-marketplace/plugins/superpowers-plus/skills/dispatching-parallel-agents/SKILL.md
@@ -9,17 +9,15 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when facing 2+ independent tasks that can be worked on without shared
-    state or sequential dependencies
   use_when:
-  - Use when facing 2+ independent tasks or failures that can be worked on without
+  - facing 2+ independent tasks or failures that can be worked on without
     shared state.
-  - Use when multiple test files fail with different root causes.
-  - Use when each problem can be understood without context from the others.
+  - multiple test files fail with different root causes.
+  - each problem can be understood without context from the others.
   do_not_use_when:
-  - Do not use when failures are related or share state.
-  - Do not use when a single agent needs full system context.
-  - Do not use when tasks have sequential dependencies.
+  - failures are related or share state.
+  - a single agent needs full system context.
+  - tasks have sequential dependencies.
   related_skills:
   - systematic-debugging
   - executing-plans
@@ -29,7 +27,7 @@ license: MIT
 ---
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/dispatching-parallel-agents/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Dispatching Parallel Agents
 

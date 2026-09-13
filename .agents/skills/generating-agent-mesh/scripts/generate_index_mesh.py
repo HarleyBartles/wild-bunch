@@ -104,8 +104,8 @@ def _run_index_mesh_extra_hook(repo_root: Path, check: bool) -> list[str]:
 
 # Set at import from git. Use configure_root() or --repo-root to override before any work runs.
 ROOT = _repo_root()
-EXCLUDED_DIR_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".pytest_cache", ".superpowers"}
-EXCLUDED_ROOT_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".superpowers"}
+EXCLUDED_DIR_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".pytest_cache", ".superpowers", "evals"}
+EXCLUDED_ROOT_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".superpowers", "evals"}
 EXCLUDED_FILE_NAMES = {".git", ".gitkeep"}
 INDEX_FILE_NAMES = {"INDEX.md", "INDEX.json"}
 THIRD_PARTY_ROOT = ROOT / "sources" / "third_party"
@@ -447,7 +447,8 @@ def main(argv: list[str] | None = None) -> int:
     actual_paths = {
         path
         for path in ROOT.rglob("*")
-        if path.is_file()
+        if not any(part in EXCLUDED_ROOT_NAMES for part in path.relative_to(ROOT).parts)
+        and path.is_file()
         and path.name == "INDEX.md"
         and (not is_under(path, THIRD_PARTY_ROOT) or path == THIRD_PARTY_ROOT / "INDEX.md")
         and not is_under(path, SKILL_ZIPS_ROOT)

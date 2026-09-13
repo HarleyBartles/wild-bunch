@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Systematic Debugging
-  short_description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
-  default_prompt: Use /systematic-debugging to use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+  short_description: Diagnose bugs, test failures, and unexpected behavior from evidence.
+  default_prompt: Use systematic-debugging when encountering any bug, test failure, or unexpected behavior, before proposing fixes.
 policy:
   products:
   - codex

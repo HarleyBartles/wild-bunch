@@ -10,14 +10,12 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when auditing web content accessibility against WCAG 2.2 or mapping success
-    criteria to a verification plan.
   use_when:
-  - Use when auditing web content accessibility against WCAG 2.2.
-  - Use when mapping success criteria to a verification plan.
+  - auditing web content accessibility against WCAG 2.2.
+  - mapping success criteria to a verification plan.
   do_not_use_when:
-  - Do not use when the work is general UX design.
-  - Do not use when the work is automated tooling setup only.
+  - the work is general UX design.
+  - the work is automated tooling setup only.
 license: MIT
 ---
 

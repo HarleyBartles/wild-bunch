@@ -13,13 +13,13 @@ metadata:
   owner: Harley Bartles
   scope: Engine-agnostic relational database design and optimization patterns
   use_when:
-  - Use when designing or reviewing a relational database schema
-  - Use when normalizing tables, choosing keys, or defining constraints
-  - Use when modeling transactions, concurrency, views, or stored procedures
-  - Use when planning indexes, partitions, or query tuning
+  - designing or reviewing a relational database schema
+  - normalizing tables, choosing keys, or defining constraints
+  - modeling transactions, concurrency, views, or stored procedures
+  - planning indexes, partitions, or query tuning
   do_not_use_when:
-  - Do not use for engine-specific operations; prefer database-engines
-  - Do not use for NoSQL or document databases
+  - engine-specific operations; prefer database-engines
+  - NoSQL or document databases
 license: MIT
 ---
 

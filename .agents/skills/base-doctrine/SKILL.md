@@ -1,7 +1,7 @@
 ---
 name: base-doctrine
-description: Use when cross-runtime doctrine store for cross-project operating invariants
-  not owned by a more specific skill. Use when work involves system-prompt limits,
+description: Use when work depends on cross-project operating invariants not owned by
+  a more specific skill, including system-prompt limits,
   tool/source evidence honesty, durable doctrine routing, bounded skill/reference
   read loops, correction/trust posture, canonical agent asset source truth, or output
   artifact-shape authority such as reserved YAML, dispatch/continuity confusion,
@@ -13,21 +13,15 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when cross-runtime doctrine store for cross-project operating invariants
-    not owned by a more specific skill. Use when work involves system-prompt limits,
-    tool/source evidence honesty, durable doctrine routing, bounded skill/reference
-    read loops, correction/trust posture, canonical agent asset source truth, or output
-    artifact-shape authority such as reserved YAML, dispatch/continuity confusion,
-    worker-copy attention guards, and lower-skill format conflicts.
   use_when:
-  - Use when cross-runtime doctrine store for cross-project operating invariants not
-    owned by a more specific skill. Use when work involves system-prompt limits, tool/source
+  - work depends on cross-project operating invariants not owned by a more specific
+    skill, including system-prompt limits, tool/source
     evidence honesty, durable doctrine routing, bounded skill/reference read loops,
     correction/trust posture, canonical agent asset source truth, or output artifact-shape
     authority such as reserved YAML, dispatch/continuity confusion, worker-copy
     attention guards, and lower-skill format conflicts.
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
+  - another more specific skill owns this task.
 license: MIT
 ---
 # Base Doctrine
@@ -42,15 +36,20 @@ Use this skill as the cross-runtime doctrine store for cross-project operating i
 - Tool, memory, connector, repository-route, source-availability, or evidence-route claims: read `references/tool-surface-and-evidence.md`.
 - Deciding where durable doctrine belongs, canonical source truth, installed-skill versus repo-source boundaries, or agent asset marketplace routing: read `references/durable-doctrine-routing.md`.
 - Bounded skill/reference reading, anti-loop stop rules, or "how much should I read before acting" questions: read `references/bounded-read-loop.md`.
+- Shared authority, owner applicability, reversible autonomy, human stop boundaries, or model-neutral operating semantics: read `references/operating-contract.md`.
 - Failure, correction, and trust posture: read `references/failure-and-trust-posture.md`.
 - Worker and subagent continuity, dispatch lifecycle, or evidence-based stall handling: read `references/worker-continuity.md`.
 - Output shape, reserved artifact forms, YAML-vs-non-YAML conflicts, worker-copy attention guards, or artifact authority: read `references/output-artifact-shape.md`.
-- Report partitioning, report laundering, worker returns, verification summaries, publication notes, or closure summaries: invoke `$writing-with-clarity` and read its `references/report-hygiene-checklist.md`.
+- Report partitioning, report laundering, worker returns, verification summaries, publication notes, or closure summaries: invoke `writing-with-clarity` and read its `references/report-hygiene-checklist.md`.
 - Quick map: read `references/doctrine-index.md`.
 
 ## Core control-plane rule
 
-This entrypoint should classify the kind of base doctrine needed and point to the smallest relevant reference. Do not perform source-route selection, connector inspection, repository lookup, memory claims, or tool-surface diagnosis from `SKILL.md` alone.
+This entrypoint should classify the kind of base doctrine needed and point to
+the smallest relevant reference. Do not perform source-route selection,
+connector inspection, repository lookup, memory claims, or tool-surface
+diagnosis from `SKILL.md` alone. Classification precedes broad environment or
+doctrine loading; stop reading once the next lawful action is known.
 
 For ordinary chat, acknowledgements, pings, or lightweight meta that does not require source or tool evidence, answer directly after any project bootstrap that was already required by the active project context. Connector presence, file presence, runtime tool availability, or plugin availability is not itself a reason to load a source-route reference.
 
@@ -60,7 +59,7 @@ Load `references/durable-doctrine-routing.md` when the current task asks where d
 
 Load `references/output-artifact-shape.md` only when the current task involves output format authority, reserved workspace forms, dispatch/continuity confusion, YAML-shaped content, reusable handoff shapes, or lower-skill output templates that may conflict with project/workspace conventions.
 
-Load `$writing-with-clarity`'s `references/report-hygiene-checklist.md` only when the current task involves drafting or reviewing report-like surfaces — worker returns, verification summaries, publication notes, closure summaries, or continuity notes — where reporting language could change the authority of information.
+Load `writing-with-clarity`'s `references/report-hygiene-checklist.md` only when the current task involves drafting or reviewing report-like surfaces — worker returns, verification summaries, publication notes, closure summaries, or continuity notes — where reporting language could change the authority of information.
 
 Use the most specific project skill, workflow skill, plugin, repo skill, or repo playbook when one owns the work. Use this skill only for base doctrine that crosses projects or prevents recurring GPT failure modes.
 

@@ -10,9 +10,12 @@ live
   database and the provider/storage validation lane.
 - 2026-06-22 - live: the local PostgreSQL service is now a shared, long-lived
   developer service owned by the persistent main checkout and reused across
-  workers/worktrees. `scripts/postgres-dev.sh ensure` and
-  `scripts/postgres-dev.ps1 ensure` are the documented idempotent entry
+  workers/worktrees. `tools/postgres-dev.ps1 ensure` and
+  `tools/postgres-dev.ps1 ensure` are the documented idempotent entry
   points; normal worker cleanup must not stop the shared service. See BUNCH-76.
+- 2026-08-24 - superseded: Wild Bunch moved from the repo-local `5434`
+  cluster to the shared `Z:\_postgres-cluster` service on `5435`, managed by
+  `tools/postgres-dev.ps1`.
 
 ## Decision Type
 
@@ -46,8 +49,8 @@ test databases.
 ## Detailed Decision Breakdown
 
 The repo documents a persistent local app database at `wildbunch_dev` on
-`localhost:5434`, with repo-local tooling under `.local/` and explicit setup and
-reset commands.
+`localhost:5435`, with shared tooling under `Z:\_postgres-cluster` and explicit
+setup and reset commands.
 
 The persistence adapter uses EF Core with Npgsql against PostgreSQL. That is an
 adapter choice, not a domain dependency, and it remains compatible with the
@@ -96,19 +99,16 @@ otherwise.
 
 ## Implementation Status or Plan
 
-Live. The local PostgreSQL docs and testing-lane docs describe the convention and
-the validation posture. As of BUNCH-76 (2026-06-22), the service is shared and
-owned by the persistent main checkout: `scripts/postgres-dev.sh ensure`
-idempotently reuses a healthy service or starts one when down, worktrees borrow
-the main checkout's tooling and data dir via `git rev-parse --git-common-dir`
-resolution, and normal worker cleanup must not stop the shared service.
+Live. `tools/postgres-dev.ps1 ensure` idempotently reuses or starts the shared
+`Z:\_postgres-cluster` service. Worktrees use the same `localhost:5435`
+endpoint, and normal worker cleanup must not stop it.
 
 ## Related Stable Source Surfaces
 
 - `docs/local-postgresql.md`
 - `docs/testing-lanes.md`
 - `.agents/architecture-hygiene.md`
-- `scripts/postgres-dev.ps1`
+- `tools/postgres-dev.ps1`
 - `tests/WildBunch.Integration.Tests/PostgreSqlPersistenceTests.cs`
 - `src/WildBunch.Persistence/WildBunch.Persistence.csproj`
 - `src/WildBunch.Persistence/WildBunchDbContext.cs`
