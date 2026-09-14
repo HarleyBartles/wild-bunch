@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import unittest
 
 
@@ -22,18 +23,19 @@ class RepoGuidanceContractsTests(unittest.TestCase):
         self.assertTrue(authored)
         for path in authored:
             text = path.read_text(encoding="utf-8")
-            positions = [text.find(heading) for heading in RUNBOOK_HEADINGS]
-            self.assertNotIn(-1, positions, path.relative_to(REPO_ROOT))
-            self.assertEqual(sorted(positions), positions, path.relative_to(REPO_ROOT))
+            headings = re.findall(r"^## .+$", text, flags=re.MULTILINE)
+            self.assertEqual(
+                list(RUNBOOK_HEADINGS), headings, path.relative_to(REPO_ROOT)
+            )
 
     def test_unslop_profiles_live_under_contracts(self) -> None:
-        self.assertEqual([], list((REPO_ROOT / ".agents" / "unslop").glob("*.md")))
+        self.assertEqual([], list((REPO_ROOT / ".agents" / "unslop").rglob("*.md")))
         self.assertEqual(
             [],
             list(
                 (
                     REPO_ROOT / "src" / "WildBunch.Web" / ".agents" / "unslop"
-                ).glob("*.md")
+                ).rglob("*.md")
             ),
         )
         self.assertTrue((REPO_ROOT / ".agents" / "contracts" / "unslop").is_dir())

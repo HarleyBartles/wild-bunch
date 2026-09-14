@@ -10,6 +10,8 @@ Adding or changing a Wild Bunch developer control or panel.
 - `/wild-bunch-domain-modeling`
 - `/wild-bunch-dotnet-architecture`
 - `/wild-bunch-browser-game`
+- `/react`, `/game-ui-frontend`, and `/web-styling` when the change crosses
+  their frontend boundaries.
 - `/test-driven-development`
 - `/game-playtest`
 - `/verification-before-completion`
@@ -17,8 +19,8 @@ Adding or changing a Wild Bunch developer control or panel.
 ## Composition
 
 Establish lawful state preparation and panel ownership first. Implement the
-backend command and immutable dev event, then compose only the frontend
-capabilities required (`/react`, `/game-ui-frontend`, `/web-styling`). Exercise
+backend command and immutable dev event, then compose only the declared
+frontend capabilities required. Exercise
 the prepared state through normal gameplay and verify it through playtest.
 
 ## Doctrine and contracts

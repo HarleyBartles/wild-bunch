@@ -8,8 +8,11 @@ Implementing an approved Wild Bunch change in a task worktree.
 
 - `/test-driven-development`
 - `/verification-before-completion`
-- The focused Wild Bunch capability skill for any domain, architecture,
-  browser, seed, dev-control, or asset judgment in scope.
+- `/wild-bunch-domain-modeling` for gameplay and aggregate decisions.
+- `/wild-bunch-dotnet-architecture` for C# application and persistence boundaries.
+- `/wild-bunch-browser-game` for browser state and presentation ownership.
+- `/seed-ownership`, `/dev-control-boundary`, or
+  `/town-hub-asset-judgment` when that focused judgment is in scope.
 
 ## Composition
 

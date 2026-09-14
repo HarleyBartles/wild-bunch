@@ -17,8 +17,9 @@ deterministic processing runbook.
 
 ## Doctrine and contracts
 
-The matching art doctrine under `../doctrine/art/` and the applicable binding
-anti-slop contract govern family, camera, seam, and player-surface constraints.
+The matching art doctrine under `../doctrine/art/` and
+`src/WildBunch.Assets/docs/asset-spec.md` govern family, camera, seam, canvas,
+and promotion constraints.
 
 ## Local commands and paths
 

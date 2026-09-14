@@ -8,18 +8,18 @@ Opening, updating, or publishing a Wild Bunch pull request.
 
 - `/publishing-source`
 - `/repo-worker-base`
-- `/requesting-code-review` and `/receiving-code-review` when review occurs.
 - `/verification-before-completion`
 
 ## Composition
 
-Enter through `/using-superpowers-plus` and follow its publication handoff.
-Portable skills own Draft lifecycle, commit discipline, review sequencing, and
-publication; this runbook supplies Wild Bunch bindings.
+`/repo-worker-base` supplies worktree and source-custody boundaries,
+`/verification-before-completion` gates the local head, and
+`/publishing-source` owns Draft lifecycle and publication.
 
 ## Doctrine and contracts
 
-- Root [AGENTS.md](../../AGENTS.md) owns publication proof.
+- This runbook is the publication-proof surface routed from root
+  [AGENTS.md](../../AGENTS.md).
 - [Repository command declaration](../contracts/repo-standards-commands.json)
   defines the canonical apply and check capabilities.
 
