@@ -130,8 +130,8 @@ jobs:
       - name: Validate agent mesh
         run: bash .agents/skills/generating-agent-mesh/scripts/validate-agent-mesh.sh --check
 
-      - name: Validate repo-local skills
-        run: python scripts/validate_local_skills_extra.py --check .agents/skills wild-bunch-
+      - name: Check installed skill projection
+        run: python .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --check
 
       - name: Run script regression tests
         run: python -m pytest scripts/tests -q
