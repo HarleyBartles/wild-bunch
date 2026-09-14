@@ -13,10 +13,6 @@ Wild Bunch uses the shared Windows PostgreSQL cluster at
 - Ownership: the service is shared across Wild Bunch worktrees and other local
   repositories; normal worker cleanup must not stop it.
 
-The old repo-local cluster under `.local/postgres-dev` and the
-`scripts/postgres-dev.*` entry points are retired. Do not use them for current
-validation or local launch.
-
 ## Service commands
 
 ```powershell

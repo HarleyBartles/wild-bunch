@@ -1,6 +1,8 @@
 # Repo Runbook Policy
 
-This repo follows the `repo-standards` skill. Invoke `/using-superpowers-plus` first to route to the relevant stage skill, then invoke `/repo-standards` when the task touches repo shape, runbook layout, or scaffolds.
+This repo follows the `repo-standards` skill. Invoke `using-superpowers-plus`
+first to route to the relevant stage skill, then invoke `repo-standards` when
+the task touches repo shape, runbook layout, or scaffolds.
 
 ## Standard-to-local mapping
 
@@ -10,12 +12,12 @@ This repo follows the `repo-standards` skill. Invoke `/using-superpowers-plus` f
 | planning.md | `.agents/runbooks/planning.md` | required |
 | implementing.md | `.agents/runbooks/implementing.md` | required |
 | code-review.md | `.agents/runbooks/code-review.md` | required |
-| marketplace-generation.md | `.agents/runbooks/marketplace-generation.md` |  |
-| skill-authoring.md | `.agents/runbooks/skill-authoring.md` |  |
-| security.md | `.agents/runbooks/security.md` |  |
-| testing.md | `.agents/runbooks/testing.md` |  |
+| marketplace-generation.md | `.agents/runbooks/marketplace-generation.md` | present |
+| skill-authoring.md | `.agents/runbooks/skill-authoring.md` | present |
+| security.md | `.agents/runbooks/security.md` | present |
+| testing.md | `.agents/runbooks/testing.md` | present |
 | pr.md | `.agents/runbooks/pr.md` | required |
-| code-style.md | `.agents/runbooks/code-style.md` |  |
+| code-style.md | `.agents/runbooks/code-style.md` | present |
 
 ## Additional repo-specific runbooks
 
@@ -29,3 +31,10 @@ This repo follows the `repo-standards` skill. Invoke `/using-superpowers-plus` f
 ## Exceptions
 
 None.
+
+## Root router interpretation
+
+Root `AGENTS.md` uses the five-section router defined by the executable
+repository-shape contract. The 12 canonical topics are coverage requirements
+across those five sections and their routed targets; they are not 12 required
+root headings. Publication proof is owned by `.agents/runbooks/pr.md`.

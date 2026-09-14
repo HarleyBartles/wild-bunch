@@ -23,5 +23,3 @@ Use this local overlay after `using-superpowers-plus` routes review to
 - Use `py -3 tools/run.py ci --check` only for deliberate uncommitted or CI-parity
   proof; a successful normal commit already carries staged-snapshot hook evidence.
 - Confirm current GitHub PR checks before approval.
-- Report findings with the P0-P3 priority taxonomy and exact file/line evidence.
-

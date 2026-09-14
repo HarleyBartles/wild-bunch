@@ -73,7 +73,7 @@ A good dev overlay slice usually looks like this:
 7. The next normal player action consumes that setup.
 8. The overlay refreshes from backend state after command success.
 9. Browser evidence proves the UI behavior.
-10. Evidence is saved under the repo's ignored `.agents/superpowers/output/...` area, not committed.
+10. Evidence is saved under the branch-scoped `_agent-scratch` workspace, not committed.
 
 ## Avoid patterns
 
@@ -404,7 +404,7 @@ Bad:
 
 Prefer:
 
-- store generated evidence under `.agents/superpowers/output/screenshots/`;
+- store generated evidence under the branch-scoped `_agent-scratch` workspace;
 - ignore generated contents with a local `.gitignore`;
 - keep only navigational/control files tracked if needed;
 - summarize or attach screenshots through review tooling, not as repo files.
@@ -572,7 +572,7 @@ Ask these before accepting dev overlay work:
 11. Does the panel refresh from backend state after commands?
 12. Does the panel reveal context/state mismatches instead of laundering them?
 13. Does browser evidence exist for layout/interaction changes?
-14. Is generated evidence stored under ignored `.agents/superpowers/output/...`?
+14. Is generated evidence stored under the branch-scoped `_agent-scratch` workspace?
 15. Are screenshots and generated evidence absent from the PR changed-file list?
 16. Does the PR body match the actual implementation and evidence handling?
 17. Did the worker prove the playtest loop, not just tests passing?

@@ -10,8 +10,6 @@ Use this local overlay after `using-superpowers-plus` routes planning to
 - Read [architecture guardrails](../docs/architecture-guardrails.md) when the work
   touches domain logic, persistence, commands, queries, or projections.
 - Read [frontend standards](../docs/frontend-standards.md) for browser work.
-- Read [workflow policy](../docs/workflow-policy.md) for local publication and
-  evidence requirements.
 
 ## Local artifact paths
 
@@ -22,4 +20,3 @@ Use this local overlay after `using-superpowers-plus` routes planning to
 
 Completed planning artifacts leave the tracked tree under the rules in
 [completed-artifacts doctrine](../doctrine/completed-artifacts.md).
-

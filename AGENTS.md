@@ -9,10 +9,6 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - Repo state (code, docs, ADRs, and generated mesh) is the source of truth for implementation.
 - External control planes (GitHub PRs, Linear issues) provide publication and issue facts, but the live repo is the authority for current implementation state.
 
-## Publication proof
-
-Work is published through a dedicated linked worktree, a task branch, and a pull request to `main`. Direct pushes to `main` require explicit authorization.
-
 ## Build and test commands
 
 - `py -3 tools/run.py ci --check`

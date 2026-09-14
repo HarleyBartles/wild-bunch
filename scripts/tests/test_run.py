@@ -52,3 +52,21 @@ def test_diagnostics_collects_independent_ci_failures(monkeypatch, capsys) -> No
 def test_diagnostics_is_rejected_outside_ci_check(capsys) -> None:
     assert run.main(["ci", "--apply", "--diagnostics"]) == 1
     assert "--diagnostics requires ci --check" in capsys.readouterr().err
+
+
+def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
+    visited: list[str] = []
+    mechanical_steps = (
+        "_repo_standards_apply",
+        "_skill_scripts_check",
+        "_skills_apply",
+        "_mesh_apply",
+    )
+    product_steps = ("_build_dotnet", "_test_dotnet", "_build_web", "_diff_check")
+
+    for name in mechanical_steps + product_steps:
+        monkeypatch.setattr(run, name, lambda _ctx, step=name: visited.append(step))
+
+    run._ci_apply(run.Ctx("apply", False))
+
+    assert visited == list(mechanical_steps)

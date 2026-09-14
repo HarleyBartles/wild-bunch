@@ -189,7 +189,7 @@ When working in event sourcing, persistence, or projection code:
   boundaries, and domain event design.
 - Invoke `/cqrs` for command/query separation and `/event-sourcing` for events
   as source of truth, replay, and projection patterns.
-- Invoke `/event-driven-architecture` for domain events and projections.
+- Invoke `/event-driven-systems` for domain events and projections.
 - Invoke `/ddd` for aggregate root, value object, and domain event modeling.
 
 ## Enforcement

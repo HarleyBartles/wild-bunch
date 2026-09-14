@@ -284,9 +284,9 @@ BUNCH-67/68/72-era references were classified as follows:
   a historical note marking BUNCH-67/68/72 as superseded by the concrete
   child-component extraction pattern. The event-sourcing posture is
   unchanged.
-- **Plan files under `.agents/superpowers/plans/`** (BUNCH-77, BUNCH-72):
-  historical execution records (class (c)). Left unchanged — they document
-  what was planned at the time.
+- **Completed BUNCH-77 and BUNCH-72 plans:** historical execution records
+  (class (c)). Removed from the live tree under completed-artifact custody;
+  Git history preserves what was planned at the time.
 
 No class (b) references (operative agent law that is now misleading) were
 found outside the ADRs already handled.

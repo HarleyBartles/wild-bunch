@@ -168,10 +168,6 @@ def _ci_apply(ctx: Ctx) -> None:
     _skill_scripts_check(ctx)
     _skills_apply(ctx)
     _mesh_apply(ctx)
-    _build_dotnet(ctx)
-    _test_dotnet(ctx)
-    _build_web(ctx)
-    _diff_check(ctx)
 
 
 def _ci_check(ctx: Ctx) -> None:

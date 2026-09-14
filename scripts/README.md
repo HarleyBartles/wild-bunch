@@ -26,14 +26,6 @@ These compatibility wrappers call the canonical
 `py -3 tools/run.py ci --check` lane. Pass `--diagnostics` in Bash or
 `-Diagnostics` in PowerShell to collect independent failures.
 
-**Use before** taking a PR out of draft. The `workflow-policy.md` requires the preflight to pass before marking a PR ready for review.
-
-### ci-preflight-extra.sh / ci-preflight-extra.ps1
-Repo-specific extension script called by `ci-preflight` after the generic
-marketplace skill checks. It runs `dotnet restore/build/ef/test` and the
-`src/WildBunch.Web` `npm ci/typecheck/test/build` pipeline. In `--check` mode
-it is a no-op because those lanes are too heavy for the pre-commit hook.
-
 ### dev-servers.sh / dev-servers.ps1
 **Use when** you need to start, stop, check, or ensure the API + Vite dev
 servers are running for local development or integration testing.
