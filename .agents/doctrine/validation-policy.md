@@ -1,32 +1,7 @@
 # Validation doctrine
 
-Use the portable testing and verification skills for general test design and
-completion workflow. This file records Wild Bunch lanes and exceptions.
-
-## Canonical gate
-
-```powershell
-.\tools\postgres-dev.ps1 ensure
-py -3 tools\run.py ci --check
-```
-
-The runner checks repository standards, skill projections and scripts, the
-generated mesh, .NET build and tests, frontend install/typecheck/tests/build,
-and diff hygiene. Use `--diagnostics` only to collect multiple independent
-failures. A normal hooked commit checks the exact staged snapshot.
-
-For persistence changes, also run:
-
-```powershell
-dotnet tool restore
-dotnet ef migrations list --project src\WildBunch.Persistence --startup-project src\WildBunch.Api
-```
-
-The shared local PostgreSQL service is `localhost:5435`; leave it running.
-Direct PostgreSQL-backed test commands need
-`ConnectionStrings__WildBunchPostgresDb=Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres`
-in the same process. A refused connection on 5435 is environment evidence;
-check `postgres-dev.ps1 status|ensure` before judging it as a product failure.
+This file records Wild Bunch test-lane ownership and invariants. The executable
+sequence and environment setup live in the [testing runbook](../runbooks/testing.md).
 
 ## Repository test lanes
 
@@ -49,9 +24,5 @@ Tests rendering `RouterProvider` use `createAppRouter()`, never the shared
 router singleton, because TanStack Router retains state between tests. Async
 lazy-route assertions use an appropriate explicit wait.
 
-## Generated mesh failures
-
-When a routed file moves, regenerate the whole mesh with
-`py -3 tools\run.py ci --apply`; do not hand-edit an index or regenerate only a
-subtree. `TestResults/`, `node_modules/`, and other ignored outputs must remain
-excluded from the mesh.
+Generated mesh validation covers the whole routed tree. `TestResults/`,
+`node_modules/`, and other ignored outputs remain excluded.

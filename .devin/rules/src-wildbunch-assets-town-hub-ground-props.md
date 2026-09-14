@@ -9,9 +9,4 @@ globs:
 `src/WildBunch.Assets/source/town-hub-ground/props/**`
 
 When working in this scope:
-- `src/WildBunch.Assets/docs/asset-operations.md` — project-level layout, required reading, and rules
-- `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md`
-- `src/WildBunch.Assets/docs/bibles/ground/props-bible.md`
-- `src/WildBunch.Assets/docs/asset-spec.md`
-- `.agents/doctrine/art/town-hub-ground.md`
-- `.agents/runbooks/asset-selection-cut-normalization.md`
+- `.agents/runbooks/town-hub-asset-production.md`

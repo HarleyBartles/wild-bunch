@@ -1,9 +1,7 @@
-# Dev Overlay Doctrine — State/Action Boundary, Panel Ownership, and Mesh Discipline
+# Dev overlay doctrine
 
 This is the binding repository doctrine for the Dev Overlay and Playtest
 Control Plane. All dev-overlay work must follow it.
-
-Apply the [dev overlay unslop profile](../unslop/dev-overlay.md) together with this doctrine when designing, implementing, or reviewing dev overlay work.
 
 ## 1. State/action boundary
 
@@ -114,18 +112,3 @@ Dev commands produce dev-event receipts that are part of the event stream. Norma
 ## 8. Context mismatch detection
 
 If the visible UI surface says one thing (e.g., saloon) but the aggregate action context says another (e.g., SheriffOffice or a stale context), the dev overlay must not present that contradiction as normal. Either fix the stale transition or show both the UI surface and the aggregate context with a clear mismatch warning.
-
-## 9. Closeout proof
-
-Dev-overlay work must provide:
-
-- Event-stream proof for dev force → normal gameplay consumption → normal gameplay outcome.
-- Screenshots showing the panel in compact and expanded mode.
-- Screenshots showing default panel selection for the surface.
-- Screenshots showing candidate dropdowns (not raw ID typing) for any force control.
-- Screenshots showing resolved names and domain meaning for displayed fields.
-- Test results for backend domain/application/API and frontend tests.
-
-Screenshots and other agent-generated evidence belong in the branch-scoped
-`Z:\_agent-scratch\wild-bunch\<branch-name>` workspace and must not be committed.
-See `.agents/doctrine/artifact-custody.md` for artifact custody.

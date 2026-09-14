@@ -132,7 +132,7 @@
   "notes": [
     "Repo-local Codex plugin marketplace for HarleyBartles/wild-bunch.",
     "Default-installed plugins are sourced from HarleyBartles/agent-asset-marketplace, except game-studio which is vendored locally under .agents/plugins/game-studio/.",
-    "wild-bunch-* skills are repository-local and are not supplied by a marketplace plugin.",
+    "Repository-local skills are identified only by exact names in repo.local_skills; their names do not imply custody.",
     "house-skills is intentionally not default-installed.",
     "writing-pack and unslop-plus are subscribed explicitly so their skills remain installed during refreshes."
   ],
@@ -141,7 +141,9 @@
       "wild-bunch-browser-game",
       "wild-bunch-domain-modeling",
       "wild-bunch-dotnet-architecture",
-      "wild-bunch-project-doctrine"
+      "seed-ownership",
+      "dev-control-boundary",
+      "town-hub-asset-judgment"
     ]
   }
 }

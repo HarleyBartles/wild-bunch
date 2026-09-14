@@ -88,9 +88,9 @@ the bundled marketplace skills.
 - `scripts/generate_index_mesh_extra.py` (and `.sh`/`.ps1` wrappers) is called
   by `generating-agent-mesh` after it generates the `INDEX.md` mesh. It appends
   the ADR freshness table to `docs/adr/INDEX.md`.
-- `scripts/validate_local_skills_extra.py` (and `.sh`/`.ps1` wrappers) is
-  called by `refreshing-installed-skills` while syncing skills. It validates
-  the `wild-bunch-*` repo-local skill directories.
+- Repository-local skills are declared by exact name in
+  `.agents/plugins/marketplace.json` under `repo.local_skills`. The installed
+  refresh capability validates those names and preserves their directories.
 
 ## Conventions
 

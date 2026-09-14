@@ -13,10 +13,12 @@
   ],
   "syncedSkills": 66,
   "localSkills": [
+    "dev-control-boundary",
+    "seed-ownership",
+    "town-hub-asset-judgment",
     "wild-bunch-browser-game",
     "wild-bunch-domain-modeling",
-    "wild-bunch-dotnet-architecture",
-    "wild-bunch-project-doctrine"
+    "wild-bunch-dotnet-architecture"
   ],
   "marketplace": {
     "source": "HarleyBartles/agent-asset-marketplace",
@@ -31,5 +33,5 @@
   ],
   "marketplaceFile": ".agents/plugins/marketplace.json",
   "vendorProfiles": [],
-  "syncedAt": "2026-09-13T22:11:52.184918"
+  "syncedAt": "2026-09-14T12:30:17.214776"
 }

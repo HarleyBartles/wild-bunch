@@ -47,14 +47,6 @@ The starting town is NOT a seed-owned fact. It is a player setup choice validate
 - The player can start in any town that exists in the generated world.
 - If no starting town is supplied, the safe default is the slot-0 town of the derived world (the first town produced by the seed's xorshift shuffle), not a fixed catalog property.
 
-## When to update this project
-
-- **New town or trail**: add to `SeedWorldFactory.cs`, update `SeedWorldFactoryTests` snapshot assertions, update `SeededNewGameFactoryTests` count assertions.
-- **New world variant**: add to `SeedWorldVariant` enum, add variant-specific terrain/water/services to existing town/trail definitions, update `ResolveWorldVariant` in `SeedWorldResolver.cs`, update snapshot tests.
-- **New difficulty or entropy level**: update enums, update `DifficultyEnvelope.For` / `EntropyPolicy.For`, update tests.
-- **Any new seed-owned field**: add to `SeedWorld`, add to `SeedWorldResolver.Resolve`, update the bit-packing layout in `SeedWorldResolver.CreateRepresentativeSeedCode`, add a round-trip guardrail test.
-- **Any new pressure-owned field**: add to `DifficultyEnvelope.For`, update `GameSetupResolver.Resolve`, update tests.
-
 ## Do NOT
 
 - Do NOT store UUIDs in test fixtures. Store `SeedWorld` records and derive UUIDs via `SeedWorldResolver.CreateRepresentativeSeedCode`.

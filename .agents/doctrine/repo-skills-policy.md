@@ -4,26 +4,16 @@
 
 - `.agents/plugins/marketplace.json` is the authored plugin subscription.
 - `.agents/plugins/marketplace-source` pins the external marketplace source.
-- `.agents/skills/.provenance.json` and non-`wild-bunch-*` skill directories are
-  generated projections; do not edit them by hand.
+- `.agents/skills/.provenance.json` and skill directories not named in
+  `repo.local_skills` are generated projections; do not edit them by hand.
 - `.agents/plugins/game-studio/skills/` is the authored source for the locally
   vendored `game-studio` plugin.
-- `.agents/skills/wild-bunch-*/` contains repository-local authored skills.
+- Exact names under `repo.local_skills` identify repository-local authored
+  skills. A name or prefix alone never establishes custody.
 
-## Refresh contract
+## Registration invariant
 
-Run the repository's canonical apply capability after changing the plugin
-subscription, pinned source, local plugin, or repo-local skill source:
-
-```powershell
-py -3 tools\run.py ci --apply
-```
-
-Then stage the intended tree and use the normal hooked commit. The hook checks
-the installed projection against the configured source and provenance.
-
-## Local namespace
-
-Repo-local skills must use the `wild-bunch-*` prefix and be named exactly in
-`repo.local_skills`. A marketplace refresh must preserve those directories and
-must not include them in marketplace provenance.
+Every repository-local skill is named exactly once in `repo.local_skills`, its
+directory and frontmatter name match that entry, and marketplace provenance
+does not claim it. Repository-local skills may retain descriptive
+`wild-bunch-*` names, but that prefix is not reserved or protected.

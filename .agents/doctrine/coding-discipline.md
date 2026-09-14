@@ -1,12 +1,11 @@
 # Coding Discipline
 
-Use this reference when writing code, deciding scope boundaries, or refactoring.
-
 ## Code style guidelines
 
 This document defines the code style and coding discipline for Wild Bunch. See the sections below for scope, architecture-stack, and refactoring rules.
 
-**Artifact Placement**: Before creating any files (scratch notes, code reviews, temporary documents), read `.agents/doctrine/artifact-custody.md`. Scratch files must go in `Z:\_agent-scratch\wild-bunch\<branch-name>`, never in the repo root.
+Scratch files belong in `Z:\_agent-scratch\wild-bunch\<branch-name>`, never in
+the repo root.
 
 ## Scope Discipline
 - Do only the requested slice.
@@ -14,17 +13,12 @@ This document defines the code style and coding discipline for Wild Bunch. See t
 - No unrelated feature work.
 - If a needed design decision is missing, return `BLOCKED` or `AMBER` rather than inventing broad architecture.
 
-## Architecture Stack Discipline
-- This repo uses DDD + CQRS + Event Sourcing. These are the established patterns, not one option among many.
-- Do not hand-roll non-DDD solutions: no anemic domain models, no services that mutate aggregates from outside, no bypassing the aggregate root for gameplay mutations.
-- Do not hand-roll non-CQRS solutions: no mixing read logic into command handlers, no mixing mutation logic into query handlers, no scraping aggregate state for reads instead of using projections.
-- Do not hand-roll non-event-sourced solutions: no direct state mutations outside the event-sourced route, no skipping `Apply` methods, no adding mutable state that isn't restored from events.
-- When unsure how to apply these patterns, use `/ddd`, `/cqrs`,
-  `/event-sourcing`, `/event-driven-systems`, `/wild-bunch-dotnet-architecture`,
-  and `/wild-bunch-domain-modeling` as applicable.
-- Current source and ADRs define Wild Bunch's implementation decisions. Portable
-  skills provide technique; they do not override repository source truth.
-- Do not create placeholder state. If a value is not yet known, make the field nullable and set it when the value becomes known. Placeholder values that get silently replaced are an anti-pattern.
+## Architecture discipline
+
+- [Architecture guardrails](architecture-guardrails.md) and current source own
+  Wild Bunch architecture decisions. Portable techniques do not override them.
+- Do not move gameplay mutation out of `GameSession` merely to satisfy a generic
+  pattern.
 
 ## Modular Excitement Doctrine
 - Modular player excitement is achieved through boring implementation.
@@ -33,7 +27,8 @@ This document defines the code style and coding discipline for Wild Bunch. See t
 ## Coding Discipline
 - Keep slices small and mainline-friendly; if a file is getting bulky, extract the pure helper, factory, or renderer before it becomes a god object.
 - Avoid letting aggregate roots, endpoint files, React panels, and builders accumulate unrelated responsibilities.
-- Do not move gameplay mutation out of `GameSession` just to satisfy SOLID; extract pure helpers around it instead.
+- Extract pure helpers around aggregate behavior instead of moving its mutation
+  boundary.
 - Prefer one canonical algorithm or formatter over duplicate versions that can drift.
 - When you touch a surface, leave it cleaner or explicitly report why the cleanup is deferred.
 - Backend remains authoritative for gameplay state; React renders server state instead of inventing it.

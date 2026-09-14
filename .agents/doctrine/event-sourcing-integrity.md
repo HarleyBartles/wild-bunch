@@ -177,20 +177,6 @@ agent might introduce and why it is wrong.
     match what the deserializer can read, the load fails. Upcaster correctness is
     verified by `UpcasterCorrectnessTests`.
 
-## Skill Routing
-
-When working in event sourcing, persistence, or projection code:
-
-- Invoke `/wild-bunch-dotnet-architecture` for GameSession live-play flows,
-  application orchestration, infrastructure persistence, CQRS/read models,
-  event-stream plus snapshot-cache state, and framework leakage guardrails.
-- Invoke `/wild-bunch-domain-modeling` for DDD tactical modeling, GameSession
-  boundaries, and domain event design.
-- Invoke `/cqrs` for command/query separation and `/event-sourcing` for events
-  as source of truth, replay, and projection patterns.
-- Invoke `/event-driven-systems` for domain events and projections.
-- Invoke `/ddd` for aggregate root, value object, and domain event modeling.
-
 ## Enforcement
 
 - **Build-time:** `UpcasterChainCompletenessTests` asserts every

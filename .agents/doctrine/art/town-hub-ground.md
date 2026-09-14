@@ -1,20 +1,8 @@
 # Town Hub Ground Art Doctrine
 
-Use this file as the agent-facing control surface for town-hub ground work. Keep
-it operational. The human-facing source of truth is the ground bible set in
+The human-facing source of truth is the ground bible set in
 `src/WildBunch.Assets/docs/bibles/ground/`; use those files for canonical
 palette, seam, and family rules. Do not restate the whole style bible here.
-
-## Read order
-
-- Read `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md` first.
-- Then read the matching family bible:
-  - `src/WildBunch.Assets/docs/bibles/ground/dirt-bible.md`
-  - `src/WildBunch.Assets/docs/bibles/ground/road-bible.md`
-  - `src/WildBunch.Assets/docs/bibles/ground/spur-bible.md`
-  - `src/WildBunch.Assets/docs/bibles/ground/path-bible.md`
-  - `src/WildBunch.Assets/docs/bibles/ground/props-bible.md`
-
 
 ## Working rules
 
@@ -24,8 +12,6 @@ palette, seam, and family rules. Do not restate the whole style bible here.
 - Keep prop sprites as standalone transparent assets.
 - Do not add placement, jitter, or spawn logic here; that belongs to the play
   surface, not the asset contract.
-- If an asset family drifts away from the written contract, rewrite the prompt
-  before generating another pass.
 
 ## Custody note
 

@@ -14,35 +14,24 @@ metadata:
 
 ## Owned decision
 
-Keep domain rules in the `GameSession` aggregate, application code focused on command/query orchestration, and infrastructure responsible for persistence and framework concerns.
+Decide which Wild Bunch .NET layer owns a change that crosses domain,
+application, persistence, API, or projection boundaries.
 
-## Current architecture
+## Method
 
-- `GameSession` is the live-play aggregate root and event-production boundary.
-- Command flows produce typed domain events, apply them through `GameSession`, and record uncommitted events.
-- Persistence appends the typed event stream. Event-backed sessions can fully replay when JSON component snapshots are stale or incomplete.
-- `StartPrepped` sessions may have zero events. Snapshot components are required to load that current zero-event state because full replay returns `null` when no stored events exist.
-- `GameSession` owns `BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, and `ActionContextTracker` as internal child components.
-- Application handlers coordinate commands and queries but do not own gameplay invariants.
-- Infrastructure owns EF Core entities, event envelopes, serializers, snapshot components, migrations, and projection storage.
-- Read models and projections derive query state without becoming a second write model.
+1. Read the live paths and [architecture guardrails](../../doctrine/architecture-guardrails.md),
+   plus [event-sourcing integrity](../../doctrine/event-sourcing-integrity.md)
+   when events, snapshots, or projections are involved.
+2. Separate domain invariants, use-case sequencing, persistence mechanics, API
+   translation, and query derivation.
+3. Return an ownership map, dependency direction, event/snapshot implications,
+   and the replay or projection proof required.
+4. Escalate the generic technique only to the focused portable skill that owns
+   it: `ddd`, `cqrs`, `event-sourcing`, `event-driven-systems`,
+   `clean-architecture`, or `dotnet`.
 
-## Decision pattern
+## Boundary
 
-1. Inspect the live domain, handler, repository, event, and test paths.
-2. Put invariants and state transitions in the aggregate or owning child component.
-3. Put use-case sequencing in application code.
-4. Put database and serialization details in persistence.
-5. Prove replay and snapshot paths converge for event-backed sessions, and preserve the zero-event `StartPrepped` load path.
-
-Use `ddd`, `cqrs`, `event-sourcing`, `event-driven-architecture`, `clean-architecture`, and `dotnet` only for the generic architecture question they own.
-
-## Reference
-
-Read [.NET architecture](references/dotnet-architecture.md) for persistence and falsification checks.
-
-## Stop conditions
-
-- Do not add direct aggregate mutation outside typed event production and `Apply`.
-- Do not make component snapshots the conceptual source of history for event-backed sessions, but do not remove the snapshots required by zero-event `StartPrepped` sessions.
-- Do not introduce a broker, EventStoreDB, separate event-store interface, or normalized live-session table split unless the task explicitly requires it.
+This skill does not restate the current architecture and does not own feature
+implementation order. Use `wild-bunch-domain-modeling` for a domain-only
+ownership decision; the composing runbook owns implementation and validation.

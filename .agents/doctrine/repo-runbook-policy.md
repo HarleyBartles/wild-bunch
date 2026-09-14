@@ -1,8 +1,7 @@
 # Repo Runbook Policy
 
-This repo follows the `repo-standards` skill. Invoke `using-superpowers-plus`
-first to route to the relevant stage skill, then invoke `repo-standards` when
-the task touches repo shape, runbook layout, or scaffolds.
+This file records the required repository runbook mapping and accepted local
+extensions to the portable repository standard.
 
 ## Standard-to-local mapping
 
@@ -23,6 +22,9 @@ the task touches repo shape, runbook layout, or scaffolds.
 
 - `.agents/runbooks/ui-browser-check.md`
 - `.agents/runbooks/asset-selection-cut-normalization.md`
+- `.agents/runbooks/seeded-game-setup.md`
+- `.agents/runbooks/dev-overlay.md`
+- `.agents/runbooks/town-hub-asset-production.md`
 
 ## Root contributor and review surfaces
 

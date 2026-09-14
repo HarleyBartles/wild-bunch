@@ -1,11 +1,11 @@
 ---
 name: wild-bunch-browser-game
-description: Use when Wild Bunch work changes browser delivery, React or Phaser integration, player HUDs, DOM overlays, playtesting, or browser QA evidence.
+description: Use when Wild Bunch browser work needs a decision about client state authority or presentation ownership.
 metadata:
   status: active
-  scope: Wild Bunch browser delivery and verification decisions.
+  scope: Wild Bunch browser state-authority decisions.
   use_when:
-    - Use when a task changes the web game, player-facing browser UI, or browser validation route.
+    - Use when a browser task could put authoritative game state in React, Phaser, or another client owner.
   do_not_use_when:
     - Do not use for backend-only gameplay or persistence work.
 ---
@@ -14,33 +14,21 @@ metadata:
 
 ## Owned decision
 
-Keep the browser as a presentation and input adapter over backend-authoritative game state, then select the smallest browser implementation or QA route that fits the task.
+Decide whether browser state belongs to React presentation, Phaser playfield
+rendering/input, or the backend-authoritative game model.
 
-## Current posture
+## Method
 
-- The web app uses React 18, Phaser 3, TypeScript, and Vite.
-- Render player-known backend state. Do not make React, Phaser, or client stores authoritative for gameplay facts or hidden investigation truth.
-- Send player intent through the established command/API boundary.
-- Keep the player HUD and play surfaces useful in-world; keep developer controls in the dev overlay.
-- Preserve domain rules for travel, inventory, wallet, horse state, clues, and culprit truth when adapting them for the browser.
+1. Read the live browser/API path and [frontend standards](../../doctrine/frontend-standards.md).
+2. Classify each fact as authoritative game state, player-known presentation
+   state, ephemeral rendering/input state, or developer-only state.
+3. Return the owner, command boundary, visibility boundary, and browser proof
+   needed to falsify the choice. Route developer-control semantics to
+   `dev-control-boundary`.
 
-## Route by need
+## Boundary
 
-- Use `react` for React component and hook structure.
-- Use `phaser-2d-game` for Phaser scene, lifecycle, camera, or input work.
-- Use `game-ui-frontend` and `interaction-design` for HUD and player-flow decisions.
-- Use `game-playtest` for browser playtests and evidence.
-- Use `webapp-testing` for local browser automation and route checks.
-- Use `web-styling` plus `.agents/docs/frontend-standards.md` for styling decisions.
-
-Load only the adjacent skill that owns the unresolved decision.
-
-## Reference
-
-Read [Browser game stack](references/browser-game-stack.md) for the verified stack, authority boundary, and focused QA route.
-
-## Stop conditions
-
-- Inspect `src/WildBunch.Web/package.json` and live source before changing stack claims.
-- Do not accept a screenshot alone as behavior proof.
-- Route gameplay-rule changes through `wild-bunch-domain-modeling` and backend structure changes through `wild-bunch-dotnet-architecture`.
+This skill does not implement React, Phaser, styling, or browser tests. A
+runbook may compose it with `react`, `phaser-2d-game`, `game-ui-frontend`,
+`game-playtest`, `playwright-testing`, or `web-styling` when those capabilities
+are actually required.

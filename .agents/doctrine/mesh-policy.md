@@ -19,22 +19,15 @@ agent material by role:
 - completed audits, trackers, plans, and reports leave the live tree once their
   enduring decisions or rules have been promoted.
 
-## Generation and validation
-
-Use the canonical runner to regenerate and validate the complete mesh:
-
-```powershell
-py -3 tools\run.py ci --apply
-py -3 tools\run.py ci --check
-```
+## Freshness invariant
 
 Do not hand-edit generated indexes. When a routed file is added, moved, or
 removed, the generated mesh must change in the same commit.
 
 ## Wild Bunch deltas
 
-- Repo-local skills use the `wild-bunch-*` namespace and are listed exactly in
-  `.agents/plugins/marketplace.json` under `repo.local_skills`.
+- Repo-local skills are listed exactly in `.agents/plugins/marketplace.json`
+  under `repo.local_skills`; naming conventions do not establish custody.
 - Marketplace-installed skills are generated projections under `.agents/skills/`;
   their source and provenance are owned by the marketplace configuration and
   pinned submodule.

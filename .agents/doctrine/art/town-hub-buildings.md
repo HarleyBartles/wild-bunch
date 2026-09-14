@@ -1,6 +1,9 @@
 # Town Hub Buildings Art Doctrine
 
-Use this file as the agent-facing control surface for town-building sprite work. Keep it operational. The human-facing source of truth is the town-building master bible and asset spec in `src/WildBunch.Assets/docs/bibles/buildings/` and `src/WildBunch.Assets/docs/`; use those files for canonical vocabulary, footprint terms, and family names. Do not restate the whole style bible here.
+The human-facing source of truth is the town-building master bible and asset
+spec in `src/WildBunch.Assets/docs/bibles/buildings/` and
+`src/WildBunch.Assets/docs/`. This doctrine records repository constraints that
+must survive production workflow changes.
 
 The town-hub asset split is:
 
@@ -11,15 +14,6 @@ The town-hub asset split is:
 The source/staging/sprites custody homes are the working contract, and the
 filler-building visibility rule still applies: supporting buildings should stay
 visually secondary to the named town buildings.
-
-## Reference image selection
-
-- Prefer references that already match the town-building contract: top-down with a slight oblique tilt, pixel art, and the 60x50 footprint.
-- When a source image is intended to be cut out, prefer a strong green chroma-key background over white so the cutout pass can remove the backdrop without damaging light details.
-- Accept a reference only if it preserves the family read without forcing a new silhouette.
-- Reject street-level views, flat front elevations, painterly concept art, photoreal renders, extreme lens distortion, or anything that hides the roof plane.
-- Reject mixed-family references. Each reference set should stay inside one canonical building family.
-- Use a clean master front reference for each family, then derive the turnarounds from that anchor instead of letting each view drift independently.
 
 ## Camera lock
 
@@ -66,13 +60,6 @@ visually secondary to the named town buildings.
 - When the asset-root AGENTS file points at this doctrine, treat this file as
   the canonical agent-facing contract for the town-hub split.
 
-## Prompt style
-
-- Keep prompts anchored to pixel art, crisp edges, readable silhouette, and a simple western palette.
-- Ask for clean rooflines, short readable walls, and a practical small-town read.
-- Do not request painted, rendered, cinematic, sketchy, or soft-focus treatment.
-- Do not use prompt wording that nudges the result toward a modern storefront, a generic frontier shack, or a front-on illustration.
-
 ## Family cues
 
 - General store: commerce-first read, porch or awning, merchandise frontage, goods and display cues.
@@ -81,17 +68,3 @@ visually secondary to the named town buildings.
 - Telegraph office: communications and administration read, compact practical frontage, posted notices, and service-oriented cues.
 - For the sheriff office, remove storefront clutter, stacked goods, display-window language, and broad retail signage. If it still reads like the store, strengthen the official markers before retrying.
 - For the filler-building families, keep the town read secondary to the named buildings and keep the five-view, four-tier contract intact.
-
-## Retry rules
-
-- Retry when the image lands too front-facing, too level, too painterly, too loose, or too close to the wrong family.
-- The retry prompt should restate: top-down slight oblique, pixel art, 60x50 footprint, and the exact family name.
-- For a wrong camera, say to push the roof plane back into dominance and restore the oblique angle.
-- For a wrong family read, add the missing cues and remove the misleading ones before trying again.
-- Do not rely on cropping or perspective warping to rescue a bad camera contract. Regenerate instead.
-
-## Asset pipeline pointer
-
-- For cut and normalization, use `.agents/runbooks/asset-selection-cut-normalization.md` and the asset-local `src/WildBunch.Assets/scripts/image_asset_pipeline.py` helper, with the repo-root wrapper kept only for compatibility.
-- Keep town-building notes focused on family-specific selection and camera rules, not on the shared image pipeline mechanics.
-- For roads and ground, prefer seam-safe copy promotion over sprite cutting.
