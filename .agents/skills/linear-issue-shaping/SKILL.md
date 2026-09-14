@@ -1,10 +1,8 @@
 ---
 name: linear-issue-shaping
-description: 'Use when Linear-backed issue, project, and document shaping: create
-  or update worker-ready Linear issues, inspect Linear comments/attachments/state,
-  prepare paste-ready worker handoffs when explicitly requested, and route GitHub
-  PR proof after a PR exists. Do not launch workers, delegate execution, or assume
-  any execution lane; treat worker-ready as issue-ready only.'
+description: Use when shaping Linear-backed issues, projects, or documents; inspecting
+  Linear state; preparing explicitly requested worker handoffs; or routing pull-request
+  proof after a PR exists.
 metadata:
   source-id: linear-issue-shaping
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/linear-issue-shaping/SKILL.md
@@ -12,19 +10,16 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: 'Use when Linear-backed issue, project, and document shaping: create or update
-    worker-ready Linear issues, inspect Linear comments/attachments/state, prepare
-    paste-ready worker handoffs when explicitly requested, and route GitHub PR proof
-    after a PR exists. Do not launch workers, delegate execution, or assume any execution
-    lane; treat worker-ready as issue-ready only.'
+  scope: Linear issue, project, document, worker-packet, and PR-proof shaping without
+    worker dispatch or execution ownership.
   use_when:
-  - 'Use when Linear-backed issue, project, and document shaping: create or update
+  - 'Linear-backed issue, project, or document shaping is needed: create or update
     worker-ready Linear issues, inspect Linear comments/attachments/state, prepare
     paste-ready worker handoffs when explicitly requested, and route GitHub PR proof
     after a PR exists. Do not launch workers, delegate execution, or assume any execution
     lane; treat worker-ready as issue-ready only.'
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
+  - another more specific skill owns this task.
 license: MIT
 ---
 # Linear Issue Shaping
@@ -49,7 +44,7 @@ Linear is the durable issue/control plane. The boring default is:
 4. switch to GitHub proof only after a GitHub PR, branch, commit, or URL exists;
 5. never claim execution, publication, merge, or closeout unless the target system proves it.
 
-If a Linear write is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, route the recovery into `/connector-safety` immediately. Do not paraphrase the payload from memory or retry the same mutation shape from the same surface.
+If a Linear write is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, route the recovery into `connector-safety` immediately. Do not paraphrase the payload from memory or retry the same mutation shape from the same surface.
 
 Use the same discover/read/mutate/discover/readback loop for issue create or update, project moves, document creation or updates, milestone changes, relation or blocker changes, labels, statuses, comments, and assignee fields.
 
@@ -66,7 +61,7 @@ For ordinary worker issues, keep the safe default as `assignee: me`, with `deleg
 When a Linear issue is intended to become worker-send-ready for repo or code execution, always compose this stack:
 
 ```text
-/using-superpowers-plus -> linear-issue-shaping -> verification-before-completion
+using-superpowers-plus -> linear-issue-shaping -> verification-before-completion
 ```
 
 Use this skill first to fetch or create the durable Linear issue surface, classify the lane, and preserve the Linear state convention.
@@ -81,7 +76,10 @@ Approved plans live in the repo under `.agents/plans/`. After a plan merges, pla
 
 If the approved plan is stale but the drift is repairable and stays inside the approved scope, repair the repo-resident plan in the execution branch, keep the route-state block current, and include the repaired plan in the execution PR. If the drift changes scope materially, invalidates the approved direction, or makes execution unsafe, stop for human review.
 
-Every execution PR must include the updated repo-resident plan file with checked boxes. If the plan was stale, the execution PR must include the repaired plan plus implementation. If the plan was fresh, the execution PR must still include the updated checked-off plan.
+Keep an approved plan current while it governs implementation and review. When
+the PR completes it, follow the consumer's completed-artifact custody rule:
+promote durable decisions and remove the finished planning artifacts from the
+final tracked tree. A disposable scratch copy is optional and proves nothing.
 
 Return to this skill after those gates to write or update the Linear issue only when the latest instruction authorizes mutation.
 

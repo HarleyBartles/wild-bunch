@@ -4,7 +4,7 @@ metadata:
   source_category: first_party
 interface:
   display_name: Repo Worker Base
-  short_description: Use when repo-backed work needs portable hygiene, stage composition, or publication boundaries.
-  default_prompt: Use repo-worker-base for repo-backed work. Read the matching baseline and the consuming repository's local stage runbook before invoking the selected Superpowers lane; use the local hygiene/layout policy for repository-specific paths, commands, exclusions, CI, and exceptions.
+  short_description: Portable hygiene and publication boundaries for repository work.
+  default_prompt: Use repo-worker-base to apply portable worktree, source-custody, validation, and publication boundaries after using-superpowers-plus selects the workflow owner.
 policy:
   allow_implicit_invocation: true

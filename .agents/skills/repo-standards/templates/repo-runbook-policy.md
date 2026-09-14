@@ -1,6 +1,7 @@
 # Repo Runbook Policy
 
-This repo follows the `repo-standards` skill. Invoke `/using-superpowers-plus` first to route to the relevant stage skill, then invoke `/repo-standards` when the task touches repo shape, runbook layout, or scaffolds.
+This repo follows the `repo-standards` layout. Invoke `using-superpowers-plus`
+once and follow its handoff; local runbooks supply repository-specific deltas.
 
 ## Standard-to-local mapping
 

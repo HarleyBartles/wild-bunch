@@ -10,14 +10,11 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when working with the Linear connector surface, choosing the right tool
-    call, or finding create/update tools exposed under save_* rather than create_*
-    or update_*.
   use_when:
-  - Use when working with the Linear connector surface, choosing the right tool call,
+  - working with the Linear connector surface, choosing the right tool call,
     or finding create/update tools exposed under save_* rather than create_* or update_*.
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
+  - another more specific skill owns this task.
 license: MIT
 ---
 # Using Linear MCP

@@ -1,8 +1,7 @@
 ---
 name: receiving-code-review
-description: Use when receiving code review feedback, before implementing suggestions,
-  especially if feedback seems unclear or technically questionable - requires technical
-  rigor and verification, not performative agreement or blind implementation
+description: Use when received code-review feedback is unclear, technically questionable,
+  or needs verification before implementation.
 metadata:
   source-id: receiving-code-review
   source-path: codex-marketplace/plugins/superpowers-plus/skills/receiving-code-review/SKILL.md
@@ -10,17 +9,14 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when receiving code review feedback, before implementing suggestions,
-    especially if feedback seems unclear or technically questionable - requires technical
-    rigor and verification, not performative agreement or blind implementation
   use_when:
-  - Use when receiving code review feedback before implementing suggestions.
-  - Use when feedback is unclear or technically questionable.
-  - Use when the suggestion needs verification against codebase reality.
+  - receiving code review feedback before implementing suggestions.
+  - feedback is unclear or technically questionable.
+  - the suggestion needs verification against codebase reality.
   do_not_use_when:
-  - Do not use when there is no external feedback to evaluate.
-  - Do not use to dismiss feedback without technical reasoning.
-  - Do not use to implement suggestions blindly.
+  - there is no external feedback to evaluate.
+  - to dismiss feedback without technical reasoning.
+  - to implement suggestions blindly.
   related_skills:
   - requesting-code-review
   - iterative-review
@@ -31,7 +27,7 @@ license: MIT
 ---
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/receiving-code-review/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Code Review Reception
 

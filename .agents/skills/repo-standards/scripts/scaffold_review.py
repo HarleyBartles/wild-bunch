@@ -41,7 +41,7 @@ def _has_required_boilerplate(content: str) -> bool:
     return (
         "# Review entry point" in content
         and ".agents/doctrine/repo-runbook-policy.md" in content
-        and "/requesting-code-review" in content
+        and "using-superpowers-plus" in content
     )
 
 
@@ -53,7 +53,7 @@ examples:
   %(prog)s --force               overwrite REVIEW.md with the template
 
 The template expects the file to keep the `# Review entry point` heading and
-references to `.agents/doctrine/repo-runbook-policy.md` and `/requesting-code-review`.
+references to `.agents/doctrine/repo-runbook-policy.md` and `using-superpowers-plus`.
 
 exit codes:
   0  REVIEW.md is present/valid or was written

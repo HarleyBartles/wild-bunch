@@ -47,7 +47,7 @@ fresh context, a different selected model, or deterministic verification.
 ## Mapping to shared custom-profile roles
 
 These are the Codex MultiAgentV1 equivalents of the Devin Desktop custom
-profiles. Use them when a sibling skill says "use `/selecting-a-subagent`" for a
+profiles. Use them when a sibling skill says "use `selecting-a-subagent`" for a
 role.
 
 | Shared role | Codex V1 route |

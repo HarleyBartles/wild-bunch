@@ -10,10 +10,10 @@ metadata:
   owner: Harley Bartles
   scope: Run the repository's generate_index_mesh.py and validate_agent_mesh.py commands.
   use_when:
-  - Use when INDEX.md files are stale after skill, plugin, or source changes.
-  - Use when verifying the navigation mesh, local markdown links, and doctrine routing in CI or as a pre-commit gate.
+  - INDEX.md files are stale after skill, plugin, or source changes.
+  - verifying the navigation mesh, local markdown links, and doctrine routing in CI or as a pre-commit gate.
   do_not_use_when:
-  - Do not use when installing or refreshing skills from the plugin source.
+  - installing or refreshing skills from the plugin source.
   related_skills:
   - repo-standards
   - refreshing-installed-skills

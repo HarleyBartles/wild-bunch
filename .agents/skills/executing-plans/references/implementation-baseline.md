@@ -21,8 +21,9 @@ publication proof and any required issue-control update.
 
 ## Validation and publication gate
 
-Run the repository- and issue-specific validation. Record each command, result,
-and skipped check with its reason. Generated output is valid only when its
+Run the repository- and issue-specific validation. Report a skipped material
+check and its consequence; do not reproduce successful command transcripts
+that the canonical gate already proves. Generated output is valid only when its
 owner's write path and check path agree. Before closeout, review the changed
 files, final diff, and working-tree state.
 
@@ -38,7 +39,6 @@ Return GREEN only when all relevant facts are true:
 
 - source work is complete and generated surfaces are current;
 - the branch was created from or updated onto current required main;
-- the final full head SHA is recorded;
 - the branch is pushed, or an exact publication blocker is recorded;
 - the PR URL is verified when publication is available;
 - required validation ran, with any skipped checks justified;
@@ -50,20 +50,10 @@ evidence warrants rather than laundering local success into GREEN.
 
 ## Required return evidence
 
-Every repo-backed return includes:
-
-- repository and issue or task identifier;
-- worktree path and task branch;
-- starting main SHA and final full head SHA;
-- whether the branch was created from, rebased onto, or merged with current
-  required main;
-- PR URL, or the exact reason no PR exists;
-- changed source and generated files;
-- validation commands, results, and skipped-check reasons;
-- remote CI and PR state when a PR exists;
-- final working-tree state;
-- GREEN, AMBER, RED, or BLOCKED judgment;
-- remaining blockers, concerns, or follow-up.
+Return the outcome, the PR URL or publication blocker, any material validation
+boundary, and unresolved blockers or follow-up. GitHub and the repository prove
+branch, head, changed-file, and PR metadata; do not transcribe that machine
+state into a parallel checklist.
 
 ## Stop signs
 

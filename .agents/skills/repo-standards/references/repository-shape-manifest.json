@@ -17,12 +17,13 @@
       "optional": false
     },
     {
-      "id": "tools-run",
-      "path": "tools/run.py",
-      "kind": "file",
+      "id": "repo-standards-commands",
+      "path": ".agents/contracts/repo-standards-commands.json",
+      "kind": "command-declaration",
       "source": null,
       "scaffold": null,
-      "optional": false
+      "optional": false,
+      "required_with": "pre-commit-hook"
     },
     {
       "id": "tools-shared-checkout",
@@ -88,29 +89,28 @@
       "optional": false
     },
     {
-      "id": "completed-plans-rule",
-      "path": ".devin/rules/completed-plans.md",
+      "id": "completed-artifacts-doctrine",
+      "path": ".agents/doctrine/completed-artifacts.md",
       "kind": "file",
-      "source": "templates/completed-plans-rule.md",
+      "source": "templates/completed-artifacts.md",
       "optional": false
     },
     {
-      "id": "completed-plans-doctrine",
-      "path": ".agents/doctrine/completed-plans.md",
-      "kind": "file",
-      "source": "templates/completed-plans.md",
-      "optional": false
-    },
-    {
-      "id": "plans-completed-dir",
+      "id": "retired-plans-completed-dir",
       "path": ".agents/plans/completed",
-      "kind": "directory",
+      "kind": "absent",
       "optional": false
     },
     {
-      "id": "specs-completed-dir",
+      "id": "retired-specs-completed-dir",
       "path": ".agents/specs/completed",
-      "kind": "directory",
+      "kind": "absent",
+      "optional": false
+    },
+    {
+      "id": "retired-roadmaps-completed-dir",
+      "path": ".agents/roadmaps/completed",
+      "kind": "absent",
       "optional": false
     }
   ]

@@ -1,8 +1,7 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing
-  or creating PRs - requires running verification commands and confirming output before
-  making any success claims; evidence before assertions always
+description: Use when a claim that work is complete, fixed, passing, or ready needs
+  current evidence before a commit, pull request, or handoff.
 metadata:
   source-id: verification-before-completion
   source-path: codex-marketplace/plugins/superpowers-plus/skills/verification-before-completion/SKILL.md
@@ -10,18 +9,15 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when about to claim work is complete, fixed, or passing, before committing
-    or creating PRs - requires running verification commands and confirming output
-    before making any success claims; evidence before assertions always
   use_when:
-  - Use when about to claim work is complete, fixed, or passing, before committing
+  - about to claim work is complete, fixed, or passing, before committing
     or creating PRs.
-  - Use when a verification command can prove the claim.
-  - Use before any completion claim that should be backed by fresh evidence.
+  - a verification command can prove the claim.
+  - a completion claim should be backed by fresh evidence.
   do_not_use_when:
-  - Do not use when no verification command exists for the claim.
-  - Do not use to override fresh evidence with confidence.
-  - Do not use as a substitute for running the actual verification.
+  - no verification command exists for the claim.
+  - to override fresh evidence with confidence.
+  - a substitute for running the actual verification.
   related_skills:
   - executing-plans
   - subagent-driven-development
@@ -32,7 +28,7 @@ license: MIT
 ---
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/verification-before-completion/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Verification Before Completion
 
@@ -45,10 +41,15 @@ This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, re
 ## The Iron Law
 
 ```
-NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
+NO COMPLETION CLAIMS WITHOUT STATE-BOUND VERIFICATION EVIDENCE
 ```
 
-If you haven't run the verification command in this message, you cannot claim it passes.
+Evidence is fresh when it proves the same tested state (tree/head/staged
+state),
+command and scope, relevant environment, and claim. A conversation turn is
+not a state identifier. Reuse unchanged proof; repeat only for a changed
+state, failure, unresolved concern, nondeterminism, environment drift, or a
+different proof claim.
 
 ## The Gate Function
 
@@ -56,12 +57,15 @@ If you haven't run the verification command in this message, you cannot claim it
 BEFORE claiming any status or expressing satisfaction:
 
 1. IDENTIFY: What command proves this claim?
-2. RUN: Execute the FULL command (fresh, complete)
-3. READ: Full output, check exit code, count failures
-4. VERIFY: Does output confirm the claim?
+2. CHECK STATE: Record the tested tree/head/staged state, relevant environment,
+   command scope, and whether existing evidence still covers the claim
+3. RUN OR REUSE: Execute the named command when state changed or evidence is
+   stale; otherwise reuse the unchanged proof
+4. READ: Full output, check exit code, count failures
+5. VERIFY: Does output confirm the claim?
    - If NO: State actual status with evidence
    - If YES: State claim WITH evidence
-5. ONLY THEN: Make the claim
+6. ONLY THEN: Make the claim
 
 Skip any step = lying, not verifying
 ```

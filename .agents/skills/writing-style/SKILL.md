@@ -10,12 +10,12 @@ metadata:
   owner: Harley Bartles
   scope: Apply bounded voice and reader-fatigue guidance without overriding facts or clarity.
   use_when:
-  - Use when a supplied draft needs an authorised voice review.
-  - Use when repeated or mismatched prose patterns may tire a known audience.
-  - Use when a style concern must be separated from an authorship or detector claim.
+  - a supplied draft needs an authorised voice review.
+  - repeated or mismatched prose patterns may tire a known audience.
+  - a style concern must be separated from an authorship or detector claim.
   do_not_use_when:
-  - Do not use for ordinary drafting when $writing owns the composed workflow.
-  - Do not use to infer authorship, evade detection, or build a private author corpus.
+  - ordinary drafting when writing owns the composed workflow.
+  - to infer authorship, evade detection, or build a private author corpus.
   related_skills:
   - writing
   - writing-with-clarity
@@ -49,7 +49,7 @@ finding conflicts, report it and leave the higher-authority text unchanged.
    conditions. A phrase occurrence alone never licenses repair.
 5. Return the smallest supported guidance, with one of these finding types:
    `observed`, `candidate`, `preserve`, `repair`, or `abstain`.
-6. Recheck every proposed change through $writing-with-clarity so meaning,
+6. Recheck every proposed change through writing-with-clarity so meaning,
    qualification, readability, and deliberate voice survive.
 
 Use `references/profile-contract.md` when maintaining profile data or when the

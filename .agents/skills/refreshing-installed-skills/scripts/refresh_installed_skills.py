@@ -107,14 +107,14 @@ PROVENANCE_PATH = AGENTS_SKILLS_PATH / ".provenance.json"
 
 def _local_skills(config: dict[str, Any]) -> list[str]:
     repo = config.get("repo") or {}
-    prefixes = repo.get("local_skills")
-    if prefixes is None:
-        prefixes = repo.get("local_skill_prefixes", [])
-    return [str(p) for p in prefixes]
-
-
-# Backwards-compatible alias for older consumers
-_local_skill_prefixes = _local_skills
+    if "local_skill_prefixes" in repo:
+        raise ValueError(
+            "legacy local_skill_prefixes is not valid at runtime; migrate it to exact repo.local_skills entries"
+        )
+    local_skills = repo.get("local_skills", [])
+    if not isinstance(local_skills, list):
+        raise ValueError("repo.local_skills must be a list of exact skill names")
+    return [str(name) for name in local_skills]
 
 
 def _is_local_skill_dir(skill_dir: Path, local_skill_names: list[str]) -> bool:
@@ -135,15 +135,15 @@ def _frontmatter_name(skill_dir: Path) -> object:
     return yaml.safe_load("\n".join(lines[1:end_index])).get("name")
 
 
-def _validate_local_skill_dirs(prefixes: list[str]) -> list[Path]:
+def _validate_local_skill_dirs(local_skill_names: list[str]) -> list[Path]:
     if not AGENTS_SKILLS_PATH.is_dir():
         return []
 
     invalid: list[Path] = []
-    for prefix in prefixes:
+    for skill_name in local_skill_names:
         matched: list[Path] = []
         for skill_dir in sorted(AGENTS_SKILLS_PATH.iterdir()):
-            if not _is_local_skill_dir(skill_dir, [prefix]):
+            if not _is_local_skill_dir(skill_dir, [skill_name]):
                 continue
             matched.append(skill_dir)
             try:
@@ -164,20 +164,20 @@ def _validate_local_skill_dirs(prefixes: list[str]) -> list[Path]:
                 print(f"ERROR: local skill {display_path} is invalid: {exc}")
                 invalid.append(skill_dir)
         if not matched:
-            missing = AGENTS_SKILLS_PATH / prefix
-            print(f"ERROR: declared local skill '{prefix}' is not present on disk")
+            missing = AGENTS_SKILLS_PATH / skill_name
+            print(f"ERROR: declared local skill '{skill_name}' is not present on disk")
             invalid.append(missing)
     return invalid
 
 
-def _discover_local_skills(prefixes: list[str]) -> list[str]:
+def _discover_local_skills(local_skill_names: list[str]) -> list[str]:
     """Return sorted, valid repo-local skill directory names."""
     if not AGENTS_SKILLS_PATH.is_dir():
         return []
 
     local_skills: list[str] = []
     for skill_dir in sorted(AGENTS_SKILLS_PATH.iterdir()):
-        if not _is_local_skill_dir(skill_dir, prefixes):
+        if not _is_local_skill_dir(skill_dir, local_skill_names):
             continue
         try:
             if _frontmatter_name(skill_dir) != skill_dir.name:
@@ -203,11 +203,11 @@ def _powershell_cmd() -> list[str]:
     return ["powershell", "-NoProfile", "-File"]
 
 
-def _run_validate_local_skills_extra(check_mode: bool, prefixes: list[str]) -> bool:
+def _run_validate_local_skills_extra(check_mode: bool, local_skill_names: list[str]) -> bool:
     """Run the repo-supplied local-skill validation hook if one exists.
 
-    The hook receives the skills root and any local skill prefixes:
-        scripts/validate_local_skills_extra.sh [--check] <skills-root> <prefix> ...
+    The hook receives the skills root and the exact declared local skill names:
+        scripts/validate_local_skills_extra.sh [--check] <skills-root> <skill-name> ...
     """
     hook_sh = ROOT / "scripts" / "validate_local_skills_extra.sh"
     hook_ps1 = ROOT / "scripts" / "validate_local_skills_extra.ps1"
@@ -229,7 +229,7 @@ def _run_validate_local_skills_extra(check_mode: bool, prefixes: list[str]) -> b
         return True
 
     cmd.append(AGENTS_SKILLS_PATH.relative_to(ROOT).as_posix())
-    cmd.extend(prefixes)
+    cmd.extend(local_skill_names)
 
     result = subprocess.run(
         cmd,
@@ -248,7 +248,7 @@ def _run_validate_local_skills_extra(check_mode: bool, prefixes: list[str]) -> b
 
 
 def _reserved_marketplace_skill_collisions(
-    installed_plugins: list[dict[str, Any]], prefixes: list[str]
+    installed_plugins: list[dict[str, Any]], local_skill_names: list[str]
 ) -> list[tuple[str, str]]:  # noqa: E501
     collisions: list[tuple[str, str]] = []
     for plugin in installed_plugins:
@@ -259,13 +259,13 @@ def _reserved_marketplace_skill_collisions(
         if not isinstance(plugin_name, str):
             plugin_name = "unknown"
         for skill_dir in sorted(skills_path.iterdir()):
-            if skill_dir.is_dir() and skill_dir.name in prefixes:
+            if skill_dir.is_dir() and skill_dir.name in local_skill_names:
                 collisions.append((plugin_name, skill_dir.name))
     return collisions
 
 
 def _expected_marketplace_skill_inventory(
-    installed_plugins: list[dict[str, Any]], prefixes: list[str]
+    installed_plugins: list[dict[str, Any]], local_skill_names: list[str]
 ) -> dict[str, Path]:  # noqa: E501
     expected: dict[str, Path] = {}
     for plugin in installed_plugins:
@@ -273,19 +273,21 @@ def _expected_marketplace_skill_inventory(
         if skills_path is None:
             continue
         for skill_dir in sorted(skills_path.iterdir()):
-            if skill_dir.is_dir() and skill_dir.name not in prefixes:
+            if skill_dir.is_dir() and skill_dir.name not in local_skill_names:
                 expected.setdefault(skill_dir.name, skill_dir)
     return expected
 
 
-def _marketplace_skill_inventory_is_current(installed_plugins: list[dict[str, Any]], prefixes: list[str]) -> bool:
-    expected = _expected_marketplace_skill_inventory(installed_plugins, prefixes)
+def _marketplace_skill_inventory_is_current(
+    installed_plugins: list[dict[str, Any]], local_skill_names: list[str]
+) -> bool:
+    expected = _expected_marketplace_skill_inventory(installed_plugins, local_skill_names)
     if not expected or not AGENTS_SKILLS_PATH.is_dir():
         return False
     installed_marketplace_names = {
         skill_dir.name
         for skill_dir in AGENTS_SKILLS_PATH.iterdir()
-        if skill_dir.is_dir() and skill_dir.name not in prefixes
+        if skill_dir.is_dir() and skill_dir.name not in local_skill_names
     }
     return installed_marketplace_names == set(expected) and all(
         not _skill_needs_update(source_skill, AGENTS_SKILLS_PATH / name) for name, source_skill in expected.items()
@@ -471,7 +473,7 @@ def _install_plugin_skills(
     plugin: dict[str, Any],
     check_mode: bool = False,
     synced_skill_names: set[str] | None = None,
-    prefixes: list[str] | None = None,
+    local_skill_names: list[str] | None = None,
 ) -> bool:  # noqa: E501
     """Install skills from a single plugin."""
     skills_path = _get_plugin_skills_path(plugin)
@@ -485,8 +487,8 @@ def _install_plugin_skills(
     if synced_skill_names is None:
         synced_skill_names = set()
 
-    if prefixes is None:
-        prefixes = []
+    if local_skill_names is None:
+        local_skill_names = []
 
     installed_any = False
     for skill_dir in sorted(skills_path.iterdir()):
@@ -495,7 +497,7 @@ def _install_plugin_skills(
 
         dest_skill = AGENTS_SKILLS_PATH / skill_dir.name
 
-        if skill_dir.name in prefixes:
+        if skill_dir.name in local_skill_names:
             raise ValueError(f"Marketplace skill '{skill_dir.name}' collides with a declared local skill name")
 
         # Collision guard: if two plugins project a skill with the same name,
@@ -527,7 +529,7 @@ def _install_plugin_skills(
 
 
 def _clean_orphan_skills(
-    check_mode: bool = False, synced_skill_names: set[str] | None = None, prefixes: list[str] | None = None
+    check_mode: bool = False, synced_skill_names: set[str] | None = None, local_skill_names: list[str] | None = None
 ) -> bool:  # noqa: E501
     """Remove skills that don't belong to any installed plugin."""
     if not AGENTS_SKILLS_PATH.exists():
@@ -536,15 +538,15 @@ def _clean_orphan_skills(
     if synced_skill_names is None:
         synced_skill_names = set()
 
-    if prefixes is None:
-        prefixes = []
+    if local_skill_names is None:
+        local_skill_names = []
 
     cleaned_any = False
     for skill_dir in sorted(AGENTS_SKILLS_PATH.iterdir()):
         if not skill_dir.is_dir():
             continue
 
-        if _is_local_skill_dir(skill_dir, prefixes):
+        if _is_local_skill_dir(skill_dir, local_skill_names):
             continue
 
         if skill_dir.name not in synced_skill_names:
@@ -657,20 +659,59 @@ def _write_provenance(
 
 
 def _is_submodule(repo_root: Path) -> bool:
-    result = subprocess.run(
-        ["git", "rev-parse", "--show-superproject-working-tree"],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        env=_stripped_env(),
-    )
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-superproject-working-tree"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            env=_stripped_env(),
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return False
     return result.returncode == 0 and result.stdout.strip()
+
+
+def _marketplace_source_drift(repo_root: Path) -> str | None:
+    """Return the origin/main tip if the marketplace-source submodule is behind it.
+
+    Uses a read-only `git ls-remote` so --check can detect a stale pin without
+    changing the working tree.
+    """
+    submodule = _marketplace_source_path(repo_root)
+    if not _is_submodule(submodule):
+        return None
+    try:
+        remote = subprocess.run(
+            ["git", "-C", str(submodule), "ls-remote", "origin", "refs/heads/main"],
+            capture_output=True,
+            text=True,
+            check=True,
+            env=_stripped_env(),
+        )
+        lines = remote.stdout.strip().splitlines()
+        if not lines:
+            return None
+        main_tip = lines[0].split()[0]
+        current = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=submodule,
+            capture_output=True,
+            text=True,
+            check=True,
+            env=_stripped_env(),
+        ).stdout.strip()
+        if main_tip == current:
+            return None
+        return main_tip
+    except (subprocess.CalledProcessError, OSError):
+        return None
 
 
 def _roll_marketplace_source(repo_root: Path) -> None:
     """Roll the marketplace-source submodule to origin/main when present."""
     submodule = _marketplace_source_path(repo_root)
-    if not submodule.is_dir() or not (submodule / ".git").exists():
+    if not _is_submodule(submodule):
         return
     print("Rolling marketplace-source to origin/main...")
     try:
@@ -704,9 +745,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "Only pass this if you intend to mutate this checkout.",
     )
     parser.add_argument(
-        "--roll-marketplace-source",
-        action="store_true",
-        help="Roll the marketplace-source submodule to origin/main before syncing",
+        "--no-roll-marketplace-source",
+        dest="roll_marketplace_source",
+        action="store_false",
+        default=True,
+        help="Do not roll the marketplace-source submodule to origin/main before syncing",
     )
     return parser.parse_args(argv)
 
@@ -728,17 +771,25 @@ def main(argv: list[str] | None = None) -> int:
     if not args.check and not shared_checkout.approve_mutation(ROOT, _SCRIPT_NAME, args.allow_shared_checkout):
         return 1
 
-    if not args.check and args.roll_marketplace_source:
-        _roll_marketplace_source(ROOT)
+    marketplace_source_drift: str | None = None
+    if args.roll_marketplace_source:
+        if not args.check:
+            _roll_marketplace_source(ROOT)
+        else:
+            marketplace_source_drift = _marketplace_source_drift(ROOT)
 
     config = _load_marketplace_config()
-    prefixes = _local_skill_prefixes(config)
+    try:
+        local_skill_names = _local_skills(config)
+    except ValueError as exc:
+        print(f"ERROR: {exc}")
+        return 1
 
-    invalid_local_skills = _validate_local_skill_dirs(prefixes)
+    invalid_local_skills = _validate_local_skill_dirs(local_skill_names)
     if invalid_local_skills:
         return 1
 
-    if not _run_validate_local_skills_extra(check_mode=args.check, prefixes=prefixes):
+    if not _run_validate_local_skills_extra(check_mode=args.check, local_skill_names=local_skill_names):
         return 1
 
     installed_plugins = _get_installed_plugins(config)
@@ -747,11 +798,11 @@ def main(argv: list[str] | None = None) -> int:
         print("No plugins with INSTALLED_BY_DEFAULT policy found")
         return 0
 
-    local_skills = _discover_local_skills(prefixes)
-    expected_skills = _expected_marketplace_skill_inventory(installed_plugins, prefixes)
+    local_skills = _discover_local_skills(local_skill_names)
+    expected_skills = _expected_marketplace_skill_inventory(installed_plugins, local_skill_names)
     synced_skill_count = len(expected_skills)
 
-    collisions = _reserved_marketplace_skill_collisions(installed_plugins, prefixes)
+    collisions = _reserved_marketplace_skill_collisions(installed_plugins, local_skill_names)
     if collisions:
         for plugin_name, skill_name in collisions:
             print(f"ERROR: Marketplace plugin '{plugin_name}' exposes declared local skill name '{skill_name}'")
@@ -803,8 +854,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     provenance_needs_update = _provenance_needs_update(existing_provenance, new_state)
 
-    if not args.force and existing_provenance and not provenance_needs_update:
-        if _marketplace_skill_inventory_is_current(installed_plugins, prefixes) and deploy_check == 0:
+    if not args.force and existing_provenance and not provenance_needs_update and marketplace_source_drift is None:
+        if _marketplace_skill_inventory_is_current(installed_plugins, local_skill_names) and deploy_check == 0:
             print(f"Skills already synced at manifest SHA {current_manifest_sha}. Use --force to re-copy.")
             print(
                 f"Synced skills: {existing_provenance.get('syncedSkills')} from "
@@ -833,7 +884,7 @@ def main(argv: list[str] | None = None) -> int:
         plugin_name = plugin.get("name", "unknown")
         print(f"\nProcessing plugin: {plugin_name}")
         if _install_plugin_skills(
-            plugin, check_mode=args.check, synced_skill_names=synced_skill_names, prefixes=prefixes
+            plugin, check_mode=args.check, synced_skill_names=synced_skill_names, local_skill_names=local_skill_names
         ):  # noqa: E501
             changes_made = True
 
@@ -842,7 +893,7 @@ def main(argv: list[str] | None = None) -> int:
     if _clean_orphan_skills(
         check_mode=args.check,
         synced_skill_names=synced_skill_names,
-        prefixes=prefixes,
+        local_skill_names=local_skill_names,
     ):
         changes_made = True
 
@@ -864,6 +915,10 @@ def main(argv: list[str] | None = None) -> int:
     # Provenance metadata drift (plugin list, local skills, manifest SHA) is also
     # a change worth reporting and writing.
     changes_made = changes_made or provenance_needs_update
+
+    # A stale marketplace-source pin is itself a change; --apply would roll it.
+    if marketplace_source_drift is not None:
+        changes_made = True
 
     # Write provenance when the skill tree or provenance state changed. A forced
     # byte-identical refresh must remain a no-diff operation.

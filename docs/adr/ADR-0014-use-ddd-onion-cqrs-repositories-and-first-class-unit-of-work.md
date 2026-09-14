@@ -95,7 +95,7 @@ Live as architecture doctrine, with application-facing Unit of Work and reposito
 - `src/WildBunch.Application/Games/Queries/`
 - `src/WildBunch.Persistence/DependencyInjection.cs`
 - `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`
-- `.agents/architecture-hygiene.md`
+- `.agents/doctrine/architecture-guardrails.md`
 - `docs/adr/ADR-0002-gamesession-is-the-command-aggregate-root.md`
 - `docs/adr/ADR-0003-composed-jsonb-session-persistence.md`
 - `docs/adr/ADR-0004-postgresql-local-development-and-validation-lane.md`

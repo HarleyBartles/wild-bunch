@@ -22,7 +22,7 @@ Use this template to dispatch an `implementer` subagent for a `node-finding-fix`
 
 ## Verification
 
-- {Consumer preflight command to run, e.g., `py -3 tools/run.py ci --check`}
+- {Consumer's canonical preflight command to run}
 - {Expected passing output or assertion}
 - {Any targeted checks to confirm the finding is resolved}
 

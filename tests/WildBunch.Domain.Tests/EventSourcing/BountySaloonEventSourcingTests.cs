@@ -18,7 +18,7 @@ namespace WildBunch.Domain.Tests.EventSourcing;
 /// Event-sourcing tests for the BUNCH-80 bounty/saloon migration.
 /// Verifies that LookAroundSaloon produces typed events (SaloonPersonOfInterestSpotted)
 /// and that the clock advances via TownActionContextEntered.
-/// See ADR-0028 and .agents/superpowers/plans/2026-06-23-bunch-80-phase1-events-and-apply.md.
+/// See ADR-0028.
 /// </summary>
 public sealed class BountySaloonEventSourcingTests
 {

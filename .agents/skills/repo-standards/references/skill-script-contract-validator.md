@@ -2,7 +2,8 @@
 
 ## What it checks
 
-`repo-standards/scripts/validate_skill_scripts.py` walks every installed skill Python script under `.agents/skills/*/scripts/*.py` and verifies the contract from `.agents/specs/completed/2026-08-04-skill-script-cli-contract-design.md`:
+`repo-standards/scripts/validate_skill_scripts.py` walks every installed skill
+Python script under `.agents/skills/*/scripts/*.py` and verifies this contract:
 
 - `--help` exits `0` and contains a `usage:` line.
 - `--help` declares the script classification: `read-only`, `mutating`, or `mixed`.
@@ -10,7 +11,8 @@
 
 ## When to run it
 
-Run it as part of `tools/run repo-standards --check` or `tools/run ci --check`. CI will fail if any non-deferred script fails.
+Run it as part of the consumer's canonical repository-standards or CI check.
+CI will fail if any non-deferred script fails.
 
 ## How to fix a failure
 

@@ -11,7 +11,7 @@ Use this reference when the Playwright MCP surface does not cover the task.
 ## Procedure
 
 1. Confirm absence with `mcp_list_tools` for `mcp-playwright`.
-2. Run `/inspecting-the-environment` to confirm Playwright is installed.
+2. Run `inspecting-the-environment` to confirm Playwright is installed.
 3. Choose the right non-MCP surface:
    - **Browser preview** (`browser_preview`) for live interaction.
    - **`py -3 -m playwright` / `npx playwright`** for CLI-only tasks.

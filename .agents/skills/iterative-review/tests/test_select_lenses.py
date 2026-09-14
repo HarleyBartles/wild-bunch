@@ -90,10 +90,10 @@ class TestSelectLensesHelpers(unittest.TestCase):
         self.assertTrue(module._glob_match("**/scripts/**", "tools/scripts/run.py"))
         self.assertTrue(module._glob_match("**/scripts/**", "scripts/foo.py"))
         self.assertTrue(module._glob_match("**/*.py", "run.py"))
-        self.assertTrue(module._glob_match("tools/*.py", "tools/run.py"))
+        self.assertTrue(module._glob_match("tools/*.py", "tools/runner.py"))
         self.assertFalse(module._glob_match("tools/*.py", "tools/sub/run.py"))
-        self.assertFalse(module._glob_match("tools/*.py", "src/tools/run.py"))
-        self.assertTrue(module._glob_match("**/tools/*.py", "src/tools/run.py"))
+        self.assertFalse(module._glob_match("tools/*.py", "src/tools/runner.py"))
+        self.assertTrue(module._glob_match("**/tools/*.py", "src/tools/runner.py"))
 
     def test_common_inputs_do_not_force_selection(self):
         module = _load_select_lenses()

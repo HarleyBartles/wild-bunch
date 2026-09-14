@@ -10,19 +10,11 @@ metadata:
   owner: Harley Bartles
   scope: Cross-repo runbook layout, invocation, workflow order, and handoff requirements.
   use_when:
-  - Use when reading, creating, updating, or aligning any repo-local runbook.
-  - Use when determining the workflow order for repo-backed design, planning, implementation, or review.
-  - Use when a repo's runbook set is missing or misaligned with the standard.
+  - reading, creating, updating, or aligning any repo-local runbook.
+  - determining the workflow order for repo-backed design, planning, implementation, or review.
+  - a repo's runbook set is missing or misaligned with the standard.
   do_not_use_when:
-  - Do not use for generic repo hygiene such as worktree, branch, source custody, or publication boundaries — defer to repo-worker-base for those.
-  use_with:
-  - repo-worker-base
-  - inspecting-the-environment
-  - brainstorming
-  - writing-plans
-  - executing-plans
-  - subagent-driven-development
-  - requesting-code-review
+  - generic repo hygiene such as worktree, branch, source custody, or publication boundaries — defer to repo-worker-base for those.
 license: MIT
 ---
 
@@ -40,20 +32,17 @@ Each repo supplies a thin overlay at `.agents/doctrine/repo-runbook-policy.md` t
 | How a repo's shape should be checked/applied | [references/repository-shape-standard.md](references/repository-shape-standard.md) and [references/repository-shape-manifest.json](references/repository-shape-manifest.json) |
 | How preflight, pre-commit, and CI relate | [references/ci-validation-pipeline.md](references/ci-validation-pipeline.md) |
 | The repo's local runbook mappings | `.agents/doctrine/repo-runbook-policy.md` in the consuming repo |
-| Repo hygiene (worktree, branch, validation, publication) | `/repo-worker-base` |
+| Repo hygiene (worktree, branch, validation, publication) | `repo-worker-base` |
 | Scratch workspace layout and cleanup | [references/scratch-workspace-policy.md](references/scratch-workspace-policy.md) |
 | Skill-bundled script CLI contract failures | [references/skill-script-contract-validator.md](references/skill-script-contract-validator.md) |
 | Vendor subagent profile deployment | [references/vendor-profile-deployment.md](references/vendor-profile-deployment.md) |
 
 ## Composition contract
 
-For any runbook work, use:
-
-```text
-repo-standards -> repo-worker-base -> local runbook -> selected Superpowers lane
-```
-
-`repo-standards` supplies the universal runbook standard and workflow order. `repo-worker-base` supplies worktree, branch, validation, and publication boundaries. The local runbook supplies repo-specific details. The Superpowers lane supplies stage technique.
+`using-superpowers-plus` is the sole bootstrap and composition router. It
+selects the required hygiene and stage owners; the selected stage skill reads
+the local runbook for repository-specific paths, commands, constraints, and
+evidence. `repo-standards` does not recreate that routing sequence.
 
 ## Workflow order
 
@@ -63,18 +52,17 @@ The canonical repo-backed workflow is:
 design -> planning -> implementing -> review
 ```
 
-`repo-standards` is a check-and-align tool for repo shape and runbook layout, not a first-turn router. Do not invoke it before `/using-superpowers-plus`.
+`repo-standards` is a check-and-align tool for repo shape and runbook layout, not a first-turn router. Do not invoke it before `using-superpowers-plus`.
 
-After the owning Superpowers stage skill has routed you (e.g., `/writing-plans` for planning), invoke `/repo-standards` when:
+After the owning Superpowers+ stage skill has routed you (e.g., `writing-plans` for planning), invoke `repo-standards` when:
 - the stage skill explicitly tells you to verify or apply repo shape,
 - the repo's `AGENTS.md` or local runbook points you to `repo-standards`,
 - the task involves scaffolds, runbook layout, or the `repository-shape-manifest.json`.
 
-The typical `repo-standards` workflow is:
+After routing, the `repo-standards` workflow is:
 1. Read `references/repository-runbook-standard.md` and `references/repository-shape-standard.md`.
-2. Invoke `/repo-worker-base` if the work touches worktree, branch, validation, or publication.
-3. Read the repo's `.agents/doctrine/repo-runbook-policy.md`.
-4. Apply or check the surfaces the stage skill needs.
+2. Read the repo's `.agents/doctrine/repo-runbook-policy.md`.
+3. Apply or check the surfaces the routed owner needs.
 
 ## Script usage notes
 

@@ -34,7 +34,7 @@ Use this checklist as the core of the review:
 1. **Security / secrets exposure (CWE-200).** Scan for real identifiers or secrets that should not be in source: 17–20 digit snowflake IDs, tokens, API keys, email addresses, private IP addresses, or any value redacted elsewhere. Use `<PLACEHOLDER>` or env-var instructions.
 2. **SKILL.md frontmatter schema.** `license` must be a top-level field; `name` and `description` must be top-level; `metadata` must not silently swallow fields or contain unexpected keys.
 3. **Skill-to-skill path consistency.** Any instruction pointing at a helper script must use the canonical current path. Watch for stale cross-skill references.
-4. **Marketplace tooling correctness.** `new_plugin.py` and `tools/run.py` have correct exit codes, `mutating` tags, and `--check`/`--apply` semantics.
+4. **Marketplace tooling correctness.** Repository-owned tooling has correct exit codes, mutation tags, and preview/apply semantics where the consumer contract defines them.
 5. **Generated/index surfaces.** `plugin-roots.json`, `bundle-manifest.json`, `repo-index/**`, and `.agents/plugins/marketplace.json` are consistent and do not lose fields.
 6. **Reference file hygiene.** Markdown table rows have a closing `|`. Examples use `py -3`. No real IDs in examples or maps.
 7. **Spec/plan drift.** The diff implements the linked plan/spec and does not introduce unscoped packs or features.

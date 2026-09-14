@@ -5,19 +5,23 @@ This file describes the surfaces `repo-standards` checks and can apply. It is th
 ## Required surfaces
 
 - `.agents/plugins/marketplace-source` as a git submodule pointing at the marketplace source.
-- `.agents/plugins/marketplace.json` with `repo.local_skills` configured.
-- `tools/run.py` - the repo's canonical `ci` (and other) task runner. See [ci-validation-pipeline.md](ci-validation-pipeline.md) for the contract.
-- `.git/hooks/pre-commit` wired to `tools/run.py ci --apply`. The hook is validated by contract (it must be executable on POSIX; it must carry a `#!` shebang on Windows/NT where the executable bit is not reliably represented; it must run `tools/run.py ci --apply`; and it must enable `errexit`, `nounset`, and `pipefail`), not by byte-for-byte comparison to a template.
+- `.agents/plugins/marketplace.json` with exact repo-local skill identifiers in `repo.local_skills`; naming prefixes are not required.
+- `.agents/contracts/repo-standards-commands.json` declaring the consumer's canonical `apply` and `check` command vectors whenever the `pre-commit-hook` surface is enabled. `repo-standards` validates this declaration but does not invent repository-specific commands; a consumer must supply it before `--apply` can install or repair the hook. Repositories that explicitly except the hook also except this dependent declaration.
+- The consumer's canonical validation capability, declared in its local repository guidance. See [ci-validation-pipeline.md](ci-validation-pipeline.md) for the contract.
+- `.git/hooks/pre-commit` wired to the consumer's canonical apply capability followed by its canonical check capability. The hook is validated by contract (it must be executable on POSIX; it must carry a `#!` shebang on Windows/NT where the executable bit is not reliably represented; it must apply and check the exact staged snapshot; it must preserve and restore unstaged/untracked work; it must enable `errexit`, `nounset`, and `pipefail`). Repository-local wrapper lines are allowed, but the canonical staged-snapshot command skeleton from the template must remain intact and in order so a marker-only/no-op hook cannot certify itself.
 - `.agents/doctrine/repo-runbook-policy.md` mapping the repo to `repo-standards`.
+- `.agents/contracts/unslop/` for binding repo-specific anti-slop profiles when
+  the consumer maintains them. Justified subsystem overlays use
+  `<scope>/.agents/contracts/unslop/`; generic reusable profiles remain owned
+  by the portable `unslop-profiles` skill.
 - `REVIEW.md` at the repo root pointing to the review runbook and required skill invocations.
 - `CONTRIBUTING.md` at the repo root as the contributor entry point.
 - `.gitignore` at the repo root, free of stale `.agents/superpowers/sdd/**` or `!.agents/superpowers/sdd/.gitignore` rules.
 - `.agents/runbooks/<standard-runbook>.md` for the core and declared runbook set.
 - Root `AGENTS.md` as a router with five core sections and a routing table.
 - `.agents/runbooks/AGENTS.md` as an optional router for the runbook set (may be scaffolded by `scaffold-runbooks`).
-- `.agents/plans/completed/` and `.agents/specs/completed/` as the historical archive for in-flight plans and specs that have been completed. `repo-standards --apply` creates these directories and places a `.gitkeep` placeholder in each so they survive a clean checkout.
-- `.agents/doctrine/completed-plans.md` stating that completed plans/specs are historical context, not live pattern sources.
-- `.devin/rules/completed-plans.md` as a conditional trigger on completed plan/spec files, routing to `.agents/doctrine/completed-plans.md`.
+- `.agents/doctrine/completed-artifacts.md` stating that completed planning artifacts leave the tracked tree and durable decisions belong in ADRs or current doctrine.
+- No tracked `completed/` archive under `.agents/plans/`, `.agents/specs/`, or `.agents/roadmaps/`.
 
 ## Router AGENTS.md model
 
@@ -55,18 +59,21 @@ Use these idempotent scripts to create missing user-content surfaces. The agent 
 
 ## Exceptions
 
-Repos may record surface exceptions in the `## Exceptions` section of `.agents/doctrine/repo-runbook-policy.md` using the surface `id` (one per line). `repo-standards --check` and `--apply` skip those surfaces.
+Repos may record surface exceptions in the `## Exceptions` section of `.agents/doctrine/repo-runbook-policy.md` using the surface `id` (one per line). `repo-standards --check` and `--apply` skip those surfaces. A surface named by another surface's `required_with` relationship cannot be excepted while the dependent surface remains enabled; that configuration is drift and `--apply` fails before mutation.
 
 ## Local overrides
 
 Each repo supplies its own `repo.local_skills` in `.agents/plugins/marketplace.json` so local skills are not pruned by `refreshing-installed-skills`.
+Entries are complete skill directory/frontmatter names and are matched exactly.
+Legacy `local_skill_prefixes` input is accepted only by `scaffold-marketplace-json`,
+which expands matching directories into explicit names before removing the legacy key.
 
 ## SDD scratch
 
 The Superpowers+ SDD workspace lives outside the repo at:
 
 ```
-<repo-root>/../_agent-scratch/<branch>/<plan-basename>/
+<main-checkout>/../_agent-scratch/<repo-name>/<branch>/<plan-basename>/
 ```
 
 SDD outputs (task briefs, implementer reports, review packages, and progress
@@ -80,3 +87,13 @@ The root `.gitignore` must not contain a stale in-repo rule such as:
 ```
 
 `scaffold-gitignore` removes the stale rule and any leftover `.agents/superpowers/sdd/.gitignore` directory from older repo layouts.
+
+## Completed artifacts
+
+Completed plans, specifications, roadmaps, checkpoints, and similar artifacts
+leave the tracked tree when their work is complete. Git history remains the
+immutable record. An optional convenience copy may live under the central
+`_agent-scratch/<repo-name>/completed/<artifact-type>/` store. It is disposable,
+not branch-scoped, and not evidence.
+Promote enduring architecture decisions to ADRs and operating rules to current
+doctrine or runbooks before removing the artifacts.

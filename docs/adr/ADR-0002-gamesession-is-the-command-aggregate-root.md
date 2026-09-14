@@ -81,7 +81,7 @@ Live. The domain and command flow already route through `GameSession`.
 
 - 2026-06-01 - live: `GameSession` remains the mutable live-play aggregate root and command handlers persist it through the repository boundary.
 - 2026-06-01 - clarified: `GameSession` can contain real session-owned aggregate/subaggregate boundaries, not just flat helper components.
-- 2026-07-01 - live: the child-component extraction pattern (`BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, `ActionContextTracker`) is now concrete. See `.agents/docs/game-session-decomposition-audit.md` for the current inventory and trajectory. The BUNCH-67/68/72-era "future sub-aggregate splits" language is superseded by this concrete pattern.
+- 2026-07-01 - live: the child-component extraction pattern (`BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, `ActionContextTracker`) is now concrete. The BUNCH-67/68/72-era "future sub-aggregate splits" language is superseded by this concrete pattern.
 
 ## Related Stable Source Surfaces
 
@@ -92,7 +92,6 @@ Live. The domain and command flow already route through `GameSession`.
 - `src/WildBunch.Domain/Game/InvestigationLoop.cs`
 - `src/WildBunch.Domain/Game/StoreLoop.cs`
 - `src/WildBunch.Domain/Game/ActionContextTracker.cs`
-- `.agents/docs/game-session-decomposition-audit.md`
 - `src/WildBunch.Domain/Cases/CaseFile.cs`
 - `src/WildBunch.Domain/Travel/TravelJourney.cs`
 - `src/WildBunch.Domain/Travel/TravelModels.cs`
@@ -108,13 +107,14 @@ Live. The domain and command flow already route through `GameSession`.
 
 ## Proof of Implementation or Explicit Non-Implementation
 
-`GameSession` is a sealed aggregate root in the domain, command handlers persist it through `IGameSessionRepository`, and the repository rehydrates the session back through the same boundary. Five internal child domain components (`BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, `ActionContextTracker`) own cohesive state and decision logic under the session root; see `.agents/docs/game-session-decomposition-audit.md` for the audit.
+`GameSession` is a sealed aggregate root in the domain, command handlers persist it through `IGameSessionRepository`, and the repository rehydrates the session back through the same boundary. Five internal child domain components (`BountyLoop`, `JourneyLoop`, `InvestigationLoop`, `StoreLoop`, `ActionContextTracker`) own cohesive state and decision logic under the session root.
 
 ## Review Triggers
 
 - When a second command root becomes concrete and unavoidable.
 - When `GameSession` starts accumulating unrelated responsibilities that no longer belong to a single live-play aggregate.
-- When a new child component is added or an existing one is removed — update `.agents/docs/game-session-decomposition-audit.md` in the same PR.
+- When a new child component changes the aggregate decision, update this ADR and
+  the current architecture guardrails in the same PR.
 
 ## Historical Notes
 

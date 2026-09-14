@@ -1,9 +1,7 @@
 ---
 name: risk-gates
-description: Use when a pre-action risk gate is needed before a mutation, dispatch,
-  canon claim, analogy reliance, or resolution that could violate scope, authority,
-  source truth, canon, safety, or user intent. Routes to the relevant gate reference
-  docs based on the action and project context.
+description: Use when an action, mutation, dispatch, canon claim, analogy, or resolution
+  could violate scope, authority, source truth, safety, canon, or user intent.
 metadata:
   source-id: risk-gates
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/risk-gates/SKILL.md
@@ -11,28 +9,24 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when a pre-action risk gate is needed before a mutation, dispatch, canon
-    claim, analogy reliance, or resolution that could violate scope, authority, source
-    truth, canon, safety, or user intent. Routes to the relevant gate reference docs
-    based on the action and project context.
   use_when:
-  - Use when about to act, dispatch, mutate a durable surface, or treat a claim as
+  - about to act, dispatch, mutate a durable surface, or treat a claim as
     resolved and hidden risk could make the action unsafe or false.
-  - Use when an ambiguous term, scope, target, source, authority, output shape, time
+  - an ambiguous term, scope, target, source, authority, output shape, time
     reference, or vocabulary item could cause the wrong action if guessed.
-  - Use when about to make, change, summarize, publish, dispatch, or rely on a durable
+  - about to make, change, summarize, publish, dispatch, or rely on a durable
     canon or truth claim.
-  - Use when binding constraints (authority, scope, source hierarchy, workflow law,
+  - binding constraints (authority, scope, source hierarchy, workflow law,
     data/schema, provenance/license, canon/doctrine, safety/privacy) may be violated
     by a proposed move.
-  - Use when about to rely on an analogy, metaphor, comparison, or frame to make a
+  - about to rely on an analogy, metaphor, comparison, or frame to make a
     durable decision.
-  - Use when about to run a destructive operation (delete, drop, rewrite history, bulk mutation) that could cause data loss or exceed authority.
+  - about to run a destructive operation (delete, drop, rewrite history, bulk mutation) that could cause data loss or exceed authority.
   do_not_use_when:
-  - Do not use when the action is ordinary, unconstrained, and has no protected surfaces
+  - the action is ordinary, unconstrained, and has no protected surfaces
     or required workflow steps.
-  - Do not use when another more specific skill owns the task.
-  - Do not use when the task is a broad planning or research workflow without a concrete action to gate.
+  - another more specific skill owns the task.
+  - the task is a broad planning or research workflow without a concrete action to gate.
   related_skills:
   - verification-before-completion
   - connector-safety
@@ -107,7 +101,7 @@ Rooms-specific gate profiles (canon pressure, ambiguity preservation, analogy va
 6. Surface only unresolved legitimate choices.
 7. Return green only when the next action has a lawful route, required authority, sufficient evidence, and the correct output surface.
 
-If a single missing fact blocks the next step, invoke `/asking-clarifying-questions` before guessing.
+If a single missing fact blocks the next step, invoke `asking-clarifying-questions` before guessing.
 
 ## Boundaries
 

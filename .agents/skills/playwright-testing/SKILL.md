@@ -9,14 +9,12 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when writing, reviewing, or debugging Playwright end-to-end tests for
-    web applications.
   use_when:
-  - Use when writing or reviewing Playwright end-to-end tests.
-  - Use when choosing selectors, fixtures, or retry and reporting strategies.
-  - Use when running tests across browsers or integrating with CI.
+  - writing or reviewing Playwright end-to-end tests.
+  - choosing selectors, fixtures, or retry and reporting strategies.
+  - running tests across browsers or integrating with CI.
   do_not_use_when:
-  - Do not use when another more specific skill owns the task.
+  - another more specific skill owns the task.
   related_skills:
   - frontend-ux
   - wcag

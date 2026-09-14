@@ -1,8 +1,8 @@
 ---
 name: feature-sliced-design
 description: >
-  Official Feature-Sliced Design (FSD) v2.1 skill for applying the methodology
-  to frontend projects. Use when the task involves organizing project structure
+  Use when a frontend task requires the official Feature-Sliced Design (FSD)
+  v2.1 methodology for organizing project structure
   with FSD layers, deciding where code belongs, placing static assets (images,
   icons, fonts, PDFs), grouping closely related slices, defining public APIs
   and import boundaries, resolving cross-imports or evaluating the @x pattern,

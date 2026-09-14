@@ -6,7 +6,7 @@ Use when the execution skill you are in differs from the `Execution Strategy` wr
 
 When picking an execution lane, follow this order:
 
-1. **Human explicit direction.** The user told you which skill to use, or explicitly chose a lane (for example, by typing `/executing-plans`). This wins over all other signals.
+1. **Human explicit direction.** The user told you which skill to use, or explicitly chose a lane (for example, by typing `executing-plans`). This wins over all other signals.
 2. **Your own assessment of the plan.** If the user did not direct the lane, read the plan, look at the task shape, and choose the lane that fits best.
 3. **The plan's `Execution Strategy`.** This is a recommendation, not a command. It is one input to your decision.
 

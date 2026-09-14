@@ -8,7 +8,7 @@ Use this profile before designing, implementing, reviewing, or dispatching backe
 
 Keep backend work aligned with the architecture stack Wild Bunch has already selected.
 
-This repo is not choosing between generic backend patterns on each issue. The selected posture is Onion/Clean-ish dependency direction, DDD aggregate authority, CQRS command/query separation, typed domain events, event-sourced migrated flows, safe projections, repository/UoW persistence, snapshots as cache/current-state load aid, and PostgreSQL-backed persistence.
+This repo is not choosing between generic backend patterns on each issue. The selected posture is Onion/Clean-ish dependency direction, DDD aggregate authority, CQRS command/query separation, typed domain events, event-sourced flows, safe projections, repository/UoW persistence, snapshots as cache/current-state load aid, and PostgreSQL-backed persistence.
 
 Backend slop is architecture drift: using the right pattern names while moving authority, truth, mutation, persistence, or projection responsibilities to the wrong place.
 
@@ -19,7 +19,8 @@ Before backend work, answer these first:
 - What live game state or player-facing output changes?
 - Which layer owns the rule?
 - Does mutation flow through `GameSession` or the current aggregate route?
-- Is this flow migrated event-sourced, legacy direct, or explicitly transitional?
+- What mutation path does the live source use: event-sourced, direct, or
+  explicitly transitional?
 - Is the data player-known, hidden/internal, or developer-audit only?
 - Does persistence preserve the event/snapshot/read-model distinction?
 - What behavior, replay, projection, persistence, or safety test proves the change?
@@ -36,25 +37,19 @@ Do not relitigate it inside ordinary feature work. Preserve the selected authori
 - API maps transport to application use cases and response shapes. It does not own gameplay truth.
 - Player-facing outputs are safe projections/read models, not raw aggregate internals, raw events, or full audit.
 
-## Legacy And Migration Honesty
+## Mutation-path honesty
 
-The repo is mid-migration. Some flows are event-sourced; some legacy/direct surfaces may remain.
+This profile does not record migration status. Inspect the touched flow in live
+source and classify it as event-sourced, direct, or explicitly transitional.
+Do not call a flow event-sourced until command-path and replay-path behavior are
+materially equivalent.
 
-Do not pretend transitional code is gone. Do not expand legacy surfaces casually. Do not call a flow event-sourced until command-path and replay-path behavior are materially equivalent.
-
-When touching a legacy/direct flow:
-
-- keep the legacy surface bounded
-- do not add new obsolete log/read dependencies
-- state whether the slice migrates the flow or leaves it transitional
-- preserve behavior with characterization tests before structural changes
-- do not route around selected architecture for convenience
-
-When touching an already-migrated flow:
-
-- do not add new direct mutation beside event application
-- do not rebuild player-facing output from obsolete logs when typed events/projections are the selected source
-- prove replay/projection behavior where state or read output changes
+For a direct or transitional flow, keep the surface bounded, avoid obsolete
+log/read dependencies, state whether the slice changes its mutation path, and
+preserve behavior with characterization tests. For an event-sourced flow, do
+not add direct mutation beside event application or rebuild player-facing
+output from obsolete logs; prove replay and projection behavior when state or
+read output changes.
 
 ## Golden Shapes
 
@@ -65,7 +60,7 @@ When touching an already-migrated flow:
 Good shape:
 
 - command method validates intent
-- migrated command creates a typed domain event
+- event-sourced command creates a typed domain event
 - `Apply(...)` mutates aggregate state
 - aggregate records uncommitted events
 - Application handler loads aggregate, invokes command, stores through repository/UoW, and maps safe output
@@ -156,7 +151,7 @@ Use pure helpers for calculations. Use domain services only when logic truly cro
 
 ### Event-sourcing drift
 
-For migrated flows, typed events are the mutation path, not a side log.
+For event-sourced flows, typed events are the mutation path, not a side log.
 
 Stop:
 
@@ -164,7 +159,7 @@ Stop:
 - generic event envelopes in Domain
 - `string EventType` / `object Payload` domain events
 - events that cannot replay state
-- snapshot-only changes for migrated state without replay/event consideration
+- snapshot-only changes for event-backed state without replay/event consideration
 
 Require typed domain events, `Apply(...)` mutation, optimistic append, snapshot-as-cache posture, and replay/equivalence proof when behavior changes.
 
@@ -212,7 +207,8 @@ Watch for:
 
 ### Runtime persistence shape drift
 
-The selected posture is strongly typed aggregate state suitable for JSON snapshots plus typed events/projections where migrated.
+The selected posture is strongly typed aggregate state suitable for JSON
+snapshots plus typed events and projections.
 
 Stop:
 
@@ -262,7 +258,8 @@ Before implementation:
 - Restate the issue goal as observable backend state or behavior.
 - Identify touched layers: Domain, Application, Persistence, API, projections, tests.
 - Identify authoritative owner and selected architectural path.
-- Classify the flow as migrated event-sourced, legacy direct, or migration slice.
+- Classify the live mutation path as event-sourced, direct, or explicitly
+  transitional.
 - Identify player-known vs hidden/internal vs developer-audit data.
 - Identify persistence shape: event stream, snapshot component, read model/projection, static content, or table.
 - Identify the behavior/projection/replay/persistence tests needed.
@@ -273,7 +270,7 @@ During implementation:
 - Keep Application orchestration-only.
 - Keep EF, storage envelopes, migrations, and serializers in Persistence.
 - Keep API as transport mapping.
-- Do not add direct mutation beside event application for migrated flows.
+- Do not add direct mutation beside event application for event-sourced flows.
 - Do not add new obsolete log/read dependencies.
 - Do not expose raw events or hidden truth to player-facing API.
 - Prefer focused pure helpers over broad services.
@@ -284,12 +281,14 @@ Before review:
 
 - Compare changed source against issue goal and selected architecture path.
 - Run falsification checks for drift modes above.
-- Search for forbidden recurrence: hidden truth fields, legacy log reads, new direct mutation paths, ad hoc services, generic event envelopes, child repositories.
+- Search for forbidden recurrence: hidden truth fields, superseded log reads,
+  new direct mutation paths, ad hoc services, generic event envelopes, and
+  child repositories.
 - Run relevant validation commands.
 - Add behavior tests for changed game rules.
 - Add persistence/schema/serialization tests for persistence changes.
 - Add projection safety tests for player-facing output changes.
-- Add replay/equivalence tests for migrated event-sourced behavior changes.
+- Add replay/equivalence tests for event-sourced behavior changes.
 - Report exact commands, outputs, branch, head SHA, changed files, caveats, and cleanup proof.
 
 ## Review Questions
@@ -299,7 +298,8 @@ Ask these before accepting backend work:
 1. What source-of-truth state changed?
 2. Which layer owns the rule?
 3. Did mutation flow through `GameSession` or the current aggregate route?
-4. Is the touched flow migrated event-sourced, legacy direct, or explicitly transitional?
+4. What mutation path does the touched flow use in live source: event-sourced,
+   direct, or explicitly transitional?
 5. If events are involved, are they typed domain facts and replayable?
 6. If persistence changed, did it preserve event/snapshot/read-model distinctions?
 7. If a table was added, what selected-repo access pattern justifies it?
@@ -309,7 +309,8 @@ Ask these before accepting backend work:
 11. Did any service/repository/provider/manager route around aggregate/application/persistence boundaries?
 12. Did tests prove behavior, negative cases, replay/projection equivalence, or persistence boundaries as relevant?
 13. Does validation output support the claim, or only show tests ran?
-14. Does the PR/update identify remaining legacy compatibility surfaces honestly?
+14. Does the PR identify any direct or transitional compatibility surface it
+    actually touches?
 
 ## Acceptance Checks
 
@@ -319,7 +320,7 @@ This profile passes only if it would stop a worker from:
 - moving gameplay mutation into ad hoc services
 - routing around `GameSession` / aggregate authority
 - recording events beside mutation and calling it event sourcing
-- treating snapshots as the conceptual source of migrated history
+- treating snapshots as the conceptual source of event-backed history
 - using queries/read models as hidden domain truth
 - exposing raw events, hidden truth, or backend-only fields to player-facing API
 - using DTOs/mappers as canonical game truth

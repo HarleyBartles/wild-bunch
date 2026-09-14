@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {"type": "command", "command": "{{IR_PY}} \"{{IR_HOOK_DIR}}/gate_review_paths.py\""},
+          {"type": "command", "command": "{{IR_PY}} \"{{IR_HOOK_DIR}}/record_pretool.py\""}
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {"type": "command", "command": "{{IR_PY}} \"{{IR_HOOK_DIR}}/record_posttool.py\""}
+        ]
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 # node-closeout
 
 ## Purpose
-Archive completed planning artifacts before flipping the PR to ready.
+Remove completed planning artifacts before flipping the PR to ready.
 
 ## Inputs
 - PR body, linked issues
@@ -12,18 +12,15 @@ Archive completed planning artifacts before flipping the PR to ready.
 
 ## Recipe
 1. Identify the plan and spec named in the PR body, linked issues, or `.agents/plans/` and `.agents/specs/`.
-2. Confirm the plan is complete: every top-level checkbox is checked or the plan records the implementation PR.
-3. `git mv .agents/plans/<plan-name>.md .agents/plans/completed/`
-4. If the plan lists a spec: `git mv .agents/specs/<spec-name>.md .agents/specs/completed/`
-5. Move any related roadmaps or research files referenced by the plan.
-6. Run `py -3 tools/heal_archive_links.py --apply` and `py -3 tools/check_archive_links.py`.
-7. Run `py -3 tools/run.py mesh --apply` and `py -3 tools/run.py marketplace --apply`.
-8. Run `py -3 tools/run.py ci --check`; do not proceed if it fails.
-9. Commit the archive with `git commit -m "archive: complete <plan-name>"`.
+2. Confirm the plan's work is complete and promote enduring decisions into ADRs or current doctrine.
+3. Remove the completed plan, spec, roadmap, checkpoint, and related planning artifacts from Git. An optional copy may go to the consumer's central completed-artifact scratch store; it is disposable and not evidence.
+4. Run the consumer's canonical mesh and marketplace regeneration helpers.
+5. Run the consumer's canonical CI check; do not proceed if it fails.
+6. Commit the completed-artifact removal normally.
 
 ## Outputs
-- Moved archived plan/spec/roadmap files
-- Commit recording the archive
+- Completed planning artifacts absent from the tracked tree
+- Durable decisions retained only in their current authority surfaces
 
 ## Next check
 py -3 .agents/skills/iterative-review/scripts/next_node.py --metrics <scratch_dir>/review-metrics.json

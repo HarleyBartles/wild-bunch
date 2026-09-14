@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "policy_id": "authority-discovery",
+  "version": "1",
+  "repo_law_roots": ["AGENTS.md", "CLAUDE.md", ".devin/rules/**",
+                     ".agents/doctrine/**"],
+  "pr_roots": ["description", "linked_issues"],
+  "edge_kinds": ["governs", "implements", "depends-on", "supersedes",
+                 "references-as-authority"],
+  "edge_grammars": [
+    {"kind": "marker", "pattern": "<!-- authority:edge <kind> <target> -->"},
+    {"kind": "front_matter", "key": "authority_edges"},
+    {"kind": "plan_spec_header", "pattern": "**Spec:** <path>",
+     "edge": "implements"}
+  ],
+  "structural_edges": [
+    {"from": "AGENTS.md", "to": [".devin/rules/**", ".agents/doctrine/**"],
+     "edge": "governs"}
+  ],
+  "override_path": ".agents/iterative-review/authority-policy.json"
+}

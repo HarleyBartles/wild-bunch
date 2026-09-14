@@ -3,7 +3,7 @@
 Use this profile when performing code reviews. This profile enforces standards for reviewing code changes, PRs, and worker returns.
 
 ## Scratch Artifact Check
-- **CRITICAL**: Before creating any scratch files (code reviews, temporary notes, draft documents), check `.agents/docs/artifact-policy.md` for placement guidance
+- **CRITICAL**: Before creating any scratch files (code reviews, temporary notes, draft documents), check `.agents/doctrine/artifact-custody.md` for placement guidance
 - Scratch files must be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>`, never in the repo root
 - Files like `*-review*.md`, `*-scratch*.md`, `COMMIT_MSG.txt`, `PR_BODY.md` are scratch artifacts that pollute the tree
 - If you find scratch artifacts committed to the repo, remove them as part of self-healing

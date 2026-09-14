@@ -9,14 +9,12 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when designing, reviewing, or debugging frontend user interfaces and
-    the task calls for accessibility, layout, interaction, or UX guidance.
   use_when:
-  - Use when designing or reviewing a frontend layout, component, or interaction.
-  - Use when checking accessibility, color, typography, or responsive behavior.
-  - Use when refining user flows, feedback, and platform-appropriate conventions.
+  - designing or reviewing a frontend layout, component, or interaction.
+  - checking accessibility, color, typography, or responsive behavior.
+  - refining user flows, feedback, and platform-appropriate conventions.
   do_not_use_when:
-  - Do not use when another more specific skill owns the task.
+  - another more specific skill owns the task.
   related_skills:
   - playwright-testing
   - wcag

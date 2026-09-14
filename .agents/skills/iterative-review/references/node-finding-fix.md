@@ -27,7 +27,7 @@ Verify and fix a single `blocking/important` lens finding.
    - Verify the resulting `review-log-implementer-report.md` and the fix commit.
 4. If inline/orchestrator is chosen:
    - Apply the minimal change to the affected file(s).
-   - Run the consumer's preflight (e.g., `py -3 tools/run.py ci --check`) and confirm it passes.
+   - Run the consumer's canonical preflight and confirm it passes.
 5. If the finding severity is `blocking` or `important`, or if `non_trivial_fix` is `true`, the fix must be proven with a failing-then-passing test:
    - **RED:** Create or identify a test that reproduces the bug. Run it and capture the failing output in the implementer report or inline log.
    - **GREEN:** Apply the minimal fix. Re-run the same test until it passes.

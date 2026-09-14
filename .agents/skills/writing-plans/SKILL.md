@@ -1,7 +1,7 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before
-  touching code
+description: Use when an approved specification or settled requirements need to become
+  an executable multi-step implementation plan.
 metadata:
   source-id: writing-plans
   source-path: codex-marketplace/plugins/superpowers-plus/skills/writing-plans/SKILL.md
@@ -9,17 +9,15 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when you have a spec or requirements for a multi-step task, before touching
-    code
   use_when:
-  - Use when an approved spec exists for a multi-step task.
-  - Use when the goal fits a single tight implementation plan.
-  - Use before touching implementation code.
+  - an approved spec exists for a multi-step task.
+  - the goal fits a single tight implementation plan.
+  - implementation code has not yet been changed.
   do_not_use_when:
-  - Do not use when the spec covers multiple independent subsystems; invoke writing-roadmaps
+  - the spec covers multiple independent subsystems; invoke writing-roadmaps
     to create a roadmap before writing plans.
-  - Do not use when implementation has already started.
-  - Do not use as a substitute for brainstorming.
+  - implementation has already started.
+  - a substitute for brainstorming.
   related_skills:
   - brainstorming
   - handoff-gates
@@ -30,7 +28,7 @@ license: MIT
 ---
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/writing-plans/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Writing Plans
 
@@ -42,9 +40,9 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**First step:** If you were not already routed here by `/using-superpowers-plus`, invoke `/using-superpowers-plus` first. Then read this skill's baseline (`references/planning-baseline.md`) and the repo's `.agents/runbooks/planning.md` before executing the stage checklist.
+**First step:** If you were not already routed here by `using-superpowers-plus`, invoke `using-superpowers-plus` first. Then read this skill's baseline (`references/planning-baseline.md`) and the repo's `.agents/runbooks/planning.md` before executing the stage checklist.
 
-**Context:** If working in an isolated worktree, it should have been created via the `/using-git-worktrees` skill at execution time.
+**Context:** If working in an isolated worktree, it should have been created via the `using-git-worktrees` skill at execution time.
 
 **Save plans to:** `.agents/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
@@ -59,21 +57,21 @@ Before drafting a task, decide what to do when a plan item is missing scope or d
 
 | Situation | Use |
 |---|---|
-| Plan item has no acceptance criteria and the answer is not in durable source or the spec | `/asking-clarifying-questions` |
-| The whole shape of the solution is unknown | `/brainstorming` to update the spec first |
+| Plan item has no acceptance criteria and the answer is not in durable source or the spec | `asking-clarifying-questions` |
+| The whole shape of the solution is unknown | `brainstorming` to update the spec first |
 | Plan item has acceptance criteria but is large | Write the plan as a high-level draft and iterate |
 | Scope is in the spec but not yet broken into tasks | Write the plan, then review |
 
-If a single missing fact blocks the next step, invoke `/asking-clarifying-questions` before guessing.
+If a single missing fact blocks the next step, invoke `asking-clarifying-questions` before guessing.
 
 ## Plan Lifecycle
 
 Plans are durable, tracked files. The in-flight plan is the source of truth for the work, not a transient scratch note.
 
 - **In-flight home:** `.agents/plans/YYYY-MM-DD-<feature-name>.md` (or `.agents/plans/<epic-name>/YYYY-MM-DD-<feature-name>.md` for epic plans). Off-repo scratch is for transient session artifacts only; the plan itself always lives in the in-flight plan home.
-- **Commit before handoff:** A plan must exist and be committed before it can be handed to `/executing-plans` or `/subagent-driven-development`. Execution skills read the saved, committed file, not unsaved editor state.
-- **Completion:** When the work is complete, move the plan file to `.agents/plans/completed/<plan-file>`.
-- **Roadmap and index links:** Any roadmap, `INDEX.md`, or spec link that points to the in-flight path must be updated when the plan is archived. See the `completing-plans` runbook for the exact move-and-link-rewrite sequence.
+- **Commit before handoff:** A plan must exist and be committed before it can be handed to `executing-plans` or `subagent-driven-development`. Execution skills read the saved, committed file, not unsaved editor state.
+- **Completion:** When the work is complete, promote enduring decisions to ADRs or current doctrine, then remove the finished plan and associated planning artifacts from Git. A convenience copy may live in the consumer's central completed-artifact scratch store but is disposable and not evidence.
+- **Roadmap and index links:** Remove links to completed artifacts rather than maintaining a completed-artifact index. See the consumer's completion runbook for its removal sequence.
 
 ## File Structure
 
@@ -110,6 +108,17 @@ A long plan with well-sliced, independently testable tasks is not a problem. The
 - "Run the tests and make sure they pass" - step
 - "Commit" - step
 
+## Recipient-relative planning
+
+Write each plan for the executor and stage that will receive it. Always make
+the observable goal, exclusions, seams, invariants, interfaces, authority,
+acceptance evidence, and task exits explicit. For Luna or lower-capability
+executors, pre-resolve consequential alternatives, name exact evidence homes
+and commands when known, and use finite decision tables where a choice would
+otherwise be rediscovered during execution. Exact implementation code is
+optional unless the code shape itself is the contract; specify behavior,
+interfaces, and evidence rather than pretending pseudocode is a guarantee.
+
 ## Plan Document Header
 
 **Every plan MUST start with this header:**
@@ -117,13 +126,16 @@ A long plan with well-sliced, independently testable tasks is not a problem. The
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-driven-development` (recommended) or `/executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` (recommended) or `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** [One sentence describing what this builds]
 
 **Architecture:** [2-3 sentences about approach]
 
 **Tech Stack:** [Key technologies/libraries]
+
+**Spec:** [path to the spec/design doc this plan implements — the plan
+argues from the spec, so the spec travels with it; executors read both]
 
 **Execution Strategy:** `subagent-driven-development` (default for independent tasks) — `executing-plans` (for tightly coupled/sequential tasks), `dispatching-parallel-agents` (for 2+ independent parallel tracks), or `manual` (for human-driven work). The planner picks the recommended lane.
 
@@ -208,13 +220,15 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 
 **5. Plan Size Check:** Did you think the plan was too large while writing? If yes, did you apply one of the escape hatches in `references/plan-scope-sizing.md`? Is the `Execution Strategy` field filled with an allowed value and a clear rationale?
 
-**4. Plan-readiness rating:** Use `handoff-gates` `plan-readiness` lane. Rate the plan for execution confidence (8/10 floor, 9/10 target). Report the final rating in the handoff. Do not execute below 8/10.
+**4. Plan-readiness rating:** Use the `handoff-gates` `plan-readiness` lane.
+Rate the plan for execution confidence (8/10 floor, 9/10 target), report the
+rating in the current handoff, and do not persist it or execute below 8/10.
 
 If you find issues during the self-review, fix them inline and re-run the plan-readiness gate. If you find a spec requirement with no task, add the task.
 
 ## Execution Handoff
 
-After the plan is saved and the plan-readiness rating meets the floor, read the `Execution Strategy` and present it to the user:
+After the saved plan meets the readiness floor, read the `Execution Strategy` and present it to the user:
 
 > "Plan complete and saved to `.agents/plans/<filename>.md`. The `Execution Strategy` is `<strategy>`. The plan-readiness rating is `<X>/10`.
 > Do you want to proceed with the recommended strategy, or switch to another lane?"

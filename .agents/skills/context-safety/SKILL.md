@@ -12,13 +12,13 @@ metadata:
   owner: Harley Bartles
   scope: very large text write safety, bounded composition, compaction boundaries, and atomic replacement.
   use_when:
-  - Use when a text write is expected to exceed 2,000 lines or 1 MB of UTF-8 text.
-  - Use when inline composition would risk consuming the remaining session context.
-  - Use when safe staging and atomic replacement are required for a large text write.
-  - Use when `/compact` should happen only after durable state has been preserved.
+  - a text write is expected to exceed 2,000 lines or 1 MB of UTF-8 text.
+  - inline composition would risk consuming the remaining session context.
+  - safe staging and atomic replacement are required for a large text write.
+  - deliberate context compaction is needed after durable state has been preserved.
   do_not_use_when:
-  - Do not use when the change is small and can be written directly.
-  - Do not use when the task is unrelated to large or context-heavy text writes.
+  - the change is small and can be written directly.
+  - the task is unrelated to large or context-heavy text writes.
   related_skills:
   - repo-worker-base
   - connector-safety
@@ -157,7 +157,7 @@ If you would be tempted to compose a large document inline in the main session c
 
 ## Scratch folder for large temporary outputs
 
-For large temporary outputs that don't need to be committed, use the centralized off-repo scratch provided by `subagent-workspace/scripts/sdd-workspace` (or `sdd-workspace.ps1` on Windows). It resolves `<main-checkout>/../_agent-scratch/<branch>/<plan-basename>/`, which is always outside the repo tree and on the same volume as the working tree.
+For large temporary outputs that don't need to be committed, use the centralized off-repo scratch provided by `subagent-workspace/scripts/sdd-workspace` (or `sdd-workspace.ps1` on Windows). It resolves `<main-checkout>/../_agent-scratch/<repo-name>/<branch>/<plan-basename>/`, which is always outside the repo tree and on the same volume as the working tree.
 
 ### When to use scratch folder vs. bounded composition
 

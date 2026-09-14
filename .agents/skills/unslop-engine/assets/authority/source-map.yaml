@@ -1,0 +1,9 @@
+schema_version: 1
+reconciled_against: 5be928b71fc996815467b858e99f12cc7e6d1fcf860790820c189924fbccb6b7
+references:
+  - path: references/upstream-provenance.md
+    source_sections:
+      - Upstream provenance and adaptation rationale
+    load_when:
+      - Use when verifying authority or provenance.
+    content_mode: first_party_synthesis

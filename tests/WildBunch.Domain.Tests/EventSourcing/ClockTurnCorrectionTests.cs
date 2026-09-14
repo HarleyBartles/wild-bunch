@@ -17,7 +17,7 @@ namespace WildBunch.Domain.Tests.EventSourcing;
 /// <summary>
 /// Tests for the BUNCH-80 clock/turn correction: event-sourced action-context-based
 /// turn advancement and TimeOfDay naming layer.
-/// See ADR-0028 + .agents/superpowers/plans/2026-06-23-bunch-80-overview.md.
+/// See ADR-0028.
 /// </summary>
 public sealed class ClockTurnCorrectionTests
 {

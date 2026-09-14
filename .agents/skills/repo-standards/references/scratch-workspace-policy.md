@@ -13,12 +13,17 @@ _agent-scratch/
     <branch-name>/
       <plan-or-task-basename>/
         ...
+    completed/
+      plans/
+      specs/
+      roadmaps/
+      checkpoints/
 ```
 
 The top level of `_agent-scratch` may only contain folders named after the
-repositories that use it. Each repo folder may only contain folders named
-after in-flight branches or active tasks. Leaf contents are disposable
-scratch for that task.
+repositories that use it. Folders within a repo namespace are named after
+branches or active tasks, except the central `completed/` convenience store.
+All contents are disposable scratch.
 
 ## Naming
 
@@ -51,3 +56,8 @@ any repo folder that contains entries not matching a branch or task.
 
 When a branch is merged and its worktree is removed, its scratch directory is
 `delete_now` unless another active task or plan still references it.
+
+Completed planning artifacts may be copied into
+`<repo-name>/completed/<artifact-type>/` for convenience before leaving Git.
+That optional central copy is disposable and carries no retention or proof
+obligation. Completed artifacts have no branch-scoped scratch custody.

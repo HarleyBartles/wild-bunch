@@ -1,0 +1,22 @@
+schema_version: 1
+custody: marketplace
+lane: skills-with-citation
+authority:
+  title: "mshumer/unslop"
+  canonical_url: https://github.com/mshumer/unslop
+  pinned_source_url: https://github.com/mshumer/unslop/blob/edcb62386d129c65e4395f0cfcc9168eb1ba2148/README.md
+  latest_check_url: https://github.com/mshumer/unslop
+  revision: edcb62386d129c65e4395f0cfcc9168eb1ba2148
+  retrieved_at: "2026-07-22"
+  content_sha256: 5be928b71fc996815467b858e99f12cc7e6d1fcf860790820c189924fbccb6b7
+  license: MIT
+  license_url: https://github.com/mshumer/unslop/blob/main/LICENSE
+decomposition:
+  reconciled_against: 5be928b71fc996815467b858e99f12cc7e6d1fcf860790820c189924fbccb6b7
+  references:
+    - path: references/upstream-provenance.md
+      source_sections:
+        - Upstream provenance and adaptation rationale
+      load_when:
+        - Use when verifying authority or provenance.
+      content_mode: first_party_synthesis

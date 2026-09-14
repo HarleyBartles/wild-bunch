@@ -12,13 +12,13 @@ metadata:
   owner: Harley Bartles
   scope: Domain-driven design for complex business domains
   use_when:
-  - Use when modeling a complex business domain
-  - Use when defining bounded contexts and ubiquitous language
-  - Use when choosing tactical DDD patterns such as aggregates, entities, value objects,
+  - modeling a complex business domain
+  - defining bounded contexts and ubiquitous language
+  - choosing tactical DDD patterns such as aggregates, entities, value objects,
     or domain events
   do_not_use_when:
-  - Do not use when the domain is simple CRUD
-  - Do not use when a more specific skill already owns the abstraction
+  - the domain is simple CRUD
+  - a more specific skill already owns the abstraction
 license: MIT
 ---
 

@@ -12,19 +12,19 @@ metadata:
   owner: Harley Bartles
   scope: React component architecture, hooks usage, and performance patterns.
   use_when:
-  - Use when building or reviewing React component architecture.
-  - Use when choosing, ordering, or refactoring hooks.
-  - Use when lifting state, composing components, or handling conditional rendering.
-  - Use when optimizing renders with memo, useMemo, useCallback, or React.memo.
-  - Use when deciding whether server components or a framework-specific skill is more
+  - building or reviewing React component architecture.
+  - choosing, ordering, or refactoring hooks.
+  - lifting state, composing components, or handling conditional rendering.
+  - optimizing renders with memo, useMemo, useCallback, or React.memo.
+  - deciding whether server components or a framework-specific skill is more
     appropriate.
   do_not_use_when:
-  - Do not use when the work is framework-agnostic styling; use the web-styling skill.
-  - Do not use when the work is TypeScript-specific type design; use the typescript
+  - the work is framework-agnostic styling; use the web-styling skill.
+  - the work is TypeScript-specific type design; use the typescript
     skill.
-  - Do not use when the work is routing or global state management owned by another
+  - the work is routing or global state management owned by another
     skill.
-  - Do not use when the task requires Next.js or framework-specific server components;
+  - the task requires Next.js or framework-specific server components;
     use the appropriate framework skill.
   related_skills:
   - typescript

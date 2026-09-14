@@ -10,7 +10,6 @@ SCRIPT_BASES = [
     "ci-preflight",
     "dev-servers",
     "image_asset_pipeline",
-    "postgres-dev",
 ]
 
 
@@ -26,7 +25,7 @@ def test_powershell_entrypoint_exists(script_base):
     assert (SCRIPTS_DIR / f"{script_base}.ps1").exists()
 
 
-@pytest.mark.parametrize("script_base", ["ci-preflight", "dev-servers", "postgres-dev"])
+@pytest.mark.parametrize("script_base", ["ci-preflight", "dev-servers"])
 def test_bash_entrypoint_is_not_a_powershell_bridge(script_base):
     """Linux bash entrypoints should not depend on PowerShell."""
     contents = (SCRIPTS_DIR / f"{script_base}.sh").read_text(encoding="utf-8")

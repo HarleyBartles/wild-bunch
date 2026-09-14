@@ -1,7 +1,7 @@
 ---
 name: requesting-code-review
 description: Use when completing tasks, implementing major features, or before merging
-  to verify work meets requirements
+  to verify work meets requirements.
 metadata:
   source-id: requesting-code-review
   source-path: codex-marketplace/plugins/superpowers-plus/skills/requesting-code-review/SKILL.md
@@ -9,16 +9,14 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when completing tasks, implementing major features, or before merging
-    to verify work meets requirements
   use_when:
-  - Use when completing a task or major feature, or before merging.
-  - Use after subagent-driven-development per-task review.
-  - Use when a fresh reviewer perspective will catch issues before they cascade.
+  - completing a task or major feature, or before merging.
+  - subagent-driven-development per-task review is complete and whole-branch review is due.
+  - a fresh reviewer perspective will catch issues before they cascade.
   do_not_use_when:
-  - Do not use before tests pass.
-  - Do not use when no changes exist to review.
-  - Do not use as a substitute for self-review.
+  - before tests pass.
+  - no changes exist to review.
+  - a substitute for self-review.
   related_skills:
   - receiving-code-review
   - iterative-review
@@ -29,7 +27,7 @@ license: MIT
 ---
 ## Provenance
 
-This skill is a first-party authored derivation of `obra/superpowers` v6.2.0, released under the MIT License. The original upstream snapshot is retained in `codex-marketplace/plugins/superpowers-plus/skills/requesting-code-review/` for reference.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Requesting Code Review
 

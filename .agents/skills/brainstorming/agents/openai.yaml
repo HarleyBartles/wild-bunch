@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Brainstorming
-  short_description: Use when starting any creative work such as creating features, building components, adding functionality, or modifying behavior.
-  default_prompt: Use /brainstorming to use when starting any creative work such as creating features, building components, adding functionality, or modifying behavior.
+  short_description: Shape uncertain creative work into an approved design.
+  default_prompt: Use brainstorming when starting any creative work such as creating features, building components, adding functionality, or modifying behavior.
 policy:
   products:
   - codex

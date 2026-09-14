@@ -8,11 +8,10 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when working with the Playwright MCP server, choosing the right browser tool call, or falling back to non-MCP Playwright surfaces when the MCP does not cover the task.
   use_when:
-  - Use when working with the Playwright MCP server, choosing the right browser tool call, or falling back to non-MCP Playwright surfaces when the MCP does not cover the task.
+  - working with the Playwright MCP server, choosing the right browser tool call, or falling back to non-MCP Playwright surfaces when the MCP does not cover the task.
   do_not_use_when:
-  - Do not use when another more specific skill owns the task.
+  - another more specific skill owns the task.
 license: MIT
 ---
 
@@ -35,4 +34,4 @@ Use this skill to pick the right `mcp-playwright` tool for browser automation or
 
 1. **MCP first.** Start by routing to the use-case file that matches your intent.
 2. **Confirm absence before exit.** Before opening `references/other-playwright-tools.md`, check `references/surface-map.md` or run `mcp_list_tools` for `mcp-playwright` to confirm the needed tool is not there.
-3. **Environment check for fallbacks.** Before using a non-MCP Playwright tool, run `/inspecting-the-environment` to confirm it is installed and available.
+3. **Environment check for fallbacks.** Before using a non-MCP Playwright tool, run `inspecting-the-environment` to confirm it is installed and available.

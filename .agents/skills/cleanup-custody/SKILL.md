@@ -1,8 +1,8 @@
 ---
 name: cleanup-custody
-description: Use when use this skill to classify whether a workspace or repository
-  surface should stay live, move to cold store, move to governed trash, be deleted
-  now, or block and route to an owning authority.
+description: Use when a workspace or repository surface needs a custody decision about
+  whether to keep it live, move it to cold store or governed trash, delete it now,
+  or route it to an owning authority.
 metadata:
   source-id: cleanup-custody
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/cleanup-custody/SKILL.md
@@ -10,15 +10,12 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when use this skill to classify whether a workspace or repository surface
-    should stay live, move to cold store, move to governed trash, be deleted now,
-    or block and route to an owning authority.
   use_when:
-  - Use when use this skill to classify whether a workspace or repository surface
+  - a workspace or repository surface needs classification to determine whether it
     should stay live, move to cold store, move to governed trash, be deleted now,
     or block and route to an owning authority.
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
+  - another more specific skill owns this task.
 license: MIT
 ---
 # Cleanup Custody

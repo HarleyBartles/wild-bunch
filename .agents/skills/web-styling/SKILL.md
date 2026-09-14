@@ -10,10 +10,10 @@ metadata:
   owner: Harley Bartles
   scope: Cross-framework CSS approach guidance
   use_when:
-    - Use when choosing or refactoring CSS approaches across CSS Modules, Sass, Less, and styled-components
-    - Use when comparing CSS-in-JS with preprocessed CSS
+    - choosing or refactoring CSS approaches across CSS Modules, Sass, Less, and styled-components
+    - comparing CSS-in-JS with preprocessed CSS
   do_not_use_when:
-    - Do not use when the work is design system governance or framework-specific component libraries
+    - the work is design system governance or framework-specific component libraries
 license: MIT
 ---
 

@@ -9,7 +9,7 @@ Wild Bunch uses a consolidated frontend styling stack centered on `styled-compon
     *   `_variables.scss`: Design tokens and theme variables.
     *   `_reset.scss`: CSS reset and normalization.
     *   `_base.scss`: Base element defaults (e.g., `h1`, `p` defaults).
-3.  **No Plain CSS Classes**: Direct usage of `className="legacy-class"` is forbidden for component styling. All styling must be handled via styled components.
+3.  **No Plain CSS Classes**: Direct CSS-class styling through `className` is forbidden. Component styling belongs in styled components.
 4.  **Token Discipline**: Reference design tokens via `var(--token-name)` instead of hardcoded hex/rgb values to ensure palette consistency.
 
 ## Shared Primitives
@@ -32,6 +32,6 @@ Styling that is specific to a feature (e.g., `DestinationCard` for travel) shoul
 
 The styling stack is enforced by an automated test: `src/tests/stylingEnforcement.test.ts`. This test asserts:
 *   `src/styles.css` does not exist.
-*   `src/styles/index.scss` does not reference legacy CSS.
+*   `src/styles/index.scss` does not reference `styles.css`.
 *   No `.css` imports remain in TSX files.
-*   No legacy plain CSS classes from the original `styles.css` are used in `className`.
+*   Prohibited plain CSS classes are not used in `className`.

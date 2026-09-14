@@ -9,12 +9,12 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-    - Use when you need to read Discord messages, list servers/channels, search messages, or download attachments through the `discord` MCP server.
-    - Use when you are unsure which Discord MCP tool to call.
-    - Use when a task may require write, manage, or moderation privileges and you need to check whether the bot is allowed to run it.
+    - you need to read Discord messages, list servers/channels, search messages, or download attachments through the `discord` MCP server.
+    - you are unsure which Discord MCP tool to call.
+    - a task may require write, manage, or moderation privileges and you need to check whether the bot is allowed to run it.
   do_not_use_when:
-    - Do not use when the bot has not been granted the required Discord permissions for a write/moderation action.
-    - Do not use when another more specific skill owns the task.
+    - the bot has not been granted the required Discord permissions for a write/moderation action.
+    - another more specific skill owns the task.
 license: MIT
 ---
 

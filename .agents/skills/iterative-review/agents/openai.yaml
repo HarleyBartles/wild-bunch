@@ -5,7 +5,7 @@ metadata:
 interface:
   display_name: Iterative Review
   short_description: Human-approved legacy review assistance for non-frontier orchestrators.
-  default_prompt: Ask whether to use /iterative-review for this PR. Do not use it with Sol or another harness-designated frontier model.
+  default_prompt: Use iterative-review only after explicit human approval to assist a non-frontier orchestrator with legacy draft-PR review inside a Devin harness; do not use it with a harness-designated frontier model (Sol, Astra, Fable, or Opus) or outside a Devin harness.
 policy:
   products:
   - chatgpt

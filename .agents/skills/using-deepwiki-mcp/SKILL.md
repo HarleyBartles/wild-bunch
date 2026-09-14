@@ -8,15 +8,14 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when you need high-level orientation, conventions, architecture, or cross-repo context for a GitHub repo and need to choose the right DeepWiki MCP tool and question phrasing.
   use_when:
-  - Use when you need high-level orientation, conventions, architecture, or cross-repo context for a GitHub repo.
-  - Use when you need to decide whether to ask a targeted question, list wiki topics, or read the full generated wiki.
-  - Use when you want to compare or contrast up to 10 public repos.
+  - you need high-level orientation, conventions, architecture, or cross-repo context for a GitHub repo.
+  - you need to decide whether to ask a targeted question, list wiki topics, or read the full generated wiki.
+  - you want to compare or contrast up to 10 public repos.
   do_not_use_when:
-  - Do not use when you need exact, current source or version-specific behavior.
-  - Do not use when the repo is private, not indexed by DeepWiki, or the answer has safety/security implications without verification.
-  - Do not use when another more specific skill owns the task.
+  - you need exact, current source or version-specific behavior.
+  - the repo is private, not indexed by DeepWiki, or the answer has safety/security implications without verification.
+  - another more specific skill owns the task.
 license: MIT
 ---
 

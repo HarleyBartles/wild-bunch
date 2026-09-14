@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Dispatching Parallel Agents
-  short_description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
-  default_prompt: Use /dispatching-parallel-agents to use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies
+  short_description: Dispatch independent tasks that do not share state or ordering constraints.
+  default_prompt: Use dispatching-parallel-agents when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies.
 policy:
   products:
   - codex

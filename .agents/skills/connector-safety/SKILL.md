@@ -1,11 +1,8 @@
 ---
 name: connector-safety
-description: Use when use this skill to keep connector and tool-side-effect work safe,
-  auditable, and boring when a connector or tool call is blocked, rejected, safety-filtered,
-  permission-rejected, schema-rejected, or validation-rejected, when a planned action
-  could be sensitive, destructive, permission-changing, or easy to over-bundle, or
-  when mutation work should follow discover -> read -> write -> verify or step back
-  up the connector discovery chain.
+description: Use when a connector or tool call is blocked or rejected, when a planned
+  side effect is sensitive, destructive, permission-changing, or easy to over-bundle,
+  or when the safe mutation and verification route is uncertain.
 metadata:
   source-id: connector-safety
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/connector-safety/SKILL.md
@@ -13,21 +10,15 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when use this skill to keep connector and tool-side-effect work safe,
-    auditable, and boring when a connector or tool call is blocked, rejected, safety-filtered,
-    permission-rejected, schema-rejected, or validation-rejected, when a planned action
-    could be sensitive, destructive, permission-changing, or easy to over-bundle,
-    or when mutation work should follow discover -> read -> write -> verify or step
-    back up the connector discovery chain.
   use_when:
-  - Use when use this skill to keep connector and tool-side-effect work safe, auditable,
+  - connector or tool-side-effect work needs a safe and auditable mutation path,
     and boring when a connector or tool call is blocked, rejected, safety-filtered,
     permission-rejected, schema-rejected, or validation-rejected, when a planned action
     could be sensitive, destructive, permission-changing, or easy to over-bundle,
     or when mutation work should follow discover -> read -> write -> verify or step
     back up the connector discovery chain.
   do_not_use_when:
-  - Do not use when another more specific skill owns this task.
+  - another more specific skill owns this task.
 license: MIT
 ---
 # Connector Safety

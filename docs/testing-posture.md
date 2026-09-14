@@ -44,7 +44,7 @@ Manual browser evidence is one lane in the evidence model, not the whole model.
 - It should be reported separately from automated validation.
 - It is especially useful for visible UI/game-flow changes when automated tests do not fully prove the user-facing result.
 
-For the worker-facing operational route, see [UI Browser Check Playbook](../.agents/docs/ui-browser-check-playbook.md).
+For the repo-local operational route, see [UI browser-check runbook](../.agents/runbooks/ui-browser-check.md).
 
 ## Local Run Context
 
@@ -58,14 +58,13 @@ The repo-verified local UI route uses these targets:
 Before using the local browser route, make sure the repo-local PostgreSQL lane is ready:
 
 ```bash
-bash scripts/postgres-dev.sh install-tools
-bash scripts/postgres-dev.sh setup
+pwsh -File tools/postgres-dev.ps1 ensure
 ```
 
 If you want the full PostgreSQL-backed validation lane in one command, use:
 
 ```bash
-bash scripts/postgres-dev.sh validate
+py -3 tools/run.py ci --check
 ```
 
 The API launch profile already supplies `ConnectionStrings__WildBunchPostgresDb` for the normal local run path.

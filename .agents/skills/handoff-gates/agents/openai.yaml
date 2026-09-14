@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Handoff Gates
-  short_description: Use when a stage-boundary artifact needs a readiness check before handoff.
-  default_prompt: Use /handoff-gates when a stage-boundary artifact (spec, plan, or completed work) needs a readiness check before handoff. Use when a spec is ready to move from brainstorming to planning, a plan is ready to move from writing-plans to execution, or completed work is ready to move from executing-plans to code review. Do not use as a substitute for risk-gates.
+  short_description: Assess spec, plan, and implementation readiness at stage boundaries.
+  default_prompt: Use handoff-gates to assess whether a spec, plan, or completed implementation is ready for its next stage; keep risk and authority decisions with risk-gates.
 policy:
   products:
   - chatgpt

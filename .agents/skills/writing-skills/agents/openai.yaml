@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Writing Skills
-  short_description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
-  default_prompt: Use /writing-skills to use when creating new skills, editing existing skills, or verifying skills work before deployment
+  short_description: Create, revise, and verify reusable agent skills.
+  default_prompt: Use writing-skills when creating new skills, editing existing skills, or verifying skills work before deployment.
 policy:
   products:
   - codex

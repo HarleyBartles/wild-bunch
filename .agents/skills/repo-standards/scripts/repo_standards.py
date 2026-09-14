@@ -53,6 +53,7 @@ import shared_checkout  # noqa: E402
 
 
 _SCRIPT_NAME = "repo-standards"
+_COMMAND_DECLARATION = Path(".agents/contracts/repo-standards-commands.json")
 
 
 def _is_submodule(repo_root: Path) -> bool:
@@ -121,6 +122,45 @@ def _scaffold_script_path(surface: dict[str, object]) -> Path | None:
     return Path(__file__).resolve().parent / str(scaffold)
 
 
+def _surface_is_explicitly_excepted(surface: dict[str, object], exceptions: set[str]) -> bool:
+    rel = str(surface["path"])
+    surf_id = str(surface.get("id", ""))
+    return surf_id in exceptions or rel in exceptions
+
+
+def _enabled_surface_ids(surfaces: list[dict[str, object]], exceptions: set[str]) -> set[str]:
+    """Return manifest surface ids enabled after explicit exceptions and dependencies."""
+    by_id = {str(surface.get("id", "")): surface for surface in surfaces if surface.get("id")}
+    enabled = {
+        surf_id for surf_id, surface in by_id.items() if not _surface_is_explicitly_excepted(surface, exceptions)
+    }
+    changed = True
+    while changed:
+        changed = False
+        for surf_id in tuple(enabled):
+            required_with = by_id[surf_id].get("required_with")
+            if required_with and str(required_with) not in enabled:
+                enabled.remove(surf_id)
+                changed = True
+    return enabled
+
+
+def _required_with_findings(surfaces: list[dict[str, object]], exceptions: set[str]) -> list[str]:
+    """Reject exception sets that leave a dependent surface without its prerequisite."""
+    by_id = {str(surface.get("id", "")): surface for surface in surfaces if surface.get("id")}
+    findings: list[str] = []
+    for surface in surfaces:
+        surf_id = str(surface.get("id", ""))
+        required_with = str(surface.get("required_with", ""))
+        if not surf_id or not required_with or required_with not in by_id:
+            continue
+        prerequisite_enabled = not _surface_is_explicitly_excepted(surface, exceptions)
+        dependent_enabled = not _surface_is_explicitly_excepted(by_id[required_with], exceptions)
+        if dependent_enabled and not prerequisite_enabled:
+            findings.append(f"{required_with} requires {surf_id}; except {required_with} as well or restore {surf_id}")
+    return findings
+
+
 def _git_hooks_dir(repo_root: Path) -> Path:
     result = subprocess.run(
         ["git", "rev-parse", "--git-path", "hooks"],
@@ -165,7 +205,31 @@ def _run_scaffold_check(scaffold: Path, repo_root: Path) -> list[str]:
     return findings
 
 
-def _check_hook_contract(hook_path: Path) -> list[str]:
+def _check_declared_commands(repo_root: Path) -> tuple[dict[str, list[str]] | None, list[str]]:
+    path = repo_root / _COMMAND_DECLARATION
+    if not path.is_file():
+        return None, [f"missing consumer command declaration: {_COMMAND_DECLARATION.as_posix()}"]
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, [f"consumer command declaration cannot be read: {exc}"]
+    if not isinstance(data, dict):
+        return None, ["consumer command declaration must be a JSON object"]
+    findings: list[str] = []
+    commands: dict[str, list[str]] = {}
+    for capability, switch in (("apply", "--apply"), ("check", "--check")):
+        command = data.get(capability)
+        if not isinstance(command, list) or not command or not all(isinstance(item, str) for item in command):
+            findings.append(f"consumer command declaration has invalid {capability} command")
+            continue
+        if switch not in command:
+            findings.append(f"declared {capability} command is missing {switch}")
+            continue
+        commands[capability] = command
+    return (commands if len(commands) == 2 else None), findings
+
+
+def _check_hook_contract(hook_path: Path, repo_root: Path) -> list[str]:
     """Validate a pre-commit hook by the repo-standards contract, not by byte comparison."""
     findings: list[str] = []
     if not hook_path.is_file():
@@ -196,19 +260,37 @@ def _check_hook_contract(hook_path: Path) -> list[str]:
     if not _has_shell_guard(non_comment):
         findings.append("pre-commit hook missing errexit/nounset/pipefail guard")
 
-    non_comment_text = "\n".join(non_comment)
-    # Accept either the canonical 'ci --apply' or the legacy 'all --apply' alias,
-    # which is a safe backwards-compatibility bridge for older checkouts.
-    targets = ("tools/run.py ci --apply", "tools/run.py all --apply")
-    ci_apply = any(t in non_comment_text for t in targets)
-    if not ci_apply:
-        for prefix in ("py -3", "python3", "python"):
-            if any(f"{prefix} {t}" in non_comment_text for t in targets):
-                ci_apply = True
-                break
-    if not ci_apply:
-        findings.append("pre-commit hook must run 'tools/run.py ci --apply' (or 'all --apply')")
+    declaration, declaration_findings = _check_declared_commands(repo_root)
+    findings.extend(declaration_findings)
+    declaration_marker = _COMMAND_DECLARATION.as_posix()
+    if declaration_marker not in text.replace("\\", "/"):
+        findings.append("pre-commit hook must source the consumer command declaration")
+    apply_marker = "run_declared apply"
+    check_marker = "run_declared check"
+    apply_index = text.find(apply_marker)
+    check_index = text.find(check_marker)
+    if apply_index < 0:
+        findings.append("pre-commit hook must invoke the declared apply capability")
+    if check_index < 0:
+        findings.append("pre-commit hook must invoke the declared check capability")
+    if apply_index >= 0 and check_index >= 0 and apply_index >= check_index:
+        findings.append("pre-commit hook must invoke apply before check")
+    if declaration is not None and apply_index >= 0 and check_index >= 0:
+        if "required_switch" not in text:
+            findings.append("pre-commit hook command runner must validate declared switches")
+    if not _retains_canonical_hook_contract(text):
+        findings.append("pre-commit hook must retain the canonical staged-snapshot contract command skeleton")
     return findings
+
+
+def _retains_canonical_hook_contract(text: str) -> bool:
+    """Require the canonical executable body; customize commands via its declaration."""
+    template = Path(__file__).resolve().parent.parent / "templates" / "pre-commit"
+    if not template.is_file():
+        return False
+    required = template.read_text(encoding="utf-8", errors="replace").splitlines()
+    actual = text.splitlines()
+    return actual == required
 
 
 def _has_shell_guard(non_comment: list[str]) -> bool:
@@ -242,11 +324,18 @@ def _has_shell_guard(non_comment: list[str]) -> bool:
     return {"errexit", "nounset", "pipefail"}.issubset(enabled)
 
 
-def _check_surface(repo_root: Path, surface: dict[str, object], exceptions: set[str]) -> list[str]:
+def _check_surface(
+    repo_root: Path,
+    surface: dict[str, object],
+    exceptions: set[str],
+    enabled_surface_ids: set[str] | None = None,
+) -> list[str]:
     findings: list[str] = []
     rel = str(surface["path"])
     surf_id = str(surface.get("id", ""))
-    if surf_id in exceptions or rel in exceptions:
+    if _surface_is_explicitly_excepted(surface, exceptions):
+        return findings
+    if enabled_surface_ids is not None and surf_id and surf_id not in enabled_surface_ids:
         return findings
     kind = str(surface.get("kind", "file"))
     optional = bool(surface.get("optional", False))
@@ -254,9 +343,19 @@ def _check_surface(repo_root: Path, surface: dict[str, object], exceptions: set[
     scaffold = _scaffold_script_path(surface)
     full = repo_root / rel
 
+    if kind == "command-declaration":
+        _, declaration_findings = _check_declared_commands(repo_root)
+        findings.extend(declaration_findings)
+        return findings
+
     if kind == "directory":
         if not full.is_dir() and not optional:
             findings.append(f"missing directory: {rel}")
+        return findings
+
+    if kind == "absent":
+        if full.exists():
+            findings.append(f"retired path remains: {rel}")
         return findings
 
     if kind == "submodule":
@@ -282,7 +381,7 @@ def _check_surface(repo_root: Path, surface: dict[str, object], exceptions: set[
             findings.append(f"missing hook: {rel}")
             return findings
         # Validate the hook contract rather than requiring the exact template.
-        findings.extend(_check_hook_contract(hook_path))
+        findings.extend(_check_hook_contract(hook_path, repo_root))
         return findings
 
     if optional and not full.exists():
@@ -304,10 +403,18 @@ def _check_surface(repo_root: Path, surface: dict[str, object], exceptions: set[
     return findings
 
 
-def _apply_surface(repo_root: Path, surface: dict[str, object], exceptions: set[str], force: bool) -> bool:
+def _apply_surface(
+    repo_root: Path,
+    surface: dict[str, object],
+    exceptions: set[str],
+    force: bool,
+    enabled_surface_ids: set[str] | None = None,
+) -> bool:
     rel = str(surface["path"])
     surf_id = str(surface.get("id", ""))
-    if surf_id in exceptions or rel in exceptions:
+    if _surface_is_explicitly_excepted(surface, exceptions):
+        return False
+    if enabled_surface_ids is not None and surf_id and surf_id not in enabled_surface_ids:
         return False
     kind = str(surface.get("kind", "file"))
     template = _template_path(surface)
@@ -419,10 +526,12 @@ under the ## Exceptions heading are skipped."""
     manifest = json.loads(_manifest_path().read_text(encoding="utf-8"))
     surfaces = manifest.get("surfaces", [])
     exceptions = _load_exceptions(repo_root)
+    enabled_surface_ids = _enabled_surface_ids(surfaces, exceptions)
+    dependency_findings = _required_with_findings(surfaces, exceptions)
 
-    findings: list[str] = []
+    findings: list[str] = list(dependency_findings)
     for surface in surfaces:
-        findings.extend(_check_surface(repo_root, surface, exceptions))
+        findings.extend(_check_surface(repo_root, surface, exceptions, enabled_surface_ids))
 
     # Deduplicate while preserving order
     seen = set()
@@ -440,6 +549,12 @@ under the ## Exceptions heading are skipped."""
         print("OK repo-standards: all surfaces present")
         return 0
 
+    if dependency_findings:
+        for finding in dependency_findings:
+            print(f"DRIFT: {finding}")
+        print("error: invalid repo-standards exception dependency", file=sys.stderr)
+        return 1
+
     if not args.yes:
         print(f"Will apply {len(unique_findings)} surfaces with drift: {unique_findings}")
         print("Add --yes to apply. Add --yes --force to overwrite existing drifted surfaces.")
@@ -448,11 +563,22 @@ under the ## Exceptions heading are skipped."""
     if not shared_checkout.approve_mutation(repo_root, _SCRIPT_NAME, args.allow_shared_checkout):
         return 1
 
+    _, declaration_findings = _check_declared_commands(repo_root)
+    if "repo-standards-commands" in enabled_surface_ids and declaration_findings:
+        for finding in declaration_findings:
+            print(f"DRIFT: {finding}")
+        print(
+            "error: supply a valid consumer command declaration before applying repo-standards",
+            file=sys.stderr,
+        )
+        return 1
+
     applied = 0
     for surface in surfaces:
-        if _check_surface(repo_root, surface, exceptions):
-            if _apply_surface(repo_root, surface, exceptions, args.force):
+        if _check_surface(repo_root, surface, exceptions, enabled_surface_ids):
+            if _apply_surface(repo_root, surface, exceptions, args.force, enabled_surface_ids):
                 applied += 1
+
     print(f"OK repo-standards: applied {applied} surface(s)")
     return 0
 

@@ -1,34 +1,122 @@
 #!/usr/bin/env bash
-# The pre-commit hook applies and verifies the repo's mechanical surfaces.
-# It is installed by the repo-standards skill into .git/hooks/pre-commit.
+# Regenerate owned mechanical surfaces, then prove the complete staged product.
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-# Capture the working tree state before the build so we can detect any
-# generated files the staging allow-list does not cover.
+# Git exports repository-local variables to hooks. Clear them after resolving
+# this worktree so nested Git commands can honour their own working directory.
+unset $(git rev-parse --local-env-vars)
+
 AFTER_STATUS=""
-BEFORE_STATUS=$(mktemp)
-trap 'rm -f "$BEFORE_STATUS" "$AFTER_STATUS"' EXIT
-git status --porcelain --untracked-files=all > "$BEFORE_STATUS"
+UNSTAGED_PATCH=$(mktemp)
+UNTRACKED_STASHED=0
+WORKTREE_RESET=0
+PATCH_RESTORE_FAILED=0
+
+restore_worktree() {
+  local exit_code=$?
+  trap - EXIT
+  if [ "$WORKTREE_RESET" -eq 1 ]; then
+    if ! git apply --binary --whitespace=nowarn "$UNSTAGED_PATCH"; then
+      echo "pre-commit: validation finished but the unstaged patch could not be restored from $UNSTAGED_PATCH" >&2
+      exit_code=1
+      PATCH_RESTORE_FAILED=1
+    fi
+  fi
+  if [ "$UNTRACKED_STASHED" -eq 1 ]; then
+    if ! git stash pop --quiet; then
+      echo "pre-commit: validation finished but untracked files could not be restored; recover them from git stash" >&2
+      exit_code=1
+    fi
+  fi
+  rm -f "$AFTER_STATUS"
+  if [ "$PATCH_RESTORE_FAILED" -eq 0 ]; then
+    rm -f "$UNSTAGED_PATCH"
+  fi
+  exit "$exit_code"
+}
+
+trap restore_worktree EXIT
+
+# The public marketplace source is a build input. Never derive installed skills
+# from submodule bytes that are absent from the staged gitlink or that do not
+# match the commit the superproject index will record.
+if ! SUBMODULE_STATUS=$(git submodule status --recursive); then
+  echo "pre-commit: could not inspect required submodule source" >&2
+  exit 1
+fi
+SUBMODULE_HEAD_DRIFT=$(printf '%s\n' "$SUBMODULE_STATUS" | grep -E '^[+-U]' || true)
+SUBMODULE_WORKTREE_DRIFT=$(git submodule foreach --quiet --recursive '
+  actual=$(git rev-parse HEAD) || exit 1
+  dirty=$(git status --porcelain --untracked-files=all) || exit 1
+  if [ "$actual" != "$sha1" ] || [ -n "$dirty" ]; then
+    printf "%s\n" "$displaypath"
+  fi
+')
+if [ -n "$SUBMODULE_HEAD_DRIFT" ] || [ -n "$SUBMODULE_WORKTREE_DRIFT" ]; then
+  echo "pre-commit: submodule source does not match the staged gitlink or has uncommitted files:" >&2
+  printf '%s\n%s\n' "$SUBMODULE_HEAD_DRIFT" "$SUBMODULE_WORKTREE_DRIFT" >&2
+  echo "pre-commit: commit/stage the intended submodule state or restore it before regenerating derived skills" >&2
+  exit 1
+fi
+
+# Materialize the index in the working tree before regeneration. Every generated
+# file and every validation command must observe the snapshot Git will commit,
+# never an unstaged repair layered over it.
+git diff --binary --no-ext-diff --full-index -- > "$UNSTAGED_PATCH"
+if [ -s "$UNSTAGED_PATCH" ]; then
+  git checkout -- .
+  WORKTREE_RESET=1
+fi
+
+if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+  git stash push --quiet --keep-index --include-untracked -m "repo-standards pre-commit untracked snapshot $$"
+  UNTRACKED_STASHED=1
+fi
 
 if command -v py >/dev/null 2>&1; then
-  py -3 tools/run.py ci --apply --allow-shared-checkout
+  PYTHON=(py -3)
 elif command -v python3 >/dev/null 2>&1; then
-  python3 tools/run.py ci --apply --allow-shared-checkout
+  PYTHON=(python3)
 elif command -v python >/dev/null 2>&1; then
-  python tools/run.py ci --apply --allow-shared-checkout
+  PYTHON=(python)
 else
   echo "py, python3, or python not found" >&2
   exit 1
 fi
 
-# Stage the generated directories that tools/run.py ci --apply owns.
-git add -A -- .agents/skills/ 2>/dev/null || true
+COMMAND_DECLARATION="$REPO_ROOT/.agents/contracts/repo-standards-commands.json"
+if [ ! -f "$COMMAND_DECLARATION" ]; then
+  echo "pre-commit: missing consumer command declaration: $COMMAND_DECLARATION" >&2
+  exit 1
+fi
 
-# Stage canonical generated surfaces that may appear as untracked files
-# in new directories. Glob pathspecs avoid scanning the working tree.
+run_declared() {
+  "${PYTHON[@]}" - "$COMMAND_DECLARATION" "$1" "$REPO_ROOT" <<'PY'
+import json
+import subprocess
+import sys
+
+declaration_path, capability, repo_root = sys.argv[1:]
+with open(declaration_path, encoding="utf-8") as stream:
+    declaration = json.load(stream)
+command = declaration.get(capability)
+if not isinstance(command, list) or not command or not all(isinstance(item, str) for item in command):
+    raise SystemExit(f"invalid declared {capability} command")
+if command[0] == "@python":
+    command = [sys.executable, *command[1:]]
+required_switch = "--apply" if capability == "apply" else "--check"
+if required_switch not in command:
+    raise SystemExit(f"declared {capability} command is missing {required_switch}")
+raise SystemExit(subprocess.run(command, cwd=repo_root).returncode)
+PY
+}
+
+run_declared apply
+
+git add -A -- .agents/skills/ 2>/dev/null || true
 git add -- ':(glob)**/INDEX.md' 2>/dev/null || true
 git add -- ':(glob)**/INDEX.json' 2>/dev/null || true
 git add -- ':(glob)**/.provenance.json' 2>/dev/null || true
@@ -36,14 +124,15 @@ git add -- .agents/plugins/marketplace.json 2>/dev/null || true
 git add -- codex-marketplace/plugin-roots.json 2>/dev/null || true
 git add -- codex-marketplace/manifest.json 2>/dev/null || true
 
-# Fail the commit if the build produced any unstaged or untracked changes
-# outside the allow-list. This prevents a clean local run from silently
-# producing a commit that fails ci --check in CI.
 AFTER_STATUS=$(mktemp)
 git status --porcelain --untracked-files=all > "$AFTER_STATUS"
-UNSTAGED=$(comm -13 <(sort "$BEFORE_STATUS") <(sort "$AFTER_STATUS") | awk 'substr($0,2,1) != " "')
+UNSTAGED=$(awk 'substr($0,2,1) != " "' "$AFTER_STATUS")
 if [ -n "$UNSTAGED" ]; then
-  echo "pre-commit: build produced unstaged/tracked or untracked changes not in the staging allow-list:" >&2
+  echo "pre-commit: regeneration produced unstaged changes outside its staging allow-list:" >&2
   echo "$UNSTAGED" >&2
   exit 1
 fi
+
+# The safety checks above must fail immediately. The validation runner can then
+# collect every independent product failure from this exact staged snapshot.
+run_declared check

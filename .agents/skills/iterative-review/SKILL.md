@@ -1,6 +1,6 @@
 ---
 name: iterative-review
-description: Use only after human approval when an orchestrator not known to be frontier-capable needs legacy subagent review assistance for a draft PR. Do not use with Sol or another harness-designated frontier model.
+description: Use when a human-approved draft-PR review inside a Devin harness needs legacy subagent assistance because the orchestrator is not known to be frontier-capable. Do not use with a harness-designated frontier model (Sol, Astra, Fable, or Opus) or outside a Devin harness.
 metadata:
   source-id: iterative-review
   source-path: codex-marketplace/plugins/superpowers-plus/skills/iterative-review/SKILL.md
@@ -8,15 +8,17 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Human-approved legacy review assistance for orchestrators not known to be frontier-capable reviewing a draft PR.
+  scope: Human-approved legacy review assistance for orchestrators not known to be frontier-capable reviewing a draft PR inside a Devin harness.
   use_when:
-  - Use only when the human explicitly approves this workflow for the current PR.
-  - Use only when the orchestrator is non-frontier, or its classification is unknown and the human approves after being told that limitation.
+  - the session runs in a Devin harness.
+  - the human explicitly approves this workflow for the current PR.
+  - the orchestrator is non-frontier, or its classification is unknown and the human approves after being told that limitation.
   do_not_use_when:
-  - Do not use when the orchestrator is gpt-5.6-sol or another model the harness designates as frontier-capable; use ordinary self-review and canonical validation instead.
+  - the session is not running in a Devin harness; the skill is inert there.
+  - the orchestrator is a harness-designated frontier model (currently gpt-5.6-sol, gpt-6-astra, claude-fable, or claude-opus) or another model the harness designates as frontier-capable; use ordinary self-review and canonical validation instead.
   - Do not start the graph when model capability is unknown or human approval is absent.
-  - Do not use when the PR has no changes to review.
-  - Do not use as a substitute for the repo's canonical CI preflight.
+  - the PR has no changes to review.
+  - a substitute for the repo's canonical CI preflight.
   related_skills:
   - requesting-code-review
   - receiving-code-review
@@ -25,6 +27,19 @@ metadata:
   - dispatching-parallel-agents
 license: MIT
 ---
+
+## Interim boundary
+
+The current version-1 workflow is review assistance, not proof of reviewed green.
+Version-1 workspaces cannot produce a trustworthy-green seal.
+The experimental version-2 kernel is not the user entrypoint until the trustworthy-green roadmap reaches cutover.
+
+Version-2 status: on Devin Desktop with the hooks pack installed, `reviewctl`
+can freeze and refresh an immutable snapshot through the witnessed two-command
+acquisition flow (`enumerate` then `complete --acquired`, or the `freeze` /
+`refresh` aliases that refuse a stale enumeration). Coverage, dispatch,
+frontier, and seal lanes remain unbuilt, and green stays unavailable until the
+later roadmap plans land.
 
 ## Provenance
 
@@ -35,17 +50,22 @@ This skill is a first-party skill authored for this repository. It is not derive
 Run this gate before reading graph recipes, creating review state, dispatching a
 subagent, or invoking any script in this skill.
 
-1. Determine the orchestrator's effective model classification from trusted
+1. If this session is not running in a Devin harness, **stop and do not use
+   this skill**. The graph assumes Devin's transcript, subagent, and scratch
+   surfaces; outside them it is inert.
+2. Determine the orchestrator's effective model classification from trusted
    harness context. Do not infer strength from marketing language or a profile
    name.
-2. If the orchestrator is `gpt-5.6-sol` or another model the harness explicitly
-   designates as frontier-capable, **stop and do not use this skill**. Perform
-   ordinary whole-change self-review and the repository's canonical validation.
-3. If the orchestrator is non-frontier or its classification is unknown, tell
+3. If the orchestrator is a harness-designated frontier model (currently
+   `gpt-5.6-sol`, `gpt-6-astra`, `claude-fable`, or `claude-opus`) or another
+   model the harness explicitly designates as frontier-capable, **stop and do
+   not use this skill**. Perform ordinary whole-change self-review and the
+   repository's canonical validation.
+4. If the orchestrator is non-frontier or its classification is unknown, tell
    the human that this is the legacy review-assistance graph: it can add useful
    review coverage, but it is not proof of exhaustive review or trustworthy
    green. Ask whether they want it used for this PR.
-4. Continue only after a new affirmative answer for this PR. Silence, prior use
+5. Continue only after a new affirmative answer for this PR. Silence, prior use
    on another PR, general autonomy, or merely discovering this skill is not
    approval. If approval is declined or unavailable, use ordinary self-review
    and canonical validation instead.
@@ -172,4 +192,4 @@ Lens subagents write their own `review-log-<lens>.md` files with `write` and end
 - Letting `reviewer-fixes` drift into a full branch review. Keep the input tightly scoped to the fix.
 - Blindly applying reviewer findings without verification. Use `receiving-code-review` for each finding.
 - Skipping CI after the reviewer loop. The reviewer "green" signal is not the draft/ready gate.
-- Flipping a PR to ready without archiving the completed plan/spec/roadmap it implements. The ready state should represent the completed plan, including the moved planning artifacts.
+- Flipping a PR to ready while completed plans, specs, roadmaps, checkpoints, or similar planning artifacts remain tracked.

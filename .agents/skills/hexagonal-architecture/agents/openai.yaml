@@ -4,7 +4,7 @@ metadata:
   source_category: first_party
 interface:
   display_name: Hexagonal Architecture
-  short_description: Use when isolating domain logic from frameworks, UI, and databases through ports and adapters. Do not use when the domain is trivial or the project is a thin framework wrapper.
-  default_prompt: Use when isolating domain logic from frameworks, UI, and databases through ports and adapters. Do not use when the domain is trivial or the project is a thin framework wrapper.
+  short_description: Guidance for isolating domain logic from frameworks, UI, and databases through ports and adapters. Do not use when the domain is trivial or the project is a thin framework wrapper.
+  default_prompt: Use hexagonal-architecture when isolating domain logic from frameworks, UI, and databases through ports and adapters. Do not use when the domain is trivial or the project is a thin framework wrapper.
 policy:
   allow_implicit_invocation: true

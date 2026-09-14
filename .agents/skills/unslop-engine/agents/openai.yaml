@@ -1,0 +1,10 @@
+version: 1
+metadata:
+  skill_name: unslop-engine
+  source_category: first_party
+interface:
+  display_name: Unslop Engine
+  short_description: Build durable profiles that counter repetitive AI-output defaults.
+  default_prompt: Use unslop-engine when observed AI output defaults in a domain are repetitive and you need a durable anti-slop profile to counter them.
+policy:
+  allow_implicit_invocation: false

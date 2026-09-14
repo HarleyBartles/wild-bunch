@@ -83,7 +83,7 @@ Live. The posture doc, worker playbook, and repo indices now carry the route.
 ## Related Stable Source Surfaces
 
 - `docs/testing-posture.md`
-- `.agents/ui-browser-check-playbook.md`
+- `.agents/runbooks/ui-browser-check.md`
 - `docs/testing-lanes.md`
 - `docs/local-postgresql.md`
 - `src/WildBunch.Api/Properties/launchSettings.json`

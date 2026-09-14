@@ -10,10 +10,8 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Use when isolating domain logic from frameworks, UI, and databases through
-    ports and adapters.
   use_when:
-  - Use when isolating domain logic from frameworks, UI, and databases through ports
+  - isolating domain logic from frameworks, UI, and databases through ports
     and adapters
   do_not_use_when:
   - the domain is trivial or the project is a thin framework wrapper
