@@ -104,6 +104,10 @@ flowchart TD
     Rehydrate --> RebuildProj[Rebuild projections via projectors]
     RebuildProj --> ReturnAgg
 
+    %% Zero-event setup state has no event history to replay
+    Prep[Zero-event StartPrepped state] --> PrepSnap[Load current setup snapshot]
+    PrepSnap --> ReturnAgg
+
     %% Projection rebuild path
     LoadProj[Load projection] --> CheckProjVer{Projection version current?}
     CheckProjVer -->|Yes| UseStored[Use stored projection JSON]
@@ -119,7 +123,7 @@ flowchart TD
     end
 
     %% Negative constraints (violations)
-    SnapRequired[~~Snapshot required to load~~] -.->|VIOLATION| Load
+    SnapRequired[~~Event-backed state requires snapshot~~] -.->|VIOLATION| Load
     DirectMut[~~Direct mutation outside Apply~~] -.->|VIOLATION| Apply
     NoProjector[~~Projection without projector~~] -.->|VIOLATION| Store
     BypassFunnel[~~Bypass PersistedPayloadLoader~~] -.->|VIOLATION| LoadEvents
