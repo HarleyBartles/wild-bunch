@@ -1,34 +1,43 @@
 # UI browser-check runbook
 
-Use this Wild Bunch overlay after the selected browser or verification skill
-owns the portable checking workflow.
+## When
 
-## Local launch route
+Browser behavior, layout, interaction, or player-flow evidence is required.
 
-- Ensure shared PostgreSQL: `.\tools\postgres-dev.ps1 ensure`
-- Manage this worktree's API and Vite servers with
-  `.\scripts\dev-servers.ps1 ensure|status|stop`.
-- Canonical API: `http://localhost:5275`
-- Canonical web app: `http://localhost:5173`
-- Shared PostgreSQL: `localhost:5435`
+## Required skills
 
-The helper records process IDs, ports, URLs, worktree path, and branch in
-`.local/dev-servers/state.json`. Reuse only a healthy server recorded for the
-current worktree. Never stop another worktree's server. When canonical ports
-are occupied, use the helper's reported alternate ports and report the actual
-URLs.
+- `/game-playtest`
+- `/wild-bunch-browser-game` when client state authority is in question.
+- `/playwright-testing` when the change includes automated browser tests.
 
-## Wild Bunch proof
+## Composition
 
-- Prove the frontend reaches the API belonging to the same worktree before
-  accepting browser evidence.
-- Use a deterministic seed or known scenario when visible behavior depends on
-  session state.
-- Keep automated validation separate from browser evidence.
-- Report the worktree, branch, actual API and frontend URLs, scenario, observed
-  result, and any console or network errors.
-- Stop worker-started dev servers with `.\scripts\dev-servers.ps1 stop`; leave
-  the shared PostgreSQL service running.
+Resolve state authority when needed, launch the matching worktree services, and
+let `/game-playtest` own interactive evidence. Add `/playwright-testing` only
+for test implementation or diagnosis.
 
-The browser-check trigger remains the one recorded in
-[ADR-0022](../../docs/adr/ADR-0022-ui-browser-checks-are-a-manual-evidence-lane.md).
+## Doctrine and contracts
+
+[Frontend standards](../doctrine/frontend-standards.md) and applicable scoped
+anti-slop contracts bind the observed surface.
+
+## Local commands and paths
+
+- PostgreSQL: `.\tools\postgres-dev.ps1 ensure` at `localhost:5435`
+- Servers: `.\scripts\dev-servers.ps1 ensure|status|stop`
+- Canonical API/web URLs: `http://localhost:5275` and `http://localhost:5173`
+- Worktree server state: `.local/dev-servers/state.json`
+
+Reuse only healthy state recorded for this worktree. Use helper-reported
+alternate ports when canonical ports are occupied. Stop worker-started servers;
+leave shared PostgreSQL running.
+
+## Evidence contract
+
+Report worktree, branch, actual URLs, API/worktree match, deterministic scenario,
+observed result, and console/network errors separately from automated proof.
+
+## Prohibited combinations
+
+- Do not stop another worktree's server.
+- Do not accept a screenshot alone as behavioral proof.

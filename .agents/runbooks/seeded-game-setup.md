@@ -1,25 +1,44 @@
 # Seeded game setup runbook
 
-Use this runbook when changing the UUID codec or the setup pipeline.
+## When
+
+Changing the UUID codec, game-setup pipeline, difficulty, entropy, starting
+town, or setup-owned player facts.
+
+## Required skills
+
+- `/seed-ownership`
+- `/wild-bunch-domain-modeling` when gameplay invariants change.
+- `/wild-bunch-dotnet-architecture` when application or persistence boundaries change.
+- `/test-driven-development`
+- `/verification-before-completion`
 
 ## Composition
 
-1. Use `/seed-ownership` to classify each changed fact.
-2. Use `/wild-bunch-domain-modeling` if the resolved fact changes a gameplay
-   invariant, and `/wild-bunch-dotnet-architecture` if it crosses application
-   or persistence boundaries.
-3. Use `/test-driven-development` for the focused change and
-   `/verification-before-completion` for the final claim.
+Classify every changed fact with `/seed-ownership`, add only the boundary skills
+the change crosses, construct it test-first, then verify the resolved pipeline.
 
-## Repository route
+## Doctrine and contracts
 
-- Seed codec and world factory: `src/WildBunch.GameContent/`.
-- Setup orchestration and session creation: inspect live symbols named by
-  [seed pipeline doctrine](../doctrine/game-content-seed-pipeline.md).
-- Tests: `tests/WildBunch.GameContent.Tests/` plus the affected domain,
-  application, or integration lane.
+[Seed pipeline doctrine](../doctrine/game-content-seed-pipeline.md),
+[entropy and seed doctrine](../doctrine/entropy-and-seed.md), and applicable
+architecture or gameplay doctrine bind the change.
 
-Update both codec directions for a seed-owned field. Store `SeedWorld` values
-in tests and derive UUIDs with `CreateRepresentativeSeedCode`; do not freeze
-encoded UUID fixtures. Run the focused tests, then the canonical gate in
-[testing](testing.md).
+## Local commands and paths
+
+- Codec and world factory: `src/WildBunch.GameContent/`
+- Tests: `tests/WildBunch.GameContent.Tests/` plus affected domain, application,
+  or integration lanes
+- Update both codec directions for seed-owned fields. Store `SeedWorld` values
+  in tests and derive UUIDs with `CreateRepresentativeSeedCode`.
+
+## Evidence contract
+
+Ownership is explicit; round-trip and setup tests prove deterministic behavior;
+the canonical gate in [testing](testing.md) passes.
+
+## Prohibited combinations
+
+- Do not place difficulty, entropy, starting town, or player setup inside seed
+  identity.
+- Do not freeze encoded UUID fixtures.

@@ -1,46 +1,40 @@
-# Image Asset Cut and Normalization
+# Image asset cut and normalization runbook
 
-Use this runbook after `/town-hub-asset-judgment` accepts a candidate that needs
-deterministic processing.
+## When
 
-## What belongs here
+A town-hub candidate accepted by `/town-hub-asset-judgment` needs deterministic
+sheet slicing, background removal, normalization, staging, or promotion.
 
-- cutout and normalization commands
-- repository paths and canvas handling
+## Required skills
 
-## Required dependencies
+- `/town-hub-asset-judgment`
 
-- Python 3.11+ with Pillow installed for the primary pipeline path
-- `src/WildBunch.Assets/scripts/image_asset_pipeline.py` depends on Pillow for the cut, slice, and normalize commands
+## Composition
 
-## First-pass workflow
+Accept visual judgment before processing, apply the deterministic operation,
+then judge the processed game-scale result before promotion.
 
-1. If the source is a full turnaround sheet, slice it into its individual
-   views first using the repo helper.
-2. Cut the background to transparency or normalize the crop onto a white
-   staging canvas, depending on the review stage.
-3. Normalize the subject onto the target canvas with a stable bottom anchor.
-4. Write the result into the appropriate staging folder for visual judgment.
-5. Promote it only after `/town-hub-asset-judgment` accepts the processed result.
+## Doctrine and contracts
 
-## Cut and normalize command
+The applicable art doctrine and `src/WildBunch.Assets/docs/asset-spec.md` bind
+canvas, footprint, view names, and custody.
 
-Use the repository's primary Python backend first:
+## Local commands and paths
+
+Primary helper: `src/WildBunch.Assets/scripts/image_asset_pipeline.py` with
+Python 3.11+ and Pillow.
 
 ```bash
-python src/WildBunch.Assets/scripts/image_asset_pipeline.py normalize \
-  --input C:/path/to/source.png \
-  --out path/to/staging/output.png
+python src/WildBunch.Assets/scripts/image_asset_pipeline.py normalize --input C:/path/to/source.png --out path/to/staging/output.png
+python src/WildBunch.Assets/scripts/image_asset_pipeline.py slice-sheet --input C:/path/to/sheet.png --out-dir path/to/staging/family --names front,profile,rear,front-oblique,rear-oblique
 ```
 
-For full turnaround sheets, slice the views into separate staging files:
+## Evidence contract
 
-```bash
-python src/WildBunch.Assets/scripts/image_asset_pipeline.py slice-sheet \
-  --input C:/path/to/sheet.png \
-  --out-dir path/to/staging/family \
-  --names front,profile,rear,front-oblique,rear-oblique
-```
+The processed asset preserves required canvas, bottom anchor, transparency,
+view naming, and accepted game-scale read at its staging or production path.
 
-If the environment does not have Pillow available, install it into the active
-Python environment before using the repo helper.
+## Prohibited combinations
+
+- Do not use deterministic cropping or perspective warping to rescue a rejected
+  camera or family judgment.

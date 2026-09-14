@@ -1,12 +1,39 @@
-# Marketplace generation guide
+# Marketplace generation runbook
 
-Use `/refreshing-installed-skills` after changing the plugin subscription,
-pinned marketplace source, local plugin, or a registered repo-local skill.
+## When
 
-The authored subscription is `.agents/plugins/marketplace.json`. Exact entries
-under `repo.local_skills` are preserved as local custody; all other installed
-skill directories are projections. Run `py -3 tools\run.py ci --apply`, stage
-the intended projection and mesh changes, and use the normal hooked commit.
+Changing plugin subscriptions, the pinned marketplace source, a local plugin,
+or a registered repository-local skill.
 
-See [repository skills policy](../doctrine/repo-skills-policy.md) for the
-custody invariants this workflow must preserve.
+## Required skills
+
+- `/refreshing-installed-skills`
+- `/repo-standards`
+
+## Composition
+
+Refresh the installed projection from authored configuration, then apply and
+check repository shape and mesh requirements.
+
+## Doctrine and contracts
+
+[Repository skills policy](../doctrine/repo-skills-policy.md) owns source
+custody. Exact `repo.local_skills` names identify local skills; every other
+installed skill directory is a projection.
+
+## Local commands and paths
+
+- Authored subscription: `.agents/plugins/marketplace.json`
+- Pinned source: `.agents/plugins/marketplace-source`
+- Apply: `py -3 tools\run.py ci --apply`
+- Check: `py -3 tools\run.py ci --check`
+
+## Evidence contract
+
+The projection provenance, submodule gitlink, registered local skills, and
+generated mesh agree at the committed head.
+
+## Prohibited combinations
+
+- Do not hand-edit marketplace-projected skill files.
+- Do not infer local custody from a name or prefix.

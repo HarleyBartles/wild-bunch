@@ -1,29 +1,39 @@
 # Town-hub asset production runbook
 
-Use this runbook when producing or revising a town-hub building, road, or
-ground asset.
+## When
+
+Producing or revising a town-hub building, road, ground, or prop asset.
+
+## Required skills
+
+- `/imagegen` when raster generation is needed.
+- `/town-hub-asset-judgment`
 
 ## Composition
 
-1. Read `src/WildBunch.Assets/docs/asset-operations.md`, the asset spec, the
-   applicable master and family bible under `src/WildBunch.Assets/docs/bibles/`,
-   and the matching doctrine under `../doctrine/art/`.
-2. Use `/imagegen` for generated raster candidates when generation is needed.
-3. Use `/town-hub-asset-judgment` to accept, retry, or reject each candidate.
-4. Use the deterministic selection/cut/normalization runbook for processing.
+Read the asset operations/spec and applicable master/family bible, generate only
+when needed, judge each candidate, then send accepted candidates through the
+deterministic processing runbook.
 
-## Repository route
+## Doctrine and contracts
 
-- Masters and family sources: the matching family under
-  `src/WildBunch.Assets/source/`.
-- Reviewable intermediates: the matching family under
-  `src/WildBunch.Assets/staging/`.
-- Promoted outputs: the matching family under
-  `src/WildBunch.Assets/production/sprites/` or
-  `src/WildBunch.Assets/production/tiles/`, as defined by the asset spec.
-- Deterministic helper and commands:
-  [asset selection, cut, and normalization](asset-selection-cut-normalization.md).
+The matching art doctrine under `../doctrine/art/` and the applicable binding
+anti-slop contract govern family, camera, seam, and player-surface constraints.
 
-Buildings require the canonical five-view set and game-scale review. Road and
-ground tiles use seam-safe copy promotion without trimming or rescaling. Keep
-candidate sheets and discarded renders out of promoted output.
+## Local commands and paths
+
+- Sources: matching family under `src/WildBunch.Assets/source/`
+- Reviewable intermediates: matching family under `src/WildBunch.Assets/staging/`
+- Outputs: matching family under `src/WildBunch.Assets/production/sprites/` or
+  `production/tiles/` as declared by the asset spec
+- Processing: [asset cut and normalization](asset-selection-cut-normalization.md)
+
+## Evidence contract
+
+Candidate judgment, required views, game-scale read, seam/footprint checks, and
+promoted path agree with the applicable bible and asset spec.
+
+## Prohibited combinations
+
+- Do not promote rejected candidate sheets or discarded renders.
+- Do not trim or rescale road and ground tile canvases.

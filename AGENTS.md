@@ -22,7 +22,7 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - Testing instructions: [.agents/runbooks/testing.md](.agents/runbooks/testing.md)
 - Code style guidelines: [.agents/runbooks/code-style.md](.agents/runbooks/code-style.md)
 - Review guidelines: [.agents/runbooks/code-review.md](.agents/runbooks/code-review.md)
-- PR instructions: [.agents/runbooks/pr.md](.agents/runbooks/pr.md)
+- Publication proof and PR instructions: [.agents/runbooks/pr.md](.agents/runbooks/pr.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Security considerations: [.agents/runbooks/security.md](.agents/runbooks/security.md)
 

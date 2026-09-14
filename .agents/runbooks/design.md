@@ -1,23 +1,36 @@
 # Design runbook
 
-This overlay supplies Wild Bunch-specific inputs after `using-superpowers-plus`
-routes design work to `brainstorming`.
+## When
 
-## Local design constraints
+Designing a Wild Bunch feature or behavior before implementation planning.
 
-- Read [coding discipline](../doctrine/coding-discipline.md) for scope and the
-  mandatory architecture posture.
-- Read [architecture guardrails](../doctrine/architecture-guardrails.md) when the
-  design touches GameSession, domain logic, persistence, commands, queries, or
-  projections.
-- Read [frontend standards](../doctrine/frontend-standards.md) for browser delivery
-  or player-facing UI.
-- Read [validation doctrine](../doctrine/validation-policy.md) so the design names
-  the required Wild Bunch evidence lanes.
-- Read [mesh policy](../doctrine/mesh-policy.md) when the design changes agent-facing
-  routes, doctrine, or generated indexes.
+## Required skills
 
-## Local artifact path
+- `/brainstorming`
 
-Active design specifications live in `.agents/specs/`. Completed specifications
-leave the tracked tree under [artifact custody doctrine](../doctrine/artifact-custody.md).
+## Composition
+
+`/brainstorming` owns design discovery and spec handoff. This runbook supplies
+only the Wild Bunch constraints and artifact home it must bind.
+
+## Doctrine and contracts
+
+- [Coding discipline](../doctrine/coding-discipline.md) always applies.
+- Add [architecture guardrails](../doctrine/architecture-guardrails.md) for
+  domain, persistence, command, query, or projection work.
+- Add [frontend standards](../doctrine/frontend-standards.md) for browser work.
+- Add [validation doctrine](../doctrine/validation-policy.md) to select evidence
+  lanes and [mesh policy](../doctrine/mesh-policy.md) for agent-surface changes.
+
+## Local commands and paths
+
+Active design specifications live in `.agents/specs/`.
+
+## Evidence contract
+
+The accepted specification names every applicable doctrine constraint and
+Wild Bunch validation lane.
+
+## Prohibited combinations
+
+- Do not reproduce `/brainstorming` discovery, self-review, or handoff steps.

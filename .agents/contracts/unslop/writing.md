@@ -11,8 +11,8 @@ Use this profile when writing documents, plans, specs, or any other text artifac
 ## Artifact Placement
 - Active plans, specifications, and roadmaps live under `.agents/plans/`,
   `.agents/specs/`, and `.agents/roadmaps/`.
-- Durable doctrine and repo-local profiles live under `.agents/doctrine/` and
-  `.agents/unslop/`.
+- Durable doctrine and binding repo-local profiles live under
+  `.agents/doctrine/` and `.agents/contracts/unslop/`.
 - Temporary notes, review packages, worker reports, screenshots, and other
   evidence live in `Z:\_agent-scratch\wild-bunch\<branch-name>`.
 - Do not create loose agent files at repo root or commit generated evidence.

@@ -1,22 +1,41 @@
 # Implementing runbook
 
-Use this local overlay after `using-superpowers-plus` selects the implementation
-owner.
+## When
 
-## Required local reading
+Implementing an approved Wild Bunch change in a task worktree.
 
-- [Coding discipline](../doctrine/coding-discipline.md) for scope and architecture
-  boundaries.
-- [Validation doctrine](../doctrine/validation-policy.md) before changing tests.
-- [Architecture guardrails](../doctrine/architecture-guardrails.md) before changing
-  GameSession, persistence, domain logic, commands, queries, or projections.
-- [Gameplay invariants](../doctrine/gameplay-invariants.md) before changing
-  player state, investigation truth, or travel behavior.
-- [Frontend standards](../doctrine/frontend-standards.md) before browser work.
+## Required skills
 
-## Wild Bunch validation
+- `/test-driven-development`
+- `/verification-before-completion`
+- The focused Wild Bunch capability skill for any domain, architecture,
+  browser, seed, dev-control, or asset judgment in scope.
+
+## Composition
+
+The focused capability establishes ownership, `/test-driven-development`
+constructs the change, and `/verification-before-completion` gates the result.
+
+## Doctrine and contracts
+
+- [Coding discipline](../doctrine/coding-discipline.md) always applies.
+- [Architecture guardrails](../doctrine/architecture-guardrails.md) applies to
+  GameSession, persistence, domain, command, query, or projection changes.
+- [Gameplay invariants](../doctrine/gameplay-invariants.md) applies to player,
+  investigation, or travel behavior.
+- [Frontend standards](../doctrine/frontend-standards.md) applies to browser work.
+
+## Local commands and paths
 
 Select focused tests from [validation doctrine](../doctrine/validation-policy.md),
-then use the sequence in the [testing runbook](testing.md). For a normal commit,
-stage the intended tree and let the installed pre-commit hook check that exact
-snapshot.
+then use [testing](testing.md). A normal commit uses the installed hook over the
+exact staged snapshot.
+
+## Evidence contract
+
+Focused behavior proof and the canonical staged-snapshot gate both pass.
+
+## Prohibited combinations
+
+- Do not use a capability skill to sequence the repository delivery lifecycle.
+- Do not bypass the hooked commit.

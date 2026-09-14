@@ -17,6 +17,7 @@ extensions to the portable repository standard.
 | testing.md | `.agents/runbooks/testing.md` | present |
 | pr.md | `.agents/runbooks/pr.md` | required |
 | code-style.md | `.agents/runbooks/code-style.md` | present |
+| completing-plans.md | `.agents/runbooks/completing-plans.md` | present |
 
 ## Additional repo-specific runbooks
 
@@ -33,9 +34,7 @@ extensions to the portable repository standard.
 
 ## Exceptions
 
-- `completed-artifacts-doctrine` - `/cleanup-custody` owns the portable
-  classification and removal workflow. Wild Bunch keeps only its repository
-  destinations and retention delta in `.agents/doctrine/artifact-custody.md`.
+None.
 
 ## Root router interpretation
 

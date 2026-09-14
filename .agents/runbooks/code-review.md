@@ -1,25 +1,41 @@
 # Code review runbook
 
-Use this local overlay after `using-superpowers-plus` routes review to
-`requesting-code-review` or another review owner.
+## When
 
-## Wild Bunch review concerns
+Reviewing a Wild Bunch diff, branch, or pull request.
 
-- Domain and persistence changes must preserve the DDD, CQRS, event-sourcing,
-  replay, upcasting, projection-version, and load-funnel rules in
-  [architecture guardrails](../doctrine/architecture-guardrails.md) and
-  [event-sourcing integrity doctrine](../doctrine/event-sourcing-integrity.md).
-- Frontend changes must follow [frontend standards](../doctrine/frontend-standards.md)
-  and protect the player-facing play surface.
-- Tests must use the correct test kind and assert observable behavior under
-  [validation doctrine](../doctrine/validation-policy.md).
-- Apply the repo-local profiles in `.agents/unslop/` and the relevant portable
-  profile from `unslop-profiles`.
-- Update ADRs when an architectural decision changes and regenerate the mesh
-  when routed or indexed files change.
+## Required skills
 
-## Evidence
+- `/requesting-code-review` for review construction.
+- `/receiving-code-review` when resolving feedback.
+- `/verification-before-completion` before approval or completion claims.
 
-- Use `py -3 tools/run.py ci --check` only for deliberate uncommitted or CI-parity
-  proof; a successful normal commit already carries staged-snapshot hook evidence.
-- Confirm current GitHub PR checks before approval.
+## Composition
+
+The review owner selects lenses; applicable Wild Bunch capability skills judge
+domain-specific boundaries. Feedback resolution returns through
+`/receiving-code-review`, then current verification gates the verdict.
+
+## Doctrine and contracts
+
+- Backend changes: [architecture guardrails](../doctrine/architecture-guardrails.md)
+  and [event-sourcing integrity](../doctrine/event-sourcing-integrity.md).
+- Frontend changes: [frontend standards](../doctrine/frontend-standards.md).
+- Tests: [validation doctrine](../doctrine/validation-policy.md).
+- Apply relevant binding profiles from `../contracts/unslop/` and scoped
+  contract homes; portable profiles remain owned by `/unslop-profiles`.
+
+## Local commands and paths
+
+Use `py -3 tools/run.py ci --check` for deliberate CI-parity proof. Regenerate
+the mesh through the canonical apply capability when routed files change.
+
+## Evidence contract
+
+The verdict names current local proof and current GitHub checks, and identifies
+any applicable ADR or mesh change.
+
+## Prohibited combinations
+
+- Do not substitute test volume for behavioral review.
+- Do not copy portable review lenses or feedback choreography here.
