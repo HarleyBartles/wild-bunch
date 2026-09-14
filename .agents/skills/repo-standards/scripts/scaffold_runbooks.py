@@ -25,6 +25,7 @@ RUNBOOK_TITLES: dict[str, str] = {
     "pr.md": "Pull request runbook",
     "code-style.md": "Code style runbook",
     "repo-doctrine.md": "Repo doctrine runbook",
+    "completing-plans.md": "Completion runbook",
 }
 
 
@@ -76,9 +77,21 @@ def _runbook_content(name: str) -> str:
     title = RUNBOOK_TITLES.get(name, name.replace("-", " ").title())
     return (
         f"# {title}\n\n"
-        f"This is the repo-local {title.lower()}. "
-        "It documents repo-specific conventions, commands, and exceptions.\n\n"
-        "<!-- Add repo-specific guidance here. -->\n"
+        "<!-- One-sentence purpose: who uses this runbook and what it governs. -->\n\n"
+        "## When\n\n"
+        "<!-- The class of change or trigger this runbook covers. -->\n\n"
+        "## Required skills\n\n"
+        "<!-- The skills this composition invokes; the owning stage skill for stage runbooks. -->\n\n"
+        "## Composition\n\n"
+        "<!-- Order or conditions under which the required skills apply. -->\n\n"
+        "## Doctrine and contracts\n\n"
+        "<!-- Local truths and shapes that constrain this composition. -->\n\n"
+        "## Local commands and paths\n\n"
+        "<!-- Repository commands, paths, and exceptions. -->\n\n"
+        "## Evidence contract\n\n"
+        "<!-- What the combined workflow must prove before it is complete. -->\n\n"
+        "## Prohibited combinations\n\n"
+        "<!-- Combinations explicitly not legitimate here, or `none`. -->\n"
     )
 
 

@@ -70,14 +70,8 @@ which expands matching directories into explicit names before removing the legac
 
 ## SDD scratch
 
-The Superpowers+ SDD workspace lives outside the repo at:
-
-```
-<main-checkout>/../_agent-scratch/<repo-name>/<branch>/<plan-basename>/
-```
-
-SDD outputs (task briefs, implementer reports, review packages, and progress
-ledgers) are not repo resident and are not governed by `.gitignore`.
+The off-repo `_agent-scratch` layout, naming, sanitization, and cleanup rules
+live in [scratch-workspace-policy.md](scratch-workspace-policy.md).
 
 The root `.gitignore` must not contain a stale in-repo rule such as:
 
@@ -90,10 +84,7 @@ The root `.gitignore` must not contain a stale in-repo rule such as:
 
 ## Completed artifacts
 
-Completed plans, specifications, roadmaps, checkpoints, and similar artifacts
-leave the tracked tree when their work is complete. Git history remains the
-immutable record. An optional convenience copy may live under the central
-`_agent-scratch/<repo-name>/completed/<artifact-type>/` store. It is disposable,
-not branch-scoped, and not evidence.
-Promote enduring architecture decisions to ADRs and operating rules to current
-doctrine or runbooks before removing the artifacts.
+The `completed-artifacts-doctrine` surface carries this repo's custody truth
+for finished planning artifacts. `cleanup-custody` owns the custody method and
+promotion-before-removal step; the mapped completion runbook owns the removal
+composition.
