@@ -1,6 +1,7 @@
 # Dev Overlay Doctrine — State/Action Boundary, Panel Ownership, and Mesh Discipline
 
-This is the binding agent-facing doctrine for the Dev Overlay and Playtest Control Plane. All dev-overlay work must follow it. The Linear document "Doctrine — dev overlay state/action boundary" is the upstream source; this file is the repo-persisted version that future workers encounter through the agents mesh.
+This is the binding repository doctrine for the Dev Overlay and Playtest
+Control Plane. All dev-overlay work must follow it.
 
 Apply the [dev overlay unslop profile](../unslop/dev-overlay.md) together with this doctrine when designing, implementing, or reviewing dev overlay work.
 
@@ -127,4 +128,4 @@ Dev-overlay work must provide:
 
 Screenshots and other agent-generated evidence belong in the branch-scoped
 `Z:\_agent-scratch\wild-bunch\<branch-name>` workspace and must not be committed.
-See `.agents/docs/artifact-policy.md` for artifact custody.
+See `.agents/doctrine/artifact-custody.md` for artifact custody.

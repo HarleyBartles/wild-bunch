@@ -78,7 +78,7 @@ Both wrappers are thin convenience layers that call the Python script.
 
 The primary backend is Pillow in Python 3.11+ with the package installed in
 the active environment. The selection and promotion note lives in
-`.agents/docs/asset-pipeline/selection-cut-normalization.md`.
+`.agents/runbooks/asset-selection-cut-normalization.md`.
 
 ## Extension hooks
 

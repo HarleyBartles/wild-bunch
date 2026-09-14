@@ -21,7 +21,8 @@ the task touches repo shape, runbook layout, or scaffolds.
 
 ## Additional repo-specific runbooks
 
-- <!-- list repo-specific runbooks here -->
+- `.agents/runbooks/ui-browser-check.md`
+- `.agents/runbooks/asset-selection-cut-normalization.md`
 
 ## Root contributor and review surfaces
 
@@ -30,7 +31,9 @@ the task touches repo shape, runbook layout, or scaffolds.
 
 ## Exceptions
 
-None.
+- `completed-artifacts-doctrine` - `/cleanup-custody` owns the portable
+  classification and removal workflow. Wild Bunch keeps only its repository
+  destinations and retention delta in `.agents/doctrine/artifact-custody.md`.
 
 ## Root router interpretation
 

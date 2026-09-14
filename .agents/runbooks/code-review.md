@@ -7,12 +7,12 @@ Use this local overlay after `using-superpowers-plus` routes review to
 
 - Domain and persistence changes must preserve the DDD, CQRS, event-sourcing,
   replay, upcasting, projection-version, and load-funnel rules in
-  [architecture guardrails](../docs/architecture-guardrails.md) and
-  [event-sourcing integrity policy](../docs/event-sourcing-integrity-policy.md).
-- Frontend changes must follow [frontend standards](../docs/frontend-standards.md)
+  [architecture guardrails](../doctrine/architecture-guardrails.md) and
+  [event-sourcing integrity doctrine](../doctrine/event-sourcing-integrity.md).
+- Frontend changes must follow [frontend standards](../doctrine/frontend-standards.md)
   and protect the player-facing play surface.
 - Tests must use the correct test kind and assert observable behavior under
-  [validation policy](../docs/validation-policy.md).
+  [validation doctrine](../doctrine/validation-policy.md).
 - Apply the repo-local profiles in `.agents/unslop/` and the relevant portable
   profile from `unslop-profiles`.
 - Update ADRs when an architectural decision changes and regenerate the mesh

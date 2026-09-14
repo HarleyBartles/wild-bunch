@@ -107,7 +107,7 @@ endpoint, and normal worker cleanup must not stop it.
 
 - `docs/local-postgresql.md`
 - `docs/testing-lanes.md`
-- `.agents/architecture-hygiene.md`
+- `.agents/doctrine/architecture-guardrails.md`
 - `tools/postgres-dev.ps1`
 - `tests/WildBunch.Integration.Tests/PostgreSqlPersistenceTests.cs`
 - `src/WildBunch.Persistence/WildBunch.Persistence.csproj`

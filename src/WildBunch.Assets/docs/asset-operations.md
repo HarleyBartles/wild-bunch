@@ -22,9 +22,9 @@ Before editing or promoting assets in this project, read:
 - `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md`
 - the matching family bible under `src/WildBunch.Assets/docs/bibles/buildings/` or `src/WildBunch.Assets/docs/bibles/ground/` for the asset you are working on
 - `src/WildBunch.Assets/docs/asset-spec.md`
-- `.agents/docs/art/town-hub-buildings-art-doctrine.md` (for building work)
-- `.agents/docs/art/town-hub-ground-art-doctrine.md` (for ground, road, or prop work)
-- `.agents/docs/asset-pipeline/selection-cut-normalization.md`
+- `.agents/doctrine/art/town-hub-buildings.md` (for building work)
+- `.agents/doctrine/art/town-hub-ground.md` (for ground, road, or prop work)
+- `.agents/runbooks/asset-selection-cut-normalization.md`
 
 ## Rules
 

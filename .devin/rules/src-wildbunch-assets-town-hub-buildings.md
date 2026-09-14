@@ -13,5 +13,5 @@ When working in this scope:
 - `src/WildBunch.Assets/docs/bibles/buildings/buildings-bible-master.md`
 - the shared or family-specific town-building bible under `src/WildBunch.Assets/docs/bibles/buildings/` that matches the asset you are working on
 - `src/WildBunch.Assets/docs/asset-spec.md`
-- `.agents/docs/art/town-hub-buildings-art-doctrine.md`
-- `.agents/docs/asset-pipeline/selection-cut-normalization.md`
+- `.agents/doctrine/art/town-hub-buildings.md`
+- `.agents/runbooks/asset-selection-cut-normalization.md`

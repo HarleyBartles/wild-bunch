@@ -3,7 +3,7 @@
 Use this profile when writing documents, plans, specs, or any other text artifacts. This profile enforces standards for artifact placement and writing quality.
 
 ## Scratch Artifact Check
-- **CRITICAL**: Before creating any scratch files (draft documents, temporary notes, session artifacts), check `.agents/docs/artifact-policy.md` for placement guidance
+- **CRITICAL**: Before creating any scratch files (draft documents, temporary notes, session artifacts), check `.agents/doctrine/artifact-custody.md` for placement guidance
 - Scratch files must be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>`, never in the repo root
 - Files like `*-review*.md`, `*-scratch*.md`, `*-draft*.md`, `COMMIT_MSG.txt`, `PR_BODY.md` are scratch artifacts that pollute the tree
 - If you find scratch artifacts committed to the repo, remove them as part of self-healing

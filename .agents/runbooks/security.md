@@ -1,3 +1,4 @@
 # Security considerations
 
-See [.agents/docs/architecture-hygiene.md](../docs/architecture-hygiene.md) for hygiene, safety, and verification boundaries.
+Use `/connector-safety` for portable tool-side-effect controls. For Wild Bunch
+source boundaries, see [architecture guardrails](../doctrine/architecture-guardrails.md).

@@ -61,7 +61,7 @@ A key difference from ADR-0031: the saloon dev context is the first dev surface 
    - The DTO is a separate type from player DTOs (GameSessionDto, JournalDto).
    - The endpoint is under /api/dev/ with DevRoleGuard.
    - Player-facing APIs continue to be guarded by `GameApiHiddenTruthTests`.
-   - The dev-overlay doctrine (`.agents/docs/dev-overlay-doctrine.md`) governs what hidden truth is useful vs sensational.
+   - The dev-overlay doctrine (`.agents/doctrine/dev-overlay.md`) governs what hidden truth is useful vs sensational.
 
 7. **Persistence.** The three dev events are registered in `ResolveEventType` for event-stream serialization. The `PendingDevSaloonOverride` is stored as a snapshot component (`pendingDevSaloonOverride`) in the EF component-based snapshot path and as a field in the full `GameSessionSnapshot` record. On load, `_pendingDevSaloonOverride` is set via `GameSessionRehydrator.SetBackingField`. Post-snapshot event replay overwrites the snapshot value via Apply.
 

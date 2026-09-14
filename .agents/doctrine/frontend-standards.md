@@ -26,7 +26,7 @@ React renders backend/player-known state rather than inventing canonical game fa
 
 ## Dev Overlay
 
-Required reading: `.agents/docs/dev-overlay-doctrine.md` — binding doctrine for dev overlay state/action boundary, panel ownership, related panel visibility, layout, hidden truth, backend authority, and closeout proof.
+Required reading: `.agents/doctrine/dev-overlay.md` — binding doctrine for dev overlay state/action boundary, panel ownership, related panel visibility, layout, hidden truth, backend authority, and closeout proof.
 
 Also apply `.agents/unslop/dev-overlay.md` — the dev overlay unslop drift-prevention profile.
 
@@ -43,5 +43,5 @@ The app uses TanStack Router with a route tree that reflects game state via URL 
 - **Town place routes are flat siblings under rootRoute, NOT children of townRoute.** `TownHubSurface` renders the hub directly (no `<Outlet />`), so child routes would not render. Place routes (`/town/store`, `/town/sheriff`, `/town/saloon`, `/town/trailhead`) are siblings of `/town` under the root route.
 - **Search params:** The `/town` route uses `validateSearch` to parse the optional `arrived` query param (`?arrived=1`). The validateSearch function must return `{}` when the param is absent, not `{ arrived: undefined }` — the latter makes TanStack Router type the param as required, breaking `navigate({ to: "/town" })` calls that don't pass search.
 - **Suspense:** Lazy-loaded route components are wrapped in `<Suspense>` with `<RouteLoading>` as the fallback (defined in `src/shell/RouteLoading.tsx`).
-- **Testing:** Tests that render through `RouterProvider` must use the `createAppRouter()` factory, not the shared `router` singleton. The shared router retains internal state between tests (TanStack Router doesn't react to `window.history.replaceState`), causing test ordering flakes. See `.agents/docs/validation-policy.md` Test Quality Standards for details.
+- **Testing:** Tests that render through `RouterProvider` must use the `createAppRouter()` factory, not the shared `router` singleton. The shared router retains internal state between tests (TanStack Router doesn't react to `window.history.replaceState`), causing test ordering flakes. See `.agents/doctrine/validation-policy.md` for the local test lanes.
 - **Enforcement:** Routing conventions (lazy-loaded components, flat town place routes, validateSearch returns `{}`, `createAppRouter` factory exists) are enforced by `src/tests/routingConventions.test.ts`. If you add or change a route, this test will catch violations.

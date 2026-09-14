@@ -9,6 +9,16 @@
 - Stage-specific repository deltas live under `.agents/runbooks/`.
 - `INDEX.md` and `INDEX.json` files are generated navigation, not operative law.
 
+Do not recreate `.agents/docs/` as an authority catch-all. Classify authored
+agent material by role:
+
+- doctrine says what must remain true in this repository;
+- contracts define executable or independently consumed agreements;
+- runbooks contain repo-local procedures and deltas from portable workflows;
+- ordinary human explanation belongs under root `docs/`;
+- completed audits, trackers, plans, and reports leave the live tree once their
+  enduring decisions or rules have been promoted.
+
 ## Generation and validation
 
 Use the canonical runner to regenerate and validate the complete mesh:

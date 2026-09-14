@@ -5,11 +5,11 @@ Use this local overlay after `using-superpowers-plus` routes planning to
 
 ## Wild Bunch inputs
 
-- Read [coding discipline](../docs/coding-discipline.md) and
-  [validation policy](../docs/validation-policy.md) for every implementation plan.
-- Read [architecture guardrails](../docs/architecture-guardrails.md) when the work
+- Read [coding discipline](../doctrine/coding-discipline.md) and
+  [validation doctrine](../doctrine/validation-policy.md) for every implementation plan.
+- Read [architecture guardrails](../doctrine/architecture-guardrails.md) when the work
   touches domain logic, persistence, commands, queries, or projections.
-- Read [frontend standards](../docs/frontend-standards.md) for browser work.
+- Read [frontend standards](../doctrine/frontend-standards.md) for browser work.
 
 ## Local artifact paths
 
@@ -18,5 +18,5 @@ Use this local overlay after `using-superpowers-plus` routes planning to
 - Active roadmaps: `.agents/roadmaps/`
 - Transient worker material: the branch-scoped `_agent-scratch` workspace
 
-Completed planning artifacts leave the tracked tree under the rules in
-[completed-artifacts doctrine](../doctrine/completed-artifacts.md).
+Completed planning artifacts leave the tracked tree under
+[artifact custody doctrine](../doctrine/artifact-custody.md).

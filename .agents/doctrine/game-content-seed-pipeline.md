@@ -23,7 +23,7 @@ seed code -> SeedWorld -> DifficultyEnvelope -> EntropyPolicy
 
 - **Seed-owned** (`SeedWorld`): world variant, selected town IDs, trail graph (with baseline terrain/water/distance), accusation/default culprit candidates, cash bonus. The seed owns the map.
 - **Pressure-owned** (`DifficultyEnvelope`): difficulty, starting cash, loadout profile, horse/saddle posture, travel rules profile.
-- **Entropy-owned** (`EntropyPolicy` + `MysteryTruthResolver`): salt mode, cash bonus cap, and (future) culprit reroll/feature reallocation. See [Entropy and Seed/Test Policy](entropy-and-seed-policy.md) for the full entropy ladder and boundary.
+- **Entropy-owned** (`EntropyPolicy` + `MysteryTruthResolver`): salt mode and cash bonus cap. See [entropy and seed doctrine](entropy-and-seed.md) for the full entropy ladder and boundary.
 - **Player/setup-owned** (`StartingTownPolicy`): starting town choice. The player can start in any town that exists in the generated world. The seed does NOT choose the starting town.
 
 ## Seed-Derived Town Selection
@@ -38,15 +38,14 @@ The seed deterministically derives the world map from a 40-entry town-name pool:
 Design boundary:
 - SeedWorld owns the candidate/generated map.
 - Same seed + same difficulty should produce the same resolved map.
-- Difficulty may later influence map pressure/layout realization (distance bands, terrain harshness, connectivity constraints) downstream of the seed codec, not by hiding difficulty inside the seed.
-- Longer term, `SeedWorld + DifficultyEnvelope` may produce the final resolved world/map, while `StartingTownPolicy` validates the player's start choice against that world.
+- Difficulty-owned pressure stays downstream of the seed codec rather than
+  being hidden inside the seed.
 
 ## Starting Town
 
 The starting town is NOT a seed-owned fact. It is a player setup choice validated by `StartingTownPolicy`:
 - The player can start in any town that exists in the generated world.
 - If no starting town is supplied, the safe default is the slot-0 town of the derived world (the first town produced by the seed's xorshift shuffle), not a fixed catalog property.
-- Future seam: difficulty may constrain eligible starting towns (easy allows any except accusation town, standard prefers inner/well-connected towns, harder constrains to outposts). An accusation/black-spot town may become non-stoppable. Difficulty should not redraw the map — it only filters eligibility.
 
 ## When to update this project
 

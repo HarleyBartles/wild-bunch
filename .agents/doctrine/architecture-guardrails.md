@@ -42,7 +42,7 @@ This repo's architecture stack is DDD + CQRS + Event Sourcing. These patterns ar
 - Command-path state and replay-path state must converge. This is verified by parity tests (`RehydrateFromEvents_Replay_Matches_Command_Path_State`). If a command mutates state directly, the corresponding `Apply` method must produce the same state from the event.
 - Do not add direct state mutations outside the event-sourced route. If you need to change state, produce an event and let `Apply` do the work.
 - Do not introduce a separate event-store interface, broker, EventStoreDB, or normalized live-session table split unless the issue explicitly scopes it.
-- **See [`.agents/docs/event-sourcing-integrity-policy.md`](event-sourcing-integrity-policy.md)** for the full event sourcing integrity policy: design principles, canonical flow diagram, negative constraints, projection rebuild rules, and version enforcement. That policy is the primary operational surface; this guardrails section is the summary.
+- **See [`event-sourcing-integrity.md`](event-sourcing-integrity.md)** for the full event sourcing integrity doctrine: design principles, canonical flow diagram, negative constraints, projection rebuild rules, and version enforcement. That doctrine is the primary operational surface; this guardrails section is the summary.
 
 ### Setup Phase and Nullable State
 - During setup phase (`StartFlowPhase < GameStarted`), the player has not chosen a starting town. `Player.CurrentTownId` is `null`. `_currentTown` is `null`. `CurrentTownVisit` is `null`.
@@ -76,7 +76,7 @@ This repo's architecture stack is DDD + CQRS + Event Sourcing. These patterns ar
 ## UUID Seed Codec
 - The game-start UUID encodes the seed-owned world/map layer. Inspect `SeedWorldResolver` source for the current codec layout and what fields are seed-owned.
 - The seed does NOT encode difficulty, entropy, loadout, horse/saddle, final starting town, or final cash — those are pressure-owned (`DifficultyEnvelope`), entropy-owned (`EntropyPolicy` + `MysteryTruthResolver`), or player/setup-owned (`StartingTownPolicy`).
-- The starting town is NOT a seed-owned fact. The player can start in any town that exists in the generated world. `StartingTownPolicy` validates the choice and provides a safe default. Future seam: difficulty may constrain eligibility.
+- The starting town is NOT a seed-owned fact. The player can start in any town that exists in the generated world. `StartingTownPolicy` validates the choice and provides a safe default.
 - The seed deterministically derives the world map from a town-name pool via slot-based derivation. This is NOT a pair of canned named sets — it is true seed-derived town selection. Inspect source for current pool size and derivation parameters.
 - `SeedWorld` holds the candidate/generated map. The seed owns default terrain and trail distances. Later difficulty can modify those values downstream of the seed codec.
 - Design boundary: SeedWorld owns the candidate/generated map. Same seed + same difficulty should produce the same resolved map. Difficulty may later influence map pressure/layout realization downstream of the seed codec, not by hiding difficulty inside the seed.

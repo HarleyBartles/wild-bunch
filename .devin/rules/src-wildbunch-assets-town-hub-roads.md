@@ -15,5 +15,5 @@ When working in this scope:
 - `src/WildBunch.Assets/docs/bibles/ground/spur-bible.md`
 - `src/WildBunch.Assets/docs/bibles/ground/path-bible.md`
 - `src/WildBunch.Assets/docs/asset-spec.md`
-- `.agents/docs/art/town-hub-ground-art-doctrine.md`
-- `.agents/docs/asset-pipeline/selection-cut-normalization.md`
+- `.agents/doctrine/art/town-hub-ground.md`
+- `.agents/runbooks/asset-selection-cut-normalization.md`

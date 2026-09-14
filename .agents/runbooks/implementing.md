@@ -5,12 +5,12 @@ owner.
 
 ## Required local reading
 
-- [Coding discipline](../docs/coding-discipline.md) for scope and architecture
+- [Coding discipline](../doctrine/coding-discipline.md) for scope and architecture
   boundaries.
-- [Validation policy](../docs/validation-policy.md) before changing tests.
-- [Architecture guardrails](../docs/architecture-guardrails.md) before changing
+- [Validation doctrine](../doctrine/validation-policy.md) before changing tests.
+- [Architecture guardrails](../doctrine/architecture-guardrails.md) before changing
   GameSession, persistence, domain logic, commands, queries, or projections.
-- [Frontend standards](../docs/frontend-standards.md) before browser work.
+- [Frontend standards](../doctrine/frontend-standards.md) before browser work.
 
 ## Wild Bunch validation
 
@@ -23,4 +23,3 @@ owner.
 
 For a normal commit, stage the intended tree and let the installed pre-commit
 hook apply and check that exact staged snapshot.
-

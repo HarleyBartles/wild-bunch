@@ -87,7 +87,7 @@ Live. The existing project files and tests already show the current stack.
 - `src/WildBunch.Web/src/api/wildBunchApi.test.ts`
 - `src/WildBunch.Web/src/components/TravelPanel.test.tsx`
 - `src/WildBunch.Web/src/components/TravelRoutesPanel.test.tsx`
-- `.agents/architecture-hygiene.md`
+- `.agents/doctrine/architecture-guardrails.md`
 
 ## Proof of Implementation or Explicit Non-Implementation
 

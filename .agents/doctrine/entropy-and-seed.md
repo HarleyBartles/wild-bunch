@@ -1,17 +1,19 @@
 # Entropy and Seed/Test Policy
 
-This document is durable agent-facing guidance for work touching game setup, entropy, travel variance, seeded setup, dev-overlay controls, or tests that need deterministic game scenarios. It is the companion to the entropy ladder implemented in BUNCH-93 and the seed codec policy in `.agents/docs/architecture-guardrails.md`.
+This document is durable agent-facing guidance for work touching game setup, entropy, travel variance, seeded setup, dev-overlay controls, or tests that need deterministic game scenarios. It complements the seed codec rules in `.agents/doctrine/architecture-guardrails.md`.
 
 ## Entropy Ladder
 
-Game entropy is a player-selected axis that controls determinism, randomness, variance, and future rule-bending. It is distinct from difficulty, which controls pressure, lethality, and resource harshness.
+Game entropy is a player-selected axis that controls determinism, randomness,
+and variance. It is distinct from difficulty, which controls pressure,
+lethality, and resource harshness.
 
 | Entropy | Salt Mode | Semantic |
 |---------|-----------|----------|
 | **Boring** | `SaltSourceMode.Fixed` | Near-deterministic. No salt rolls where entropy controls the decision. Same stable route/session inputs produce the same result. Boring is not "fewer encounters" as its core meaning — it is "no salt-driven surprises." |
 | **Classic** | `SaltSourceMode.Runtime` | Standard gameplay entropy. Salted rolls behave as the normal intended game mode. This is the baseline. |
 | **Adventurous** | `SaltSourceMode.Runtime` | Bigger luck swings in both directions. Luck can go better or worse than Classic, but this must not become difficulty pressure. |
-| **Wild** | `SaltSourceMode.Runtime` | Future rule-bending mode. In BUNCH-93 it is only minimally represented as high volatility (more lucky/unlucky/environmental/Npc, less quiet). Later Wild may allow explicit, named rule bends such as POIs appearing misleadingly similar at first glance or a lawman beating normal trail time through an in-world exception like catching a train. Do not implement vague "Wild means harder" behavior. |
+| **Wild** | `SaltSourceMode.Runtime` | High volatility: more lucky, unlucky, environmental, and NPC outcomes, with fewer quiet outcomes. It must not become hidden difficulty pressure. |
 
 ### Entropy Boundary
 
@@ -58,8 +60,7 @@ Tests that need deterministic game scenarios must follow these rules. Tests that
 
 ## References
 
-- `.agents/docs/architecture-guardrails.md` — UUID Seed Codec section (seed-owned vs pressure-owned vs entropy-owned)
-- `.agents/docs/game-content-seed-pipeline.md` — game setup pipeline and seed-owned vs pressure-owned boundary
-- `.agents/docs/dev-overlay-doctrine.md` — dev overlay state/action boundary
+- `.agents/doctrine/architecture-guardrails.md` — UUID Seed Codec section (seed-owned vs pressure-owned vs entropy-owned)
+- `.agents/doctrine/game-content-seed-pipeline.md` — game setup pipeline and seed-owned vs pressure-owned boundary
+- `.agents/doctrine/dev-overlay.md` — dev overlay state/action boundary
 - `TravelTestSeedCatalog.cs` — canonical seed world entries for travel tests
-- BUNCH-93 — entropy setup and controls implementation

@@ -69,7 +69,7 @@ Use `Ctrl+C` in each terminal. Leave the shared PostgreSQL service running;
 
 ### Shortcuts and validation
 
-If you prefer one command to start both API and frontend, run `.\scripts\dev-servers.ps1 ensure`. For the full build/test/EF validation lane and the PostgreSQL-backed CI path, see `.agents/docs/validation-policy.md`, `docs/local-postgresql.md`, and `scripts/README.md`.
+If you prefer one command to start both API and frontend, run `.\scripts\dev-servers.ps1 ensure`. For the full build/test/EF validation lane and the PostgreSQL-backed CI path, see `.agents/doctrine/validation-policy.md`, `docs/local-postgresql.md`, and `scripts/README.md`.
 
 ## License
 

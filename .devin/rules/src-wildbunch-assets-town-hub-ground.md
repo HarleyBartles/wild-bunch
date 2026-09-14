@@ -13,5 +13,5 @@ When working in this scope:
 - `src/WildBunch.Assets/docs/bibles/ground/ground-bible-master.md`
 - the matching family bible under `src/WildBunch.Assets/docs/bibles/ground/` that matches the asset you are working on
 - `src/WildBunch.Assets/docs/asset-spec.md`
-- `.agents/docs/art/town-hub-ground-art-doctrine.md`
-- `.agents/docs/asset-pipeline/selection-cut-normalization.md`
+- `.agents/doctrine/art/town-hub-ground.md`
+- `.agents/runbooks/asset-selection-cut-normalization.md`

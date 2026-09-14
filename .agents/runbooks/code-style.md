@@ -1,3 +1,3 @@
 # Code style guide
 
-See [.agents/docs/coding-discipline.md](../docs/coding-discipline.md) for the full coding discipline and style rules.
+See [coding discipline](../doctrine/coding-discipline.md) for the repository's code rules.

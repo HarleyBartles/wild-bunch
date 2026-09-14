@@ -64,6 +64,7 @@ Additionally, we want to establish a reusable pattern for future dev-enabled act
 - Future dev-enabled actions (encounter forcing, difficulty overrides, entropy overrides) should use this pattern
 - Dev controls are cleanly separated from normal play flow
 - The backend decides whether to use dev overrides based on state, not API parameters
-- The pattern is documented in `.agents/docs/dev-enabled-action-pattern.md` and wired to AGENTS.md for agent discovery
+- This ADR is the durable decision record; `.agents/doctrine/dev-overlay.md`
+  carries the current dev-control boundaries.
 - Dev endpoints remain under `/api/dev/` with DevRoleGuard protection
 - Handlers use ExecuteWithRetryAsync for consistency with ADR-0028

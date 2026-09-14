@@ -1,10 +1,10 @@
-# Event Sourcing Integrity Policy
+# Event-sourcing integrity doctrine
 
-This policy is the primary operational surface for event sourcing integrity in
+This doctrine is the primary repository surface for event-sourcing integrity in
 the Wild Bunch repo. ADR-0028 is the decision record (why the architecture was
-chosen); this policy is the operational guidance (what an agent must do and must
-not do when working in this architecture). ADR-0028 references this policy for
-the live canonical flow rather than duplicating it.
+chosen); this doctrine states what must remain true in the implementation and
+which failure modes are prohibited. ADR-0028 references this doctrine for the
+live canonical flow rather than duplicating it.
 
 ## Design Principles
 
@@ -43,7 +43,7 @@ the live canonical flow rather than duplicating it.
    naturally. Abandoned playthroughs stay at their old version on disk — no
    global migration sweep.
 
-## Policy Rules
+## Repository rules
 
 1. **All persisted state must be reconstructable from the event stream alone.**
    If a piece of state cannot be rebuilt by replaying events through `Apply` or
@@ -76,10 +76,9 @@ the live canonical flow rather than duplicating it.
 
 ## Canonical Flow Diagram
 
-The following mermaid chart shows the canonical CQRS + event sourcing data flow.
-This is the **target flow** that the system must conform to — not the current
-(pre-policy) state. The chart is the single visual reference for how commands,
-events, snapshots, and projections relate.
+The following mermaid chart is the canonical CQRS and event-sourcing data flow.
+It is the single visual reference for how commands, events, snapshots, and
+projections relate.
 
 ```mermaid
 flowchart TD
@@ -128,7 +127,7 @@ flowchart TD
 
 ## Negative Constraints / Common Mistakes
 
-The following are violations of this policy. Each describes a pattern that an
+The following are violations of this doctrine. Each describes a pattern that an
 agent might introduce and why it is wrong.
 
 1. **Snapshot required to load.** If the load path fails when the snapshot is
@@ -176,7 +175,7 @@ agent might introduce and why it is wrong.
 10. **Upcaster that produces wrong shape.** An upcaster must produce the exact
     JSON shape that the current code expects. If the upcaster's output doesn't
     match what the deserializer can read, the load fails. Upcaster correctness is
-    verified by the upcaster correctness tests (Plan C, Part 2e test 2).
+    verified by `UpcasterCorrectnessTests`.
 
 ## Skill Routing
 
@@ -194,15 +193,11 @@ When working in event sourcing, persistence, or projection code:
 
 ## Enforcement
 
-- **Build-time:** The upcaster chain completeness test (Plan C) asserts every
+- **Build-time:** `UpcasterChainCompletenessTests` asserts every
   `IEventUpcaster` is registered and every event type has a contiguous chain.
-- **Test-time:** The full replay equality test (Plan B) asserts that
-  `RehydrateFromEvents` + projectors reconstruct the complete session, including
-  `TravelDiaryDays`. The projection rebuild parity test (Plan B/C) asserts
-  projector output matches command-path output.
-- **Review-time:** The code review guide (updated by this policy) includes
-  event-sourcing-integrity review checks. Reviewers must verify replayability,
-  projector existence, version bumps, and chart-staleness for any PR touching
-  persistence or projections.
-- **Branch protection:** Branch protection on `main` (Part 3) makes the
-  build-time and test-time enforcement blocking, not advisory.
+- **Test-time:** `FullReplayEqualityTests` asserts that event replay and
+  projectors reconstruct complete sessions, including `TravelDiaryDays`;
+  `TravelDiaryDayProjectorParityTests` asserts projector parity with the command
+  path.
+- **Review-time:** For persistence or projection changes, verify replayability,
+  projector coverage, payload-version changes, and canonical-flow accuracy.
