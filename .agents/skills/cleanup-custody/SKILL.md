@@ -36,6 +36,15 @@ Use this ladder in order:
 4. `delete_now` — exact disposable residue with no provenance, authority, or future retrieval value.
 5. `block_and_route` — protected, ambiguous, actor-owned, source-law-sensitive, or authority-sensitive surfaces.
 
+## Promotion before removal
+
+Before a surface leaves `keep_live` custody, migrate durable content to its
+owning surface: enduring architecture decisions to the repo's ADR home,
+operating rules to current doctrine or runbooks, and evidence to its declared
+proof surface. The repo's local binding names the destinations; this skill
+owns the step. A removal that strands durable decisions in deleted or
+scratch-only material is not GREEN.
+
 ## Issue-goal conformance gate
 
 When a repo and issue are in scope, cleanup review is not GREEN merely because git status is clean, residue was classified, or publication proof exists. First restate the issue goal as observable repo/workspace state, inspect the surfaces that would falsify that goal, compare worker claims to observed state, and then judge.
