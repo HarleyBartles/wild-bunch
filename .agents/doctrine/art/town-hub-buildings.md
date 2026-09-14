@@ -11,9 +11,8 @@ The town-hub asset split is:
 - `town-hub-roads` for road-network tiles
 - `town-hub-ground` for dirt and landform tiles
 
-The source/staging/sprites custody homes are the working contract, and the
-filler-building visibility rule still applies: supporting buildings should stay
-visually secondary to the named town buildings.
+The source/staging/sprites custody homes are the working contract. Supporting
+buildings stay visually secondary to the named town buildings.
 
 ## Camera lock
 
@@ -54,7 +53,7 @@ visually secondary to the named town buildings.
 - Road and ground tiles stay full-size 80x50 assets through source, staging,
   and sprites. Copy promotion preserves the canvas and seam edges; do not use
   sprite cutting, trimming, or rescaling on those tracks.
-- The tile contract is mirror tiling only: road and dirt tiles must still
+- The tile contract is mirror tiling only: road and dirt tiles must
   tile cleanly after horizontal or vertical mirroring, but the contract does
   not require rotation-based tiling at this stage.
 - When the asset-root AGENTS file points at this doctrine, treat this file as

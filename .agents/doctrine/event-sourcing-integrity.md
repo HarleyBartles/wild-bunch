@@ -8,13 +8,14 @@ live canonical flow rather than duplicating it.
 
 ## Design Principles
 
-1. **Events are the source of truth.** Every piece of persisted state must be
-   reconstructable from the event stream alone. Snapshots and projections are
-   shortcut caches — they must never be operationally required to load a session.
+1. **Events are the source of history.** Event-backed session state must be
+   reconstructable from the event stream alone. The zero-event `StartPrepped`
+   state has no history to replay and uses its current snapshot load path.
 
-2. **Snapshots are shortcut caches, not part of the replay contract.** A snapshot
-   is a performance optimization. The system must function correctly without it.
-   If a snapshot is missing or its shape is wrong, the session loads from events.
+2. **Snapshots do not replace event replay.** For event-backed state, a snapshot
+   is a performance optimization and a missing or stale snapshot falls back to
+   events. Snapshot components remain required to load the current zero-event
+   `StartPrepped` state until setup itself is event-backed.
 
 3. **Projections are derived state.** Projections (components, diary days) are
    rebuildable from the event stream. When a projection's stored version does not
@@ -45,15 +46,15 @@ live canonical flow rather than duplicating it.
 
 ## Repository rules
 
-1. **All persisted state must be reconstructable from the event stream alone.**
-   If a piece of state cannot be rebuilt by replaying events through `Apply` or
-   through a projector, it is a violation. New state that needs persistence must
-   either (a) be set by an `Apply` method from event fields, or (b) be derivable
-   by a projector from the event stream.
+1. **All event-backed persisted state must be reconstructable from the event
+   stream alone.** If event-backed state cannot be rebuilt through `Apply` or a
+   projector, it is a violation. New event-backed state must either be set by an
+   `Apply` method from event fields or be derivable by a projector.
 
-2. **Snapshots are shortcut caches.** They must never be the only path to load a
-   session. The system must function correctly with an empty snapshot table. A
-   missing or corrupted snapshot must not prevent session load.
+2. **Snapshots are shortcut caches for event-backed state.** A missing or
+   corrupted event-backed snapshot must not prevent full replay. The zero-event
+   `StartPrepped` snapshot exception is current state, not event history, and
+   must remain loadable.
 
 3. **Projections are derived state.** Projection tables (components, diary days)
    must have a projector that rebuilds them from the event stream. If a
@@ -130,9 +131,10 @@ flowchart TD
 The following are violations of this doctrine. Each describes a pattern that an
 agent might introduce and why it is wrong.
 
-1. **Snapshot required to load.** If the load path fails when the snapshot is
-   missing, corrupted, or version-stale, that is a violation. The snapshot is a
-   shortcut cache; the full replay path must always work.
+1. **Snapshot dependency for event-backed state.** If event-backed state
+   cannot load when its snapshot is missing, corrupted, or version-stale, that
+   is a violation; full replay must work. This does not apply to the current
+   zero-event `StartPrepped` state.
 
 2. **Direct mutation outside `Apply`.** State changes that don't flow through
    `ProduceEvent` → `Apply` are not event-sourced. They won't be reconstructed by

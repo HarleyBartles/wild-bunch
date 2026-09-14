@@ -7,8 +7,8 @@ processing.
 
 Generic repo-maintenance mechanics (skill sync, index mesh generation,
 repo-standards checks) are handled by the bundled marketplace skills under
-`.agents/skills/`. These scripts are the operational and repo-specific
-extensions that remain in `scripts/`.
+`.agents/skills/`. This directory contains only operational, repo-specific
+scripts and thin wrappers over canonical commands.
 
 ## Shared requirements
 
@@ -22,7 +22,7 @@ extensions that remain in `scripts/`.
 
 ### ci-preflight.sh / ci-preflight.ps1
 
-These compatibility wrappers call the canonical
+These wrappers call the canonical
 `py -3 tools/run.py ci --check` lane. Pass `--diagnostics` in Bash or
 `-Diagnostics` in PowerShell to collect independent failures.
 

@@ -46,11 +46,10 @@ live in [event-sourcing integrity](event-sourcing-integrity.md).
 
 - Runtime session persistence is JSON snapshot-oriented, while the event stream
   remains the source of history for event-backed sessions.
-- A zero-event `StartPrepped` session still requires its current snapshot load
+- A zero-event `StartPrepped` session requires its current snapshot load
   path.
 - Repo-local database artifacts live under repo-root `.local/`, never `src/`.
-- Current mainline correctness wins over obsolete internal/save compatibility
-  unless compatibility is explicitly required.
+- Do not add internal or save compatibility unless it is explicitly required.
 - Do not introduce a broker, separate event-store interface, EventStoreDB, or
   normalized live-session table split without explicit scope.
 

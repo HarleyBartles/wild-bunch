@@ -178,28 +178,12 @@ Avoid preserving UI choices that do not correspond to distinct backend behavior.
 
 Bad:
 
-```csharp
-enum DevSaloonPoiKind
-{
-    Suspect,
-    Citizen,
-    FalseLead
-}
-```
+- expose a derived gameplay outcome as a force kind when it prepares the same
+  state as an existing candidate;
+- add a label-only distinction that the backend does not preserve.
 
-If `FalseLead` just produces a citizen, it is not a distinct force kind. It is a later gameplay outcome from a wrong declaration against a citizen POI.
-
-Prefer:
-
-```csharp
-enum DevSaloonPoiKind
-{
-    Suspect,
-    Citizen
-}
-```
-
-Then test false lead by forcing Citizen and making the wrong normal gameplay declaration.
+Prefer the smallest set of distinct prepared states, then exercise the normal
+gameplay action that derives the outcome.
 
 Acceptance check:
 
@@ -212,10 +196,9 @@ Avoid labels that imply a broader or different action than the control performs.
 
 Bad:
 
-- `Force suspect`
-- `Release culprit`
-- `Make false lead`
-- `Set active POI`
+- `Force result`
+- `Complete action`
+- `Set active state`
 
 Prefer:
 
@@ -285,25 +268,16 @@ Acceptance check:
 
 - A reviewer can tell which facts are player-known and which are dev-only hidden truth.
 
-### 9. Stale doctrine fossilization
+### 9. Implementation detail promoted to doctrine
 
-Avoid turning a temporary current-state mechanic into permanent design doctrine.
-
-Bad:
-
-- "The true culprit must never appear."
-- "Killer release is clue-based" presented as desired design when it is only current backend behavior.
-- "FalseLead is a POI kind" because an earlier implementation said so.
-
-Prefer:
-
-- Current-state diagnostics are honest.
-- Intended-design mismatches are named as follow-up, not silently fixed or enshrined.
-- Tests assert the intended rule for this slice, not stale copy from a previous design.
+Do not infer a permanent design rule from an implementation detail. Diagnostics
+may describe verified live behavior; doctrine records only an intended stable
+invariant established by the owning authority.
 
 Acceptance check:
 
-- UI copy, tests, and comments do not preserve a rule Harley has explicitly corrected.
+- UI copy, tests, and comments distinguish current mechanics from stable design
+  rules.
 
 ### 10. Context mismatch laundering
 
@@ -397,25 +371,14 @@ Browser evidence is required for visual dev overlay work, but screenshots are ge
 
 Bad:
 
-- commit `docs/superpowers/screenshots/*.png`;
-- create root `.work/screenshots`;
-- add screenshots to PR as durable docs;
-- leave stale screenshot folder indexes after deleting images.
+- commit screenshots or traces as durable documentation;
+- create an ungoverned evidence directory in the repository;
+- leave generated-evidence indexes after deleting their contents.
 
 Prefer:
 
 - store generated evidence under the branch-scoped `_agent-scratch` workspace;
-- ignore generated contents with a local `.gitignore`;
-- keep only navigational/control files tracked if needed;
 - summarize or attach screenshots through review tooling, not as repo files.
-
-Preferred local ignore pattern:
-
-```gitignore
-*
-!.gitignore
-!INDEX.md
-```
 
 This applies to generated evidence generally: screenshots, traces, logs, temporary exports, Playwright captures, and similar agent output.
 
@@ -431,9 +394,9 @@ Avoid stale PR descriptions that point to deleted files or describe earlier beha
 
 Bad:
 
-- PR says screenshots are in `docs/superpowers/screenshots/` after they were moved to ignored local output.
-- PR says compact/expanded screenshots prove one thing while filenames or implementation prove another.
-- PR body claims "FalseLead removed" while API still accepts `FalseLead`.
+- PR names an evidence location that does not exist.
+- PR says screenshots prove behavior that their contents or filenames do not.
+- PR claims a domain option was removed while a live API still accepts it.
 
 Prefer:
 
@@ -480,81 +443,6 @@ Acceptance check:
 
 - Worker return proves the playtest loop, not just the validation suite.
 
-## Positive examples from BUNCH-90
-
-### Good: candidate dropdowns
-
-A useful saloon dev panel replaced raw suspect ID entry with a domain-facing candidate dropdown. It showed suspect names and useful facts while submitting stable IDs internally.
-
-Why it is good:
-
-- Faster playtesting.
-- Fewer typo paths.
-- Less raw backend leakage.
-- More honest domain UI.
-
-### Good: gate-aware true culprit copy
-
-The stale "true culprit can never appear" rule was replaced by gate-aware eligibility. Locked gate means ineligible now; released gate means the culprit can become eligible if domain rules allow it.
-
-Why it is good:
-
-- It avoids fossilizing a temporary constraint.
-- It keeps dev tools aligned with intended game progression.
-- It lets tests prove both sides of the gate.
-
-### Good: false lead removed as force kind
-
-`FalseLead` was removed as a dev override kind once source inspection showed it was semantically just Citizen. False lead is tested by forcing Citizen and then making a wrong normal declaration.
-
-Why it is good:
-
-- The UI no longer presents fake domain categories.
-- The model stays smaller and clearer.
-- The normal game loop remains the source of confrontation outcomes.
-
-### Good: width-based two-column layout
-
-The saloon dev panel uses two columns when width allows, regardless of compact/expanded state. Compact controls height; width controls columns.
-
-Why it is good:
-
-- Compact remains useful.
-- Expanded is not required just to use available horizontal space.
-- The overlay behaves like a pull-down workbench instead of a one-column debug drawer.
-
-## Negative examples from BUNCH-90
-
-### Bad: compact mode with `height: auto`
-
-Compact mode grew tall enough to look expanded. The button label was technically correct, but the visual result contradicted it.
-
-Stop this because:
-
-- reviewers cannot trust the state;
-- the overlay dominates the play surface;
-- screenshots become misleading.
-
-### Bad: committed screenshots under `docs/`
-
-Screenshots were added as repo files under `docs/superpowers/screenshots/`.
-
-Stop this because:
-
-- screenshot proof is generated evidence, not durable source;
-- binary artifacts pollute repo history;
-- future workers will copy the pattern.
-
-### Bad: hiding a fake option only in frontend
-
-A visible UI option can be removed while the API/domain still accepts it. That is not cleanup; it is hidden slop.
-
-Stop this because:
-
-- future agents may build on the hidden API shape;
-- tests may still enshrine the fake category;
-- source truth remains inconsistent.
-
 ## Review questions
 
 Ask these before accepting dev overlay work:
@@ -599,7 +487,7 @@ Return AMBER if any are true:
 - PR body cites stale screenshot paths or deleted evidence.
 - Worker claims GREEN from validation commands without proving the actual dev overlay loop.
 
-## What this profile intentionally does not duplicate
+## Boundary
 
 Backend architecture rules remain in the backend unslop profile:
 

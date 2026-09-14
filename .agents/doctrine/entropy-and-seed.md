@@ -37,7 +37,9 @@ Tests that need deterministic game scenarios must follow these rules. Tests that
 ### Do not
 
 - **Do not generate random seed GUIDs inside tests.** `Guid.NewGuid()` as a seed makes tests flaky and non-reproducible.
-- **Do not hard-code raw UUID seeds in tests.** Stored UUIDs are as flaky as `Random.Guid` because codec changes break them. A UUID that resolved to a specific world yesterday may resolve to a different world after a codec change.
+- **Do not hard-code raw UUID seeds in tests.** Codec changes may change which
+  world a stored UUID resolves to; store `SeedWorld` values and derive UUIDs
+  through the codec.
 - **Do not brute-force through many seeds or salts to find a scenario that happens to work.** This hides non-determinism behind a search loop and will eventually fail.
 - **Do not test private weight-builder internals directly.** If `BuildEncounterCountWeights` or `BuildCategoryWeights` are private, test through the public generator surface or through `GameSession` behavior.
 

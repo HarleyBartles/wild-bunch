@@ -33,3 +33,9 @@ def test_local_skill_custody_uses_exact_registration_only():
 
     for suffix in ("py", "ps1", "sh"):
         assert not (REPO_ROOT / "scripts" / f"validate_local_skills_extra.{suffix}").exists()
+
+
+def test_marketplace_manifest_is_configuration_not_narrative():
+    marketplace = json.loads(MARKETPLACE_PATH.read_text(encoding="utf-8"))
+
+    assert "notes" not in marketplace
