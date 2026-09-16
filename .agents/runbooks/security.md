@@ -12,8 +12,12 @@ truth, or a sensitive mutation boundary.
 
 ## Composition
 
-Use `/risk-gates` before a sensitive action, then `/connector-safety` for the
-approved discover-read-write-verify sequence.
+1. Use `/risk-gates` to identify the authority, scope, hidden truth, and
+   irreversible consequence before any sensitive mutation.
+2. Bind the approved action to the architecture and gameplay doctrine below.
+3. Use `/connector-safety` for the external tool or connector mutation and its
+   readback; keep unrelated writes separate.
+4. Run the focused security/behavior tests and the testing runbook's delivery gate.
 
 ## Doctrine and contracts
 
@@ -28,8 +32,10 @@ repo files or command output.
 
 ## Evidence contract
 
-The return identifies the authority used, exact mutation, readback, and any
-unresolved exposure or permission boundary.
+- [ ] The action's authority and exact scope are recorded.
+- [ ] The mutation and independent readback agree.
+- [ ] No secret or hidden game truth enters repo files, logs, or player APIs.
+- [ ] Any unresolved permission or exposure boundary is reported explicitly.
 
 ## Prohibited combinations
 

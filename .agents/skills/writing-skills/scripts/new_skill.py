@@ -15,7 +15,6 @@ from typing import Final
 
 
 CUSTODIES: Final = {"local", "marketplace"}
-LOCAL_PREFIX: Final = "mark-"
 NAME_PATTERN: Final = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 SCRIPT_ROOT = Path(__file__).resolve().parent
 TEMPLATE_ROOT = SCRIPT_ROOT.parent / "templates"
@@ -33,12 +32,8 @@ def validate_request(name: str, custody: str, lane: str, plugins: set[str]) -> N
         raise ValueError(f"unsupported custody: {custody}")
     if len(name) > 64 or not NAME_PATTERN.fullmatch(name):
         raise ValueError("skill name must use lowercase letters, numbers, and single hyphens (64 characters maximum)")
-    if custody == "local" and not name.startswith(LOCAL_PREFIX):
-        raise ValueError("local custody requires the mark- prefix")
     if custody == "marketplace" and lane not in plugins:
         raise ValueError(f"--lane must be a marketplace plugin pack; got {lane!r}")
-    if custody == "marketplace" and name.startswith(LOCAL_PREFIX):
-        raise ValueError("marketplace custody cannot use the mark- prefix")
 
 
 def destination_for(repo_root: Path, name: str, custody: str, lane: str) -> Path:

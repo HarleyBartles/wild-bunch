@@ -11,9 +11,13 @@ Producing or revising a town-hub building, road, ground, or prop asset.
 
 ## Composition
 
-Read the asset operations/spec and applicable master/family bible, generate only
-when needed, judge each candidate, then send accepted candidates through the
-deterministic processing runbook.
+1. Read the asset operations/spec, matching art doctrine, and master/family bible.
+2. Use `/imagegen` only when a new raster candidate is required; retain source
+   and staging custody declared below.
+3. Use `/town-hub-asset-judgment` to accept, retry, or reject the candidate at
+   required views and game scale.
+4. Send only accepted candidates through the asset cut/normalization runbook,
+   then promote the accepted processed result to its declared production path.
 
 ## Doctrine and contracts
 
@@ -31,8 +35,10 @@ and promotion constraints.
 
 ## Evidence contract
 
-Candidate judgment, required views, game-scale read, seam/footprint checks, and
-promoted path agree with the applicable bible and asset spec.
+- [ ] Candidate judgment records accept, retry, or reject.
+- [ ] Required views and game-scale read match the family bible.
+- [ ] Seam, canvas, footprint, and camera checks match doctrine and asset spec.
+- [ ] Only the accepted processed asset exists at the production path.
 
 ## Prohibited combinations
 

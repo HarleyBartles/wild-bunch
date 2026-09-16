@@ -11,8 +11,13 @@ Turning settled Wild Bunch requirements into an executable plan or roadmap.
 
 ## Composition
 
-Use exactly one planning owner for the artifact scale. It binds the relevant
-repository doctrine below and hands execution a committed plan.
+1. Select exactly one owner: `/writing-plans` for a bounded change or
+   `/writing-roadmaps` for multiple consecutive plans.
+2. Read the accepted specification and bind the applicable doctrine, contracts,
+   repository paths, and validation commands below.
+3. Save and commit the active artifact in its declared home before execution.
+4. Hand execution exact seams, exclusions, task exits, and evidence without
+   copying the planning skill's method into the artifact.
 
 ## Doctrine and contracts
 
@@ -33,8 +38,10 @@ repository doctrine below and hands execution a committed plan.
 
 ## Evidence contract
 
-The committed artifact names exact repository paths, applicable test lanes,
-and downstream inputs without inventing unresolved design.
+- [ ] The plan or roadmap is committed in its declared active home.
+- [ ] Every task names exact repository paths, constraints, and downstream inputs.
+- [ ] Focused and canonical validation lanes are explicit.
+- [ ] No unresolved design decision is silently assigned to implementation.
 
 ## Prohibited combinations
 

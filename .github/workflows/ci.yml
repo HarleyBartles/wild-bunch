@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
-    name: Backend (.NET build + tests)
+  validation:
+    name: Canonical tracked commit gate
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
@@ -24,21 +24,21 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: wildbunch_dev
         ports:
-          - 5434:5432
+          - 5435:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
-    env:
-      ConnectionStrings__WildBunchPostgresDb: "Host=localhost;Port=5434;Database=postgres;Username=postgres;Password=postgres"
-
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
+          fetch-depth: 2
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -55,55 +55,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: Restore
-        run: dotnet restore WildBunch.sln
-
-      - name: Build
-        run: dotnet build WildBunch.sln --no-restore --configuration Release
-
-      - name: Test
-        run: dotnet test WildBunch.sln --no-build --no-restore --configuration Release --logger "console;verbosity=normal"
-
-  frontend:
-    name: Frontend (Vite tests + typecheck + build)
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: src/WildBunch.Web
-
-    steps:
-      - uses: actions/checkout@v6
-
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: src/WildBunch.Web/package-lock.json
-
-      - name: Install
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm run test
-
-      - name: Build
-        run: npm run build
-
-  index-mesh:
-    name: Index mesh + plugin manifest
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: true
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -113,25 +70,7 @@ jobs:
       - name: Install Python script requirements
         run: python -m pip install -r scripts/requirements.txt
 
-      - name: Stage pre-commit hook for repo shape check
-        run: |
-          mkdir -p .git/hooks
-          cp .agents/skills/repo-standards/templates/pre-commit .git/hooks/pre-commit
-
-      - name: Check repo standards shape
-        run: bash .agents/skills/repo-standards/scripts/repo-standards.sh --check
-
-      - name: Validate skill script contracts
-        run: python .agents/skills/repo-standards/scripts/validate_skill_scripts.py --check
-
-      - name: Check INDEX.md mesh
-        run: bash .agents/skills/generating-agent-mesh/scripts/generate-index-mesh.sh --check
-
-      - name: Validate agent mesh
-        run: bash .agents/skills/generating-agent-mesh/scripts/validate-agent-mesh.sh --check
-
-      - name: Check installed skill projection
-        run: python .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --check
-
-      - name: Run script regression tests
-        run: python -m pytest scripts/tests -q
+      - name: Validate tracked commit gate
+        env:
+          REPO_STANDARDS_HOSTED_COMMIT: HEAD
+        run: githooks/pre-commit

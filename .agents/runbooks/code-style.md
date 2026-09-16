@@ -12,8 +12,11 @@ Writing or reviewing source whose language or framework conventions matter.
 
 ## Composition
 
-Invoke only the capability matching the touched surface; combine capabilities
-only when the change crosses those boundaries.
+1. Classify each touched source surface as .NET, React, or browser styling.
+2. Invoke only its declared capability (`/dotnet`, `/react`, or `/web-styling`)
+   and bind coding discipline plus any frontend doctrine.
+3. Run the focused formatter, compiler, or typecheck for that surface, then the
+   testing runbook's canonical gate at delivery.
 
 ## Doctrine and contracts
 
@@ -27,8 +30,10 @@ canonical gate in [testing](testing.md).
 
 ## Evidence contract
 
-Changed source follows the applicable local doctrine and passes its compiler or
-typecheck lane.
+- [ ] Each touched surface follows its applicable capability and local doctrine.
+- [ ] Its focused compiler, formatter, or typecheck passes.
+- [ ] Cross-boundary changes use each relevant capability without importing
+  conventions from an unrelated layer.
 
 ## Prohibited combinations
 

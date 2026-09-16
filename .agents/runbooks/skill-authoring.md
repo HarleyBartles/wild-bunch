@@ -12,8 +12,13 @@ Creating or changing a repository-local Wild Bunch skill.
 
 ## Composition
 
-`/writing-skills` owns test-first skill design. Register the accepted local
-skill by exact name, refresh projections, and validate repository shape.
+1. Use `/writing-skills` to define and test one focused Wild Bunch capability or
+   judgment; keep repository lifecycle sequencing in runbooks.
+2. Create the authored source under `.agents/skills/<exact-name>/` and register
+   that exact name in `repo.local_skills` without relying on a prefix.
+3. Use `/refreshing-installed-skills` to prove refresh preserves local custody.
+4. Use `/repo-standards` through the marketplace-generation and testing
+   runbooks to validate projection, provenance, mesh, and committed shape.
 
 ## Doctrine and contracts
 
@@ -30,8 +35,10 @@ contract, runbook, script, or portable skill already owns.
 
 ## Evidence contract
 
-The skill's directory and frontmatter names match registration, focused tests
-exercise its boundary, and refresh preserves it outside marketplace provenance.
+- [ ] Directory, frontmatter, and `repo.local_skills` names match exactly.
+- [ ] Focused tests exercise the skill's declared capability boundary.
+- [ ] Refresh preserves the skill without marketplace provenance.
+- [ ] Generated mesh and repository standards checks pass.
 
 ## Prohibited combinations
 

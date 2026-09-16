@@ -11,8 +11,12 @@ sheet slicing, background removal, normalization, staging, or promotion.
 
 ## Composition
 
-Accept visual judgment before processing, apply the deterministic operation,
-then judge the processed game-scale result before promotion.
+1. Use `/town-hub-asset-judgment` to accept the source family, view, and camera
+   before deterministic processing.
+2. Run the repo helper below to slice, cut, or normalize into the matching
+   staging family without changing the accepted visual judgment.
+3. Use `/town-hub-asset-judgment` again on the processed, game-scale result and
+   promote only an accepted output to the asset-spec destination.
 
 ## Doctrine and contracts
 
@@ -31,8 +35,9 @@ python src/WildBunch.Assets/scripts/image_asset_pipeline.py slice-sheet --input 
 
 ## Evidence contract
 
-The processed asset preserves required canvas, bottom anchor, transparency,
-view naming, and accepted game-scale read at its staging or production path.
+- [ ] The source and processed result both have recorded judgment.
+- [ ] Canvas, bottom anchor, transparency, and view name match the asset spec.
+- [ ] The promoted path belongs to the accepted family and output class.
 
 ## Prohibited combinations
 

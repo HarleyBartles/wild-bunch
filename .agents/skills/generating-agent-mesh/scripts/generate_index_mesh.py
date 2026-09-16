@@ -104,8 +104,17 @@ def _run_index_mesh_extra_hook(repo_root: Path, check: bool) -> list[str]:
 
 # Set at import from git. Use configure_root() or --repo-root to override before any work runs.
 ROOT = _repo_root()
-EXCLUDED_DIR_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".pytest_cache", ".superpowers", "evals"}
-EXCLUDED_ROOT_NAMES = {".git", ".githooks", ".worktrees", "__pycache__", ".superpowers", "evals"}
+EXCLUDED_DIR_NAMES = {
+    ".git",
+    ".githooks",
+    "githooks",
+    ".worktrees",
+    "__pycache__",
+    ".pytest_cache",
+    ".superpowers",
+    "evals",
+}
+EXCLUDED_ROOT_NAMES = EXCLUDED_DIR_NAMES.copy()
 EXCLUDED_FILE_NAMES = {".git", ".gitkeep"}
 INDEX_FILE_NAMES = {"INDEX.md", "INDEX.json"}
 THIRD_PARTY_ROOT = ROOT / "sources" / "third_party"

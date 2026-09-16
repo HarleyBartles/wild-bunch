@@ -11,9 +11,16 @@ Adding, changing, or running Wild Bunch tests and validation gates.
 
 ## Composition
 
-Use the owning capability to choose behavior, `/test-driven-development` for
-the focused red-green cycle, and `/verification-before-completion` for the
-state-bound final gate.
+1. Use the owning capability and validation doctrine to select the smallest
+   lane that observes the changed behavior.
+2. Use `/test-driven-development` for the focused red-green cycle; add real
+   PostgreSQL or browser evidence only when the boundary requires it.
+3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
+   that use `localhost:5435`.
+4. Apply generated surfaces when needed, stage the intended tree, and let the
+   normal hook run the canonical check.
+5. Use `/verification-before-completion` to report focused and canonical proof
+   for the same tested state.
 
 ## Doctrine and contracts
 
@@ -29,6 +36,10 @@ state-bound final gate.
 py -3 tools\run.py ci --check
 ```
 
+For hook setup or repair, run `ci --apply`; it activates the tracked hook before
+checking upstream repository shape. Hook custody is defined in
+[repo runbook policy](../doctrine/repo-runbook-policy.md).
+
 Use `ci --apply` when generated agent surfaces changed and `--diagnostics` only
 to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence
@@ -37,8 +48,11 @@ service at `localhost:5435`.
 
 ## Evidence contract
 
-Report the tested tree, focused behavior result, canonical gate result, and any
-documented skips or environment failures.
+- [ ] The tested tree or commit is identified.
+- [ ] Focused behavior proof names its command and result.
+- [ ] Required PostgreSQL or browser dependencies were healthy.
+- [ ] The canonical gate result belongs to the same staged or committed state.
+- [ ] Skips and environment failures are reported rather than counted as proof.
 
 ## Prohibited combinations
 

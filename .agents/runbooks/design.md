@@ -10,8 +10,11 @@ Designing a Wild Bunch feature or behavior before implementation planning.
 
 ## Composition
 
-`/brainstorming` owns design discovery and spec handoff. This runbook supplies
-only the Wild Bunch constraints and artifact home it must bind.
+1. Use `/brainstorming` to settle the behavior and produce the design artifact.
+2. Bind each affected Wild Bunch surface to the doctrine below and name its
+   validation lane before accepting the design.
+3. Save the accepted specification under `.agents/specs/` for planning; keep
+   transient exploration in branch-scoped scratch.
 
 ## Doctrine and contracts
 
@@ -28,8 +31,10 @@ Active design specifications live in `.agents/specs/`.
 
 ## Evidence contract
 
-The accepted specification names every applicable doctrine constraint and
-Wild Bunch validation lane.
+- [ ] The accepted specification is present under `.agents/specs/`.
+- [ ] It names every applicable doctrine and contract.
+- [ ] It identifies the focused, integration, browser, or mesh evidence the
+  implementation must produce.
 
 ## Prohibited combinations
 

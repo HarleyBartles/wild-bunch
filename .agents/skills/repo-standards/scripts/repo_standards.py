@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -66,17 +67,6 @@ def _is_submodule(repo_root: Path) -> bool:
         env=_stripped_env(),
     )
     return result.returncode == 0 and result.stdout.strip()
-
-
-def _is_ci() -> bool:
-    """Return True when running in a CI environment.
-
-    CI runners set CI=true or GITHUB_ACTIONS=true. Pre-commit hooks are a
-    local-only surface and are not validated in CI.
-    """
-    env = os.environ
-    ci = env.get("CI", "").lower()
-    return ci in ("1", "true", "yes") or env.get("GITHUB_ACTIONS") is not None
 
 
 def _manifest_path() -> Path:
@@ -162,16 +152,37 @@ def _required_with_findings(surfaces: list[dict[str, object]], exceptions: set[s
     return findings
 
 
-def _git_hooks_dir(repo_root: Path) -> Path:
+def _configured_hooks_path(repo_root: Path) -> str | None:
     result = subprocess.run(
-        ["git", "rev-parse", "--git-path", "hooks"],
+        ["git", "config", "--get", "core.hooksPath"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        env=_stripped_env(),
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip().replace("\\", "/").rstrip("/")
+
+
+def _check_hooks_path(repo_root: Path, expected: str) -> list[str]:
+    configured = _configured_hooks_path(repo_root)
+    if configured != expected:
+        actual = configured or "<unset>"
+        return [f"core.hooksPath must be {expected}; found {actual}"]
+    resolved = subprocess.run(
+        ["git", "rev-parse", "--path-format=absolute", "--git-path", "hooks"],
         cwd=repo_root,
         capture_output=True,
         text=True,
         check=True,
         env=_stripped_env(),
     )
-    return Path(result.stdout.strip())
+    actual_path = Path(resolved.stdout.strip()).resolve()
+    expected_path = (repo_root / expected).resolve()
+    if actual_path != expected_path:
+        return [f"core.hooksPath does not resolve to tracked hooks directory: {expected}"]
+    return []
 
 
 def _check_surface_content(repo_root: Path, rel: str, template: Path | None) -> list[str]:
@@ -230,7 +241,12 @@ def _check_declared_commands(repo_root: Path) -> tuple[dict[str, list[str]] | No
     return (commands if len(commands) == 2 else None), findings
 
 
-def _check_hook_contract(hook_path: Path, repo_root: Path) -> list[str]:
+def _check_hook_contract(
+    hook_path: Path,
+    repo_root: Path,
+    platform_name: str | None = None,
+    executable: bool | None = None,
+) -> list[str]:
     """Validate a pre-commit hook by the repo-standards contract, not by byte comparison."""
     findings: list[str] = []
     if not hook_path.is_file():
@@ -240,13 +256,17 @@ def _check_hook_contract(hook_path: Path, repo_root: Path) -> list[str]:
     # On POSIX the executable bit is required for git to run the hook.
     # On Windows/NT, os.access(X_OK) is not reliable, so we only require a
     # shebang as a plausibility check.
-    if os.name == "nt":
+    if (platform_name or os.name) == "nt":
         try:
             if hook_path.read_bytes()[:2] != b"#!":
                 findings.append("pre-commit hook has no shebang")
         except OSError as exc:
             findings.append(f"pre-commit hook cannot be read: {exc}")
-    elif not os.access(hook_path, os.X_OK):
+    elif not (
+        executable
+        if executable is not None
+        else bool(hook_path.stat().st_mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
+    ):
         findings.append("pre-commit hook is not executable")
 
     try:
@@ -415,15 +435,12 @@ def _check_surface(
         return findings
 
     if kind == "hook":
-        # Pre-commit hooks are local-only; CI does not install or validate them.
-        if _is_ci():
-            return findings
-        hook_path = _git_hooks_dir(repo_root) / Path(rel).name
+        hook_path = repo_root / rel
         if not hook_path.is_file():
             findings.append(f"missing hook: {rel}")
-            return findings
-        # Validate the hook contract rather than requiring the exact template.
-        findings.extend(_check_hook_contract(hook_path, repo_root))
+        else:
+            findings.extend(_check_hook_contract(hook_path, repo_root))
+        findings.extend(_check_hooks_path(repo_root, str(Path(rel).parent).replace("\\", "/")))
         return findings
 
     if optional and not full.exists():
@@ -476,17 +493,20 @@ def _apply_surface(
         return True
 
     if kind in ("file", "hook") and template is not None:
-        if kind == "hook":
-            full = _git_hooks_dir(repo_root) / Path(rel).name
-        else:
-            full = repo_root / rel
-        if full.is_file() and not force:
+        full = repo_root / rel
+        if full.is_file() and not force and kind != "hook":
             print(f"skip {rel}: exists; use --force to overwrite")
             return False
         full.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(template, full)
         if kind == "hook":
             full.chmod(0o755)
+            subprocess.run(
+                ["git", "config", "core.hooksPath", str(Path(rel).parent).replace("\\", "/")],
+                cwd=repo_root,
+                check=True,
+                env=_stripped_env(),
+            )
         print(f"wrote {rel}")
         return True
     if scaffold is not None and scaffold.is_file():
