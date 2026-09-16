@@ -15,8 +15,14 @@ town, or setup-owned player facts.
 
 ## Composition
 
-Classify every changed fact with `/seed-ownership`, add only the boundary skills
-the change crosses, construct it test-first, then verify the resolved pipeline.
+1. Use `/seed-ownership` to classify every changed setup fact as seed, pressure,
+   entropy, or player owned.
+2. Add `/wild-bunch-domain-modeling` or `/wild-bunch-dotnet-architecture` only
+   when the classified fact crosses those boundaries.
+3. Use `/test-driven-development` to change codec directions, setup flow, and
+   the focused round-trip or integration lane together.
+4. Use `/verification-before-completion` to prove the resolved seed world and
+   setup behavior through the public pipeline and canonical gate.
 
 ## Doctrine and contracts
 
@@ -34,8 +40,10 @@ architecture or gameplay doctrine bind the change.
 
 ## Evidence contract
 
-Ownership is explicit; round-trip and setup tests prove deterministic behavior;
-the canonical gate in [testing](testing.md) passes.
+- [ ] Every changed fact has one declared owner.
+- [ ] Seed-owned fields round-trip through both codec directions.
+- [ ] Tests derive UUIDs from `SeedWorld` rather than freezing encoded fixtures.
+- [ ] Setup and affected domain/application/integration tests pass.
 
 ## Prohibited combinations
 

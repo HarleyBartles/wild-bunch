@@ -18,10 +18,15 @@ Adding or changing a Wild Bunch developer control or panel.
 
 ## Composition
 
-Establish lawful state preparation and panel ownership first. Implement the
-backend command and immutable dev event, then compose only the declared
-frontend capabilities required. Exercise
-the prepared state through normal gameplay and verify it through playtest.
+1. Use `/dev-control-boundary` to classify the control as lawful state
+   preparation and assign its owning panel.
+2. Use `/wild-bunch-domain-modeling` and `/wild-bunch-dotnet-architecture` to
+   add the backend command, aggregate route, immutable dev event, and receipt.
+3. Use `/wild-bunch-browser-game` plus only the declared frontend capabilities
+   needed to expose the control without fabricating local outcome state.
+4. Use `/test-driven-development` for focused backend/frontend proof and
+   `/game-playtest` to consume the prepared state through normal gameplay.
+5. Use `/verification-before-completion` to assemble the exact proof contract.
 
 ## Doctrine and contracts
 
@@ -37,8 +42,10 @@ the prepared state through normal gameplay and verify it through playtest.
 
 ## Evidence contract
 
-Return every field required by `dev-overlay-proof.md`, including dev-event,
-normal-gameplay consumption, browser, and automated proof.
+- [ ] Every field in `dev-overlay-proof.md` is present.
+- [ ] The dev command and immutable dev-event receipt identify prepared state.
+- [ ] A normal gameplay command consumes that state and produces the outcome.
+- [ ] Browser evidence and automated evidence are reported independently.
 
 ## Prohibited combinations
 

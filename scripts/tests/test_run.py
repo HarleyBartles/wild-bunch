@@ -70,3 +70,7 @@ def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
     run._ci_apply(run.Ctx("apply", False))
 
     assert visited == list(mechanical_steps)
+
+
+def test_ci_check_validates_the_installed_skill_projection() -> None:
+    assert "installed-skills" in [name for name, _check, _fix in run.CI_CHECKS]

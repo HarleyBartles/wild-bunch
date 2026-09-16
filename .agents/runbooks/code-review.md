@@ -12,9 +12,14 @@ Reviewing a Wild Bunch diff, branch, or pull request.
 
 ## Composition
 
-The review owner selects lenses; applicable Wild Bunch capability skills judge
-domain-specific boundaries. Feedback resolution returns through
-`/receiving-code-review`, then current verification gates the verdict.
+1. Use `/requesting-code-review` to review the actual committed diff and select
+   the applicable Wild Bunch capability and anti-slop lenses.
+2. Check the diff against the doctrine, contracts, local commands, and evidence
+   obligations below rather than against the PR summary.
+3. Route every accepted finding through `/receiving-code-review`; re-check the
+   repaired diff rather than trusting the response.
+4. Use `/verification-before-completion` to bind the final verdict to the
+   current local head and, when a PR exists, its remote head and checks.
 
 ## Doctrine and contracts
 
@@ -32,8 +37,11 @@ the mesh through the canonical apply capability when routed files change.
 
 ## Evidence contract
 
-The verdict names current local proof and current GitHub checks, and identifies
-any applicable ADR or mesh change.
+- [ ] The reviewed commit range and current head are explicit.
+- [ ] Applicable backend, frontend, validation, and anti-slop authorities were checked.
+- [ ] Each finding is resolved, rejected with evidence, or reported as open.
+- [ ] Local proof and applicable GitHub checks match the reviewed head.
+- [ ] Required ADR and mesh changes are present.
 
 ## Prohibited combinations
 

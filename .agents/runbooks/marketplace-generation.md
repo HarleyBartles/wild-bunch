@@ -12,8 +12,14 @@ or a registered repository-local skill.
 
 ## Composition
 
-Refresh the installed projection from authored configuration, then apply and
-check repository shape and mesh requirements.
+1. Edit only the authored subscription, pinned marketplace source, local plugin,
+   or registered local skill that owns the change.
+2. Use `/refreshing-installed-skills` to rebuild installed projections from
+   those sources; never patch projected skill content as the fix.
+3. Use `/repo-standards` through `py -3 tools/run.py ci --apply` to reconcile
+   repository shape, hook custody, provenance, and generated mesh.
+4. Stage source and generated outputs together and verify their agreement at
+   the normal hooked commit.
 
 ## Doctrine and contracts
 
@@ -30,8 +36,10 @@ installed skill directory is a projection.
 
 ## Evidence contract
 
-The projection provenance, submodule gitlink, registered local skills, and
-generated mesh agree at the committed head.
+- [ ] Authored marketplace configuration and submodule gitlink are staged.
+- [ ] Installed skill bytes and `.provenance.json` resolve from those sources.
+- [ ] Every local skill is registered by exact name and survives refresh.
+- [ ] Generated indexes and the committed projection agree.
 
 ## Prohibited combinations
 

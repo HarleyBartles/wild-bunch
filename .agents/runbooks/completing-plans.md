@@ -13,10 +13,13 @@ has completed its work and needs removal from the live tree.
 
 ## Composition
 
-Verify the work first. Use `/cleanup-custody` to classify the artifact and
-promote durable content. Remove the completed artifact and stale links, apply
-the generated mesh, then let `/publishing-source` carry the deletion in the
-normal commit and PR lifecycle.
+1. Use `/verification-before-completion` to prove the artifact's work is complete.
+2. Use `/cleanup-custody` to classify each enduring decision or rule and promote
+   it to its doctrine, contract, ADR, or runbook owner before removal.
+3. Remove the completed artifact and live links, then run
+   `py -3 tools/run.py ci --apply` to regenerate navigation.
+4. Use `/publishing-source` to carry the deletion and generated changes through
+   the normal hooked commit and PR lifecycle.
 
 ## Doctrine and contracts
 
@@ -36,9 +39,11 @@ generated index changes are committed afterward.
 
 ## Evidence contract
 
-The work is proven complete, durable content exists at its current owner, the
-artifact and all live links are absent, the mesh is current, and Git records
-both creation and removal.
+- [ ] Completion proof covers the artifact's acceptance criteria.
+- [ ] Durable decisions and rules exist at their current authority owners.
+- [ ] The completed artifact and every live link to it are absent.
+- [ ] The generated mesh is current.
+- [ ] Git records both the artifact's creation and completed removal.
 
 ## Prohibited combinations
 

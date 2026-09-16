@@ -22,7 +22,39 @@
 
 ---
 
-### Task 1: Encode the concrete local runbook contract
+### Task 1: Move the pre-commit hook into tracked custody
+
+**Files:**
+- Create: `githooks/pre-commit`
+- Modify: `scripts/tests/test_run.py`
+- Modify: `scripts/tests/test_ci_workflow.py`
+- Modify: `.github/workflows/ci.yml`
+
+**Interfaces:**
+- Consumes: the upstream canonical staged-snapshot hook template and the local apply/check command declaration.
+- Produces: a tracked canonical hook, `core.hooksPath=githooks`, and hosted CI execution of that same hook.
+
+- [ ] **Step 1: Add failing hook-custody tests**
+
+Assert that the tracked hook matches the accepted upstream template, `ci --apply` configures hook custody through repo-standards, and hosted CI executes the tracked hook directly.
+
+- [ ] **Step 2: Run the focused tests and confirm failure**
+
+Run: `py -3 -m pytest scripts/tests/test_run.py scripts/tests/test_ci_workflow.py -q`
+
+Expected: FAIL because no tracked hook or hosted parity step exists.
+
+- [ ] **Step 3: Implement tracked hook installation and validation**
+
+Accept the upstream-generated `githooks/pre-commit`; let repo-standards apply and check own `core.hooksPath` and hook validation. Update hosted CI to invoke `githooks/pre-commit` with `REPO_STANDARDS_HOSTED_COMMIT=HEAD`.
+
+- [ ] **Step 4: Run focused hook tests**
+
+Run: `py -3 -m pytest scripts/tests/test_run.py scripts/tests/test_ci_workflow.py -q`
+
+Expected: PASS.
+
+### Task 2: Encode the concrete local runbook contract
 
 **Files:**
 - Modify: `scripts/tests/test_repo_guidance_contracts.py`
@@ -56,7 +88,7 @@ Run: `py -3 -m unittest scripts.tests.test_repo_guidance_contracts`
 
 Expected: remaining failures identify additional runbooks for Task 2; the five core runbooks pass their structural assertions.
 
-### Task 2: Make every additional runbook concrete
+### Task 3: Make every additional runbook concrete
 
 **Files:**
 - Modify: `.agents/runbooks/asset-selection-cut-normalization.md`
@@ -91,14 +123,14 @@ Run: `py -3 .agents/skills/repo-standards/scripts/repo_standards.py --check --ye
 
 Expected: both pass without warnings.
 
-### Task 3: Reconcile, validate, and publish
+### Task 4: Reconcile, validate, and publish
 
 **Files:**
 - Modify: generated `INDEX.md` files as produced by `ci --apply`
 - Delete: `.agents/plans/2026-09-16-concrete-runbook-composition.md` after completion
 
 **Interfaces:**
-- Consumes: the complete authored guidance tree from Tasks 1 and 2.
+- Consumes: the tracked hook and complete authored guidance tree from Tasks 1 through 3.
 - Produces: a clean committed branch and Draft pull request targeting `main`.
 
 - [ ] **Step 1: Review the full guidance graph**

@@ -12,9 +12,14 @@ Opening, updating, or publishing a Wild Bunch pull request.
 
 ## Composition
 
-`/repo-worker-base` supplies worktree and source-custody boundaries,
-`/verification-before-completion` gates the local head, and
-`/publishing-source` owns Draft lifecycle and publication.
+1. Use `/repo-worker-base` to confirm dedicated-worktree, branch, clean-tree,
+   and source-custody state.
+2. Use `/verification-before-completion` to bind the publication claim to the
+   committed head and canonical validation result.
+3. Use `/publishing-source` to push the task branch and create or update the
+   Draft PR against `main`.
+4. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
+   applicable hosted checks with the published tree.
 
 ## Doctrine and contracts
 
@@ -35,8 +40,10 @@ Opening, updating, or publishing a Wild Bunch pull request.
 
 ## Evidence contract
 
-A GitHub pull request from a dedicated linked worktree and task branch, with
-remote head, PR body, state, and hosted checks reconciled to the published tree.
+- [ ] The local tree is clean and the branch is published from a dedicated worktree.
+- [ ] The GitHub PR targets `main` and its remote head equals local `HEAD`.
+- [ ] The PR body describes current scope and validation evidence.
+- [ ] Draft state and hosted-check expectations match the repo policy.
 
 ## Prohibited combinations
 

@@ -12,9 +12,15 @@ Browser behavior, layout, interaction, or player-flow evidence is required.
 
 ## Composition
 
-Resolve state authority when needed, launch the matching worktree services, and
-let `/game-playtest` own interactive evidence. Add `/playwright-testing` only
-for test implementation or diagnosis.
+1. Use `/wild-bunch-browser-game` when the test requires a decision about
+   server, client, or presentation ownership.
+2. Start PostgreSQL and this worktree's API/web servers with the helpers below;
+   prove the browser points at the matching worktree API.
+3. Use `/game-playtest` with a deterministic scenario to exercise behavior,
+   layout, and interaction while recording console/network state.
+4. Add `/playwright-testing` only when implementing or diagnosing automated
+   browser coverage, and keep that result separate from manual playtest proof.
+5. Stop only this worktree's worker-started servers after evidence is captured.
 
 ## Doctrine and contracts
 
@@ -34,8 +40,11 @@ leave shared PostgreSQL running.
 
 ## Evidence contract
 
-Report worktree, branch, actual URLs, API/worktree match, deterministic scenario,
-observed result, and console/network errors separately from automated proof.
+- [ ] Worktree, branch, actual API URL, and actual web URL are recorded.
+- [ ] The frontend-to-API worktree match is proven.
+- [ ] The deterministic scenario and observed interaction result are recorded.
+- [ ] Console/network errors and automated test results are reported separately.
+- [ ] Only this worktree's worker-started servers were stopped.
 
 ## Prohibited combinations
 

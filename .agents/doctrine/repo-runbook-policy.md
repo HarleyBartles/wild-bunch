@@ -32,6 +32,20 @@ extensions to the portable repository standard.
 - `REVIEW.md` is the review entry point.
 - `CONTRIBUTING.md` is the substantive contributor entry point.
 
+## Concrete composition contract
+
+Every authored runbook keeps the seven-section portable manifest. Its
+`Composition` is an ordered repository workflow that invokes declared skills
+and binds them to current doctrine, contracts, commands, and paths. Its
+`Evidence contract` is a checklist of independently observable proof. Runbooks
+do not copy the internal method of a capability skill.
+
+## Hook custody
+
+`githooks/pre-commit` is the tracked canonical hook. The apply capability sets
+`core.hooksPath=githooks`; the upstream repo-standards hook surface validates
+that tracked file locally and executes it directly in hosted CI parity mode.
+
 ## Exceptions
 
 None.
