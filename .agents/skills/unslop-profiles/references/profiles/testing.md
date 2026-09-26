@@ -42,15 +42,19 @@ Do not ban mocks, snapshots, or coverage metrics. Ban using them as substitutes 
 ## Examples
 
 ### Before (Avoid)
+
 > Add unit tests for the new logic.
 
 ### After (Prefer)
+
 > Add unit tests for `calculate_discount()` function. Test cases: (1) 10% discount for orders over $100, (2) no discount for orders under $100, (3) zero discount for zero amount, (4) handles negative amounts correctly.
 
 ### Before (Avoid)
+
 > Mock the dependencies and assert the method was called.
 
 ### After (Prefer)
+
 > Mock the external payment API and assert that the correct payment amount is passed and the function returns the expected success response. Do not assert internal method calls - assert the observable outcome.
 
 ## Acceptance Checks

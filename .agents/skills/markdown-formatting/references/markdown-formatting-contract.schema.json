@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Markdown formatting consumer contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "state", "exclusions"],
+  "properties": {
+    "version": {"const": 1},
+    "state": {"enum": ["adopted", "enforced"]},
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "path", "reason"],
+        "properties": {
+          "kind": {"enum": ["file", "tree"]},
+          "path": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

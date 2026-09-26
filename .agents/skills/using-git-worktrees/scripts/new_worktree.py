@@ -195,6 +195,18 @@ def _find_command_bus(repo_root: Path) -> Optional[Path]:
     return None
 
 
+def _shell_path(path: Path, shell: str) -> str:
+    """Render a native path for the selected POSIX shell on Windows."""
+    if os.name != "nt":
+        return str(path)
+    shell_path = Path(shell)
+    if shell_path.name.lower() == "bash.exe" and "system32" in {part.lower() for part in shell_path.parts}:
+        drive = path.drive.rstrip(":").lower()
+        tail = path.as_posix().split(":", 1)[1].lstrip("/")
+        return f"/mnt/{drive}/{tail}"
+    return path.as_posix()
+
+
 def _dispatch_capability(
     repo_root: Path,
     capability: str,
@@ -222,7 +234,11 @@ def _dispatch_capability(
         shell = shutil.which("bash") or shutil.which("sh")
         if not shell:
             return None
-        cmd = [shell, str(bus), capability, *extra]
+        # POSIX shells on Windows treat backslashes in a native path as escape
+        # characters. Forward slashes keep the absolute drive path intact for
+        # Git Bash and other Windows-hosted sh implementations.
+        bus_arg = _shell_path(bus, shell)
+        cmd = [shell, bus_arg, capability, *extra]
 
     result = subprocess.run(
         cmd,
@@ -484,7 +500,7 @@ def _configure_worktree(
         if exit_code is None:
             refresh_script = _find_refresh_script(worktree_root)
             if refresh_script:
-                refresh_args = [str(refresh_script), "--apply", "--allow-shared-checkout"]
+                refresh_args = [str(refresh_script), "--apply"]
                 result = subprocess.run(
                     [sys.executable, *refresh_args],
                     cwd=worktree_root,
@@ -505,7 +521,7 @@ def _configure_worktree(
         if exit_code is None:
             mesh_script = _find_mesh_script(worktree_root)
             if mesh_script:
-                mesh_args = [str(mesh_script), "--apply", "--allow-shared-checkout"]
+                mesh_args = [str(mesh_script), "--apply"]
                 result = subprocess.run(
                     [sys.executable, *mesh_args],
                     cwd=worktree_root,

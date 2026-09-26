@@ -1,13 +1,16 @@
 # node-lens-triage
 
 ## Purpose
+
 Normalize lens reports and classify every finding into a severity-based routing bucket. `reviewer-fast` findings are triaged the same as deep-lens findings, but fixing them does not re-run `reviewer-fast`; the downstream fix loop verifies through the consumer preflight (`re-preflight`) and the affected lens's checklist (`reviewer-fixes`).
 
 ## Inputs
+
 - Off-repo `<scratch_dir>` containing `review-log-<lens>.md` files
 - `## Checklist` severity language from each lens profile
 
 ## Recipe
+
 1. Run `py -3 .agents/skills/iterative-review/scripts/normalize_review_inputs.py --apply <scratch_dir>` to ensure all lens reports are plain UTF-8.
 2. Classify every finding from the lens reports. For each finding, call:
    ```bash
@@ -34,10 +37,12 @@ Normalize lens reports and classify every finding into a severity-based routing 
    - Only `trivial/deferred` findings remaining, or all `blocking/important` findings resolved at triage -> `final-strong` (the `resolved-ledger` node is skipped because no fixes were applied)
 
 ## Outputs
+
 - Routing decision
 - `<scratch_dir>/review-metrics.json` regenerated from `<scratch_dir>/review-state.json` and the recorded finding logs
 
 ## Next check
+
 ```bash
 py -3 .agents/skills/iterative-review/scripts/next_node.py \
     --state <scratch_dir>/review-state.json \

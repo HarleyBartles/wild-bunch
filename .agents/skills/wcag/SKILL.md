@@ -1,8 +1,6 @@
 ---
 name: wcag
-description: Use when auditing web content accessibility against WCAG 2.2 or mapping
-  success criteria to a verification plan. Do not use when the work is general UX
-  design or automated tooling setup only.
+description: Use when auditing web content accessibility against WCAG 2.2 or mapping success criteria to a verification plan. Do not use when the work is general UX design or automated tooling setup only.
 metadata:
   source-id: wcag
   source-path: codex-marketplace/plugins/frontend-pack/skills/wcag/SKILL.md
@@ -11,11 +9,11 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - auditing web content accessibility against WCAG 2.2.
-  - mapping success criteria to a verification plan.
+    - auditing web content accessibility against WCAG 2.2.
+    - mapping success criteria to a verification plan.
   do_not_use_when:
-  - the work is general UX design.
-  - the work is automated tooling setup only.
+    - the work is general UX design.
+    - the work is automated tooling setup only.
 license: MIT
 ---
 

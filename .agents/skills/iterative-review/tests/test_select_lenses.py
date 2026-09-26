@@ -4,6 +4,7 @@
 import importlib.util
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,7 +24,7 @@ def _load_select_lenses():
 class TestSelectLensesCLI(unittest.TestCase):
     def test_select_lenses_check(self):
         result = subprocess.run(
-            ["py", "-3", str(SELECT_LENSES), "--check"],
+            [sys.executable, str(SELECT_LENSES), "--check"],
             capture_output=True,
             text=True,
         )

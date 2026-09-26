@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Validate one host environment and print its concrete Python 3 executable.
+set -euo pipefail
+
+kernel=$(uname -s)
+case "$kernel" in
+  MINGW*|MSYS*|CYGWIN*) expected_python_platform=win32 ;;
+  Darwin*) expected_python_platform=darwin ;;
+  Linux*) expected_python_platform=linux ;;
+  *)
+    echo "unsupported Bash host: $kernel" >&2
+    exit 1
+    ;;
+esac
+
+normalize_python_path() {
+  local path=$1
+  if [ "$expected_python_platform" = win32 ] && [[ "$path" == [A-Za-z]:[\\/]* ]]; then
+    command -v cygpath >/dev/null 2>&1 || {
+      echo "execution environment mismatch: Windows-hosted Bash has no cygpath" >&2
+      return 1
+    }
+    cygpath -u "$path"
+    return
+  fi
+  printf '%s\n' "$path"
+}
+
+probe_python() {
+  local command_path=$1
+  shift
+  local details platform executable concrete
+
+  details=$("$command_path" "$@" -c \
+    'import sys; print(sys.platform); print(sys.executable); raise SystemExit(0 if sys.version_info.major == 3 else 1)' \
+    2>/dev/null) || return 1
+  platform=$(printf '%s\n' "$details" | sed -n '1p')
+  executable=$(printf '%s\n' "$details" | sed -n '2p')
+  [ "$platform" = "$expected_python_platform" ] || return 1
+  [ -n "$executable" ] || return 1
+  concrete=$(normalize_python_path "$executable") || return 1
+  "$concrete" -c 'import sys; raise SystemExit(0 if sys.version_info.major == 3 else 1)' \
+    >/dev/null 2>&1 || return 1
+  printf '%s\n' "$concrete"
+}
+
+resolve_command() {
+  local candidate=$1
+  if [[ "$candidate" == */* || "$candidate" == *\\* ]]; then
+    printf '%s\n' "$candidate"
+  else
+    command -v "$candidate" 2>/dev/null
+  fi
+}
+
+python_executable=""
+if [ -n "${PYTHON_EXECUTABLE:-}" ]; then
+  candidate=$(resolve_command "$PYTHON_EXECUTABLE" || true)
+  [ -n "$candidate" ] && python_executable=$(probe_python "$candidate" || true)
+  if [ -z "$python_executable" ]; then
+    echo "PYTHON_EXECUTABLE is not a Python 3 interpreter in the Bash host environment: $PYTHON_EXECUTABLE" >&2
+    exit 1
+  fi
+else
+  for name in python3 python; do
+    candidate=$(resolve_command "$name" || true)
+    [ -n "$candidate" ] || continue
+    python_executable=$(probe_python "$candidate" || true)
+    [ -n "$python_executable" ] && break
+  done
+
+  if [ -z "$python_executable" ] && [ "$expected_python_platform" = win32 ]; then
+    candidate=$(resolve_command py || true)
+    if [ -n "$candidate" ]; then
+      python_executable=$(probe_python "$candidate" -3 || true)
+    fi
+  fi
+fi
+
+if [ -z "$python_executable" ]; then
+  echo "Python 3 not found in the Bash host environment; set PYTHON_EXECUTABLE to a concrete interpreter path" >&2
+  exit 1
+fi
+
+git_executable=$(command -v git 2>/dev/null || true)
+if [ -z "$git_executable" ]; then
+  echo "execution environment mismatch: Git is unavailable in the Bash host environment" >&2
+  exit 1
+fi
+
+if ! git_error=$(git rev-parse --show-toplevel 2>&1 >/dev/null); then
+  echo "execution environment mismatch: this Bash and Git cannot operate on the current checkout" >&2
+  [ -n "$git_error" ] && printf '%s\n' "$git_error" >&2
+  exit 1
+fi
+
+printf '%s\n' "$python_executable"

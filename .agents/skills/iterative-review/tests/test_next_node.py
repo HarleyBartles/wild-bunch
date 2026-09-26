@@ -3,6 +3,7 @@
 
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,7 +39,7 @@ def _write_state(scratch: Path, *, current: str = "setup", previous: str = "", n
 
 
 def _propose(state: Path, node: str, extra: list[str] | None = None) -> subprocess.CompletedProcess:
-    cmd = ["py", "-3", str(NEXT_NODE), "--state", str(state), "--propose", node]
+    cmd = [sys.executable, str(NEXT_NODE), "--state", str(state), "--propose", node]
     if extra:
         cmd.extend(extra)
     return subprocess.run(
@@ -112,7 +113,7 @@ class TestNextNodePropose(unittest.TestCase):
                 encoding="utf-8",
             )
             result = subprocess.run(
-                ["py", "-3", str(NEXT_NODE), "--state", str(state)],
+                [sys.executable, str(NEXT_NODE), "--state", str(state)],
                 capture_output=True,
                 text=True,
             )
@@ -141,7 +142,7 @@ def _write_v1_state(scratch: Path, **overrides) -> Path:
 
 def _reviewctl_validate(state: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["py", "-3", str(REVIEWCTL), "validate", "--state", str(state)],
+        [sys.executable, str(REVIEWCTL), "validate", "--state", str(state)],
         capture_output=True,
         text=True,
     )

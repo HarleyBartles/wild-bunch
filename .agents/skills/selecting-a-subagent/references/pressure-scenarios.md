@@ -10,8 +10,8 @@
 
 ### Codex MultiAgentV1
 
- 8. Well-specified bounded implementation -> `gpt-5.4` with supported adequate reasoning.
- 9. Large read/inventory -> Luna at `medium` unless the live schema says otherwise.
+08. Well-specified bounded implementation -> `gpt-5.4` with supported adequate reasoning.
+09. Large read/inventory -> Luna at `medium` unless the live schema says otherwise.
 10. Cross-boundary debugging -> Terra at `high`.
 11. Security-sensitive migration or concurrency review -> Sol at `high`; escalate through `xhigh` or `max` only with exceptional justification.
 12. A task needs full history and Sol -> V1 may use `fork_context: true`; record that backend enforcement semantics are unobserved.

@@ -3,6 +3,7 @@
 ## When to apply
 
 Use when the frontend-ux skill loaded and the question needs more than the SKILL.md summary:
+
 - choosing component or layout patterns,
 - applying accessibility criteria,
 - reviewing interaction design,

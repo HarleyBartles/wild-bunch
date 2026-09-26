@@ -21,6 +21,7 @@ When writing docs, setup instructions, architecture notes, migration guides, API
 ## Required Avoid Rules
 
 Do not use unexplained praise words and requirement-shaped filler:
+
 - `easy`, `simple`, `intuitive`, `robust`, `scalable`, `flexible`
 - `properly`, `as needed`, `future requirements`
 
@@ -40,15 +41,19 @@ Do not ban terms like `scalable` or `flexible` when the doc defines the dimensio
 ## Examples
 
 ### Before (Avoid)
+
 > This feature allows users to easily manage their data in a robust and scalable way.
 
 ### After (Prefer)
+
 > This feature supports CRUD operations on user records with a maximum of 10,000 records per account. Data is replicated across 3 availability zones with a 99.9% uptime SLA.
 
 ### Before (Avoid)
+
 > Ensure the service handles errors properly and validates inputs as needed.
 
 ### After (Prefer)
+
 > The service validates all inputs against JSON Schema before processing. Invalid requests return HTTP 400 with error details. Internal errors are logged and return HTTP 500 with a correlation ID.
 
 ## Acceptance Checks

@@ -39,3 +39,10 @@ Active design specifications live in `.agents/specs/`.
 ## Prohibited combinations
 
 - Do not reproduce `/brainstorming` discovery, self-review, or handoff steps.
+
+## Playbook routing
+
+- [Security](../playbooks/security.md) - when the design introduces sensitive side effects, authority, permissions, secrets, or hidden truth.
+- [Dev overlay](../playbooks/dev-overlay.md) - when the design includes a developer control or panel.
+- [Seeded game setup](../playbooks/seeded-game-setup.md) - when the design changes setup ownership or deterministic setup.
+- [Town-hub asset production](../playbooks/town-hub-asset-production.md) - when the design includes a new or revised town-hub asset family.

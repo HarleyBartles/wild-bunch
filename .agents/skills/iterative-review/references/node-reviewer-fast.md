@@ -1,15 +1,18 @@
 # node-reviewer-fast
 
 ## Purpose
+
 Run the cheap `reviewer-fast` pre-lens before any deep lens is dispatched. Catch mechanical, surface-level issues that the deep reviewers should not waste effort on, and fix them before `lens-dispatch`.
 
 ## Inputs
+
 - `reviewer-fast` profile from the Devin Desktop agents search path
 - Full branch `<diff_path>`
 - `<pr_description>`
 - Off-repo `<scratch_dir>`
 
 ## Recipe
+
 1. Verify the graph is at `reviewer-fast`:
    ```
    py -3 .agents/skills/iterative-review/scripts/next_node.py \
@@ -37,10 +40,12 @@ Run the cheap `reviewer-fast` pre-lens before any deep lens is dispatched. Catch
    ```
 
 ## Outputs
+
 - `review-log-reviewer-fast.md` written by the `reviewer-fast` subagent
 - `findings.jsonl` updated when `reviewer-fast` reports issues
 
 ## Next check
+
 ```
 py -3 .agents/skills/iterative-review/scripts/next_node.py --state <scratch_dir>/review-state.json
 ```

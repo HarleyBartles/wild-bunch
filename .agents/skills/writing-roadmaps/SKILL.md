@@ -10,28 +10,28 @@ metadata:
   owner: Harley Bartles
   scope: Decompose large goals into roadmaps and execute consecutive plans.
   use_when:
-  - writing-plans scope check fails because the spec covers multiple independent subsystems.
-  - the human frames a request as a large or epic goal.
-  - continuing an existing epic roadmap.
+    - writing-plans scope check fails because the spec covers multiple independent subsystems.
+    - the human frames a request as a large or epic goal.
+    - continuing an existing epic roadmap.
   do_not_use_when:
-  - the goal fits a single tight writing-plans plan (see references/scope-notes.md for the one-plan-vs-epic boundary)
-  - a substitute for writing-plans on small, well-defined tasks.
+    - the goal fits a single tight writing-plans plan (see references/scope-notes.md for the one-plan-vs-epic boundary)
+    - a substitute for writing-plans on small, well-defined tasks.
   related_skills:
-  - handoff-gates
-  - writing-plans
-  - executing-plans
-  - subagent-driven-development
-  - brainstorming
+    - handoff-gates
+    - writing-plans
+    - executing-plans
+    - subagent-driven-development
+    - brainstorming
   use_after:
-  - brainstorming
+    - brainstorming
   use_before:
-  - handoff-gates
-  - executing-plans
+    - handoff-gates
+    - executing-plans
   use_with:
-  - handoff-gates
-  - writing-plans
-  - executing-plans
-  - subagent-driven-development
+    - handoff-gates
+    - writing-plans
+    - executing-plans
+    - subagent-driven-development
 license: MIT
 ---
 
@@ -39,16 +39,17 @@ license: MIT
 
 ## Overview
 
-Break large goals into a roadmap of consecutive plans, execute them, and keep the roadmap as a live work log.
+Break large goals into a roadmap of consecutive plans and keep it as a committed, in-flight work log. When the roadmap completes, use `completing-planning-artifacts`; it is not durable repository truth.
 
 ## Lane 1 — Start an Epic
 
 1. Read the spec from brainstorming or the human.
-2. Run `handoff-gates` spec-readiness.
+2. Verify that `brainstorming` completed its planning-handoff review, or treat a human-supplied approved spec as the design authority.
 3. Create `.agents/plans/<epic-name>/roadmap.md` with a plan sequence table.
-4. Use `writing-plans` to write Plan 1 with roadmap context.
+4. Use `writing-plans` to write Plan 1 with roadmap context and Review Focus.
 5. Run `handoff-gates` plan-readiness.
-6. Hand off to `executing-plans` or `subagent-driven-development`.
+6. Ask the human to review the saved plan before execution, preserving any execution method they already supplied.
+7. Hand off to `executing-plans` or `subagent-driven-development`.
 
 ## Lane 2 — Continue an Epic
 
@@ -56,9 +57,10 @@ Break large goals into a roadmap of consecutive plans, execute them, and keep th
 2. Pick the next pending or blocked item.
 3. Use `writing-plans` to write the next plan just-in-time, including all prior commits, PRs, worktree state, and learnings.
 4. Run `handoff-gates` plan-readiness.
-5. Execute the plan.
-6. Update the roadmap only when the remaining sequence, scope, or blockers changed.
-7. Repeat until done. Run `handoff-gates` completion-readiness before code review.
+5. Ask the human to review the saved plan before execution, preserving any execution method they already supplied.
+6. Execute the plan.
+7. Update the roadmap only when the remaining sequence, scope, or blockers changed.
+8. Repeat until done. Run `handoff-gates` completion-readiness before code review.
 
 ## Lane 3 — Split an Oversized Plan
 
@@ -73,15 +75,11 @@ This is a fallback for legitimately over-scoped plans. It is not an excuse to cr
 
 ## Roadmap Schema
 
-A markdown table with `#`, `Title`, `Status`, `Plan File`, `Commit`, `PR`, `Rating`, `Notes`.
-Status values: `pending`, `writing`, `ready`, `executing`, `done`, `blocked`.
+A markdown table with `#`, `Title`, `Status`, `Plan File`, `Commit`, `PR`, `Rating`, `Notes`. Status values: `pending`, `writing`, `ready`, `executing`, `done`, `blocked`.
 
 ## Blocked Plans
 
-If a plan remains below 8/10 and cannot be strengthened autonomously, ask the
-human one focused question. Do not proceed below 8/10 or reduce scope without
-human consultation. Update the roadmap only when the blocker changes the
-remaining route; do not store the rating.
+If a plan remains below 8/10 and cannot be strengthened autonomously, ask the human one focused question. Do not proceed below 8/10 or reduce scope without human consultation. Update the roadmap only when the blocker changes the remaining route; do not store the rating.
 
 ## Scope Changes
 

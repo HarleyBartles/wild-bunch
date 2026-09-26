@@ -1,8 +1,6 @@
 ---
 name: cleanup-custody
-description: Use when a workspace or repository surface needs a custody decision about
-  whether to keep it live, move it to cold store or governed trash, delete it now,
-  or route it to an owning authority.
+description: Use when a workspace or repository surface needs a custody decision about whether to keep it live, move it to cold store or governed trash, delete it now, or route it to an owning authority.
 metadata:
   source-id: cleanup-custody
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/cleanup-custody/SKILL.md
@@ -11,13 +9,12 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - a workspace or repository surface needs classification to determine whether it
-    should stay live, move to cold store, move to governed trash, be deleted now,
-    or block and route to an owning authority.
+    - a workspace or repository surface needs classification to determine whether it should stay live, move to cold store, move to governed trash, be deleted now, or block and route to an owning authority.
   do_not_use_when:
-  - another more specific skill owns this task.
+    - another more specific skill owns this task.
 license: MIT
 ---
+
 # Cleanup Custody
 
 Use this skill to classify whether a workspace or repository surface should stay live, move to cold store, move to governed trash, be deleted now, or block and route to an owning authority.
@@ -38,12 +35,7 @@ Use this ladder in order:
 
 ## Promotion before removal
 
-Before a surface leaves `keep_live` custody, migrate durable content to its
-owning surface: enduring architecture decisions to the repo's ADR home,
-operating rules to current doctrine or runbooks, and evidence to its declared
-proof surface. The repo's local binding names the destinations; this skill
-owns the step. A removal that strands durable decisions in deleted or
-scratch-only material is not GREEN.
+Before a surface leaves `keep_live` custody, migrate durable content to its owning surface: enduring architecture decisions to the repo's ADR home, operating rules to current doctrine or runbooks, and evidence to its declared proof surface. The repo's local binding names the destinations; this skill owns the step. A removal that strands durable decisions in deleted or scratch-only material is not GREEN.
 
 ## Issue-goal conformance gate
 

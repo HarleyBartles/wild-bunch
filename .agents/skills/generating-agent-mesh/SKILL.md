@@ -10,13 +10,13 @@ metadata:
   owner: Harley Bartles
   scope: Run the repository's generate_index_mesh.py and validate_agent_mesh.py commands.
   use_when:
-  - INDEX.md files are stale after skill, plugin, or source changes.
-  - verifying the navigation mesh, local markdown links, and doctrine routing in CI or as a pre-commit gate.
+    - INDEX.md files are stale after skill, plugin, or source changes.
+    - verifying the navigation mesh, local markdown links, and doctrine routing in CI or as a pre-commit gate.
   do_not_use_when:
-  - installing or refreshing skills from the plugin source.
+    - installing or refreshing skills from the plugin source.
   related_skills:
-  - repo-standards
-  - refreshing-installed-skills
+    - repo-standards
+    - refreshing-installed-skills
 license: MIT
 ---
 
@@ -43,11 +43,12 @@ py -3 .agents/skills/generating-agent-mesh/scripts/validate_agent_mesh.py --chec
 
 The wrapper commands `generate-index-mesh` and `validate-agent-mesh` in the same directory call these bundled Python cores and are the form used by `repo-standards` preflight.
 
-`generate-index-mesh` writes the repo-wide `INDEX.md` mesh from `git ls-files` when passed `--apply`; without `--apply` it defaults to `--check`. `validate-agent-mesh` checks local markdown links and doctrine routing. It does not commit; the caller decides whether to commit regenerated or validated state. When running from a linked worktree, add `--apply --allow-shared-checkout`.
+`generate-index-mesh` writes the repo-wide `INDEX.md` mesh from `git ls-files` when passed `--apply`; without `--apply` it defaults to `--check`. `validate-agent-mesh` checks local markdown links and doctrine routing. It does not commit; the caller decides whether to commit regenerated or validated state. Use `--apply` in a linked worktree. Add `--allow-shared-checkout` only when intentionally applying in the main shared checkout, regardless of its current branch.
 
 ## Repo-specific generation extensions
 
 `generate-index-mesh` runs an optional extra hook if one exists, after writing all `INDEX.md` files and before link validation:
+
 - `scripts/generate_index_mesh_extra.sh` -- bash script; receives `--check` followed by `<repo-root>`.
 - `scripts/generate_index_mesh_extra.ps1` -- PowerShell script; must declare `param([switch]$Check, [string]$RepoRoot)`.
 
@@ -56,6 +57,7 @@ In write mode the script can post-process or append content to specific `INDEX.m
 ## Repo-specific validation extensions
 
 `validate-agent-mesh` runs an optional extra hook if one exists:
+
 - `scripts/validate_agent_mesh_extra.sh` -- bash script; receives `--check` and optional `--changed-from <ref>`.
 - `scripts/validate_agent_mesh_extra.ps1` -- PowerShell script; must declare `param([switch]$Check, [string]$ChangedFrom)`.
 

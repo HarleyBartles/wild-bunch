@@ -1,0 +1,4 @@
+mdformat==1.0.0
+mdformat-frontmatter==2.1.2
+mdformat-gfm==1.0.0
+./.agents/plugins/marketplace-source/codex-marketplace/packages/mdformat-safe-link-labels/wheels/mdformat_safe_link_labels-1.0.0-py3-none-any.whl

@@ -1,0 +1,10 @@
+version: 1
+metadata:
+  skill_name: python
+  source_category: first_party
+interface:
+  display_name: Python
+  short_description: Guidance for writing, reviewing, or debugging Python code.
+  default_prompt: Use python when writing, reviewing, or debugging Python code.
+policy:
+  allow_implicit_invocation: true

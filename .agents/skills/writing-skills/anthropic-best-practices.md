@@ -12,10 +12,10 @@ For conceptual background on how Skills work, see the [Skills overview](https://
 
 The [context window](https://platform.claude.com/docs/en/build-with-claude/context-windows) is a public good. Your Skill shares the context window with everything else your agent needs to know, including:
 
-* The system prompt
-* Conversation history
-* Other Skills' metadata
-* Your actual request
+- The system prompt
+- Conversation history
+- Other Skills' metadata
+- Your actual request
 
 Not every token in your Skill has an immediate cost. At startup, only the metadata (name and description) from all Skills is pre-loaded. Agents read SKILL.md only when the Skill becomes relevant, and read additional files only as needed. However, being concise in SKILL.md still matters: once an agent loads it, every token competes with conversation history and other context.
 
@@ -23,9 +23,9 @@ Not every token in your Skill has an immediate cost. At startup, only the metada
 
 Only add context agents don't already have. Challenge each piece of information:
 
-* "Does the agent really need this explanation?"
-* "Can I assume the agent knows this?"
-* "Does this paragraph justify its token cost?"
+- "Does the agent really need this explanation?"
+- "Can I assume the agent knows this?"
+- "Does this paragraph justify its token cost?"
 
 **Good example: Concise** (approximately 50 tokens):
 
@@ -64,9 +64,9 @@ Match the level of specificity to the task's fragility and variability.
 
 Use when:
 
-* Multiple approaches are valid
-* Decisions depend on context
-* Heuristics guide the approach
+- Multiple approaches are valid
+- Decisions depend on context
+- Heuristics guide the approach
 
 Example:
 
@@ -83,9 +83,9 @@ Example:
 
 Use when:
 
-* A preferred pattern exists
-* Some variation is acceptable
-* Configuration affects behavior
+- A preferred pattern exists
+- Some variation is acceptable
+- Configuration affects behavior
 
 Example:
 
@@ -106,9 +106,9 @@ def generate_report(data, format="markdown", include_charts=True):
 
 Use when:
 
-* Operations are fragile and error-prone
-* Consistency is critical
-* A specific sequence must be followed
+- Operations are fragile and error-prone
+- Consistency is critical
+- A specific sequence must be followed
 
 Example:
 
@@ -126,8 +126,8 @@ Do not modify the command or add additional flags.
 
 **Analogy**: Think of the agent as a robot exploring a path:
 
-* **Narrow bridge with cliffs on both sides**: There's only one safe way forward. Provide specific guardrails and exact instructions (low freedom). Example: database migrations that must run in exact sequence.
-* **Open field with no hazards**: Many paths lead to success. Give general direction and trust the agent to find the best route (high freedom). Example: code reviews where context determines the best approach.
+- **Narrow bridge with cliffs on both sides**: There's only one safe way forward. Provide specific guardrails and exact instructions (low freedom). Example: database migrations that must run in exact sequence.
+- **Open field with no hazards**: Many paths lead to success. Give general direction and trust the agent to find the best route (high freedom). Example: code reviews where context determines the best approach.
 
 ### Test with all models you plan to use
 
@@ -135,9 +135,9 @@ Skills act as additions to models, so effectiveness depends on the underlying mo
 
 **Testing considerations by model**:
 
-* **Claude Haiku** (fast, economical): Does the Skill provide enough guidance?
-* **Claude Sonnet** (balanced): Is the Skill clear and efficient?
-* **Claude Opus** (powerful reasoning): Does the Skill avoid over-explaining?
+- **Claude Haiku** (fast, economical): Does the Skill provide enough guidance?
+- **Claude Sonnet** (balanced): Is the Skill clear and efficient?
+- **Claude Opus** (powerful reasoning): Does the Skill avoid over-explaining?
 
 What works perfectly for Opus might need more detail for Haiku. If you plan to use your Skill across multiple models, aim for instructions that work well with all of them.
 
@@ -146,11 +146,10 @@ What works perfectly for Opus might need more detail for Haiku. If you plan to u
 <Note>
   **YAML Frontmatter**: The SKILL.md frontmatter requires two fields:
 
-  * `name` - Human-readable name of the Skill (64 characters maximum)
-  * `description` - One-line description of what the Skill does and when to use it (1024 characters maximum)
+- `name` - Human-readable name of the Skill (64 characters maximum)
+- `description` - One-line description of what the Skill does and when to use it (1024 characters maximum)
 
-  For complete Skill structure details, see the [Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview#skill-structure).
-</Note>
+For complete Skill structure details, see the [Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview#skill-structure). </Note>
 
 ### Naming conventions
 
@@ -158,29 +157,29 @@ Use consistent naming patterns to make Skills easier to reference and discuss. W
 
 **Good naming examples (gerund form)**:
 
-* "Processing PDFs"
-* "Analyzing spreadsheets"
-* "Managing databases"
-* "Testing code"
-* "Writing documentation"
+- "Processing PDFs"
+- "Analyzing spreadsheets"
+- "Managing databases"
+- "Testing code"
+- "Writing documentation"
 
 **Acceptable alternatives**:
 
-* Noun phrases: "PDF Processing", "Spreadsheet Analysis"
-* Action-oriented: "Process PDFs", "Analyze Spreadsheets"
+- Noun phrases: "PDF Processing", "Spreadsheet Analysis"
+- Action-oriented: "Process PDFs", "Analyze Spreadsheets"
 
 **Avoid**:
 
-* Vague names: "Helper", "Utils", "Tools"
-* Overly generic: "Documents", "Data", "Files"
-* Inconsistent patterns within your skill collection
+- Vague names: "Helper", "Utils", "Tools"
+- Overly generic: "Documents", "Data", "Files"
+- Inconsistent patterns within your skill collection
 
 Consistent naming makes it easier to:
 
-* Reference Skills in documentation and conversations
-* Understand what a Skill does at a glance
-* Organize and search through multiple Skills
-* Maintain a professional, cohesive skill library
+- Reference Skills in documentation and conversations
+- Understand what a Skill does at a glance
+- Organize and search through multiple Skills
+- Maintain a professional, cohesive skill library
 
 ### Writing effective descriptions
 
@@ -189,10 +188,9 @@ The `description` field enables Skill discovery and should include both what the
 <Warning>
   **Always write in third person**. The description is injected into the system prompt, and inconsistent point-of-view can cause discovery problems.
 
-  * **Good:** "Processes Excel files and generates reports"
-  * **Avoid:** "I can help you process Excel files"
-  * **Avoid:** "You can use this to process Excel files"
-</Warning>
+- **Good:** "Processes Excel files and generates reports"
+- **Avoid:** "I can help you process Excel files"
+- **Avoid:** "You can use this to process Excel files" </Warning>
 
 **Be specific and include key terms**. Include both what the Skill does and specific triggers/contexts for when to use it.
 
@@ -238,9 +236,9 @@ SKILL.md serves as an overview that points agents to detailed materials as neede
 
 **Practical guidance:**
 
-* Keep SKILL.md body under 500 lines for optimal performance
-* Split content into separate files when approaching this limit
-* Use the patterns below to organize instructions, code, and resources effectively
+- Keep SKILL.md body under 500 lines for optimal performance
+- Split content into separate files when approaching this limit
+- Use the patterns below to organize instructions, code, and resources effectively
 
 #### Visual overview: From simple to complex
 
@@ -524,7 +522,7 @@ This pattern greatly improves output quality.
 5. Finalize and save the document
 ```
 
-This shows the validation loop pattern using reference documents instead of scripts. The "validator" is STYLE\_GUIDE.md, and the agent performs the check by reading and comparing.
+This shows the validation loop pattern using reference documents instead of scripts. The "validator" is STYLE_GUIDE.md, and the agent performs the check by reading and comparing.
 
 **Example 2: Document editing process** (for Skills with code):
 
@@ -583,15 +581,15 @@ Choose one term and use it throughout the Skill:
 
 **Good - Consistent**:
 
-* Always "API endpoint"
-* Always "field"
-* Always "extract"
+- Always "API endpoint"
+- Always "field"
+- Always "extract"
 
 **Bad - Inconsistent**:
 
-* Mix "API endpoint", "URL", "API route", "path"
-* Mix "field", "box", "element", "control"
-* Mix "extract", "pull", "get", "retrieve"
+- Mix "API endpoint", "URL", "API route", "path"
+- Mix "field", "box", "element", "control"
+- Mix "extract", "pull", "get", "retrieve"
 
 Consistency helps agents understand and follow instructions.
 
@@ -783,9 +781,9 @@ The most effective Skill development process involves the agent itself. Work wit
 
 The same hierarchical pattern continues when improving Skills. You alternate between:
 
-* **Working with Agent A** (the expert who helps refine the Skill)
-* **Testing with Agent B** (the agent using the Skill to perform real work)
-* **Observing Agent B's behavior** and bringing insights back to Agent A
+- **Working with Agent A** (the expert who helps refine the Skill)
+- **Testing with Agent B** (the agent using the Skill to perform real work)
+- **Observing Agent B's behavior** and bringing insights back to Agent A
 
 1. **Use the Skill in real workflows**: Give Agent B (with the Skill loaded) actual tasks, not test scenarios
 
@@ -813,10 +811,10 @@ The same hierarchical pattern continues when improving Skills. You alternate bet
 
 As you iterate on Skills, pay attention to how agents actually use them in practice. Watch for:
 
-* **Unexpected exploration paths**: Does the agent read files in an order you didn't anticipate? This might indicate your structure isn't as intuitive as you thought
-* **Missed connections**: Does the agent fail to follow references to important files? Your links might need to be more explicit or prominent
-* **Overreliance on certain sections**: If the agent repeatedly reads the same file, consider whether that content should be in the main SKILL.md instead
-* **Ignored content**: If the agent never accesses a bundled file, it might be unnecessary or poorly signaled in the main instructions
+- **Unexpected exploration paths**: Does the agent read files in an order you didn't anticipate? This might indicate your structure isn't as intuitive as you thought
+- **Missed connections**: Does the agent fail to follow references to important files? Your links might need to be more explicit or prominent
+- **Overreliance on certain sections**: If the agent repeatedly reads the same file, consider whether that content should be in the main SKILL.md instead
+- **Ignored content**: If the agent never accesses a bundled file, it might be unnecessary or poorly signaled in the main instructions
 
 Iterate based on these observations rather than assumptions. The 'name' and 'description' in your Skill's metadata are particularly critical. Agents use these when deciding whether to trigger the Skill in response to the current task. Make sure they clearly describe what the Skill does and when it should be used.
 
@@ -826,8 +824,8 @@ Iterate based on these observations rather than assumptions. The 'name' and 'des
 
 Always use forward slashes in file paths, even on Windows:
 
-* ✓ **Good**: `scripts/helper.py`, `reference/guide.md`
-* ✗ **Avoid**: `scripts\helper.py`, `reference\guide.md`
+- ✓ **Good**: `scripts/helper.py`, `reference/guide.md`
+- ✗ **Avoid**: `scripts\helper.py`, `reference\guide.md`
 
 Unix-style paths work across all platforms, while Windows-style paths cause errors on Unix systems.
 
@@ -911,10 +909,10 @@ Even if your agent could write a script, pre-made scripts offer advantages:
 
 **Benefits of utility scripts**:
 
-* More reliable than generated code
-* Save tokens (no need to include code in context)
-* Save time (no code generation required)
-* Ensure consistency across uses
+- More reliable than generated code
+- Save tokens (no need to include code in context)
+- Save time (no code generation required)
+- Ensure consistency across uses
 
 <img src="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=4bbc45f2c2e0bee9f2f0d5da669bad00" alt="Bundling executable scripts alongside instruction files" data-og-width="2048" width="2048" data-og-height="1154" height="1154" data-path="images/agent-skills-executable-scripts.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=280&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=9a04e6535a8467bfeea492e517de389f 280w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=560&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=e49333ad90141af17c0d7651cca7216b 560w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=840&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=954265a5df52223d6572b6214168c428 840w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=1100&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=2ff7a2d8f2a83ee8af132b29f10150fd 1100w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=1650&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=48ab96245e04077f4d15e9170e081cfb 1650w, https://mintcdn.com/anthropic-claude-docs/4Bny2bjzuGBK7o00/images/agent-skills-executable-scripts.png?w=2500&fit=max&auto=format&n=4Bny2bjzuGBK7o00&q=85&s=0301a6c8b3ee879497cc5b5483177c90 2500w" />
 
@@ -922,8 +920,8 @@ The diagram above shows how executable scripts work alongside instruction files.
 
 **Important distinction**: Make clear in your instructions whether the agent should:
 
-* **Execute the script** (most common): "Run `analyze_form.py` to extract fields"
-* **Read it as reference** (for complex logic): "See `analyze_form.py` for the field extraction algorithm"
+- **Execute the script** (most common): "Run `analyze_form.py` to extract fields"
+- **Read it as reference** (for complex logic): "See `analyze_form.py` for the field extraction algorithm"
 
 For most utility scripts, execution is preferred because it's more reliable and efficient. See the [Runtime environment](#runtime-environment) section below for details on how script execution works.
 
@@ -992,21 +990,21 @@ When agents perform complex, open-ended tasks, they can make mistakes. The "plan
 
 **Why this pattern works:**
 
-* **Catches errors early**: Validation finds problems before changes are applied
-* **Machine-verifiable**: Scripts provide objective verification
-* **Reversible planning**: The agent can iterate on the plan without touching originals
-* **Clear debugging**: Error messages point to specific problems
+- **Catches errors early**: Validation finds problems before changes are applied
+- **Machine-verifiable**: Scripts provide objective verification
+- **Reversible planning**: The agent can iterate on the plan without touching originals
+- **Clear debugging**: Error messages point to specific problems
 
 **When to use**: Batch operations, destructive changes, complex validation rules, high-stakes operations.
 
-**Implementation tip**: Make validation scripts verbose with specific error messages like "Field 'signature\_date' not found. Available fields: customer\_name, order\_total, signature\_date\_signed" to help the agent fix issues.
+**Implementation tip**: Make validation scripts verbose with specific error messages like "Field 'signature_date' not found. Available fields: customer_name, order_total, signature_date_signed" to help the agent fix issues.
 
 ### Package dependencies
 
 Skills run in the code execution environment with platform-specific limitations:
 
-* **claude.ai**: Can install packages from npm and PyPI and pull from GitHub repositories
-* **Anthropic API**: Has no network access and no runtime package installation
+- **claude.ai**: Can install packages from npm and PyPI and pull from GitHub repositories
+- **Anthropic API**: Has no network access and no runtime package installation
 
 List required packages in your SKILL.md and verify they're available in the [code execution tool documentation](https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool).
 
@@ -1023,17 +1021,17 @@ Skills run in a code execution environment with filesystem access, bash commands
 3. **Scripts executed efficiently**: Utility scripts can be executed via bash without loading their full contents into context. Only the script's output consumes tokens
 4. **No context penalty for large files**: Reference files, data, or documentation don't consume context tokens until actually read
 
-* **File paths matter**: Agents navigate your skill directory like a filesystem. Use forward slashes (`reference/guide.md`), not backslashes
-* **Name files descriptively**: Use names that indicate content: `form_validation_rules.md`, not `doc2.md`
-* **Organize for discovery**: Structure directories by domain or feature
-  * Good: `reference/finance.md`, `reference/sales.md`
-  * Bad: `docs/file1.md`, `docs/file2.md`
-* **Bundle comprehensive resources**: Include complete API docs, extensive examples, large datasets; no context penalty until accessed
-* **Prefer scripts for deterministic operations**: Write `validate_form.py` rather than asking the agent to generate validation code
-* **Make execution intent clear**:
-  * "Run `analyze_form.py` to extract fields" (execute)
-  * "See `analyze_form.py` for the extraction algorithm" (read as reference)
-* **Test file access patterns**: Verify the agent can navigate your directory structure by testing with real requests
+- **File paths matter**: Agents navigate your skill directory like a filesystem. Use forward slashes (`reference/guide.md`), not backslashes
+- **Name files descriptively**: Use names that indicate content: `form_validation_rules.md`, not `doc2.md`
+- **Organize for discovery**: Structure directories by domain or feature
+  - Good: `reference/finance.md`, `reference/sales.md`
+  - Bad: `docs/file1.md`, `docs/file2.md`
+- **Bundle comprehensive resources**: Include complete API docs, extensive examples, large datasets; no context penalty until accessed
+- **Prefer scripts for deterministic operations**: Write `validate_form.py` rather than asking the agent to generate validation code
+- **Make execution intent clear**:
+  - "Run `analyze_form.py` to extract fields" (execute)
+  - "See `analyze_form.py` for the extraction algorithm" (read as reference)
+- **Test file access patterns**: Verify the agent can navigate your directory structure by testing with real requests
 
 **Example:**
 
@@ -1065,8 +1063,8 @@ Use the GitHub:create_issue tool to create issues.
 
 Where:
 
-* `BigQuery` and `GitHub` are MCP server names
-* `bigquery_schema` and `create_issue` are the tool names within those servers
+- `BigQuery` and `GitHub` are MCP server names
+- `bigquery_schema` and `create_issue` are the tool names within those servers
 
 Without the server prefix, agents may fail to locate the tool, especially when multiple MCP servers are available.
 
@@ -1104,34 +1102,34 @@ Before sharing a Skill, verify:
 
 ### Core quality
 
-* [ ] Description is specific and includes key terms
-* [ ] Description includes both what the Skill does and when to use it
-* [ ] SKILL.md body is under 500 lines
-* [ ] Additional details are in separate files (if needed)
-* [ ] No time-sensitive information (or in "old patterns" section)
-* [ ] Consistent terminology throughout
-* [ ] Examples are concrete, not abstract
-* [ ] File references are one level deep
-* [ ] Progressive disclosure used appropriately
-* [ ] Workflows have clear steps
+- [ ] Description is specific and includes key terms
+- [ ] Description includes both what the Skill does and when to use it
+- [ ] SKILL.md body is under 500 lines
+- [ ] Additional details are in separate files (if needed)
+- [ ] No time-sensitive information (or in "old patterns" section)
+- [ ] Consistent terminology throughout
+- [ ] Examples are concrete, not abstract
+- [ ] File references are one level deep
+- [ ] Progressive disclosure used appropriately
+- [ ] Workflows have clear steps
 
 ### Code and scripts
 
-* [ ] Scripts solve problems rather than punt to the agent
-* [ ] Error handling is explicit and helpful
-* [ ] No "voodoo constants" (all values justified)
-* [ ] Required packages listed in instructions and verified as available
-* [ ] Scripts have clear documentation
-* [ ] No Windows-style paths (all forward slashes)
-* [ ] Validation/verification steps for critical operations
-* [ ] Feedback loops included for quality-critical tasks
+- [ ] Scripts solve problems rather than punt to the agent
+- [ ] Error handling is explicit and helpful
+- [ ] No "voodoo constants" (all values justified)
+- [ ] Required packages listed in instructions and verified as available
+- [ ] Scripts have clear documentation
+- [ ] No Windows-style paths (all forward slashes)
+- [ ] Validation/verification steps for critical operations
+- [ ] Feedback loops included for quality-critical tasks
 
 ### Testing
 
-* [ ] At least three evaluations created
-* [ ] Tested with Haiku, Sonnet, and Opus
-* [ ] Tested with real usage scenarios
-* [ ] Team feedback incorporated (if applicable)
+- [ ] At least three evaluations created
+- [ ] Tested with Haiku, Sonnet, and Opus
+- [ ] Tested with real usage scenarios
+- [ ] Team feedback incorporated (if applicable)
 
 ## Next steps
 
@@ -1140,11 +1138,11 @@ Before sharing a Skill, verify:
     Create your first Skill
   </Card>
 
-  <Card title="Use Skills in Claude Code" icon="terminal" href="https://code.claude.com/docs/en/skills">
+<Card title="Use Skills in Claude Code" icon="terminal" href="https://code.claude.com/docs/en/skills">
     Create and manage Skills in Claude Code
   </Card>
 
-  <Card title="Use Skills with the API" icon="code" href="https://platform.claude.com/docs/en/build-with-claude/skills-guide">
+<Card title="Use Skills with the API" icon="code" href="https://platform.claude.com/docs/en/build-with-claude/skills-guide">
     Upload and use Skills programmatically
   </Card>
 </CardGroup>

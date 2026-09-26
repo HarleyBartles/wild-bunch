@@ -1,7 +1,6 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior,
-  before proposing fixes.
+description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes.
 metadata:
   source-id: systematic-debugging
   source-path: codex-marketplace/plugins/superpowers-plus/skills/systematic-debugging/SKILL.md
@@ -10,25 +9,24 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - encountering a bug, test failure, or unexpected behavior before proposing
-    fixes.
-  - the root cause is unknown.
-  - time pressure makes an evidence-free guess tempting.
+    - encountering a bug, test failure, or unexpected behavior before proposing fixes.
+    - the root cause is unknown.
+    - time pressure makes an evidence-free guess tempting.
   do_not_use_when:
-  - the fix is already verified.
-  - a substitute for testing or verification.
-  - to justify a pre-selected fix.
+    - the fix is already verified.
+    - a substitute for testing or verification.
+    - to justify a pre-selected fix.
   related_skills:
-  - test-driven-development
-  - executing-plans
-  - subagent-driven-development
-  - using-superpowers-plus
+    - test-driven-development
+    - executing-plans
+    - subagent-driven-development
+    - using-superpowers-plus
 license: MIT
 ---
 
 ## Provenance
 
-This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.4.1 commit `5bf4e78011075bcfc0dc295f0724994cd123ee71` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Systematic Debugging
 
@@ -49,6 +47,7 @@ If you haven't completed Phase 1, you cannot propose fixes.
 ## When to Use
 
 Use for ANY technical issue:
+
 - Test failures
 - Bugs in production
 - Unexpected behavior
@@ -57,6 +56,7 @@ Use for ANY technical issue:
 - Integration issues
 
 **Use this ESPECIALLY when:**
+
 - Under time pressure (emergencies make guessing tempting)
 - "Just one quick fix" seems obvious
 - You've already tried multiple fixes
@@ -64,6 +64,7 @@ Use for ANY technical issue:
 - You don't fully understand the issue
 
 **Don't skip when:**
+
 - Issue seems simple (simple bugs have root causes too)
 - You're in a hurry (rushing guarantees rework)
 - Manager wants it fixed NOW (systematic is faster than thrashing)
@@ -77,18 +78,21 @@ You MUST complete each phase before proceeding to the next.
 **BEFORE attempting ANY fix:**
 
 1. **Read Error Messages Carefully**
+
    - Don't skip past errors or warnings
    - They often contain the exact solution
    - Read stack traces completely
    - Note line numbers, file paths, error codes
 
 2. **Reproduce Consistently**
+
    - Can you trigger it reliably?
    - What are the exact steps?
    - Does it happen every time?
    - If not reproducible → gather more data, don't guess
 
 3. **Check Recent Changes**
+
    - What changed that could cause this?
    - Git diff, recent commits
    - New dependencies, config changes
@@ -99,6 +103,7 @@ You MUST complete each phase before proceeding to the next.
    **WHEN system has multiple components (CI → build → signing, API → service → database):**
 
    **BEFORE proposing fixes, add diagnostic instrumentation:**
+
    ```
    For EACH component boundary:
      - Log what data enters component
@@ -112,6 +117,7 @@ You MUST complete each phase before proceeding to the next.
    ```
 
    **Example (multi-layer system):**
+
    ```bash
    # Layer 1: Workflow
    echo "=== Secrets available in workflow: ==="
@@ -139,6 +145,7 @@ You MUST complete each phase before proceeding to the next.
    See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
 
    **Quick version:**
+
    - Where does bad value originate?
    - What called this with bad value?
    - Keep tracing up until you find the source
@@ -149,20 +156,24 @@ You MUST complete each phase before proceeding to the next.
 **Find the pattern before fixing:**
 
 1. **Find Working Examples**
+
    - Locate similar working code in same codebase
    - What works that's similar to what's broken?
 
 2. **Compare Against References**
+
    - If implementing pattern, read reference implementation COMPLETELY
    - Don't skim - read every line
    - Understand the pattern fully before applying
 
 3. **Identify Differences**
+
    - What's different between working and broken?
    - List every difference, however small
    - Don't assume "that can't matter"
 
 4. **Understand Dependencies**
+
    - What other components does this need?
    - What settings, config, environment?
    - What assumptions does it make?
@@ -172,21 +183,25 @@ You MUST complete each phase before proceeding to the next.
 **Scientific method:**
 
 1. **Form Single Hypothesis**
+
    - State clearly: "I think X is the root cause because Y"
    - Write it down
    - Be specific, not vague
 
 2. **Test Minimally**
+
    - Make the SMALLEST possible change to test hypothesis
    - One variable at a time
    - Don't fix multiple things at once
 
 3. **Verify Before Continuing**
+
    - Did it work? Yes → Phase 4
    - Didn't work? Form NEW hypothesis
    - DON'T add more fixes on top
 
 4. **When You Don't Know**
+
    - Say "I don't understand X"
    - Don't pretend to know
    - Ask for help
@@ -197,6 +212,7 @@ You MUST complete each phase before proceeding to the next.
 **Fix the root cause, not the symptom:**
 
 1. **Create Failing Test Case**
+
    - Simplest possible reproduction
    - Automated test if possible
    - One-off test script if no framework
@@ -204,18 +220,21 @@ You MUST complete each phase before proceeding to the next.
    - Use the `test-driven-development` skill for writing proper failing tests
 
 2. **Implement Single Fix**
+
    - Address the root cause identified
    - ONE change at a time
    - No "while I'm here" improvements
    - No bundled refactoring
 
 3. **Verify Fix**
+
    - Test passes now?
    - No other tests broken?
    - Issue actually resolved?
    - Use the `verification-before-completion` skill before claiming success
 
 4. **If Fix Doesn't Work**
+
    - STOP
    - Count: How many fixes have you tried?
    - If < 3: Return to Phase 1, re-analyze with new information
@@ -225,11 +244,13 @@ You MUST complete each phase before proceeding to the next.
 5. **If 3+ Fixes Failed: Question Architecture**
 
    **Pattern indicating architectural problem:**
+
    - Each fix reveals new shared state/coupling/problem in different place
    - Fixes require "massive refactoring" to implement
    - Each fix creates new symptoms elsewhere
 
    **STOP and question fundamentals:**
+
    - Is this pattern fundamentally sound?
    - Are we "sticking with it through sheer inertia"?
    - Should we refactor architecture vs. continue fixing symptoms?
@@ -241,6 +262,7 @@ You MUST complete each phase before proceeding to the next.
 ## Red Flags - STOP and Follow Process
 
 If you catch yourself thinking:
+
 - "Quick fix for now, investigate later"
 - "Just try changing X and see if it works"
 - "Add multiple changes, run tests"
@@ -252,14 +274,18 @@ If you catch yourself thinking:
 - Proposing solutions before tracing data flow
 - **"One more fix attempt" (when already tried 2+)**
 - **Each fix reveals new problem in different place**
+- "This failure proves we need a new mode, flag, exception, or environment-sensitive branch"
 
 **ALL of these mean: STOP. Return to Phase 1.**
+
+If a proposed fix changes workflow meaning, stop and identify its authority. A reproduced failure authorizes diagnosis and repair; it does not authorize new semantics. Preserve the existing contract unless explicit human instruction, repository canon, or the owning skill or contract requires the change. Diagnose the observed failure as stated and reproduced. Do not substitute a familiar adjacent failure merely because it has a known repair; verify the actual failing state before selecting the cause or fix.
 
 **If 3+ fixes failed:** Question the architecture (see Phase 4.5)
 
 ## your human partner's Signals You're Doing It Wrong
 
 **Watch for these redirections:**
+
 - "Is that not happening?" - You assumed without verifying
 - "Will it show us...?" - You should have added evidence gathering
 - "Stop guessing" - You're proposing fixes without understanding
@@ -270,25 +296,25 @@ If you catch yourself thinking:
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "Issue is simple, don't need process" | Simple issues have root causes too. Process is fast for simple bugs. |
-| "Emergency, no time for process" | Systematic debugging is FASTER than guess-and-check thrashing. |
-| "Just try this first, then investigate" | First fix sets the pattern. Do it right from the start. |
-| "I'll write test after confirming fix works" | Untested fixes don't stick. Test first proves it. |
-| "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
-| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
-| "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
-| "One more fix attempt" (after 2+ failures) | 3+ failures = architectural problem. Question pattern, don't fix again. |
+| Excuse                                       | Reality                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------- |
+| "Issue is simple, don't need process"        | Simple issues have root causes too. Process is fast for simple bugs.    |
+| "Emergency, no time for process"             | Systematic debugging is FASTER than guess-and-check thrashing.          |
+| "Just try this first, then investigate"      | First fix sets the pattern. Do it right from the start.                 |
+| "I'll write test after confirming fix works" | Untested fixes don't stick. Test first proves it.                       |
+| "Multiple fixes at once saves time"          | Can't isolate what worked. Causes new bugs.                             |
+| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely.              |
+| "I see the problem, let me fix it"           | Seeing symptoms ≠ understanding root cause.                             |
+| "One more fix attempt" (after 2+ failures)   | 3+ failures = architectural problem. Question pattern, don't fix again. |
 
 ## Quick Reference
 
-| Phase | Key Activities | Success Criteria |
-|-------|---------------|------------------|
-| **1. Root Cause** | Read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
-| **2. Pattern** | Find working examples, compare | Identify differences |
-| **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
-| **4. Implementation** | Create test, fix, verify | Bug resolved, tests pass |
+| Phase                 | Key Activities                                         | Success Criteria            |
+| --------------------- | ------------------------------------------------------ | --------------------------- |
+| **1. Root Cause**     | Read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY     |
+| **2. Pattern**        | Find working examples, compare                         | Identify differences        |
+| **3. Hypothesis**     | Form theory, test minimally                            | Confirmed or new hypothesis |
+| **4. Implementation** | Create test, fix, verify                               | Bug resolved, tests pass    |
 
 ## When Process Reveals "No Root Cause"
 

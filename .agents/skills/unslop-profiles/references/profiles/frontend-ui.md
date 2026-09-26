@@ -40,15 +40,19 @@ Do not ban marketing pages or polished visuals when they are the requested outpu
 ## Examples
 
 ### Before (Avoid)
+
 > A modern hero section with a gradient background, rounded cards, and a prominent Get Started CTA.
 
 ### After (Prefer)
+
 > A sign-up form with email and password fields. Primary action: "Create account". Loading state: spinner on button. Error state: inline error message below each field. Empty state: not applicable.
 
 ### Before (Avoid)
+
 > Add trusted-by logos, testimonials, and a clean dashboard preview.
 
 ### After (Prefer)
+
 > A dashboard showing user statistics: total users, active users, and revenue. Each metric is a card with the number and a label. Data is real from the backend API. No fake data or testimonials.
 
 ## Acceptance Checks

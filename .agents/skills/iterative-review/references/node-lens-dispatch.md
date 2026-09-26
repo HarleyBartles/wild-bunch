@@ -1,9 +1,11 @@
 # node-lens-dispatch
 
 ## Purpose
+
 Dispatch the matching deep lens reviewers.
 
 ## Inputs
+
 - All `reviewer-*.md` files in the Devin Desktop agents search path
 - Full branch `<diff_path>`
 - `<pr_description>`
@@ -31,7 +33,9 @@ Dispatch the matching deep lens reviewers.
 `lens-dispatch` is a one-time dispatch. After this node, the graph routes to `normalize-inputs` and then `lens-triage`. Downstream fix handling (`metrics-track` -> `finding-fix` -> `re-preflight` -> `reviewer-fixes`) re-runs only the lens associated with the finding being fixed; do not re-dispatch all lenses.
 
 ## Outputs
+
 - Write `review-log-<lens>.md` for each dispatched lens
 
 ## Next check
-py -3 .agents/skills/iterative-review/scripts/next_node.py --state <scratch_dir>/review-state.json
+
+py -3 .agents/skills/iterative-review/scripts/next_node.py --state \<scratch_dir>/review-state.json

@@ -10,18 +10,18 @@ Use this when you need a fast, authenticated command-line path to GitHub.
 
 ## Common patterns
 
-| Intent | Command |
-| --- | --- |
-| Current repo metadata | `gh repo view --json name,owner,defaultBranchRef,url` |
-| PR head SHA | `gh pr view <number> --json headRefOid,url,state,mergeable` |
-| PR diff | `gh pr diff <number>` |
-| PR checks | `gh pr checks <number>` |
-| List open PRs | `gh pr list --state open --limit 50` |
-| API call | `gh api <endpoint>` |
-| GraphQL call | `gh api graphql --input query.json` |
-| Workflow runs | `gh run list --limit 20` |
-| Workflow logs | `gh run view <run-id> --log` |
-| Release list | `gh release list --limit 20` |
+| Intent                | Command                                                     |
+| --------------------- | ----------------------------------------------------------- |
+| Current repo metadata | `gh repo view --json name,owner,defaultBranchRef,url`       |
+| PR head SHA           | `gh pr view <number> --json headRefOid,url,state,mergeable` |
+| PR diff               | `gh pr diff <number>`                                       |
+| PR checks             | `gh pr checks <number>`                                     |
+| List open PRs         | `gh pr list --state open --limit 50`                        |
+| API call              | `gh api <endpoint>`                                         |
+| GraphQL call          | `gh api graphql --input query.json`                         |
+| Workflow runs         | `gh run list --limit 20`                                    |
+| Workflow logs         | `gh run view <run-id> --log`                                |
+| Release list          | `gh release list --limit 20`                                |
 
 ## Notes
 

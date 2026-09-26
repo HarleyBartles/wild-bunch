@@ -6,7 +6,7 @@ This file is the repo's contributor entry point.
 
 - Read root [`AGENTS.md`](./AGENTS.md) for source-of-truth and publication routing.
 - Read [`.agents/doctrine/repo-runbook-policy.md`](./.agents/doctrine/repo-runbook-policy.md) for this repo's mapping to the cross-repo runbook standard.
-- Read [`.agents/runbooks/code-style.md`](./.agents/runbooks/code-style.md) for
+- Read [`.agents/playbooks/code-style.md`](./.agents/playbooks/code-style.md) for
   source conventions and [the writing contract](./.agents/contracts/unslop/writing.md)
   for authored prose.
 

@@ -18,13 +18,15 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 
 ## Routing pointers
 
+- Lifecycle runbooks: [.agents/runbooks/INDEX.md](.agents/runbooks/INDEX.md)
+- Topical playbooks: [.agents/playbooks/INDEX.md](.agents/playbooks/INDEX.md)
 - Scoped routing: [.devin/rules/INDEX.md](.devin/rules/INDEX.md)
-- Testing instructions: [.agents/runbooks/testing.md](.agents/runbooks/testing.md)
-- Code style guidelines: [.agents/runbooks/code-style.md](.agents/runbooks/code-style.md)
+- Testing instructions: [.agents/playbooks/testing.md](.agents/playbooks/testing.md)
+- Code style guidelines: [.agents/playbooks/code-style.md](.agents/playbooks/code-style.md)
 - Review guidelines: [.agents/runbooks/code-review.md](.agents/runbooks/code-review.md)
 - Publication proof and PR instructions: [.agents/runbooks/pr.md](.agents/runbooks/pr.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
-- Security considerations: [.agents/runbooks/security.md](.agents/runbooks/security.md)
+- Security considerations: [.agents/playbooks/security.md](.agents/playbooks/security.md)
 
 ## Maintenance responsibility
 

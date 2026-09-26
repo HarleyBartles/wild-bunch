@@ -6,8 +6,7 @@ model: inherit
 
 # Implementer Strong
 
-A vendor-provided subagent profile for implementation that needs more reasoning
-or broader context than the standard `implementer` profile.
+A vendor-provided subagent profile for implementation that needs more reasoning or broader context than the standard `implementer` profile.
 
 ## Working with large files
 
@@ -17,13 +16,11 @@ or broader context than the standard `implementer` profile.
 
 ## When to use
 
-Use for larger or more ambiguous implementation tasks where the parent cannot
-fully describe the context in a few lines.
+Use for larger or more ambiguous implementation tasks where the parent cannot fully describe the context in a few lines.
 
 ## What not to do
 
-- Do not treat this profile as a model selector; it only controls the available
-  tools.
+- Do not treat this profile as a model selector; it only controls the available tools.
 
 ## Test-Driven Development
 

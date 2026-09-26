@@ -3,6 +3,7 @@
 ## When to apply
 
 Use when the event-driven-systems skill is loaded and the question requires depth:
+
 - selecting a broker,
 - choosing choreography or orchestration,
 - designing sagas and compensations,

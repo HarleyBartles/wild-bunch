@@ -47,3 +47,10 @@ the mesh through the canonical apply capability when routed files change.
 
 - Do not substitute test volume for behavioral review.
 - Do not copy portable review lenses or feedback choreography here.
+
+## Playbook routing
+
+- [Code style](../playbooks/code-style.md) - when reviewing source or technical prose.
+- [Testing](../playbooks/testing.md) - when reviewing behavior or validation evidence.
+- [Security](../playbooks/security.md) - when the diff affects sensitive side effects, permissions, secrets, hidden truth, or mutation boundaries.
+- [UI browser check](../playbooks/ui-browser-check.md) - when review needs browser behavior, layout, interaction, or player-flow evidence.

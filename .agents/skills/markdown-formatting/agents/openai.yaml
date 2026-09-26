@@ -1,0 +1,10 @@
+version: 1
+metadata:
+  skill_name: markdown-formatting
+  source_category: first_party
+interface:
+  display_name: Markdown Formatting
+  short_description: Adopt, enforce, and diagnose portable Markdown normalization.
+  default_prompt: Use markdown-formatting to apply or verify the repository's explicit Markdown formatting contract.
+policy:
+  allow_implicit_invocation: true

@@ -22,6 +22,7 @@ Before writing repo implementation plans, worker issues, coding handoffs, refact
 ## Required Avoid Rules
 
 Do not use plan wording such as:
+
 - `relevant files`, `appropriate validation`, `make robust`, `improve architecture`
 - `clean up`, `future changes`, `anything related`
 
@@ -45,15 +46,19 @@ Do not require exact file paths when the issue is a legitimate inventory task. I
 ## Examples
 
 ### Before (Avoid)
+
 > Investigate the current implementation and refactor it to be more robust.
 
 ### After (Prefer)
+
 > Refactor the user authentication module in `src/auth/` to separate password hashing from session management. Add unit tests for the new `hash_password()` and `verify_session()` functions. Run `pytest tests/test_auth.py` to verify.
 
 ### Before (Avoid)
+
 > Update the relevant files, add tests, and ensure everything passes.
 
 ### After (Prefer)
+
 > Update `src/api/users.py` to add the new `delete_user()` endpoint. Add integration tests in `tests/integration/test_users_api.py`. Run `pytest tests/integration/test_users_api.py::test_delete_user` to verify the endpoint returns HTTP 204 on success.
 
 ## Acceptance Checks

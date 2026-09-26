@@ -47,3 +47,7 @@ Turning settled Wild Bunch requirements into an executable plan or roadmap.
 
 - Do not run `/writing-plans` and `/writing-roadmaps` over the same artifact.
 - Do not copy their portable planning or handoff workflow into this runbook.
+
+## Playbook routing
+
+- [Security](../playbooks/security.md) - when the plan contains a sensitive mutation, permission, secret, or hidden-truth boundary.

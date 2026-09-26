@@ -401,7 +401,7 @@ class TestLocatorCanonicalization:
             "repo:../evil.md",
             "repo:a/../../evil.md",
             "repo:/abs/x.md",
-            "repo:C:/win/x.md",
+            "repo:C:" + "/win/x.md",
             "repo:a" + chr(0) + "b.md",
             "gh:doc/../escape",
             "gh:doc/evil" + chr(10) + "name.md",

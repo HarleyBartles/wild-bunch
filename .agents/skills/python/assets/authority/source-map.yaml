@@ -1,0 +1,12 @@
+schema_version: 1
+reconciled_against: bb279e695a611e9eb63ee158fff4421baeaf0a203ff49291145277f0bb573fe8
+references:
+  - path: references/operational-guidance.md
+    source_sections:
+    - Python language patterns
+    - Asyncio and concurrency
+    - Testing with pytest
+    - Type safety
+    load_when:
+    - Use when python operational guidance is needed.
+    content_mode: first_party_synthesis

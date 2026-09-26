@@ -1,18 +1,14 @@
 # Practical Examples
 
-Concrete code patterns for common scenarios within FSD structure. Covers
-authentication, type definitions, API request handling, and state management
-integration (Redux, TanStack Query / React Query).
+Concrete code patterns for common scenarios within FSD structure. Covers authentication, type definitions, API request handling, and state management integration (Redux, TanStack Query / React Query).
 
 ## Authentication
 
-Auth is one of the most common sources of confusion in FSD. The key question
-is: what goes in `shared/`, what goes in `features/` or `pages/`?
+Auth is one of the most common sources of confusion in FSD. The key question is: what goes in `shared/`, what goes in `features/` or `pages/`?
 
 ### Auth data: `shared/auth/` or `shared/api/`
 
-Tokens, session state, and login utilities are **infrastructure**, not
-business logic. Keep them in shared:
+Tokens, session state, and login utilities are **infrastructure**, not business logic. Keep them in shared:
 
 ```typescript
 // shared/auth/token.ts
@@ -27,14 +23,11 @@ export interface Session { userId: string; email: string; role: "admin" | "user"
 export const useSession = (): Session | null => { /* ... */ };
 ```
 
-The `shared/auth/index.ts` re-exports from these files following the
-standard public API pattern.
+The `shared/auth/index.ts` re-exports from these files following the standard public API pattern.
 
 ### Auth UI: pages (single use) or features (multi-use)
 
-Place the login form in the slice that consumes it. Single-use (only on the
-login page) goes in `pages/login/`; multi-use (dedicated page + modal login)
-goes in `features/auth/`:
+Place the login form in the slice that consumes it. Single-use (only on the login page) goes in `pages/login/`; multi-use (dedicated page + modal login) goes in `features/auth/`:
 
 ```text
 pages/login/                     ← Single-use
@@ -52,16 +45,11 @@ features/auth/                   ← Multi-use
 
 ### When to use shared/auth vs a user entity
 
-The official Auth guide presents two valid storage locations: **In Shared**
-(`shared/auth` or `shared/api`) and **In Entities** (a `user` entity).
-Pages and widgets are discouraged.
+The official Auth guide presents two valid storage locations: **In Shared** (`shared/auth` or `shared/api`) and **In Entities** (a `user` entity). Pages and widgets are discouraged.
 
-`shared/auth` is the simpler default. Choose it when the project has no
-entities layer yet, or when auth state is just a token plus minimal user info.
+`shared/auth` is the simpler default. Choose it when the project has no entities layer yet, or when auth state is just a token plus minimal user info.
 
-A `user` entity is the right call when the project already has an
-entities layer **and** auth and profile data are tightly coupled (profile
-reused for non-auth purposes like avatars in comments).
+A `user` entity is the right call when the project already has an entities layer **and** auth and profile data are tightly coupled (profile reused for non-auth purposes like avatars in comments).
 
 ```text
 // Path A: shared/auth (simpler default)
@@ -76,13 +64,9 @@ entities/user/
   index.ts
 ```
 
-For the entity approach, the API client in `shared/api` cannot import from
-`entities/`. The official guide describes three solutions: pass the token
-manually, expose it through a context with the key kept in `shared/api`,
-or inject the token into the API client when the entity store updates.
+For the entity approach, the API client in `shared/api` cannot import from `entities/`. The official guide describes three solutions: pass the token manually, expose it through a context with the key kept in `shared/api`, or inject the token into the API client when the entity store updates.
 
-A `user` entity created **only** to wrap a login response is premature.
-See `references/excessive-entities.md` for the full decision matrix.
+A `user` entity created **only** to wrap a login response is premature. See `references/excessive-entities.md` for the full decision matrix.
 
 ## Type Definitions
 
@@ -90,17 +74,15 @@ See `references/excessive-entities.md` for the full decision matrix.
 
 The location of type definitions follows the same rules as any other code:
 
-| Type scope | Location |
-| --- | --- |
-| API response/request shapes shared across the app | Domain-named files in `shared/api/` (e.g., `shared/api/product.ts`) |
-| Types for a specific entity's domain model | `entities/<name>/model/<name>.ts` |
-| Types used only within one page | `pages/<name>/model/<name>.ts` |
-| Types used only within one feature | `features/<name>/model/<name>.ts` |
-| Generic utility types (e.g., `Nullable<T>`) | Domain-named files in `shared/lib/` (e.g., `shared/lib/nullable.ts`) |
+| Type scope                                        | Location                                                             |
+| ------------------------------------------------- | -------------------------------------------------------------------- |
+| API response/request shapes shared across the app | Domain-named files in `shared/api/` (e.g., `shared/api/product.ts`)  |
+| Types for a specific entity's domain model        | `entities/<name>/model/<name>.ts`                                    |
+| Types used only within one page                   | `pages/<name>/model/<name>.ts`                                       |
+| Types used only within one feature                | `features/<name>/model/<name>.ts`                                    |
+| Generic utility types (e.g., `Nullable<T>`)       | Domain-named files in `shared/lib/` (e.g., `shared/lib/nullable.ts`) |
 
-Per Rule 4-4 (domain-based file naming), avoid grouping all types in
-`types.ts` or `utils.ts`. A file named `types.ts` cannot answer "types
-for what?" without inspection; a file named `product.ts` can.
+Per Rule 4-4 (domain-based file naming), avoid grouping all types in `types.ts` or `utils.ts`. A file named `types.ts` cannot answer "types for what?" without inspection; a file named `product.ts` can.
 
 ### Example: API types in shared
 
@@ -133,9 +115,7 @@ export const fromDTO = (dto: ProductDTO): Product => ({
 });
 ```
 
-**Key principle:** Raw API shapes go in `shared/api/`. Domain models with
-business logic go in `entities/`. If you only need the raw shape, do not
-create an entity just for types.
+**Key principle:** Raw API shapes go in `shared/api/`. Domain models with business logic go in `entities/`. If you only need the raw shape, do not create an entity just for types.
 
 ## API Request Handling
 
@@ -187,27 +167,20 @@ export const createCrudApi = <T>(resource: string) => ({
 
 Place each request function in the slice that owns the use case:
 
-- **Page-specific data fetching** (e.g., dashboard stats only used on the
-  dashboard) → `pages/<name>/api/`
+- **Page-specific data fetching** (e.g., dashboard stats only used on the dashboard) → `pages/<name>/api/`
 - **Feature-specific actions** (e.g., `toggleLike`) → `features/<name>/api/`
 - **Reusable domain queries** (e.g., `getUserById`) → `entities/<name>/api/`
 - **CRUD primitives** for a generic resource → `shared/api/create-crud-api.ts`
 
-Do not put domain-specific request functions in `shared/api/`. Shared is
-infrastructure; the moment a function knows about a specific resource and
-its domain rules, it belongs in `entities/` or higher.
+Do not put domain-specific request functions in `shared/api/`. Shared is infrastructure; the moment a function knows about a specific resource and its domain rules, it belongs in `entities/` or higher.
 
 ## State Management: Redux
 
 ### Where a Redux slice belongs
 
-The `from-custom` migration guide draws a clean line: **business
-entities** (the things your app works with, like `todo`, `product`, `user`)
-go in the Entities layer; **user actions** (`add-todo`, `toggle-todo`,
-`like-post`) go in Features.
+The `from-custom` migration guide draws a clean line: **business entities** (the things your app works with, like `todo`, `product`, `user`) go in the Entities layer; **user actions** (`add-todo`, `toggle-todo`, `like-post`) go in Features.
 
-In v2.1, also remember the pages-first rule: if the slice is used by a
-single page, keep it in that page's `model/` segment until reuse appears.
+In v2.1, also remember the pages-first rule: if the slice is used by a single page, keep it in that page's `model/` segment until reuse appears.
 
 ### Business-entity slice in entities
 
@@ -254,15 +227,11 @@ The slice's public API re-exports what consumers need:
 export { todoReducer, selectTodos, setCompleted, fetchTodos } from "./model/todo";
 ```
 
-**Key:** The entire Redux slice (reducer + selectors + thunks) lives in a
-single domain-named file, not split across `reducers.ts`, `selectors.ts`,
-`thunks.ts`. That technical-role split reduces cohesion and is an
-anti-pattern in FSD.
+**Key:** The entire Redux slice (reducer + selectors + thunks) lives in a single domain-named file, not split across `reducers.ts`, `selectors.ts`, `thunks.ts`. That technical-role split reduces cohesion and is an anti-pattern in FSD.
 
 ### User-action slice in features
 
-A user action that orchestrates the entity exposes a hook through its
-public API and consumes the entity's reducer:
+A user action that orchestrates the entity exposes a hook through its public API and consumes the entity's reducer:
 
 ```typescript
 // features/toggle-todo/model/use-toggle-todo.ts
@@ -294,19 +263,15 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 ```
 
-The store imports each slice's reducer through its public API
-(`index.ts`), never reaching into `model/` directly (Rule 4-2). Do not
-let individual slices create their own stores.
+The store imports each slice's reducer through its public API (`index.ts`), never reaching into `model/` directly (Rule 4-2). Do not let individual slices create their own stores.
 
 ## State Management: TanStack Query (React Query)
 
-Guidance applies to `@tanstack/react-query` v5 (formerly React Query). The
-package name is `@tanstack/react-query`.
+Guidance applies to `@tanstack/react-query` v5 (formerly React Query). The package name is `@tanstack/react-query`.
 
 ### Where to store query keys
 
-Three placements are valid. Choose based on project size and whether the
-project already has an Entities layer.
+Three placements are valid. Choose based on project size and whether the project already has an Entities layer.
 
 **Option 1: Flat in `shared/api/queries/`** (small projects, few endpoints):
 
@@ -330,17 +295,13 @@ shared/api/example/
   delete-example.ts
 ```
 
-**Option 3: Per entity in `entities/<entity>/api/`** when each request
-corresponds to a single entity, and the project already has an Entities
-layer. When entities reference each other, see
-`references/cross-import-patterns.md` for `@x` notation as a last resort.
+**Option 3: Per entity in `entities/<entity>/api/`** when each request corresponds to a single entity, and the project already has an Entities layer. When entities reference each other, see `references/cross-import-patterns.md` for `@x` notation as a last resort.
 
 ### Where to store mutations
 
 Do not mix mutations with queries. Two patterns are accepted:
 
-1. **A mutation hook in the `api/` segment near the place of use.** Use
-   `setQueryData` for cache updates:
+1. **A mutation hook in the `api/` segment near the place of use.** Use `setQueryData` for cache updates:
 
    ```typescript
    // src/pages/example/api/use-update-example.ts
@@ -353,16 +314,11 @@ Do not mix mutations with queries. Two patterns are accepted:
    };
    ```
 
-2. **A `mutationFn` defined in `shared/` or `entities/`** and called from
-   `useMutation` in the component.
+2. **A `mutationFn` defined in `shared/` or `entities/`** and called from `useMutation` in the component.
 
 ### Query factory pattern
 
-A query factory is an object whose values return query keys. Each key is
-wrapped in `queryOptions`, a built-in helper from `@tanstack/react-query` v5
-that lets you share `queryKey` and `queryFn` between `useQuery`,
-`useSuspenseQuery`, `prefetchQuery`, `setQueryData`, and similar APIs
-without rewriting them:
+A query factory is an object whose values return query keys. Each key is wrapped in `queryOptions`, a built-in helper from `@tanstack/react-query` v5 that lets you share `queryKey` and `queryFn` between `useQuery`, `useSuspenseQuery`, `prefetchQuery`, `setQueryData`, and similar APIs without rewriting them:
 
 ```typescript
 // src/shared/api/post/post.queries.ts
@@ -384,19 +340,13 @@ export const POST_QUERIES = {
 };
 ```
 
-Consume with `useQuery(POST_QUERIES.detail({ id }))`. For pagination,
-`placeholderData: prev => prev` prevents UI flicker when navigating pages.
+Consume with `useQuery(POST_QUERIES.detail({ id }))`. For pagination, `placeholderData: prev => prev` prevents UI flicker when navigating pages.
 
-**Benefits of a query factory:** all API requests for a domain live in one
-place (readability), every key and query function is reachable through the
-same object (convenient access), and refetching is a one-line call
-(`queryClient.invalidateQueries({ queryKey: POST_QUERIES.all() })`) without
-hunting down keys across the codebase.
+**Benefits of a query factory:** all API requests for a domain live in one place (readability), every key and query function is reachable through the same object (convenient access), and refetching is a one-line call (`queryClient.invalidateQueries({ queryKey: POST_QUERIES.all() })`) without hunting down keys across the codebase.
 
 ### Infinite scroll
 
-Use `infiniteQueryOptions` with `initialPageParam` and `getNextPageParam`.
-Add the infinite key to the same factory shown above:
+Use `infiniteQueryOptions` with `initialPageParam` and `getNextPageParam`. Add the infinite key to the same factory shown above:
 
 ```typescript
 import { infiniteQueryOptions } from "@tanstack/react-query";
@@ -414,10 +364,7 @@ Consume with `useInfiniteQuery` and flatten via `data?.pages.flatMap(...)`.
 
 ### Suspense mode
 
-`queryOptions` and `useSuspenseQuery` are compatible, and the factory does
-not change. Components use `useSuspenseQuery` instead of `useQuery` and skip
-`isLoading` entirely. Wrap interested subtrees with an `ErrorBoundary` +
-`Suspense` provider in the App layer:
+`queryOptions` and `useSuspenseQuery` are compatible, and the factory does not change. Components use `useSuspenseQuery` instead of `useQuery` and skip `isLoading` entirely. Wrap interested subtrees with an `ErrorBoundary` + `Suspense` provider in the App layer:
 
 ```tsx
 // src/app/providers/suspense-provider.tsx
@@ -433,9 +380,7 @@ export const SuspenseProvider = ({ children }) => (
 
 ### Reading mutation state with useMutationState
 
-`useMutationState` lets any component read the state of a mutation without
-passing props, useful for global save indicators. Store mutation keys next
-to the query factory:
+`useMutationState` lets any component read the state of a mutation without passing props, useful for global save indicators. Store mutation keys next to the query factory:
 
 ```typescript
 // src/shared/api/post/post.queries.ts
@@ -490,19 +435,15 @@ export const QueryProvider = ({ children }) => (
 );
 ```
 
-`QueryCache.onError` and `MutationCache.onError` give one place to wire up
-global toast notifications instead of repeating error handling on every hook.
+`QueryCache.onError` and `MutationCache.onError` give one place to wire up global toast notifications instead of repeating error handling on every hook.
 
 ### Code generation
 
-Tools that generate clients from an OpenAPI/Swagger spec are less flexible
-than hand-written factories. If your spec is clean and you adopt a generator,
-place the generated code in `@/shared/api/`.
+Tools that generate clients from an OpenAPI/Swagger spec are less flexible than hand-written factories. If your spec is clean and you adopt a generator, place the generated code in `@/shared/api/`.
 
 ### Custom API client
 
-Standardize base URL, headers, and JSON handling in a single class in
-`shared/api/`:
+Standardize base URL, headers, and JSON handling in a single class in `shared/api/`:
 
 ```typescript
 // src/shared/api/api-client.ts
@@ -522,10 +463,7 @@ export class ApiClient {
 export const apiClient = new ApiClient(API_URL);
 ```
 
-**Key principle:** Place query and mutation hooks in the slice that owns the
-domain. Page-specific queries stay in the page. Shared queries go in
-`shared/api/` or `entities/<name>/api/` depending on whether the project has
-an Entities layer.
+**Key principle:** Place query and mutation hooks in the slice that owns the domain. Page-specific queries stay in the page. Shared queries go in `shared/api/` or `entities/<name>/api/` depending on whether the project has an Entities layer.
 
 ## See also
 

@@ -47,7 +47,7 @@ def _ctl(*args, runtime="devin-desktop", cwd=None):
     else:
         env[engine.RUNTIME_ENV_VAR] = runtime
     return subprocess.run(
-        ["py", "-3", str(REVIEWCTL), *args],
+        [sys.executable, str(REVIEWCTL), *args],
         capture_output=True,
         text=True,
         env=env,
@@ -60,7 +60,7 @@ def _run(script: Path, *args, env_extra=None):
     if env_extra:
         env.update(env_extra)
     return subprocess.run(
-        ["py", "-3", str(script), *args],
+        [sys.executable, str(script), *args],
         capture_output=True,
         text=True,
         env=env,
@@ -841,9 +841,10 @@ class TestCliContract:
         assert payload["schema_version"] == 2
 
     def test_doctor_reports_runtime(self):
-        r = _ctl("doctor")
-        assert r.returncode == 0
-        assert "devin-desktop" in r.stdout
+        r = _ctl("doctor", "--json")
+        report = json.loads(r.stdout)
+        assert report["runtime"] == "devin-desktop"
+        assert report["supported"] is True
 
     def test_complete_rejects_caller_verdict_on_seal(self, tmp_path):
         state = _init_state(tmp_path)

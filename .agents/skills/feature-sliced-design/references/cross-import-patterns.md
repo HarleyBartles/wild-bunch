@@ -1,66 +1,36 @@
 # Cross-Import Resolution Patterns
 
-How to resolve cross-imports between slices on the same layer. Cross-imports
-are a code smell, not an absolute prohibition. The strategies below are
-ordered, but the right choice depends on the project context.
+How to resolve cross-imports between slices on the same layer. Cross-imports are a code smell, not an absolute prohibition. The strategies below are ordered, but the right choice depends on the project context.
 
 ## What is a cross-import?
 
-A cross-import is an import between different slices within the same layer.
-For example:
+A cross-import is an import between different slices within the same layer. For example:
 
 - importing `features/product` from `features/cart`
 - importing `widgets/sidebar` from `widgets/header`
 
-The `shared` and `app` layers do not have slices, so imports within those
-layers are not cross-imports.
+The `shared` and `app` layers do not have slices, so imports within those layers are not cross-imports.
 
 ## Why is this a code smell?
 
-Cross-imports blur domain boundaries and introduce implicit dependencies.
-Four concrete problems:
+Cross-imports blur domain boundaries and introduce implicit dependencies. Four concrete problems:
 
-1. **Unclear ownership and responsibility.** When `cart` imports from
-   `product`, it becomes unclear which slice owns the shared logic.
-   Changes to `product`'s internal implementation can break `cart`
-   without warning. This makes bugs harder to localize and code harder
-   to reason about.
-2. **Reduced isolation and testability.** A core benefit of sliced
-   architecture is that each slice can be developed, tested, and deployed
-   independently. Cross-imports break this isolation. Testing `cart` now
-   requires setting up `product`, and changes in one slice can cause
-   unexpected test failures in another.
-3. **Increased cognitive load.** Working on `cart` now requires accounting
-   for how `product` is structured. As cross-imports accumulate, tracing
-   the impact of a change requires following more code across slice
-   boundaries.
-4. **Path to circular dependencies.** Cross-imports often start as one-way
-   dependencies but evolve into bidirectional ones (A imports B, B imports
-   A). This locks slices together and makes refactoring increasingly costly.
+1. **Unclear ownership and responsibility.** When `cart` imports from `product`, it becomes unclear which slice owns the shared logic. Changes to `product`'s internal implementation can break `cart` without warning. This makes bugs harder to localize and code harder to reason about.
+2. **Reduced isolation and testability.** A core benefit of sliced architecture is that each slice can be developed, tested, and deployed independently. Cross-imports break this isolation. Testing `cart` now requires setting up `product`, and changes in one slice can cause unexpected test failures in another.
+3. **Increased cognitive load.** Working on `cart` now requires accounting for how `product` is structured. As cross-imports accumulate, tracing the impact of a change requires following more code across slice boundaries.
+4. **Path to circular dependencies.** Cross-imports often start as one-way dependencies but evolve into bidirectional ones (A imports B, B imports A). This locks slices together and makes refactoring increasingly costly.
 
 ## Entities layer: prefer boundary merge over @x
 
-Cross-imports in `entities` are usually caused by splitting entities too
-granularly. Before reaching for `@x`, consider whether the boundaries should
-be merged instead.
+Cross-imports in `entities` are usually caused by splitting entities too granularly. Before reaching for `@x`, consider whether the boundaries should be merged instead.
 
-The `@x` notation is available as a dedicated cross-import surface for
-`entities`, but it should be treated as a **last resort**, a **necessary
-compromise**, not a recommended approach. Think of `@x` as an explicit
-gateway for unavoidable domain references, not a general-purpose reuse
-mechanism. Overuse locks entity boundaries together and makes refactoring
-more costly over time.
+The `@x` notation is available as a dedicated cross-import surface for `entities`, but it should be treated as a **last resort**, a **necessary compromise**, not a recommended approach. Think of `@x` as an explicit gateway for unavoidable domain references, not a general-purpose reuse mechanism. Overuse locks entity boundaries together and makes refactoring more costly over time.
 
 ### How @x works (when boundary merge is genuinely impossible)
 
-Each entity exposes a special `@x/` directory containing files named after
-the consuming entity. This makes the cross-import explicit and auditable.
+Each entity exposes a special `@x/` directory containing files named after the consuming entity. This makes the cross-import explicit and auditable.
 
-**Direction rule:** in the path `entities/A/@x/B`, **A is the producer and
-B is the consumer**. Read it as "A crossed with B": the file `A/@x/B.ts`
-is the public API that A exposes specifically for B. So in the example
-below, `entities/user/@x/order.ts` is what `user` exposes to `order`, and
-`order` imports from it.
+**Direction rule:** in the path `entities/A/@x/B`, **A is the producer and B is the consumer**. Read it as "A crossed with B": the file `A/@x/B.ts` is the public API that A exposes specifically for B. So in the example below, `entities/user/@x/order.ts` is what `user` exposes to `order`, and `order` imports from it.
 
 ```text
 entities/
@@ -89,20 +59,15 @@ import { getUserDisplayName } from "@/entities/user/@x/order";
 1. Document why `@x` is needed and why merging boundaries does not apply.
 2. Review periodically. Requirements change and `@x` may become unnecessary.
 3. Minimize the surface area of `@x` exports.
-4. Only between entities. Features and widgets should use Strategy C or D
-   below, not `@x`.
+4. Only between entities. Features and widgets should use Strategy C or D below, not `@x`.
 
 ## Features and widgets: four strategies
 
-In `features` and `widgets`, multiple strategies are available depending on
-project context. Cross-imports here are not always forbidden; they are
-dependencies that should be deliberate. The four strategies below are
-listed in preferred order, but each fits different situations.
+In `features` and `widgets`, multiple strategies are available depending on project context. Cross-imports here are not always forbidden; they are dependencies that should be deliberate. The four strategies below are listed in preferred order, but each fits different situations.
 
 ### Strategy A: Slice merge
 
-If two slices are not truly independent and always change together, merge
-them into a single larger slice.
+If two slices are not truly independent and always change together, merge them into a single larger slice.
 
 ```text
 // Before: two features that always change together
@@ -120,22 +85,17 @@ features/profile/
   index.ts
 ```
 
-If two slices keep cross-importing each other and effectively move as one
-unit, they are likely one feature in practice. Merging is often the simpler
-and cleaner choice.
+If two slices keep cross-importing each other and effectively move as one unit, they are likely one feature in practice. Merging is often the simpler and cleaner choice.
 
 ### Strategy B: Push shared domain flows down into entities
 
-If multiple features share a domain-level flow, move that flow into a domain
-slice inside `entities`. Key principles:
+If multiple features share a domain-level flow, move that flow into a domain slice inside `entities`. Key principles:
 
 - `entities` contains domain types and domain logic only.
 - UI remains in `features` and `widgets`.
 - Features import and use the domain logic from `entities`.
 
-For example, if both `features/auth` and `features/profile` need session
-validation, place session-related domain functions in `entities/session`
-and reuse them from both features.
+For example, if both `features/auth` and `features/profile` need session validation, place session-related domain functions in `entities/session` and reuse them from both features.
 
 ```text
 entities/
@@ -158,9 +118,7 @@ features/
 
 ### Strategy C: Compose from an upper layer (IoC)
 
-Instead of connecting slices within the same layer via cross-imports,
-compose them at a higher level (`pages` or `app`). The upper layer assembles
-and connects the slices; the slices themselves do not know about each other.
+Instead of connecting slices within the same layer via cross-imports, compose them at a higher level (`pages` or `app`). The upper layer assembles and connects the slices; the slices themselves do not know about each other.
 
 Common Inversion of Control techniques:
 
@@ -189,13 +147,11 @@ export const UserDashboardPage = () => (
 );
 ```
 
-`features/user-profile` and `features/activity-feed` do not know about each
-other. The page composes them.
+`features/user-profile` and `features/activity-feed` do not know about each other. The page composes them.
 
 #### Render props (React)
 
-When one feature needs to render content from another, use render props to
-invert the dependency:
+When one feature needs to render content from another, use render props to invert the dependency:
 
 ```typescript
 // features/comment-list/ui/CommentList.tsx
@@ -227,13 +183,11 @@ export const PostPage = () => (
 );
 ```
 
-`CommentList` does not import from `user-profile`. The page injects the
-avatar component.
+`CommentList` does not import from `user-profile`. The page injects the avatar component.
 
 #### Slots (Vue)
 
-Vue's slot system provides a natural way to compose features without
-cross-imports:
+Vue's slot system provides a natural way to compose features without cross-imports:
 
 ```vue
 <!-- features/comment-list/ui/CommentList.vue -->
@@ -258,13 +212,9 @@ cross-imports:
 
 ### Strategy D: Cross-feature reuse only via Public API
 
-If strategies A-C do not fit and cross-feature reuse is genuinely
-unavoidable, allow it only through an explicit Public API (exported hooks
-or UI components). Do not access another slice's `store`, `model`, or
-internal implementation.
+If strategies A-C do not fit and cross-feature reuse is genuinely unavoidable, allow it only through an explicit Public API (exported hooks or UI components). Do not access another slice's `store`, `model`, or internal implementation.
 
-Unlike strategies A-C which aim to eliminate cross-imports, this strategy
-accepts them while minimizing risk through strict boundaries.
+Unlike strategies A-C which aim to eliminate cross-imports, this strategy accepts them while minimizing risk through strict boundaries.
 
 ```typescript
 // features/auth/index.ts
@@ -281,19 +231,13 @@ export const ProfileMenu = () => {
 };
 ```
 
-The boundary holds: `features/profile` cannot import from
-`@/features/auth/model/internal/*`. Only what `features/auth` explicitly
-exposes through `index.ts` is reachable.
+The boundary holds: `features/profile` cannot import from `@/features/auth/model/internal/*`. Only what `features/auth` explicitly exposes through `index.ts` is reachable.
 
-The `@x` notation is for the entities layer only. Features and widgets use
-strategies A through D above; their access path is the standard public API
-(`index.ts`), not a dedicated cross-import surface.
+The `@x` notation is for the entities layer only. Features and widgets use strategies A through D above; their access path is the standard public API (`index.ts`), not a dedicated cross-import surface.
 
 ## When to treat a cross-import as a problem
 
-After reviewing these strategies, the question is: when is a cross-import
-acceptable to keep, and when should it be treated as a code smell and
-refactored?
+After reviewing these strategies, the question is: when is a cross-import acceptable to keep, and when should it be treated as a code smell and refactored?
 
 Common warning signs:
 
@@ -301,30 +245,22 @@ Common warning signs:
 - Deep imports into another slice's internal files (bypassing the public API)
 - Bidirectional dependencies (A imports B, and B imports A)
 - Changes in one slice frequently breaking another slice
-- Flows that should be composed in `pages` or `app`, but are forced into
-  cross-imports within the same layer
+- Flows that should be composed in `pages` or `app`, but are forced into cross-imports within the same layer
 
-When these signals appear, treat the cross-import as a code smell and apply
-one of the strategies above.
+When these signals appear, treat the cross-import as a code smell and apply one of the strategies above.
 
 ## Strictness depends on project context
 
 The strictness of cross-import enforcement depends on the project:
 
-- In **early-stage products** with heavy experimentation, allowing some
-  cross-imports may be a pragmatic speed trade-off.
-- In **long-lived or regulated systems** (fintech, large-scale services),
-  stricter boundaries pay off in maintainability and stability.
+- In **early-stage products** with heavy experimentation, allowing some cross-imports may be a pragmatic speed trade-off.
+- In **long-lived or regulated systems** (fintech, large-scale services), stricter boundaries pay off in maintainability and stability.
 
-Cross-imports are not an absolute prohibition. They are dependencies that
-are generally best avoided, but sometimes used intentionally. If a
-cross-import is introduced:
+Cross-imports are not an absolute prohibition. They are dependencies that are generally best avoided, but sometimes used intentionally. If a cross-import is introduced:
 
 - Treat it as a deliberate architectural choice.
-- Document the reasoning in code (a comment explaining why other
-  strategies do not apply).
-- Revisit it periodically as the system evolves; if requirements change,
-  the cross-import may no longer be needed.
+- Document the reasoning in code (a comment explaining why other strategies do not apply).
+- Revisit it periodically as the system evolves; if requirements change, the cross-import may no longer be needed.
 
 ## Decision flow for AI agents
 
@@ -356,19 +292,12 @@ Two slices on the same layer need to share code.
 
 ## Anti-patterns
 
-- **Reaching for `@x` in features or widgets.** `@x` is for entities only.
-  Use Strategy C (compose) or D (Public API) instead.
-- **Treating `@x` as a clean solution.** It is a compromise. If you find
-  yourself adding multiple `@x` files between the same entities, the
-  boundaries are probably wrong. Merge them.
-- **Bypassing the Public API to access internals.** Even when Strategy D is
-  in use, importing from `@/features/auth/model/internal/*` defeats the
-  purpose. Restrict yourself to what `index.ts` exports.
-- **Bidirectional cross-imports.** A imports B and B imports A is almost
-  always a sign that the slices should be merged.
+- **Reaching for `@x` in features or widgets.** `@x` is for entities only. Use Strategy C (compose) or D (Public API) instead.
+- **Treating `@x` as a clean solution.** It is a compromise. If you find yourself adding multiple `@x` files between the same entities, the boundaries are probably wrong. Merge them.
+- **Bypassing the Public API to access internals.** Even when Strategy D is in use, importing from `@/features/auth/model/internal/*` defeats the purpose. Restrict yourself to what `index.ts` exports.
+- **Bidirectional cross-imports.** A imports B and B imports A is almost always a sign that the slices should be merged.
 
 ## See also
 
-- `references/excessive-entities.md`: prevent the conditions that lead to
-  entity-layer cross-imports in the first place.
+- `references/excessive-entities.md`: prevent the conditions that lead to entity-layer cross-imports in the first place.
 - `references/layer-structure.md`: layer rules and import directions.

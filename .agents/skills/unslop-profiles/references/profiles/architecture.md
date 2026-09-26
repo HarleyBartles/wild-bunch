@@ -39,15 +39,19 @@ Do not ban architecture patterns. Ban patterns used as decoration or shortcut re
 ## Examples
 
 ### Before (Avoid)
+
 > Use CQRS and event sourcing to make the system scalable.
 
 ### After (Prefer)
+
 > Current pressure: read queries are slow due to complex joins. Proposed solution: separate read and write models. Read model: denormalized materialized view updated via events. Tradeoffs: increased complexity, eventual consistency. Rejected alternative: database caching (insufficient for query complexity).
 
 ### Before (Avoid)
+
 > Split this into microservices for better separation of concerns.
 
 ### After (Prefer)
+
 > Current pressure: team needs independent deployment cycles. Proposed solution: split into User Service (auth, profiles) and Order Service (orders, payments). Communication: synchronous HTTP for user data, async events for order updates. Tradeoffs: network latency, distributed transactions. Rejected alternative: monolith with feature flags (deployment coupling remains).
 
 ## Acceptance Checks

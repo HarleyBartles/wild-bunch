@@ -1,6 +1,7 @@
 {
-  "manifestSha": "dfbf68b3513e9b1cb2a1f13fcda15e36db321706",
+  "manifestSha": "bc607a6d5392219445fc63554996900b84909a4d",
   "syncedPlugins": [
+    "agent-operating-model",
     "repo-worker-pack",
     "superpowers-plus",
     "game-studio",
@@ -11,7 +12,7 @@
     "writing-pack",
     "unslop-plus"
   ],
-  "syncedSkills": 66,
+  "syncedSkills": 76,
   "localSkills": [
     "dev-control-boundary",
     "seed-ownership",
@@ -33,5 +34,5 @@
   ],
   "marketplaceFile": ".agents/plugins/marketplace.json",
   "vendorProfiles": [],
-  "syncedAt": "2026-09-16T19:21:54.071810"
+  "syncedAt": "2026-09-26T20:17:58.166246"
 }

@@ -1,9 +1,6 @@
 ---
 name: database-design-patterns
-description: Use when designing relational database schemas, normalizing data,
-  choosing keys and constraints, or applying transactions, indexing, and
-  partitioning patterns. Do not use when the task is engine-specific operations
-  or NoSQL design.
+description: Use when designing relational database schemas, normalizing data, choosing keys and constraints, or applying transactions, indexing, and partitioning patterns. Do not use when the task is engine-specific operations or NoSQL design.
 metadata:
   source-id: database-design-patterns
   source-path: codex-marketplace/plugins/architecture-pack/skills/database-design-patterns/SKILL.md
@@ -13,37 +10,28 @@ metadata:
   owner: Harley Bartles
   scope: Engine-agnostic relational database design and optimization patterns
   use_when:
-  - designing or reviewing a relational database schema
-  - normalizing tables, choosing keys, or defining constraints
-  - modeling transactions, concurrency, views, or stored procedures
-  - planning indexes, partitions, or query tuning
+    - designing or reviewing a relational database schema
+    - normalizing tables, choosing keys, or defining constraints
+    - modeling transactions, concurrency, views, or stored procedures
+    - planning indexes, partitions, or query tuning
   do_not_use_when:
-  - engine-specific operations; prefer database-engines
-  - NoSQL or document databases
+    - engine-specific operations; prefer database-engines
+    - NoSQL or document databases
 license: MIT
 ---
 
 # Database Design Patterns
 
-Use this skill for engine-agnostic relational design: data modeling,
-normalization, keys and constraints, views and programmability, transactions
-and concurrency, indexing, and partitioning. The operational references adapt
-the BCcampus *Database Design – 2nd Edition* textbook and supplement it with
-citable indexing, query-tuning, and architecture references.
+Use this skill for engine-agnostic relational design: data modeling, normalization, keys and constraints, views and programmability, transactions and concurrency, indexing, and partitioning. The operational references adapt the BCcampus *Database Design – 2nd Edition* textbook and supplement it with citable indexing, query-tuning, and architecture references.
 
 ## Core topics
 
-1. Start with `references/data-modeling.md` for conceptual, logical, and physical
-   models.
-2. Use `references/normalization.md` for normal forms and functional
-   dependencies.
+1. Start with `references/data-modeling.md` for conceptual, logical, and physical models.
+2. Use `references/normalization.md` for normal forms and functional dependencies.
 3. Read `references/keys-and-constraints.md` for keys, uniqueness, and domains.
-4. Use `references/views-and-programmability.md` for views, procedures,
-   functions, and triggers.
-5. Read `references/transactions-and-concurrency.md` for isolation, locking,
-   and deadlocks.
-6. Use `references/indexing-and-query-tuning.md` for index strategy and plan
-   fundamentals.
+4. Use `references/views-and-programmability.md` for views, procedures, functions, and triggers.
+5. Read `references/transactions-and-concurrency.md` for isolation, locking, and deadlocks.
+6. Use `references/indexing-and-query-tuning.md` for index strategy and plan fundamentals.
 7. Read `references/partitioning-and-sharding.md` for scale-out basics.
 
 ## Common mistakes
@@ -54,5 +42,4 @@ citable indexing, query-tuning, and architecture references.
 - Adding indexes without checking the query plan.
 - Treating sharding as a fix for poor indexing or bad queries.
 
-For source-grounded detail, read `assets/authority/CITATIONS.md` and
-`assets/authority/source-map.yaml`.
+For source-grounded detail, read `assets/authority/CITATIONS.md` and `assets/authority/source-map.yaml`.

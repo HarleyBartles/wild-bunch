@@ -1,7 +1,6 @@
 ---
 name: frontend-ux
-description: Use when designing, reviewing, or debugging frontend user interfaces
-  and the task calls for accessibility, layout, interaction, or UX guidance.
+description: Use when designing, reviewing, or debugging frontend user interfaces and the task calls for accessibility, layout, interaction, or UX guidance.
 metadata:
   source-id: frontend-ux
   source-path: codex-marketplace/plugins/frontend-pack/skills/frontend-ux/SKILL.md
@@ -10,16 +9,16 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - designing or reviewing a frontend layout, component, or interaction.
-  - checking accessibility, color, typography, or responsive behavior.
-  - refining user flows, feedback, and platform-appropriate conventions.
+    - designing or reviewing a frontend layout, component, or interaction.
+    - checking accessibility, color, typography, or responsive behavior.
+    - refining user flows, feedback, and platform-appropriate conventions.
   do_not_use_when:
-  - another more specific skill owns the task.
+    - another more specific skill owns the task.
   related_skills:
-  - playwright-testing
-  - wcag
-  - react
-  - web-styling
+    - playwright-testing
+    - wcag
+    - react
+    - web-styling
 license: MIT
 ---
 

@@ -1,11 +1,6 @@
 ---
 name: base-doctrine
-description: Use when work depends on cross-project operating invariants not owned by
-  a more specific skill, including system-prompt limits,
-  tool/source evidence honesty, durable doctrine routing, bounded skill/reference
-  read loops, correction/trust posture, canonical agent asset source truth, or output
-  artifact-shape authority such as reserved YAML, dispatch/continuity confusion,
-  worker-copy attention guards, and lower-skill format conflicts.
+description: Use when work depends on cross-project operating invariants not owned by a more specific skill, including system-prompt limits, tool/source evidence honesty, durable doctrine routing, bounded skill/reference read loops, correction/trust posture, canonical agent asset source truth, or output artifact-shape authority such as reserved YAML, dispatch/continuity confusion, worker-copy attention guards, and lower-skill format conflicts.
 metadata:
   source-id: base-doctrine
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/base-doctrine/SKILL.md
@@ -14,16 +9,12 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - work depends on cross-project operating invariants not owned by a more specific
-    skill, including system-prompt limits, tool/source
-    evidence honesty, durable doctrine routing, bounded skill/reference read loops,
-    correction/trust posture, canonical agent asset source truth, or output artifact-shape
-    authority such as reserved YAML, dispatch/continuity confusion, worker-copy
-    attention guards, and lower-skill format conflicts.
+    - work depends on cross-project operating invariants not owned by a more specific skill, including system-prompt limits, tool/source evidence honesty, durable doctrine routing, bounded skill/reference read loops, correction/trust posture, canonical agent asset source truth, or output artifact-shape authority such as reserved YAML, dispatch/continuity confusion, worker-copy attention guards, and lower-skill format conflicts.
   do_not_use_when:
-  - another more specific skill owns this task.
+    - another more specific skill owns this task.
 license: MIT
 ---
+
 # Base Doctrine
 
 Use this skill as the cross-runtime doctrine store for cross-project operating invariants that are not owned by a more specific skill.
@@ -45,11 +36,7 @@ Use this skill as the cross-runtime doctrine store for cross-project operating i
 
 ## Core control-plane rule
 
-This entrypoint should classify the kind of base doctrine needed and point to
-the smallest relevant reference. Do not perform source-route selection,
-connector inspection, repository lookup, memory claims, or tool-surface
-diagnosis from `SKILL.md` alone. Classification precedes broad environment or
-doctrine loading; stop reading once the next lawful action is known.
+This entrypoint should classify the kind of base doctrine needed and point to the smallest relevant reference. Do not perform source-route selection, connector inspection, repository lookup, memory claims, or tool-surface diagnosis from `SKILL.md` alone. Classification precedes broad environment or doctrine loading; stop reading once the next lawful action is known.
 
 For ordinary chat, acknowledgements, pings, or lightweight meta that does not require source or tool evidence, answer directly after any project bootstrap that was already required by the active project context. Connector presence, file presence, runtime tool availability, or plugin availability is not itself a reason to load a source-route reference.
 

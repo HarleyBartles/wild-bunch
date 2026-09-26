@@ -1,14 +1,17 @@
 # node-re-preflight
 
 ## Purpose
+
 Re-run the consumer's canonical preflight after a fix to catch newly introduced deterministic issues. This is the consumer's own `ci`/`preflight` capability, not the `reviewer-fast` pre-lens. Do not re-run `reviewer-fast` in this node.
 
 ## Inputs
+
 - Post-fix branch working tree
 - `<scan_findings>`
 - Consumer preflight command
 
 ## Recipe
+
 1. Re-run the consumer's canonical preflight over the post-fix range.
 2. For each new deterministic finding, record it:
    ```bash
@@ -30,10 +33,12 @@ Re-run the consumer's canonical preflight after a fix to catch newly introduced 
 5. If it is clean, go to `reviewer-fixes`.
 
 ## Outputs
+
 - Updated `<scan_findings>`
 - `<scratch_dir>/review-metrics.json` regenerated from `<scratch_dir>/review-state.json` and the recorded logs
 
 ## Next check
+
 ```bash
 py -3 .agents/skills/iterative-review/scripts/next_node.py \
     --state <scratch_dir>/review-state.json \

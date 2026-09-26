@@ -1,7 +1,6 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to
-  decide how to integrate the work.
+description: Use when implementation is complete and needs integration, or when a PR merged externally and its exact branch head and worktree need retirement.
 metadata:
   source-id: finishing-a-development-branch
   source-path: codex-marketplace/plugins/superpowers-plus/skills/finishing-a-development-branch/SKILL.md
@@ -10,25 +9,26 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - implementation is complete, tests pass, and you need to decide how to
-    integrate the work.
-  - implementation through executing-plans or subagent-driven-development is complete.
-  - the branch needs merge, PR, keep, or discard.
+    - implementation is complete, tests pass, and you need to decide how to integrate the work.
+    - implementation through executing-plans or subagent-driven-development is complete.
+    - the branch needs merge, PR, keep, or discard.
+    - a PR merged externally and its exact branch head and linked worktree need retirement.
   do_not_use_when:
-  - tests are failing.
-  - the work is incomplete.
-  - a substitute for code review.
+    - tests are failing.
+    - the work is incomplete.
+    - a substitute for code review.
   related_skills:
-  - executing-plans
-  - subagent-driven-development
-  - requesting-code-review
-  - using-git-worktrees
-  - receiving-code-review
+    - executing-plans
+    - subagent-driven-development
+    - requesting-code-review
+    - using-git-worktrees
+    - receiving-code-review
 license: MIT
 ---
+
 ## Provenance
 
-This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.4.1 commit `5bf4e78011075bcfc0dc295f0724994cd123ee71` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Finishing a Development Branch
 
@@ -38,42 +38,40 @@ This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 com
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
+## Post-merge re-entry
+
+When a PR merged externally while the agent was away, do not show the pre-integration menu. Prove the exact published work before retiring it:
+
+1. Find the forge PR associated with the branch and verify it is `MERGED` into the expected base.
+2. Verify the PR's recorded head SHA equals the branch head being retired. If the branch moved after that recorded head SHA, stop: it contains additional work.
+3. Verify the PR's recorded merge result is contained in the current expected base history.
+4. Check whether the feature head is an ancestor of the base and record the branch-deletion command. Preserved ancestry selects `git branch -d <branch>`; verified non-ancestry integration selects deliberate `git branch -D <branch>` because ancestry-aware deletion cannot succeed.
+5. Run `scripts/remove_worktree.py --check <target>` and then `--apply` from outside the target worktree. Use its worktree `--force` only with explicit authority to discard consumer-owned modified or untracked files.
+6. After the worktree is gone, run the selected branch-deletion command and verify the local branch ref no longer exists.
+
+Squash is a common reason ancestry is absent, but convention is not proof. The merged state, expected base, recorded head SHA, recorded merge result, and current graph are the proof. Stop if any identity or integration fact is ambiguous.
+
 ## Step 1: Verify Tests
 
-Before selecting or stating a finish route, inspect the current branch and status
-and identify the exact state-bound validation evidence being reused. A user's
-summary that work is committed or checks passed is context, not a substitute
-for these read-only observations.
+Before selecting or stating a finish route, inspect the current branch and status and identify the exact state-bound validation evidence being reused. A user's summary that work is committed or checks passed is context, not a substitute for these read-only observations.
 
 Complete all three observations before choosing a route:
 
 1. Read the current branch, `HEAD`, and status.
-2. Search the repository's declared evidence locations and bounded local
-   metadata (including `.agents/*evidence*` when present) for the focused and
-   broad validation receipts named by the request.
-3. Confirm that each receipt names the current `HEAD` and claim. Ignore
-   explicitly excluded harness/tool scaffolding when judging whether the
-   product tree changed; do not let such scaffolding substitute for reading the
-   evidence receipt.
+2. Search the repository's declared evidence locations and bounded local metadata (including `.agents/*evidence*` when present) for the focused and broad validation receipts named by the request.
+3. Confirm that each receipt names the current `HEAD` and claim. Ignore explicitly excluded harness/tool scaffolding when judging whether the product tree changed; do not let such scaffolding substitute for reading the evidence receipt.
 
-Hidden and Git-excluded evidence does not appear in a default `rg --files`
-listing. When `.agents/` exists, include it explicitly with a bounded read such
-as:
+Hidden and Git-excluded evidence does not appear in a default `rg --files` listing. When `.agents/` exists, include it explicitly with a bounded read such as:
 
 ```bash
 find .agents -maxdepth 2 -type f -iname '*evidence*' -print
 ```
 
-Then read the matching receipt before selecting the route. Do not infer that
-evidence is absent from an empty default file listing.
+Then read the matching receipt before selecting the route. Do not infer that evidence is absent from an empty default file listing.
 
-If the request says evidence exists but bounded discovery cannot find it, say
-that the evidence could not be verified and stop. Do not silently convert that
-state into a keep-local route.
+If the request says evidence exists but bounded discovery cannot find it, say that the evidence could not be verified and stop. Do not silently convert that state into a keep-local route.
 
-Use the repository's current canonical evidence. Reuse valid focused or hooked
-proof when the tested state and claim are unchanged; run the broad gate when
-the state changed, evidence is stale, or a different claim needs proof.
+Use the repository's current canonical evidence. Reuse valid focused or hooked proof when the tested state and claim are unchanged; run the broad gate when the state changed, evidence is stale, or a different claim needs proof.
 
 **If tests fail**, report the failures and stop — the menu comes after a green suite:
 
@@ -97,18 +95,15 @@ WORKTREE_PATH=$(git rev-parse --show-toplevel)
 
 This determines which menu to show and how cleanup works:
 
-| State | Menu | Cleanup |
-|-------|------|---------|
-| `GIT_DIR == GIT_COMMON` (normal repo) | Standard 3 options | No worktree to clean up |
-| `GIT_DIR != GIT_COMMON`, named branch | Standard 3 options | Provenance-based (see Step 6) |
+| State                                  | Menu                         | Cleanup                             |
+| -------------------------------------- | ---------------------------- | ----------------------------------- |
+| `GIT_DIR == GIT_COMMON` (normal repo)  | Standard 3 options           | No worktree to clean up             |
+| `GIT_DIR != GIT_COMMON`, named branch  | Standard 3 options           | Provenance-based (see Step 6)       |
 | `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 2 options (no merge) | Externally managed — leave in place |
 
 ## Step 3: Determine Base Branch
 
-The base branch is whatever this work forked from — usually named in the
-plan, the conversation, or the branch's upstream. If it is not already
-known, ask: "This branch split from <your best guess> - is that correct?"
-Confirm before merging: merging into the wrong base is expensive to undo.
+The base branch is whatever this work forked from — usually named in the plan, the conversation, or the branch's upstream. If it is not already known, ask: "This branch split from <your best guess> - is that correct?" Confirm before merging: merging into the wrong base is expensive to undo.
 
 ## Step 4: Present Options
 
@@ -135,11 +130,7 @@ Implementation complete. You're on a detached HEAD (externally managed workspace
 Which option?
 ```
 
-Present the menu exactly as written — concise, with every option coming
-from the list above. Discarding the work happens only in response to your
-human partner explicitly asking for it (see "If your human partner asks to
-discard the work" below). Wait for their answer; the integration decision
-is theirs.
+Present the menu exactly as written — concise, with every option coming from the list above. Discarding the work happens only in response to your human partner explicitly asking for it (see "If your human partner asks to discard the work" below). Wait for their answer; the integration decision is theirs.
 
 ## Step 5: Execute Choice
 
@@ -159,12 +150,9 @@ git merge <feature-branch>
 <test command>
 ```
 
-If tests fail on the merged result: stop, leave the worktree and branch in
-place, and investigate — nothing has been pushed, so the merge is local
-and recoverable.
+If tests fail on the merged result: stop, leave the worktree and branch in place, and investigate — nothing has been pushed, so the merge is local and recoverable.
 
-Once the merged result is green: clean up the worktree (Step 6), then
-delete the branch:
+Once the merged result is green: clean up the worktree (Step 6), then delete the branch:
 
 ```bash
 git branch -d <feature-branch>
@@ -178,10 +166,7 @@ git push -u origin <feature-branch>
 # git push origin HEAD:refs/heads/<new-branch>
 ```
 
-Then create the pull/merge request against <base-branch> with the forge's
-tooling — its CLI if one is available, or the creation URL most forges
-print when you push — following the repo's PR template and conventions if
-present, and report the URL to your human partner.
+Then create the pull/merge request against <base-branch> with the forge's tooling — its CLI if one is available, or the creation URL most forges print when you push — following the repo's PR template and conventions if present, and report the URL to your human partner.
 
 Before opening the PR or flipping it out of draft, consult `.agents/runbooks/pr.md` `## Draft PR policy` so the PR opens as draft and only flips to ready once the preflight passes.
 
@@ -193,8 +178,7 @@ Report: "Keeping branch <name>. Worktree preserved at <path>."
 
 ### If your human partner asks to discard the work
 
-This path exists only as a response to an explicit request to throw the
-work away. Confirm first:
+This path exists only as a response to an explicit request to throw the work away. Confirm first:
 
 ```
 This will permanently delete:
@@ -220,26 +204,18 @@ git branch -D <feature-branch>
 
 ## Step 6: Cleanup Workspace
 
-**Runs for Option 1 and confirmed discards.** Options 2 and 3 always
-preserve the worktree. Both callers have already changed directory to the
-main repo root — worktree removal must run from outside the worktree —
-and use the `GIT_DIR`/`GIT_COMMON`/`WORKTREE_PATH` values captured in
-Step 2, from before that directory change.
+**Runs for Option 1 and confirmed discards.** Options 2 and 3 always preserve the worktree. Both callers have already changed directory to the main repo root — worktree removal must run from outside the worktree — and use the `GIT_DIR`/`GIT_COMMON`/`WORKTREE_PATH` values captured in Step 2, from before that directory change.
 
 **If `GIT_DIR == GIT_COMMON`:** Normal repo, no worktree to clean up. Done.
 
-**If `WORKTREE_PATH` is under `.worktrees/` or `worktrees/`:** Superpowers
-created this worktree — we own cleanup:
+**If the host does not own workspace cleanup:** Run the bundled helper from the main checkout. It resolves registered worktrees by full branch ref or absolute path, routinely discards non-authoritative submodule checkout residue, and preserves consumer-owned dirty files unless destructive force was explicitly authorized:
 
 ```bash
-git worktree remove "$WORKTREE_PATH"
-git worktree prune  # Self-healing: clean up any stale registrations
+py -3 .agents/skills/finishing-a-development-branch/scripts/remove_worktree.py --check "$WORKTREE_PATH"
+py -3 .agents/skills/finishing-a-development-branch/scripts/remove_worktree.py --apply "$WORKTREE_PATH"
 ```
 
-**If removal is refused** (`contains modified or untracked files`): the
-worktree holds files that exist nowhere else — uncommitted plans, notes,
-or scratch work. Never `--force` on your own initiative. Show your human
-partner what is at stake and ask:
+**If removal is refused** (`contains modified or untracked files`): the worktree holds files that exist nowhere else — uncommitted plans, notes, or scratch work. Never `--force` on your own initiative. Show your human partner what is at stake and ask:
 
 ```bash
 git -C "$WORKTREE_PATH" status --porcelain -uall
@@ -259,29 +235,28 @@ Which?
 
 Carry out the choice, then remove the worktree.
 
-**Otherwise:** The host environment owns this workspace — leave it in
-place. If your platform provides a workspace-exit tool, use it.
+**Otherwise:** The host environment owns this workspace — leave it in place. If your platform provides a workspace-exit tool, use it.
 
 ## Quick Reference
 
-| Option | Merge | Push | Keep Worktree | Cleanup Branch |
-|--------|-------|------|---------------|----------------|
-| 1. Merge locally | yes | - | - | yes |
-| 2. Create PR | - | yes | yes | - |
-| 3. Keep as-is | - | - | yes | - |
-| Discard (explicit request only) | - | - | - | yes (force) |
+| Option                          | Merge | Push | Keep Worktree | Cleanup Branch |
+| ------------------------------- | ----- | ---- | ------------- | -------------- |
+| 1. Merge locally                | yes   | -    | -             | yes            |
+| 2. Create PR                    | -     | yes  | yes           | -              |
+| 3. Keep as-is                   | -     | -    | yes           | -              |
+| Discard (explicit request only) | -     | -    | -             | yes (force)    |
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "Tests passed earlier this session" | Run the suite on the tree you are about to integrate. A green run only proves the tree it ran on. |
-| "They obviously want it merged" | Integration is your human partner's decision. Present the menu and wait. |
-| "They seem done with this feature — I'll offer to discard it" | The menu is complete as written. Discard happens only when your human partner asks for it in so many words. |
-| "'Yeah, get rid of it' counts as confirmation" | Only the typed word `discard` authorizes deletion. |
-| "The PR is up, so the worktree is clutter now" | PR feedback gets fixed in that worktree. It stays until the work lands. |
-| "This other worktree looks stale — I'll clean it too" | Clean up only worktrees under `.worktrees/` or `worktrees/`. Everything else belongs to the host. |
-| "Removal refused — `--force` is just finishing the cleanup" | The refusal means files exist only in that worktree. `--force` destroys them permanently. Show your human partner and ask. |
-| "The merged-result failure is probably flaky" | A failing merged result stops everything. Branch and worktree stay put while you investigate. |
-| "The base branch is obviously main" | Confirm the fork point or ask. Merging into the wrong base is expensive to undo. |
-| "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request. |
+| Excuse                                                        | Reality                                                                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| "Tests passed earlier this session"                           | Run the suite on the tree you are about to integrate. A green run only proves the tree it ran on.                          |
+| "They obviously want it merged"                               | Integration is your human partner's decision. Present the menu and wait.                                                   |
+| "They seem done with this feature — I'll offer to discard it" | The menu is complete as written. Discard happens only when your human partner asks for it in so many words.                |
+| "'Yeah, get rid of it' counts as confirmation"                | Only the typed word `discard` authorizes deletion.                                                                         |
+| "The PR is up, so the worktree is clutter now"                | PR feedback gets fixed in that worktree. It stays until the work lands.                                                    |
+| "This other worktree looks stale — I'll clean it too"         | Clean up only worktrees under `.worktrees/` or `worktrees/`. Everything else belongs to the host.                          |
+| "Removal refused — `--force` is just finishing the cleanup"   | The refusal means files exist only in that worktree. `--force` destroys them permanently. Show your human partner and ask. |
+| "The merged-result failure is probably flaky"                 | A failing merged result stops everything. Branch and worktree stay put while you investigate.                              |
+| "The base branch is obviously main"                           | Confirm the fork point or ask. Merging into the wrong base is expensive to undo.                                           |
+| "The push was rejected — force-push will fix it"              | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request.             |

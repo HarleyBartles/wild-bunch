@@ -4,11 +4,11 @@ Use this when the task is about Linear diffs, review threads, or GitHub PR-linke
 
 ## Tools
 
-| Tool | Use when | Required params | Optional params |
-| --- | --- | --- | --- |
-| `list_diffs` | Find diffs by PR number, slug, repo, owner, title, or status. | None | `cursor`, `limit`, `orderBy`, `owner`, `query`, `repo`, `status` |
-| `get_diff` | Read one diff by GitHub PR URL, Linear review URL, PR ID, slug, or known identifier. | `urlOrId` | None |
-| `get_diff_threads` | Read the review threads for one diff. | `urlOrId` | `orderBy`, `resolved`, `threadId` |
+| Tool               | Use when                                                                             | Required params | Optional params                                                  |
+| ------------------ | ------------------------------------------------------------------------------------ | --------------- | ---------------------------------------------------------------- |
+| `list_diffs`       | Find diffs by PR number, slug, repo, owner, title, or status.                        | None            | `cursor`, `limit`, `orderBy`, `owner`, `query`, `repo`, `status` |
+| `get_diff`         | Read one diff by GitHub PR URL, Linear review URL, PR ID, slug, or known identifier. | `urlOrId`       | None                                                             |
+| `get_diff_threads` | Read the review threads for one diff.                                                | `urlOrId`       | `orderBy`, `resolved`, `threadId`                                |
 
 ## Notes
 

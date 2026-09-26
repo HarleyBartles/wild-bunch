@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Finishing A Development Branch
-  short_description: Choose and complete the appropriate branch-integration path.
-  default_prompt: Use finishing-a-development-branch when implementation is complete, all tests pass, and you need to decide how to integrate the work.
+  short_description: Integrate completed work or retire a merged PR branch and worktree.
+  default_prompt: Use finishing-a-development-branch when implementation needs integration or a PR merged externally and its exact branch head and linked worktree need verified retirement.
 policy:
   products:
   - codex

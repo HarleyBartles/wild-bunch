@@ -1,8 +1,6 @@
 ---
 name: using-linear-mcp
-description: Use when working with the Linear connector surface, choosing the right
-  tool call, or finding create/update tools exposed under `save_*` rather than `create_*`
-  or `update_*`.
+description: Use when working with the Linear connector surface, choosing the right tool call, or finding create/update tools exposed under `save_*` rather than `create_*` or `update_*`.
 metadata:
   source-id: using-linear-mcp
   source-path: codex-marketplace/plugins/mcp-usage-pack/skills/using-linear-mcp/SKILL.md
@@ -11,28 +9,28 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - working with the Linear connector surface, choosing the right tool call,
-    or finding create/update tools exposed under save_* rather than create_* or update_*.
+    - working with the Linear connector surface, choosing the right tool call, or finding create/update tools exposed under save_* rather than create_* or update_*.
   do_not_use_when:
-  - another more specific skill owns this task.
+    - another more specific skill owns this task.
 license: MIT
 ---
+
 # Using Linear MCP
 
 Use this skill to pick the right Linear connector surface from the task intent, then open the matching reference.
 
 ## Router
 
-| Intent | Read first |
-| --- | --- |
-| Find or inspect issues, projects, or documents | [`references/read-discover.md`](references/read-discover.md) |
-| Read or write comments and discussion threads | [`references/comments.md`](references/comments.md) |
-| Work with diff reviews or diff threads | [`references/diffs.md`](references/diffs.md) |
-| Create or update Linear objects | [`references/mutate-save.md`](references/mutate-save.md) |
+| Intent                                                                   | Read first                                                     |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Find or inspect issues, projects, or documents                           | [`references/read-discover.md`](references/read-discover.md)   |
+| Read or write comments and discussion threads                            | [`references/comments.md`](references/comments.md)             |
+| Work with diff reviews or diff threads                                   | [`references/diffs.md`](references/diffs.md)                   |
+| Create or update Linear objects                                          | [`references/mutate-save.md`](references/mutate-save.md)       |
 | Work with teams, labels, statuses, cycles, milestones, or status updates | [`references/admin-metadata.md`](references/admin-metadata.md) |
-| Upload or inspect attachments, images, or docs help | [`references/attachments.md`](references/attachments.md) |
-| Archive or delete a status update, comment, or attachment | [`references/destructive.md`](references/destructive.md) |
-| Need the complete callable surface | [`references/surface-map.md`](references/surface-map.md) |
+| Upload or inspect attachments, images, or docs help                      | [`references/attachments.md`](references/attachments.md)       |
+| Archive or delete a status update, comment, or attachment                | [`references/destructive.md`](references/destructive.md)       |
+| Need the complete callable surface                                       | [`references/surface-map.md`](references/surface-map.md)       |
 
 ## Fast rule
 

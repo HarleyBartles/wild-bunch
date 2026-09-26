@@ -1,0 +1,4 @@
+wrap = "no"
+end_of_line = "lf"
+validate = true
+extensions = ["gfm", "frontmatter", "safe-link-labels"]

@@ -2,12 +2,12 @@
 
 Use these `mcp-playwright` tools to load, move, and search the current page.
 
-| Tool | When to use it | Required inputs | Optional inputs |
-| --- | --- | --- | --- |
-| `browser_navigate` | Load a new page | `url` | — |
-| `browser_navigate_back` | Return to the previous page | — | — |
-| `browser_find` | Locate text or a pattern without a full snapshot | `text` or `regex` | — |
-| `browser_snapshot` | Get the accessibility tree to understand structure | — | `filename` |
+| Tool                    | When to use it                                     | Required inputs   | Optional inputs |
+| ----------------------- | -------------------------------------------------- | ----------------- | --------------- |
+| `browser_navigate`      | Load a new page                                    | `url`             | —               |
+| `browser_navigate_back` | Return to the previous page                        | —                 | —               |
+| `browser_find`          | Locate text or a pattern without a full snapshot   | `text` or `regex` | —               |
+| `browser_snapshot`      | Get the accessibility tree to understand structure | —                 | `filename`      |
 
 ## Fast rules
 

@@ -38,11 +38,11 @@ Use this skill to pick the right `discord` MCP tool and to stay inside the bot's
 
 ## Router
 
-| Intent | Read first |
-|---|---|
-| Normal reading, listing, searching, or downloading attachments | [`references/authed-tool-map.md`](references/authed-tool-map.md) |
-| A tool not in the authed map, or any write/moderation/server-management task | [`references/tool-map.md`](references/tool-map.md) |
-| You are unsure whether the bot has permission | Ask your human partner before calling the tool. |
+| Intent                                                                       | Read first                                                       |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Normal reading, listing, searching, or downloading attachments               | [`references/authed-tool-map.md`](references/authed-tool-map.md) |
+| A tool not in the authed map, or any write/moderation/server-management task | [`references/tool-map.md`](references/tool-map.md)               |
+| You are unsure whether the bot has permission                                | Ask your human partner before calling the tool.                  |
 
 ## Reading pattern
 

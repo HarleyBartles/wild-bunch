@@ -4,8 +4,8 @@ metadata:
   source_category: first_party
 interface:
   display_name: Handoff Gates
-  short_description: Assess spec, plan, and implementation readiness at stage boundaries.
-  default_prompt: Use handoff-gates to assess whether a spec, plan, or completed implementation is ready for its next stage; keep risk and authority decisions with risk-gates.
+  short_description: Assess plan and implementation readiness at stage boundaries.
+  default_prompt: Use handoff-gates to assess whether a plan or completed implementation is ready for its next stage; keep risk and authority decisions with risk-gates.
 policy:
   products:
   - chatgpt
