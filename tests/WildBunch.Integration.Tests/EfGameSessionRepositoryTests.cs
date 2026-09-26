@@ -41,14 +41,17 @@ public sealed class EfGameSessionRepositoryTests
             var worldEvent = await context.StoredEvents.SingleAsync(e =>
                 e.StreamId == session.Id.Value && e.EventType == "WorldGenerated");
             var payload = System.Text.Json.Nodes.JsonNode.Parse(worldEvent.PayloadJson)!.AsObject();
+            Assert.Equal(2, worldEvent.SchemaVersion);
+            Assert.NotNull(payload["caseFile"]);
             payload.Remove("caseFile");
             worldEvent.PayloadJson = payload.ToJsonString();
+            worldEvent.SchemaVersion = 1;
             await context.SaveChangesAsync();
 
-            var newlyWrittenVersion = await context.StoredEvents
+            var storedLegacyVersion = await context.StoredEvents
                 .Where(e => e.StreamId == session.Id.Value && e.EventType == "WorldGenerated")
                 .Select(e => e.SchemaVersion).SingleAsync();
-            Assert.Equal(2, newlyWrittenVersion);
+            Assert.Equal(1, storedLegacyVersion);
         }
 
         var loaded = await repository.GetByIdAsync(session.Id);
