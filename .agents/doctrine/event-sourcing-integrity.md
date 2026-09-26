@@ -44,6 +44,17 @@ live canonical flow rather than duplicating it.
    naturally. Abandoned playthroughs stay at their old version on disk — no
    global migration sweep.
 
+## Event payload history
+
+`WorldGenerated` is currently v2. Historical v1 rows exist in both shapes: an
+early form without `caseFile`, and a later form with it. The v1-to-v2 upcaster
+adds `caseFile: null` only when the property is absent and preserves an existing
+value. Replay leaves case-file state untouched for that legacy event and relies
+on the following `CaseFileGenerated` event. A stream with a null `WorldGenerated`
+case file and no `CaseFileGenerated` event is unrecoverable and must fail closed;
+it must never retain the replay placeholder as real case-file state. Current
+writers continue to include the populated case file in both events.
+
 ## Repository rules
 
 1. **All event-backed persisted state must be reconstructable from the event

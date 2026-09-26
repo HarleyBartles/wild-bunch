@@ -1174,7 +1174,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private void Apply(WorldGenerated e)
     {
         World = e.World.ToDomain();
-        CaseFile = e.CaseFile.ToDomain();
+        if (e.CaseFile is { } caseFile)
+        {
+            CaseFile = caseFile.ToDomain();
+        }
         SaltSource = e.SaltSource;
         GameEntropy = e.GameEntropy;
         _version++;
@@ -2620,4 +2623,3 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
 }
-

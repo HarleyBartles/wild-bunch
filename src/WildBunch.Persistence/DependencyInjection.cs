@@ -15,7 +15,7 @@ public static class DependencyInjection
     {
         services.AddSingleton<GameSessionJsonSerializer>();
 
-        // Event upcaster registry. No upcasters registered yet (greenfield repo, all events at v1).
+        // Event upcaster registry.
         // When the first event shape change happens, write an IEventUpcaster and add it to
         // CreateDefaultUpcasters() below. The build-time completeness test
         // (UpcasterChainCompletenessTests) asserts every IEventUpcaster in the assembly
@@ -71,8 +71,7 @@ public static class DependencyInjection
     internal static IReadOnlyList<IPayloadUpcaster> CreateDefaultUpcasters()
     {
         var upcasters = new List<IPayloadUpcaster>();
-        // No upcasters yet. Add upcasters here as they're written:
-        // upcasters.Add(new GameStartedV1ToV2Upcaster());
+        upcasters.Add(new WorldGeneratedV1ToV2Upcaster());
         return upcasters;
     }
 }
