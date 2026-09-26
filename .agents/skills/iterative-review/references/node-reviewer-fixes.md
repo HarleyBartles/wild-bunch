@@ -1,9 +1,11 @@
 # node-reviewer-fixes
 
 ## Purpose
+
 Verify a fix against the originating lens's checklist, tightly scoped to the blast radius.
 
 ## Inputs
+
 - `findings.jsonl` - to know the `lens` and finding being fixed
 - `review-log-<lens>.md` - to extract the originating lens's `## Checklist` section
 - `review-log-implementer-report.md` (if an `implementer` fixed the finding) or the inline fix diff
@@ -78,12 +80,14 @@ Verify a fix against the originating lens's checklist, tightly scoped to the bla
      ```
 
 ## Outputs
+
 - `review-log-reviewer-fixes.md` ending with exactly one of:
   - `reviewer-fixes: clean`
   - `reviewer-fixes: N issue(s)`
 - `<scratch_dir>/review-metrics.json` regenerated from `<scratch_dir>/review-state.json` and the recorded logs
 
 ## Next check
+
 ```bash
 py -3 .agents/skills/iterative-review/scripts/next_node.py \
     --state <scratch_dir>/review-state.json \

@@ -48,3 +48,8 @@ Opening, updating, or publishing a Wild Bunch pull request.
 ## Prohibited combinations
 
 - Do not treat a local branch or push without a PR as publication proof.
+
+## Playbook routing
+
+- [Completing plans](../playbooks/completing-plans.md) - before handoff when this slice's plans, specifications, roadmaps, checkpoints, audits, or trackers have completed.
+- [Testing](../playbooks/testing.md) - when establishing the committed validation evidence used by the publication claim.

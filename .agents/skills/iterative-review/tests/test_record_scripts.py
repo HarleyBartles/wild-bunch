@@ -3,6 +3,7 @@
 
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -39,7 +40,7 @@ def _write_state(scratch: Path) -> Path:
 
 def _run(script: Path, state: Path, data: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["py", "-3", str(script), "--state", str(state), "--data", data],
+        [sys.executable, str(script), "--state", str(state), "--data", data],
         capture_output=True,
         text=True,
     )

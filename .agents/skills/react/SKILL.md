@@ -1,8 +1,6 @@
 ---
 name: react
-description: Use when building or reviewing React component architecture, hooks usage,
-  and performance patterns. Do not use when the work is framework-agnostic styling,
-  routing, or state management owned by another skill.
+description: Use when building or reviewing React component architecture, hooks usage, and performance patterns. Do not use when the work is framework-agnostic styling, routing, or state management owned by another skill.
 metadata:
   source-id: react
   source-path: codex-marketplace/plugins/frontend-pack/skills/react/SKILL.md
@@ -12,23 +10,19 @@ metadata:
   owner: Harley Bartles
   scope: React component architecture, hooks usage, and performance patterns.
   use_when:
-  - building or reviewing React component architecture.
-  - choosing, ordering, or refactoring hooks.
-  - lifting state, composing components, or handling conditional rendering.
-  - optimizing renders with memo, useMemo, useCallback, or React.memo.
-  - deciding whether server components or a framework-specific skill is more
-    appropriate.
+    - building or reviewing React component architecture.
+    - choosing, ordering, or refactoring hooks.
+    - lifting state, composing components, or handling conditional rendering.
+    - optimizing renders with memo, useMemo, useCallback, or React.memo.
+    - deciding whether server components or a framework-specific skill is more appropriate.
   do_not_use_when:
-  - the work is framework-agnostic styling; use the web-styling skill.
-  - the work is TypeScript-specific type design; use the typescript
-    skill.
-  - the work is routing or global state management owned by another
-    skill.
-  - the task requires Next.js or framework-specific server components;
-    use the appropriate framework skill.
+    - the work is framework-agnostic styling; use the web-styling skill.
+    - the work is TypeScript-specific type design; use the typescript skill.
+    - the work is routing or global state management owned by another skill.
+    - the task requires Next.js or framework-specific server components; use the appropriate framework skill.
   related_skills:
-  - typescript
-  - web-styling
+    - typescript
+    - web-styling
 license: MIT
 ---
 
@@ -36,8 +30,7 @@ license: MIT
 
 ## Overview
 
-React lets you build UIs from declarative components. This skill covers component architecture,
-hooks, and performance patterns grounded in the React documentation.
+React lets you build UIs from declarative components. This skill covers component architecture, hooks, and performance patterns grounded in the React documentation.
 
 ## When to Use
 
@@ -47,9 +40,7 @@ hooks, and performance patterns grounded in the React documentation.
 - Optimizing renders with `memo`, `useMemo`, `useCallback`, or `React.memo`.
 - Deciding when server components or a framework-specific skill such as Next.js is more appropriate.
 
-Do not use for framework-agnostic styling; defer to `web-styling`. Do not use for TypeScript-only
-type design; defer to `typescript`. Do not use for routing, global state management, or
-framework-specific server frameworks.
+Do not use for framework-agnostic styling; defer to `web-styling`. Do not use for TypeScript-only type design; defer to `typescript`. Do not use for routing, global state management, or framework-specific server frameworks.
 
 ## Core Pattern
 

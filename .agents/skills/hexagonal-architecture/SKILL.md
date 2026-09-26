@@ -1,8 +1,6 @@
 ---
 name: hexagonal-architecture
-description: Use when isolating domain logic from frameworks, UI, and databases through
-  ports and adapters. Do not use when the domain is trivial or the project is a thin
-  framework wrapper.
+description: Use when isolating domain logic from frameworks, UI, and databases through ports and adapters. Do not use when the domain is trivial or the project is a thin framework wrapper.
 metadata:
   source-id: hexagonal-architecture
   source-path: codex-marketplace/plugins/architecture-pack/skills/hexagonal-architecture/SKILL.md
@@ -11,10 +9,9 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - isolating domain logic from frameworks, UI, and databases through ports
-    and adapters
+    - isolating domain logic from frameworks, UI, and databases through ports and adapters
   do_not_use_when:
-  - the domain is trivial or the project is a thin framework wrapper
+    - the domain is trivial or the project is a thin framework wrapper
 license: MIT
 ---
 

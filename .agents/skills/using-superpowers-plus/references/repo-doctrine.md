@@ -1,7 +1,6 @@
 # Repo doctrine and user instructions
 
-User instructions (explicit requests), repo-local doctrine, and the active skill
-all shape routing. The canonical repo-local doctrine surfaces are:
+User instructions (explicit requests), repo-local doctrine, and the active skill all shape routing. The canonical repo-local doctrine surfaces are:
 
 - Root `AGENTS.md` for global repo doctrine and publication rules.
 - `.agents/doctrine/mesh-policy.md` for the canonical mesh statement.

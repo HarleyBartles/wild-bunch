@@ -4,24 +4,24 @@ Use this when working with git history, refs, branches, tags, or trees.
 
 ## Pick the surface
 
-| Surface | Use when | Required | Optional/notes |
-| --- | --- | --- | --- |
-| `git log` | Local commit history. | None | `--oneline`, `--graph`, `--all`, `<branch>`. |
-| `git show <ref>` | Full commit or object details. | `ref` | `--stat`, `--name-only`. |
-| `git branch` | List or manage local branches. | None | `-a`, `-r`, `-vv`. |
-| `git tag` | List tags. | None | `-l`, `--sort=-creatordate`. |
-| `git remote` | List remotes. | None | `-v`. |
-| `git fetch origin` | Fetch remote refs. | remote name | `--prune`. |
-| `git push origin <branch>` | Push a branch. | `branch` | `--force-with-lease` instead of `--force` when rewriting. |
-| `gh api repos/{owner}/{repo}/commits` | List commits through REST. | `owner`, `repo` | `sha`, `path`, `per_page`. |
-| `gh api repos/{owner}/{repo}/branches` | List branches through REST. | `owner`, `repo` | `per_page`. |
-| `gh api repos/{owner}/{repo}/git/trees/{ref}` | Read a git tree. | `owner`, `repo`, `ref` | `recursive=1`. |
-| `list_commits` (MCP) | List commits through MCP. | `owner`, `repo` | `sha`, `path`, `limit`. |
-| `list_branches` (MCP) | List branches through MCP. | `owner`, `repo` | `limit`. |
-| `list_tags` (MCP) | List tags through MCP. | `owner`, `repo` | `limit`. |
-| `get_commit` (MCP) | Read a single commit. | `owner`, `repo`, `sha` | None. |
-| `get_tag` (MCP) | Read a single tag. | `owner`, `repo`, `tag` | None. |
-| `get_repository_tree` (MCP) | Read a git tree. | `owner`, `repo`, `tree_sha` | `recursive`. |
+| Surface                                       | Use when                       | Required                    | Optional/notes                                            |
+| --------------------------------------------- | ------------------------------ | --------------------------- | --------------------------------------------------------- |
+| `git log`                                     | Local commit history.          | None                        | `--oneline`, `--graph`, `--all`, `<branch>`.              |
+| `git show <ref>`                              | Full commit or object details. | `ref`                       | `--stat`, `--name-only`.                                  |
+| `git branch`                                  | List or manage local branches. | None                        | `-a`, `-r`, `-vv`.                                        |
+| `git tag`                                     | List tags.                     | None                        | `-l`, `--sort=-creatordate`.                              |
+| `git remote`                                  | List remotes.                  | None                        | `-v`.                                                     |
+| `git fetch origin`                            | Fetch remote refs.             | remote name                 | `--prune`.                                                |
+| `git push origin <branch>`                    | Push a branch.                 | `branch`                    | `--force-with-lease` instead of `--force` when rewriting. |
+| `gh api repos/{owner}/{repo}/commits`         | List commits through REST.     | `owner`, `repo`             | `sha`, `path`, `per_page`.                                |
+| `gh api repos/{owner}/{repo}/branches`        | List branches through REST.    | `owner`, `repo`             | `per_page`.                                               |
+| `gh api repos/{owner}/{repo}/git/trees/{ref}` | Read a git tree.               | `owner`, `repo`, `ref`      | `recursive=1`.                                            |
+| `list_commits` (MCP)                          | List commits through MCP.      | `owner`, `repo`             | `sha`, `path`, `limit`.                                   |
+| `list_branches` (MCP)                         | List branches through MCP.     | `owner`, `repo`             | `limit`.                                                  |
+| `list_tags` (MCP)                             | List tags through MCP.         | `owner`, `repo`             | `limit`.                                                  |
+| `get_commit` (MCP)                            | Read a single commit.          | `owner`, `repo`, `sha`      | None.                                                     |
+| `get_tag` (MCP)                               | Read a single tag.             | `owner`, `repo`, `tag`      | None.                                                     |
+| `get_repository_tree` (MCP)                   | Read a git tree.               | `owner`, `repo`, `tree_sha` | `recursive`.                                              |
 
 ## Notes
 

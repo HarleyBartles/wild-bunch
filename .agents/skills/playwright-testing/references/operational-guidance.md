@@ -3,6 +3,7 @@
 ## When to apply
 
 Use when the playwright-testing skill loaded and the question needs more than the SKILL.md summary:
+
 - selecting stable locators,
 - structuring fixtures and page objects,
 - configuring retries and CI reporting,

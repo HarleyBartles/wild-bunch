@@ -44,7 +44,7 @@ Manual browser evidence is one lane in the evidence model, not the whole model.
 - It should be reported separately from automated validation.
 - It is especially useful for visible UI/game-flow changes when automated tests do not fully prove the user-facing result.
 
-For the repo-local operational route, see [UI browser-check runbook](../.agents/runbooks/ui-browser-check.md).
+For the repo-local operational route, see [UI browser-check playbook](../.agents/playbooks/ui-browser-check.md).
 
 ## Local Run Context
 

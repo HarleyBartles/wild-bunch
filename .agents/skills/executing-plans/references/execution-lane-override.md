@@ -12,6 +12,8 @@ When picking an execution lane, follow this order:
 
 ## One-lane rule
 
+Choose from execution cost as well as task shape. Native execution preserves one inline integration context and adds one fresh whole-branch review; subagent-driven execution spends fresh implementer and reviewer contexts on every task plus the final review. Tightly coupled sequential work normally favors Native; genuinely independent tasks can justify the additional SDD review cost.
+
 Pick one lane before execution starts. Announce it:
 
 > "I am using `<lane-name>` to execute this plan."

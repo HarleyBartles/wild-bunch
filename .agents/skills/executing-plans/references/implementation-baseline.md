@@ -2,36 +2,19 @@
 
 ## Read when
 
-Read for repo-backed implementation, source-custody changes, evidence,
-closeout, or publication before invoking the selected execution lane.
+Read for repo-backed implementation, source-custody changes, evidence, closeout, or publication before invoking the selected execution lane.
 
 ## Baseline
 
-Work from the dedicated checkout described by the worktree policy, then read
-the local implementation guide. Edit canonical authored source, not generated
-marketplace bundles, installed trees, or caches. Regenerate and verify downstream
-surfaces only through their owners. Keep temporary artifacts in external
-scratch custody and keep runtime behavior separate from authored guidance.
+Work from the dedicated checkout described by the worktree policy, then read the local implementation guide. Edit canonical authored source, not generated marketplace bundles, installed trees, or caches. Regenerate and verify downstream surfaces only through their owners. Keep temporary artifacts in external scratch custody and keep runtime behavior separate from authored guidance.
 
-Run the planned validation, review the final scope and working tree, then
-publish a focused branch through a PR unless direct-main work is explicitly
-authorized. Evidence distinguishes commands run, results, skipped checks, and
-their reason. Local success is not completion: closeout requires GitHub
-publication proof and any required issue-control update.
+Run the planned validation, review the final scope and working tree, then publish a focused branch through a PR unless direct-main work is explicitly authorized. Evidence distinguishes commands run, results, skipped checks, and their reason. Local success is not completion: closeout requires GitHub publication proof and any required issue-control update.
 
 ## Validation and publication gate
 
-Run the repository- and issue-specific validation. Report a skipped material
-check and its consequence; do not reproduce successful command transcripts
-that the canonical gate already proves. Generated output is valid only when its
-owner's write path and check path agree. Before closeout, review the changed
-files, final diff, and working-tree state.
+Run the repository- and issue-specific validation. Report a skipped material check and its consequence; do not reproduce successful command transcripts that the canonical gate already proves. Generated output is valid only when its owner's write path and check path agree. Before closeout, review the changed files, final diff, and working-tree state.
 
-If repository files changed, publish the exact final commit to the task branch
-and expose it through a PR into the approved base unless direct-main work was
-explicitly authorized. Verify the remote head SHA, PR state, mergeability, and
-required checks. Local files, local validation, a worker report, or an
-unpublished commit are not publication proof.
+If repository files changed, publish the exact final commit to the task branch and expose it through a PR into the approved base unless direct-main work was explicitly authorized. Verify the remote head SHA, PR state, mergeability, and required checks. Local files, local validation, a worker report, or an unpublished commit are not publication proof.
 
 ## GREEN gate
 
@@ -45,15 +28,11 @@ Return GREEN only when all relevant facts are true:
 - the working tree is clean, or exact remaining dirty state is reported;
 - no known mergeability or required-check blocker remains.
 
-If any required fact is unresolved, return AMBER, RED, or BLOCKED as the
-evidence warrants rather than laundering local success into GREEN.
+If any required fact is unresolved, return AMBER, RED, or BLOCKED as the evidence warrants rather than laundering local success into GREEN.
 
 ## Required return evidence
 
-Return the outcome, the PR URL or publication blocker, any material validation
-boundary, and unresolved blockers or follow-up. GitHub and the repository prove
-branch, head, changed-file, and PR metadata; do not transcribe that machine
-state into a parallel checklist.
+Return the outcome, the PR URL or publication blocker, any material validation boundary, and unresolved blockers or follow-up. GitHub and the repository prove branch, head, changed-file, and PR metadata; do not transcribe that machine state into a parallel checklist.
 
 ## Stop signs
 
@@ -64,6 +43,5 @@ Stop and report instead of continuing when:
 - required validation cannot run and no accepted substitute exists;
 - merge conflicts require human or product judgment;
 - direct-main mutation lacks explicit current authorization;
-- publication credentials, required secrets, or local-only resources are
-  unavailable;
+- publication credentials, required secrets, or local-only resources are unavailable;
 - remote state contradicts the local completion claim.

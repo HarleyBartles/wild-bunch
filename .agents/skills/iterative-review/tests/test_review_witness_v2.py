@@ -71,6 +71,7 @@ def _write_log(path: Path, entries: list[dict]) -> None:
         "".join(json.dumps(e, separators=(",", ":")) + "\n" for e in entries),
         encoding="utf-8",
     )
+    os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 class TestWitnessLog:

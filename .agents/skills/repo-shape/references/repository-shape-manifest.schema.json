@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HarleyBartles/agent-asset-marketplace/repository-shape-manifest.schema.json",
+  "title": "Agent operating model consumer surface manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "surfaces"],
+  "properties": {
+    "version": { "const": 3 },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "presence", "ownership", "validator", "apply", "force_reset"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "presence": { "enum": ["required", "optional", "forbidden"] },
+          "ownership": { "enum": ["consumer-authored", "consumer-generated"] },
+          "validator": { "type": "string", "minLength": 1 },
+          "apply": { "enum": ["create", "create-or-migrate", "manual-remediation", "delegate-generator"] },
+          "force_reset": { "enum": ["confirmed-template-restore", "unavailable"] },
+          "seed": { "type": ["string", "null"] },
+          "scaffold": { "type": ["string", "null"] },
+          "required_with": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

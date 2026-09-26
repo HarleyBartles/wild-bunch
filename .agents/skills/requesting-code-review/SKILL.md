@@ -1,7 +1,6 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging
-  to verify work meets requirements.
+description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements.
 metadata:
   source-id: requesting-code-review
   source-path: codex-marketplace/plugins/superpowers-plus/skills/requesting-code-review/SKILL.md
@@ -10,24 +9,26 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - completing a task or major feature, or before merging.
-  - subagent-driven-development per-task review is complete and whole-branch review is due.
-  - a fresh reviewer perspective will catch issues before they cascade.
+    - completing a task or major feature, or before merging.
+    - subagent-driven-development per-task review is complete and whole-branch review is due.
+    - a fresh reviewer perspective will catch issues before they cascade.
   do_not_use_when:
-  - before tests pass.
-  - no changes exist to review.
-  - a substitute for self-review.
+    - before tests pass.
+    - no changes exist to review.
+    - a substitute for self-review.
   related_skills:
-  - receiving-code-review
-  - iterative-review
-  - finishing-a-development-branch
-  - subagent-driven-development
-  - executing-plans
+    - selecting-a-subagent
+    - receiving-code-review
+    - iterative-review
+    - finishing-a-development-branch
+    - subagent-driven-development
+    - executing-plans
 license: MIT
 ---
+
 ## Provenance
 
-This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.4.1 commit `5bf4e78011075bcfc0dc295f0724994cd123ee71` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Requesting Code Review
 
@@ -40,11 +41,13 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 ## When to Request Review
 
 **Mandatory:**
+
 - After each task in subagent-driven development
 - After completing major feature
 - Before merge to main
 
 **Optional but valuable:**
+
 - When stuck (fresh perspective)
 - Before refactoring (baseline check)
 - After fixing complex bug
@@ -52,22 +55,25 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 ## How to Request
 
 **1. Get git SHAs:**
+
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+BASE_SHA=$(git rev-parse HEAD~1)  # or: git merge-base origin/main HEAD
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
 **2. Dispatch code reviewer subagent:**
 
-Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md](code-reviewer.md)
+Describe the review needed, then consult `selecting-a-subagent` before every reviewer dispatch for the active runtime's profile or model, reasoning, and context route. Fill the template at [code-reviewer.md](code-reviewer.md) with that route. Do not turn a review description into a model or profile name yourself.
 
 **Placeholders:**
+
 - `{DESCRIPTION}` - Brief summary of what you built
 - `{PLAN_OR_REQUIREMENTS}` - What it should do
 - `{BASE_SHA}` - Starting commit
 - `{HEAD_SHA}` - Ending commit
 
 **3. Act on feedback:**
+
 - Fix Critical issues immediately
 - Fix Important issues before proceeding
 - Note Minor issues for later
@@ -75,29 +81,20 @@ Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md
 
 ## Branch or PR diff review
 
-When the code-review request is about a branch or PR diff, the orchestrator (this session)
-prepares the review inputs; the reviewer subagent only reads the prepared diff and
-description.
+When the code-review request is about a branch or PR diff, the orchestrator (this session) prepares the review inputs; the reviewer subagent only reads the prepared diff and description.
 
 1. Determine the base ref (`<base>`) and branch (`<branch>`).
-2. Generate the review package as UTF-8 without a BOM:
-   - Bash: `.agents/skills/subagent-workspace/scripts/review-package - <base> <branch> <diff_path>` (use `-` for no plan file; `diff_path` is optional and the script prints the path it wrote).
-   - PowerShell: `.agents/skills/subagent-workspace/scripts/review-package.ps1 - <base> <branch> <diff_path>`
-3. If the review object is a PR, capture the PR title and body into `<pr_description>`
-   (e.g. with `gh pr view <number> --json title,body` or `mcp_call_tool`).
-4. Dispatch the reviewer subagent with the prepared inputs:
-   - `reviewer` for most reviews.
-   - `reviewer-strong` for full branch/PR reviews where the whole diff is in scope.
-   - `reviewer-fixes` for small, tightly focused re-reviews of a single fix or a small
-     coherent diff.
+2. Generate the review package as UTF-8 without a BOM with `py -3 .agents/skills/subagent-workspace/scripts/review_package.py --apply - <base> <branch> <diff_path>`. Use `-` for no plan file; `diff_path` is optional and the script prints the path it wrote.
+3. If the review object is a PR, capture the PR title and body into `<pr_description>` (e.g. with `gh pr view <number> --json title,body` or `mcp_call_tool`).
+4. Describe whether the review covers the whole branch or PR, an ordinary change, or a focused fix. Consult `selecting-a-subagent` before every reviewer dispatch to choose the active runtime's route, then dispatch with the prepared inputs. A request for a strong or whole-branch review does not itself select a profile, model, or reasoning level.
 
 Inputs to pass to the subagent:
+
 - `<diff_path>` — the prepared diff file.
 - `<pr_description>` — the PR title/body and any linked issue/spec context (optional).
 - `<base>` and `<branch>` — the base and head refs (optional, for extra verification).
 
-The subagent reads the prepared diff, uses `<pr_description>` to understand intent and
-scope, cites specific files and line numbers, and does not modify files.
+The subagent reads the prepared diff, uses `<pr_description>` to understand intent and scope, cites specific files and line numbers, and does not modify files.
 
 Use the prepared-diff prompt template at [reviewer-prompt.md](reviewer-prompt.md).
 
@@ -130,25 +127,26 @@ You: [Fix progress indicators]
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "I'll just review the diff myself instead of dispatching a reviewer" | You're the coordinator — reviewing the diff inline burns the context window you need to keep driving the work. Dispatch a reviewer subagent: the diff and the evaluation live in its context, and only the findings come back to you. |
-| "The reviewer needs my whole session history to understand the change" | Hand it precisely crafted context, never your session's history. That keeps the reviewer on the work product, not your thought process. |
+| Excuse                                                                 | Reality                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "I'll just review the diff myself instead of dispatching a reviewer"   | You're the coordinator — reviewing the diff inline burns the context window you need to keep driving the work. Dispatch a reviewer subagent: the diff and the evaluation live in its context, and only the findings come back to you. |
+| "The reviewer needs my whole session history to understand the change" | Hand it precisely crafted context, never your session's history. That keeps the reviewer on the work product, not your thought process.                                                                                               |
 
 ## Red Flags
 
 **Never:**
+
 - Skip review because "it's simple"
 - Ignore Critical issues
 - Proceed with unfixed Important issues
 - Argue with valid technical feedback
 
 **If reviewer wrong:**
+
 - Push back with technical reasoning
 - Show code/tests that prove it works
 - Request clarification
 
-See templates at [code-reviewer.md](code-reviewer.md) for commit-range review and
-[reviewer-prompt.md](reviewer-prompt.md) for prepared branch/PR diff review.
+See templates at [code-reviewer.md](code-reviewer.md) for commit-range review and [reviewer-prompt.md](reviewer-prompt.md) for prepared branch/PR diff review.
 
 Before requesting review on a PR — or changing a PR's draft state to signal readiness — consult `.agents/runbooks/pr.md` `## Draft PR policy` so the review request aligns with the repo's draft-to-ready transition.

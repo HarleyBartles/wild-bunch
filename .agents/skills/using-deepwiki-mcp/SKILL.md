@@ -9,13 +9,13 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - you need high-level orientation, conventions, architecture, or cross-repo context for a GitHub repo.
-  - you need to decide whether to ask a targeted question, list wiki topics, or read the full generated wiki.
-  - you want to compare or contrast up to 10 public repos.
+    - you need high-level orientation, conventions, architecture, or cross-repo context for a GitHub repo.
+    - you need to decide whether to ask a targeted question, list wiki topics, or read the full generated wiki.
+    - you want to compare or contrast up to 10 public repos.
   do_not_use_when:
-  - you need exact, current source or version-specific behavior.
-  - the repo is private, not indexed by DeepWiki, or the answer has safety/security implications without verification.
-  - another more specific skill owns the task.
+    - you need exact, current source or version-specific behavior.
+    - the repo is private, not indexed by DeepWiki, or the answer has safety/security implications without verification.
+    - another more specific skill owns the task.
 license: MIT
 ---
 
@@ -44,12 +44,12 @@ Use this skill to decide when and how to call the `deepwiki` MCP server for a Gi
 
 ## Tool selection
 
-| Situation | Tool | Read first |
-|---|---|---|
-| "How do I...?" / "What is...?" / compare | `ask_question` | [`references/golden-questions.md`](references/golden-questions.md) |
-| "What docs exist for this repo?" | `read_wiki_structure` | [`references/surface-map.md`](references/surface-map.md) |
-| "I want the whole generated wiki" | `read_wiki_contents` | [`references/surface-map.md`](references/surface-map.md) |
-| Need the complete callable surface | — | [`references/surface-map.md`](references/surface-map.md) |
+| Situation                                | Tool                  | Read first                                                         |
+| ---------------------------------------- | --------------------- | ------------------------------------------------------------------ |
+| "How do I...?" / "What is...?" / compare | `ask_question`        | [`references/golden-questions.md`](references/golden-questions.md) |
+| "What docs exist for this repo?"         | `read_wiki_structure` | [`references/surface-map.md`](references/surface-map.md)           |
+| "I want the whole generated wiki"        | `read_wiki_contents`  | [`references/surface-map.md`](references/surface-map.md)           |
+| Need the complete callable surface       | —                     | [`references/surface-map.md`](references/surface-map.md)           |
 
 ## Multi-repo questions
 

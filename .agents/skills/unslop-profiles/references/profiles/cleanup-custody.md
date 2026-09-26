@@ -28,6 +28,7 @@ Catch cleanup reports that do not classify each surface as live source, cold sto
 ## Required Prefer-Instead Rules
 
 Use a custody ladder:
+
 - **keep live**: active source, current doctrine, required index, publication proof, protected evidence, or authoritative operating material
 - **move to cold store**: inactive but lawfully retained material with retrieval value
 - **move to governed trash**: reversible deletion staging with a repo-visible index/sentinel where the repo uses that pattern
@@ -43,24 +44,30 @@ Do not turn anti-bloat into deletion-first behavior. Protected evidence, source 
 ## Examples
 
 ### Before (Avoid)
+
 > Moved old files into deprecated/ so the history remains visible.
 
 ### After (Prefer)
+
 - `old_implementation.py`: deleted - obsolete implementation, Git history preserves the code
 - `deprecated/` directory: deleted - tombstone theatre, use Git history for reference
 - `README_OLD.md`: deleted - superseded by current README, Git history preserves the content
 
 ### Before (Avoid)
+
 > Kept the obsolete wrapper as a tombstone for provenance.
 
 ### After (Prefer)
+
 - `legacy_wrapper.py`: deleted - no active references, Git history preserves the code for provenance
 - No tombstone needed - Git commit history serves as provenance
 
 ### Before (Avoid)
+
 > Deleted the duplicate files, cleanup complete.
 
 ### After (Prefer)
+
 - Checked falsification surfaces: plugin registry (no references), manifest (no entries), docs (no links)
 - `duplicate_file.py`: deleted - exact duplicate with no unique provenance
 - Cleanup complete: no stale references remain

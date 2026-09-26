@@ -1,13 +1,16 @@
 # node-resolved-ledger
 
 ## Purpose
+
 Mark findings resolved and generate the resolved-ledger evidence gate.
 
 ## Inputs
+
 - `review-metrics.json`
 - Off-repo `<scratch_dir>`
 
 ## Recipe
+
 1. When `reviewer-fixes` or `regression-scan` is clean, `resolved-ledger` is the single authority that records the resolution. For each fixed finding, call `record_resolution.py` once with `resolved_at_node` set to `reviewer-fixes` or `regression-scan` and the current round:
    ```bash
    py -3 .agents/skills/iterative-review/scripts/record_resolution.py \
@@ -39,10 +42,12 @@ Mark findings resolved and generate the resolved-ledger evidence gate.
    ```
 
 ## Outputs
+
 - Write `review-log-resolved-ledger.md` when every `important`/`blocking` finding has a `resolved_at_node` and `regressions` is empty
 - `<scratch_dir>/review-metrics.json` regenerated from `<scratch_dir>/review-state.json` and the recorded logs
 
 ## Next check
+
 ```bash
 py -3 .agents/skills/iterative-review/scripts/next_node.py \
     --state <scratch_dir>/review-state.json \

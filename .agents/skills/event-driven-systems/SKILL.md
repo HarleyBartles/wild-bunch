@@ -9,15 +9,15 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - designing asynchronous communication between services.
-  - choosing between choreography and orchestration.
-  - implementing sagas, idempotent handlers, or event schema versioning.
+    - designing asynchronous communication between services.
+    - choosing between choreography and orchestration.
+    - implementing sagas, idempotent handlers, or event schema versioning.
   do_not_use_when:
-  - the problem is better solved by synchronous RPC or a single monolith.
+    - the problem is better solved by synchronous RPC or a single monolith.
   related_skills:
-  - event-sourcing
-  - cqrs
-  - ddd
+    - event-sourcing
+    - cqrs
+    - ddd
 license: MIT
 ---
 

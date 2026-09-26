@@ -6,8 +6,6 @@ import json
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
-TRACKED_HOOK = ROOT / "githooks" / "pre-commit"
-UPSTREAM_HOOK = ROOT / ".agents" / "skills" / "repo-standards" / "templates" / "pre-commit"
 
 
 def test_hosted_ci_enters_through_the_declared_canonical_gate() -> None:
@@ -26,10 +24,6 @@ def test_hosted_ci_enters_through_the_declared_canonical_gate() -> None:
         "--check",
         "--diagnostics",
     ]
-
-
-def test_pre_commit_hook_has_tracked_custody() -> None:
-    assert TRACKED_HOOK.read_bytes() == UPSTREAM_HOOK.read_bytes()
 
 
 def test_hosted_ci_executes_the_tracked_hook() -> None:

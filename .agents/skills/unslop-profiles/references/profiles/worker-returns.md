@@ -41,15 +41,19 @@ Do not require full PR evidence for work that legitimately did not create a PR. 
 ## Examples
 
 ### Before (Avoid)
+
 > Implemented successfully. All tests are passing.
 
 ### After (Prefer)
+
 > Changed files: `src/api/users.py`, `tests/test_users.py`. Branch: `feature/user-deletion`. PR: https://github.com/org/repo/pull/123. Validation: `pytest tests/test_users.py` - all 12 tests pass. Issue goal met: user deletion endpoint is implemented and tested.
 
 ### Before (Avoid)
+
 > The issue is complete and ready to merge.
 
 ### After (Prefer)
+
 > Changed files: `src/auth/session.py`. Branch: `fix/session-timeout`. Commit: `abc123def`. Validation: `pytest tests/test_auth.py::test_session_timeout` passes. Issue goal met: session timeout logic now correctly expires sessions after 30 minutes. Ready for review.
 
 ## Acceptance Checks

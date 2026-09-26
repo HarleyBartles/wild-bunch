@@ -1,9 +1,6 @@
 # Skill Authoring Checklist
 
-When the consuming repository provides field-language contracts, apply them to
-frontmatter and `agents/openai.yaml`. Do not copy a standalone `Use when`
-description into `scope`, trigger-list values, short descriptions, or default
-prompts.
+When the consuming repository provides field-language contracts, apply them to frontmatter and `agents/openai.yaml`. Do not copy a standalone `Use when` description into `scope`, trigger-list values, short descriptions, or default prompts.
 
 Use this checklist when creating, reviewing, or refreshing a skill.
 

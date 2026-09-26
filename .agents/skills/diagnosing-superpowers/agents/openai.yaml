@@ -1,0 +1,12 @@
+version: 1
+metadata:
+  skill_name: diagnosing-superpowers
+  source_category: first_party
+interface:
+  display_name: Diagnosing Superpowers
+  short_description: Report what happened in a Codex or Devin Desktop Superpowers session with cited evidence.
+  default_prompt: Use diagnosing-superpowers to inspect the named session read-only and produce an evidence-cited report without diagnosing the framework.
+policy:
+  products:
+  - codex
+  allow_implicit_invocation: true

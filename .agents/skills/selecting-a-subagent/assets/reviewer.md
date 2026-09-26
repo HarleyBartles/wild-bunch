@@ -11,8 +11,7 @@ A vendor-provided subagent profile for focused, read-only code review.
 
 ## When to use
 
-Use for most reviews, architecture challenges, and focused re-reviews where the
-prepared diff is the primary input and no mutation is required.
+Use for most reviews, architecture challenges, and focused re-reviews where the prepared diff is the primary input and no mutation is required.
 
 ## Inputs
 

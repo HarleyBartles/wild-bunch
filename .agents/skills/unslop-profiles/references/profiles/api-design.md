@@ -40,15 +40,19 @@ Do not require every small internal endpoint to carry heavyweight public-API pro
 ## Examples
 
 ### Before (Avoid)
+
 > Add CRUD endpoints for managing resources.
 
 ### After (Prefer)
+
 > Add `POST /api/users` to create users, `GET /api/users/{id}` to retrieve users, `PUT /api/users/{id}` to update users, and `DELETE /api/users/{id}` to delete users. All endpoints require Bearer token auth. Success responses return HTTP 200 with user JSON. Error responses return HTTP 400/401/404/409 with error code and message.
 
 ### Before (Avoid)
+
 > Return a generic error message if something goes wrong.
 
 ### After (Prefer)
+
 > Error responses follow this schema: `{"error": {"code": "VALIDATION_ERROR", "message": "Email is required", "details": {"field": "email"}}}`. Status codes: 400 for validation errors, 401 for auth errors, 404 for not found, 409 for conflicts, 500 for server errors.
 
 ## Acceptance Checks

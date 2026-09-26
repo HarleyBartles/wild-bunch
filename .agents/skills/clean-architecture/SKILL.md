@@ -1,8 +1,6 @@
 ---
 name: clean-architecture
-description: Use when designing testable, framework-independent applications with
-  clear dependency rules. Do not use when the team is committed to a framework-centric
-  stack and the cost of ports/adapters is unjustified.
+description: Use when designing testable, framework-independent applications with clear dependency rules. Do not use when the team is committed to a framework-centric stack and the cost of ports/adapters is unjustified.
 metadata:
   source-id: clean-architecture
   source-path: codex-marketplace/plugins/architecture-pack/skills/clean-architecture/SKILL.md
@@ -11,11 +9,9 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - designing testable, framework-independent applications with clear dependency
-    rules
+    - designing testable, framework-independent applications with clear dependency rules
   do_not_use_when:
-  - the team is committed to a framework-centric stack and the cost of ports/adapters
-    is unjustified
+    - the team is committed to a framework-centric stack and the cost of ports/adapters is unjustified
 license: MIT
 ---
 

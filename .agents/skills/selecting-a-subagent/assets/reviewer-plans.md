@@ -69,8 +69,7 @@ Do not generate the diff yourself. The orchestrator owns diff preparation.
 
 The orchestrator dispatches this profile with `run_subagent` (or the consumer's equivalent subagent mechanism). The `task` should list the concrete input paths and the off-repo output path. Do not ask the subagent to read this profile; the profile body is the injected instruction set. Set the off-repo scratch directory as the subagent's working directory.
 
-In isolation mode, dispatch without `<diff_path>` and with the relevant `<plan_path>` / `<spec_path>` / `<roadmap_path>`.
-In PR compliance mode, dispatch with `<diff_path>` plus the branch-head versions of any governing documents. If the PR changes a plan/spec/roadmap, the authoritative governing document is the one in the branch head, not the committed main version.
+In isolation mode, dispatch without `<diff_path>` and with the relevant `<plan_path>` / `<spec_path>` / `<roadmap_path>`. In PR compliance mode, dispatch with `<diff_path>` plus the branch-head versions of any governing documents. If the PR changes a plan/spec/roadmap, the authoritative governing document is the one in the branch head, not the committed main version.
 
 ## What to write
 
@@ -90,6 +89,7 @@ Write `review-log-plans.md` in the off-repo scratch. Begin with a brief `## Inpu
 ## Output format
 
 For each issue:
+
 - `file:line` reference.
 - Severity: **blocking** / **important** / **minor**.
 - What is wrong and why it matters for the plan/spec/roadmap.
@@ -108,6 +108,7 @@ You are a reviewer, not a ledger. Do not count tool calls. Read the items that y
 - As a hard backstop, do not exceed 50 total tool calls after loading the inputs.
 
 A partial, cited report is better than an infinite loop. Do not announce that you are writing the report — just write it.
+
 ## Final response (hard contract)
 
 After writing the off-repo `review-log-*.md` report, your final response to the orchestrator must be exactly one line in this exact form:

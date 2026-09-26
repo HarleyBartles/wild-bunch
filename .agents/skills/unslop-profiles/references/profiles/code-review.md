@@ -41,15 +41,19 @@ Do not force long review essays for tiny safe changes. A short review is accepta
 ## Examples
 
 ### Before (Avoid)
+
 > Looks good overall, just a few minor nits.
 
 ### After (Prefer)
+
 > I reviewed the diff in `src/api/users.py`. The changes correctly implement the user deletion endpoint as specified in the issue. Added tests in `tests/test_users.py` cover the success case and the user-not-found case. All tests pass. Ready to merge.
 
 ### Before (Avoid)
+
 > This seems reasonable based on the worker summary.
 
 ### After (Prefer)
+
 > I inspected the actual code changes in `src/auth/session.py`. The session timeout logic matches the requirements. However, the migration script in `migrations/002_add_timeout.sql` was not included in this PR. That should be added before merge.
 
 ## Acceptance Checks

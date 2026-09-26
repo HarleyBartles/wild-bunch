@@ -1,7 +1,6 @@
 ---
 name: unslop-engine
-description: Use when observed AI output defaults in a domain are repetitive and
-  you need a durable anti-slop profile to counter them.
+description: Use when observed AI output defaults in a domain are repetitive and you need a durable anti-slop profile to counter them.
 metadata:
   source-id: unslop-engine
   source-path: codex-marketplace/plugins/unslop-plus/skills/unslop-engine/SKILL.md
@@ -10,12 +9,11 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - generating a domain-specific anti-slop profile from samples or observed
-    defaults.
+    - generating a domain-specific anti-slop profile from samples or observed defaults.
   do_not_use_when:
-  - applying an existing anti-slop profile to a task.
+    - applying an existing anti-slop profile to a task.
   related_skills:
-  - unslop-profiles
+    - unslop-profiles
 license: MIT
 ---
 

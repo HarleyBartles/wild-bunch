@@ -1,7 +1,6 @@
 ---
 name: playwright-testing
-description: Use when writing, reviewing, or debugging Playwright end-to-end tests
-  for web applications.
+description: Use when writing, reviewing, or debugging Playwright end-to-end tests for web applications.
 metadata:
   source-id: playwright-testing
   source-path: codex-marketplace/plugins/frontend-pack/skills/playwright-testing/SKILL.md
@@ -10,15 +9,15 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - writing or reviewing Playwright end-to-end tests.
-  - choosing selectors, fixtures, or retry and reporting strategies.
-  - running tests across browsers or integrating with CI.
+    - writing or reviewing Playwright end-to-end tests.
+    - choosing selectors, fixtures, or retry and reporting strategies.
+    - running tests across browsers or integrating with CI.
   do_not_use_when:
-  - another more specific skill owns the task.
+    - another more specific skill owns the task.
   related_skills:
-  - frontend-ux
-  - wcag
-  - web-styling
+    - frontend-ux
+    - wcag
+    - web-styling
 license: MIT
 ---
 

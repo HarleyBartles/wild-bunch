@@ -4,6 +4,7 @@
 import importlib.util
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,7 +24,7 @@ def _load_diff_slicer():
 class TestDiffSlicerCLI(unittest.TestCase):
     def test_diff_slicer_check(self):
         result = subprocess.run(
-            ["py", "-3", str(DIFF_SLICER), "--check"],
+            [sys.executable, str(DIFF_SLICER), "--check"],
             capture_output=True,
             text=True,
         )

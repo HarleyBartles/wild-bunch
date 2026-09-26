@@ -1,8 +1,6 @@
 ---
 name: connector-safety
-description: Use when a connector or tool call is blocked or rejected, when a planned
-  side effect is sensitive, destructive, permission-changing, or easy to over-bundle,
-  or when the safe mutation and verification route is uncertain.
+description: Use when a connector or tool call is blocked or rejected, when a planned side effect is sensitive, destructive, permission-changing, or easy to over-bundle, or when the safe mutation and verification route is uncertain.
 metadata:
   source-id: connector-safety
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/connector-safety/SKILL.md
@@ -11,16 +9,12 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - connector or tool-side-effect work needs a safe and auditable mutation path,
-    and boring when a connector or tool call is blocked, rejected, safety-filtered,
-    permission-rejected, schema-rejected, or validation-rejected, when a planned action
-    could be sensitive, destructive, permission-changing, or easy to over-bundle,
-    or when mutation work should follow discover -> read -> write -> verify or step
-    back up the connector discovery chain.
+    - connector or tool-side-effect work needs a safe and auditable mutation path, and boring when a connector or tool call is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, when a planned action could be sensitive, destructive, permission-changing, or easy to over-bundle, or when mutation work should follow discover -> read -> write -> verify or step back up the connector discovery chain.
   do_not_use_when:
-  - another more specific skill owns this task.
+    - another more specific skill owns this task.
 license: MIT
 ---
+
 # Connector Safety
 
 Use this skill to keep connector and tool-side-effect work safe, auditable, and boring when a connector or tool call is blocked, rejected, safety-filtered, permission-rejected, schema-rejected, or validation-rejected, or when a planned action could be sensitive, destructive, permission-changing, or easy to over-bundle.
@@ -56,22 +50,22 @@ For side-effecting connector work, use the connector itself to discover the narr
 Default mutation law:
 
 1. Discover the bounded parent surface with read-only calls.
-   * Find the team, project, repository, folder, calendar, draft, issue, PR, document, or parent object using the narrowest available filters.
-   * Prefer exact slugs, keys, IDs, team filters, project filters, owner filters, and limits.
-   * Do not jump from session memory or chat knowledge straight to a write when a connector read can cheaply confirm the target.
+   - Find the team, project, repository, folder, calendar, draft, issue, PR, document, or parent object using the narrowest available filters.
+   - Prefer exact slugs, keys, IDs, team filters, project filters, owner filters, and limits.
+   - Do not jump from session memory or chat knowledge straight to a write when a connector read can cheaply confirm the target.
 2. Read the exact target object using the discovered stable identifier.
-   * Read the exact issue, document, PR, draft, event, file, or record that will be mutated.
-   * Confirm current state, relations, attachments, documents, comments, or equivalent context where relevant.
+   - Read the exact issue, document, PR, draft, event, file, or record that will be mutated.
+   - Confirm current state, relations, attachments, documents, comments, or equivalent context where relevant.
 3. Write one bounded mutation using the discovered identifier.
-   * Use one side effect per call.
-   * Use narrow payloads.
-   * Do not bundle status, assignment, body rewrite, comments, relations, or document creation unless the connector requires it.
+   - Use one side effect per call.
+   - Use narrow payloads.
+   - Do not bundle status, assignment, body rewrite, comments, relations, or document creation unless the connector requires it.
 4. Rediscover the mutated thing from the parent identifier or a bounded search.
-   * Treat the mutation as incomplete until the changed object is found again from durable connector state.
-   * Use the parent surface, exact IDs, or bounded search to find the fresh target state.
+   - Treat the mutation as incomplete until the changed object is found again from durable connector state.
+   - Use the parent surface, exact IDs, or bounded search to find the fresh target state.
 5. Read back the freshly discovered target.
-   * Confirm the post-mutation state before the next write.
-   * Claim success only from the mutation result or readback.
+   - Confirm the post-mutation state before the next write.
+   - Claim success only from the mutation result or readback.
 
 This is the normal BAU loop, not just blocked-write recovery. The recovery ladder below adds the extra steps needed when a call is rejected or safety-filtered.
 
@@ -124,10 +118,10 @@ If a follow-up write blocks after a successful create, step back into discovery 
 
 When creating child objects such as documents, comments, drafts, attachments, tasks, or records, prefer a minimal create followed by a targeted update when the full payload is large or previously blocked.
 
-* Create the object with the stable parent ID, title, and short placeholder body.
-* Use the returned child object ID for enrichment.
-* Update only that child object's content.
-* Read back the parent or child after enrichment.
+- Create the object with the stable parent ID, title, and short placeholder body.
+- Use the returned child object ID for enrichment.
+- Update only that child object's content.
+- Read back the parent or child after enrichment.
 
 This is safer than creating a large fully populated child object in one call because the parent binding and child identity are proven before the larger content mutation.
 
@@ -171,12 +165,12 @@ If post-mutation readback blocks, step back to the same parent discovery chain u
 
 A retry after a blocked write or readback should usually move one step earlier in the chain:
 
-* if write or readback blocks, step back to the parent discovery surface and read the parent or target again;
-* if target read blocks, discover the bounded surface with narrower filters or a parent surface that proves the target exists;
-* if workspace search blocks, use team/project/repo/folder/workspace/branch/owner filters;
-* if large create blocks, create a minimal child object first, then update by returned child ID;
-* if follow-up child write blocks after a successful parent create, rediscover and read the parent before retrying;
-* if repeated bounded discovery or writes block, stop and report.
+- if write or readback blocks, step back to the parent discovery surface and read the parent or target again;
+- if target read blocks, discover the bounded surface with narrower filters or a parent surface that proves the target exists;
+- if workspace search blocks, use team/project/repo/folder/workspace/branch/owner filters;
+- if large create blocks, create a minimal child object first, then update by returned child ID;
+- if follow-up child write blocks after a successful parent create, rediscover and read the parent before retrying;
+- if repeated bounded discovery or writes block, stop and report.
 
 ## Mutation classes
 

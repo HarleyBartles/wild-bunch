@@ -41,15 +41,19 @@ Do not force a full threat model for every trivial change. Scale the profile to 
 ## Examples
 
 ### Before (Avoid)
+
 > Validate and sanitize all user input.
 
 ### After (Prefer)
+
 > User input is validated at the API boundary using JSON Schema. SQL queries use parameterized statements to prevent injection. HTML output is escaped using the templating system's auto-escape. Attack path: SQL injection via user email field - mitigated by parameterized queries.
 
 ### Before (Avoid)
+
 > Make sure authentication and authorization are secure.
 
 ### After (Prefer)
+
 > Authentication: JWT tokens with 1-hour expiration, signed with HS256. Authorization: role-based access control (RBAC) with admin, editor, viewer roles. Attack path: stolen JWT tokens - mitigated by short expiration and secure cookie storage. Attack path: privilege escalation - mitigated by server-side role validation on every request.
 
 ## Acceptance Checks

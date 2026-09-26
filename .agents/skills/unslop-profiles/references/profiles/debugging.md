@@ -41,15 +41,19 @@ Do not ban hypotheses. Ban unsupported hypotheses presented as explanation or fi
 ## Examples
 
 ### Before (Avoid)
+
 > This is probably caused by a race condition, so we should add a retry.
 
 ### After (Prefer)
+
 > Observed symptom: intermittent HTTP 500 errors in `src/api/orders.py` around line 45. Log analysis shows concurrent requests arriving within 10ms of each other. Hypothesis: race condition in order creation. Test: added a delay in test to reproduce. Confirmed race condition. Fix: added database row-level lock. Verification: ran 100 concurrent requests - all succeeded.
 
 ### Before (Avoid)
+
 > The issue is likely in the cache layer.
 
 ### After (Prefer)
+
 > Observed symptom: stale data returned after updates. Inspected cache layer in `src/cache/redis.py` - cache invalidation is not called after updates. Fix: added cache invalidation call in `update_user()` function. Verification: updated user data is now returned immediately.
 
 ## Acceptance Checks

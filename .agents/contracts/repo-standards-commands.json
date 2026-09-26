@@ -1,4 +1,9 @@
 {
   "apply": ["@python", "tools/run.py", "ci", "--apply", "--allow-shared-checkout"],
-  "check": ["@python", "tools/run.py", "ci", "--check", "--diagnostics"]
+  "check": ["@python", "tools/run.py", "ci", "--check", "--diagnostics"],
+  "generated_paths": [
+    ".agents/skills/**",
+    "**/INDEX.md",
+    "**/INDEX.json"
+  ]
 }

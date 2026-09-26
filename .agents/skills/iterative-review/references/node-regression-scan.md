@@ -1,15 +1,18 @@
 # node-regression-scan
 
 ## Purpose
+
 Widen review to the touched area for non-trivial or cross-cutting fixes to catch regressions.
 
 ## Inputs
+
 - Fix diff
 - Full branch diff blast radius
 - `reviewer-strong` profile
 - `review-metrics.json`
 
 ## Recipe
+
 1. Dispatch `reviewer-strong` on the touched area with `<log_path>` set to `$scratch/review-log-strong.md`.
 2. If the scan is clean, regenerate the metrics file and go to `resolved-ledger`:
    ```bash
@@ -44,10 +47,12 @@ Widen review to the touched area for non-trivial or cross-cutting fixes to catch
    ```
 
 ## Outputs
+
 - Write `review-log-strong.md`
 - `<scratch_dir>/review-metrics.json` regenerated from `<scratch_dir>/review-state.json` and the recorded logs
 
 ## Next check
+
 ```bash
 py -3 .agents/skills/iterative-review/scripts/next_node.py \
     --state <scratch_dir>/review-state.json \

@@ -1,0 +1,10 @@
+version: 1
+metadata:
+  skill_name: repo-shape
+  source_category: first_party
+interface:
+  display_name: Repo Standards
+  short_description: Inspect and align repository shape, runbooks, playbooks, and routing surfaces.
+  default_prompt: Use repo-shape to inspect, scaffold, or validate required agent-facing repository surfaces and structural contracts.
+policy:
+  allow_implicit_invocation: true

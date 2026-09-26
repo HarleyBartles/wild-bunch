@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "surface_exceptions": [],
+  "unslop_profile_roots": [
+    ".agents/contracts/unslop"
+  ]
+}

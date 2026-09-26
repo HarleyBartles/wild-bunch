@@ -38,7 +38,7 @@ Implementing an approved Wild Bunch change in a task worktree.
 ## Local commands and paths
 
 Select focused tests from [validation doctrine](../doctrine/validation-policy.md),
-then use [testing](testing.md). A normal commit uses the installed hook over the
+then use [testing](../playbooks/testing.md). A normal commit uses the installed hook over the
 exact staged snapshot.
 
 ## Evidence contract
@@ -52,3 +52,16 @@ exact staged snapshot.
 
 - Do not use a capability skill to sequence the repository delivery lifecycle.
 - Do not bypass the hooked commit.
+
+## Playbook routing
+
+- [Code style](../playbooks/code-style.md) - when source or technical prose changes.
+- [Testing](../playbooks/testing.md) - whenever behavior or validation changes.
+- [Security](../playbooks/security.md) - when side effects, permissions, secrets, hidden truth, or sensitive mutation boundaries change.
+- [Dev overlay](../playbooks/dev-overlay.md) - when developer controls or panels change.
+- [Marketplace generation](../playbooks/marketplace-generation.md) - when plugin subscriptions, pinned marketplace source, local plugins, or local skills change.
+- [Seeded game setup](../playbooks/seeded-game-setup.md) - when setup ownership or deterministic setup changes.
+- [Skill authoring](../playbooks/skill-authoring.md) - when a repository-local skill changes.
+- [Town-hub asset production](../playbooks/town-hub-asset-production.md) - when town-hub assets are produced or revised.
+- [UI browser check](../playbooks/ui-browser-check.md) - when browser behavior or visual evidence is required.
+- [Asset cut and normalization](../playbooks/asset-selection-cut-normalization.md) - when an accepted asset needs deterministic processing.

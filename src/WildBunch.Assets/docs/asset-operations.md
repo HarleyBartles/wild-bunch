@@ -24,7 +24,7 @@ Before editing or promoting assets in this project, read:
 - `src/WildBunch.Assets/docs/asset-spec.md`
 - `.agents/doctrine/art/town-hub-buildings.md` (for building work)
 - `.agents/doctrine/art/town-hub-ground.md` (for ground, road, or prop work)
-- `.agents/runbooks/asset-selection-cut-normalization.md`
+- `.agents/playbooks/asset-selection-cut-normalization.md`
 
 ## Rules
 

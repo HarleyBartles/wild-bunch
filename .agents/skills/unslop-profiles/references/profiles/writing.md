@@ -10,10 +10,7 @@ Catch generic AI prose before it becomes user-facing text. Apply before drafting
 
 Before drafting or revising: chat answers, documents, summaries, memos, release notes, issue descriptions, and explanatory copy.
 
-When `$writing` is installed, use it for sustained prose so clarity, authorised
-voice, fatigue review, and the final clarity gate compose in one workflow. Use
-this generic profile by itself for a narrow scan or when `writing-pack` is not
-installed.
+When `$writing` is installed, use it for sustained prose so clarity, authorised voice, fatigue review, and the final clarity gate compose in one workflow. Use this generic profile by itself for a narrow scan or when `writing-pack` is not installed.
 
 ## Slop Patterns to Avoid
 
@@ -27,6 +24,7 @@ installed.
 ## Required Avoid Rules
 
 Do not use stock phrase families as default moves:
+
 - `in today's`, `let's dive`, `at its core`, `it is worth noting`, `the bottom line`
 - `unlock`, `landscape`, `ecosystem`, `robust`, `seamless`, `holistic`, `empower`
 
@@ -46,15 +44,19 @@ Do not ban legitimate domain terms when they are precise. For example, `ecosyste
 ## Examples
 
 ### Before (Avoid)
+
 > In today's fast-paced digital landscape, it is more important than ever to unlock robust and seamless outcomes.
 
 ### After (Prefer)
+
 > This system reduces deployment time by 40% through automated caching and parallel processing.
 
 ### Before (Avoid)
+
 > The bottom line is that success requires a holistic approach that balances people, process, and technology.
 
 ### After (Prefer)
+
 > To ship this feature, we need: (1) backend API changes, (2) frontend component updates, and (3) migration scripts for existing data.
 
 ## Acceptance Checks

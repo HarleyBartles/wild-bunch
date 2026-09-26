@@ -14,14 +14,8 @@ The evaluator returns UTF-8 JSON with stable key and finding order:
 }
 ```
 
-Each finding contains `type`, `pattern_id`, `evidence`, `span`, `rationale`,
-`preserve_when`, `repair`, and `confidence`. `confidence` is always `null`:
-deterministic rule matches do not justify a fabricated probability.
+Each finding contains `type`, `pattern_id`, `evidence`, `span`, `rationale`, `preserve_when`, `repair`, and `confidence`. `confidence` is always `null`: deterministic rule matches do not justify a fabricated probability.
 
-`type` is `observed`, `candidate`, `preserve`, `repair`, or `abstain`.
-`span` contains zero-based `start` and exclusive `end` character offsets.
-`status` is `findings`, `clear`, or `abstained`.
+`type` is `observed`, `candidate`, `preserve`, `repair`, or `abstain`. `span` contains zero-based `start` and exclusive `end` character offsets. `status` is `findings`, `clear`, or `abstained`.
 
-Results are observations about the supplied text and declared task context.
-They are not authorship findings, detector scores, or instructions to evade a
-classifier. The evaluator never edits the input.
+Results are observations about the supplied text and declared task context. They are not authorship findings, detector scores, or instructions to evade a classifier. The evaluator never edits the input.

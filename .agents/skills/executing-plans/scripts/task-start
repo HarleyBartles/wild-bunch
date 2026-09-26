@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Start one Native task: materialize its brief and report the review-range base.
+set -euo pipefail
+
+if [ "$#" -ne 2 ]; then
+  echo "usage: bash task-start PLAN_FILE TASK_NUMBER" >&2
+  exit 2
+fi
+
+plan=$1
+n=$2
+script_dir=$(cd "$(dirname "$0")" && pwd)
+workspace_scripts=$(cd "$script_dir/../../subagent-workspace/scripts" && pwd)
+python_executable=$(bash "$script_dir/resolve-runtime")
+
+out=$("$python_executable" "$workspace_scripts/task_brief.py" --apply "$plan" "$n")
+brief=$(printf '%s\n' "$out" | sed -n 's/^wrote \(.*\): [0-9][0-9]* lines$/\1/p')
+[ -n "$brief" ] || { echo "task_brief.py did not report a path: $out" >&2; exit 1; }
+
+echo "brief: $brief"
+echo "base: $(git rev-parse HEAD)"

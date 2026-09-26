@@ -1,8 +1,6 @@
 ---
 name: linear-issue-shaping
-description: Use when shaping Linear-backed issues, projects, or documents; inspecting
-  Linear state; preparing explicitly requested worker handoffs; or routing pull-request
-  proof after a PR exists.
+description: Use when shaping Linear-backed issues, projects, or documents; inspecting Linear state; preparing explicitly requested worker handoffs; or routing pull-request proof after a PR exists.
 metadata:
   source-id: linear-issue-shaping
   source-path: codex-marketplace/plugins/repo-worker-pack/skills/linear-issue-shaping/SKILL.md
@@ -10,18 +8,14 @@ metadata:
   source-category: first_party
   status: active
   owner: Harley Bartles
-  scope: Linear issue, project, document, worker-packet, and PR-proof shaping without
-    worker dispatch or execution ownership.
+  scope: Linear issue, project, document, worker-packet, and PR-proof shaping without worker dispatch or execution ownership.
   use_when:
-  - 'Linear-backed issue, project, or document shaping is needed: create or update
-    worker-ready Linear issues, inspect Linear comments/attachments/state, prepare
-    paste-ready worker handoffs when explicitly requested, and route GitHub PR proof
-    after a PR exists. Do not launch workers, delegate execution, or assume any execution
-    lane; treat worker-ready as issue-ready only.'
+    - 'Linear-backed issue, project, or document shaping is needed: create or update worker-ready Linear issues, inspect Linear comments/attachments/state, prepare paste-ready worker handoffs when explicitly requested, and route GitHub PR proof after a PR exists. Do not launch workers, delegate execution, or assume any execution lane; treat worker-ready as issue-ready only.'
   do_not_use_when:
-  - another more specific skill owns this task.
+    - another more specific skill owns this task.
 license: MIT
 ---
+
 # Linear Issue Shaping
 
 Use this skill as the GPT-wide control plane for Linear-backed issue, project, and document shaping and Linear event-log handling.
@@ -76,10 +70,7 @@ Approved plans live in the repo under `.agents/plans/`. After a plan merges, pla
 
 If the approved plan is stale but the drift is repairable and stays inside the approved scope, repair the repo-resident plan in the execution branch, keep the route-state block current, and include the repaired plan in the execution PR. If the drift changes scope materially, invalidates the approved direction, or makes execution unsafe, stop for human review.
 
-Keep an approved plan current while it governs implementation and review. When
-the PR completes it, follow the consumer's completed-artifact custody rule:
-promote durable decisions and remove the finished planning artifacts from the
-final tracked tree. A disposable scratch copy is optional and proves nothing.
+Keep an approved plan current while it governs implementation and review. When the PR completes it, follow the consumer's completed-artifact custody rule: promote durable decisions and remove the finished planning artifacts from the final tracked tree. A disposable scratch copy is optional and proves nothing.
 
 Return to this skill after those gates to write or update the Linear issue only when the latest instruction authorizes mutation.
 

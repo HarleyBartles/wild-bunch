@@ -9,32 +9,36 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - the system needs an audit log, temporal queries, or event-driven state reconstruction.
+    - the system needs an audit log, temporal queries, or event-driven state reconstruction.
   do_not_use_when:
-  - a simple relational model is enough or when strong immediate consistency is required.
+    - a simple relational model is enough or when strong immediate consistency is required.
   related_skills:
-  - cqrs
+    - cqrs
 license: MIT
 ---
 
 # Event Sourcing
 
 ## Overview
+
 Event sourcing persists the state of a system as a sequence of immutable events, making the event store the source of truth. Current state is reconstructed by replaying events.
 
 ## When to Use
+
 - Use when an immutable audit trail and temporal querying are required.
 - Use when reconstructing past states or diagnosing why a state changed is valuable.
 - Use when event-driven integrations need a reliable history.
 - Do not use when simple relational queries and strong immediate consistency are sufficient.
 
 ## Core Pattern
+
 1. Record every state change as an append-only event with identity, type, payload, and timestamp.
 2. Organize events into streams keyed by aggregate or entity.
 3. Build projections (read models) by folding events into views; use snapshots to speed replay.
 4. Version events carefully and evolve schemas without breaking historical streams.
 
 ## Common Mistakes
+
 - Modifying or deleting events instead of appending compensating events.
 - Reconstructing state on every read without projections or snapshots.
 - Ignoring concurrency conflicts and idempotency.

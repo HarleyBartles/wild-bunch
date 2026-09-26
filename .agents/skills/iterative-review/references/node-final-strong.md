@@ -1,9 +1,11 @@
 # node-final-strong
 
 ## Purpose
+
 Run one whole-branch `reviewer-strong` pass after all `blocking/important` findings are resolved.
 
 ## Inputs
+
 - Full branch diff
 - `<pr_description>`
 - All lens logs
@@ -13,6 +15,7 @@ Run one whole-branch `reviewer-strong` pass after all `blocking/important` findi
 - `<log_path>`
 
 ## Recipe
+
 1. Validate the dispatch:
    ```bash
    py -3 .agents/skills/iterative-review/scripts/next_node.py \
@@ -58,10 +61,12 @@ Run one whole-branch `reviewer-strong` pass after all `blocking/important` findi
    ```
 
 ## Outputs
+
 - Write `review-log-strong.md`
 - `<scratch_dir>/review-metrics.json` regenerated from `<scratch_dir>/review-state.json` and the recorded logs
 
 ## Next check
+
 ```bash
 py -3 .agents/skills/iterative-review/scripts/next_node.py \
     --state <scratch_dir>/review-state.json \

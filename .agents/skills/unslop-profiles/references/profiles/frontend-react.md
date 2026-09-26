@@ -40,15 +40,19 @@ Do not ban React abstractions. Ban default abstractions that precede evidence. R
 ## Examples
 
 ### Before (Avoid)
+
 > Create a reusable component with hooks for state management and memoization for performance.
 
 ### After (Prefer)
+
 > Create a `UserProfile` component that displays user name and email. State: local component state for loading/error. No memoization needed - component renders once on mount. Accessibility: include `alt` text for avatar, keyboard navigation for edit button.
 
 ### Before (Avoid)
+
 > Use a flexible prop-driven architecture so the component can handle future cases.
 
 ### After (Prefer)
+
 > Create a `Button` component with `variant` (primary/secondary) and `size` (small/medium/large) props. These are the only variants needed for the current design system. Future variants can be added when use cases emerge.
 
 ## Acceptance Checks

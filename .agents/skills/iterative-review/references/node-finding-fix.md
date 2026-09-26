@@ -1,9 +1,11 @@
 # node-finding-fix
 
 ## Purpose
+
 Verify and fix a single `blocking/important` lens finding.
 
 ## Inputs
+
 - `original_finding` with exact text and severity
 - `lens` name (e.g., `reviewer-security`)
 - `lens_checklist` from the originating `reviewer-*.md`
@@ -12,13 +14,14 @@ Verify and fix a single `blocking/important` lens finding.
 - `<pre-fix-sha>` and branch working tree
 
 ## Recipe
+
 1. Use `receiving-code-review` to verify the finding.
 2. Choose the fix path using the decision table below.
 
-| Path | Use when... |
-|---|---|
+| Path                   | Use when...                                                                                                                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `implementer` subagent | The change spans more than one file, is non-trivial logic, touches consumer preflights or tests in a non-obvious way, or the orchestrator is not confident making the change directly. |
-| Inline/orchestrator | The change is one file / one conceptual edit, is docs/markdown/spec text, or the blast radius is minimal and the orchestrator can safely apply it. |
+| Inline/orchestrator    | The change is one file / one conceptual edit, is docs/markdown/spec text, or the blast radius is minimal and the orchestrator can safely apply it.                                     |
 
 3. If `implementer` is chosen:
    - Create `<scratch_dir>/review-log-implementer-brief.md` from `review-log-implementer-brief-template.md`.
@@ -46,6 +49,7 @@ Verify and fix a single `blocking/important` lens finding.
 8. Round cap: the fix round for a finding is `round - discovered_at_round + 1` from `<scratch_dir>/review-state.json`. When that reaches `max_fix_rounds`, escalate to `implementer-strong`; if it still fails at the cap, route to `blocked`.
 
 ## Outputs
+
 - `<scratch_dir>/review-metrics.json` regenerated from `<scratch_dir>/review-state.json` and the recorded logs
 - The `fix_round` semantics are derived from `discovered_at_round` and the current `round` in `<scratch_dir>/review-state.json`; this node does not modify `review-state.json` directly
 - If `implementer` was used:
@@ -57,6 +61,7 @@ Verify and fix a single `blocking/important` lens finding.
   - Updated `scan_findings`
 
 ## Next check
+
 ```bash
 py -3 .agents/skills/iterative-review/scripts/next_node.py \
     --state <scratch_dir>/review-state.json \

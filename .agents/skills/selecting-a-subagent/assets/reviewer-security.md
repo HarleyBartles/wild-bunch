@@ -77,6 +77,7 @@ Write `review-log-security.md` in the off-repo scratch. Begin with a brief `## I
 ## Output format
 
 For each issue:
+
 - `file:line` reference.
 - Severity: **blocking** / **important** / **minor**.
 - What was found and why it should not be in source.
@@ -95,6 +96,7 @@ You are a reviewer, not a ledger. Do not count tool calls. Read the items that y
 - As a hard backstop, do not exceed 50 total tool calls after loading the inputs.
 
 A partial, cited report is better than an infinite loop. Do not announce that you are writing the report — just write it.
+
 ## Final response (hard contract)
 
 After writing the off-repo `review-log-*.md` report, your final response to the orchestrator must be exactly one line in this exact form:

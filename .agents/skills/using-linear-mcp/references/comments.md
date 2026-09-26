@@ -4,10 +4,10 @@ Use this when you want discussion threads, issue comments, or inline comment rea
 
 ## Tools
 
-| Tool | Use when | Required params | Optional params |
-| --- | --- | --- | --- |
-| `list_comments` | Read comments on an issue, project, initiative, document, or milestone. | Exactly one of `issueId`, `projectId`, `initiativeId`, `documentId`, `milestoneId` | `cursor`, `limit`, `orderBy` |
-| `save_comment` | Create a new thread, reply to an existing thread, or update a comment. | `body`, plus exactly one parent for new threads, or `parentId` for replies, or `id` for updates | `documentId`, `initiativeId`, `issueId`, `milestoneId`, `parentId`, `projectId` |
+| Tool            | Use when                                                                | Required params                                                                                 | Optional params                                                                 |
+| --------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `list_comments` | Read comments on an issue, project, initiative, document, or milestone. | Exactly one of `issueId`, `projectId`, `initiativeId`, `documentId`, `milestoneId`              | `cursor`, `limit`, `orderBy`                                                    |
+| `save_comment`  | Create a new thread, reply to an existing thread, or update a comment.  | `body`, plus exactly one parent for new threads, or `parentId` for replies, or `id` for updates | `documentId`, `initiativeId`, `issueId`, `milestoneId`, `parentId`, `projectId` |
 
 ## Thread shape
 

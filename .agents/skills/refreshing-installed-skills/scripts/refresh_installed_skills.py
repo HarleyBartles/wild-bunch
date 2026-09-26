@@ -741,8 +741,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--allow-shared-checkout",
         action="store_true",
-        help="Approve installing/refreshing skills in a shared or git-worktree checkout. "
-        "Only pass this if you intend to mutate this checkout.",
+        help="Acknowledge intentional installation/refresh in the main shared checkout. "
+        "Linked worktrees do not need this flag.",
     )
     parser.add_argument(
         "--no-roll-marketplace-source",
@@ -831,9 +831,21 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
 
-    # Delegate vendor profile deployment to repo-standards and capture whether
-    # any work is needed. In --check mode this already reports drift.
-    deploy_script = ROOT / ".agents" / "skills" / "repo-standards" / "scripts" / "deploy_vendor_profiles.py"
+    # Delegate vendor profile deployment to repo-shape and capture whether any
+    # work is needed. A newly enabled plugin is not installed yet, so bootstrap
+    # from its canonical source on that first refresh.
+    deploy_script = ROOT / ".agents" / "skills" / "repo-shape" / "scripts" / "deploy_vendor_profiles.py"
+    if not deploy_script.is_file():
+        deploy_script = (
+            ROOT
+            / "codex-marketplace"
+            / "plugins"
+            / "agent-operating-model"
+            / "skills"
+            / "repo-shape"
+            / "scripts"
+            / "deploy_vendor_profiles.py"
+        )
     deploy_check = subprocess.run(
         [sys.executable, str(deploy_script), "--check"],
         cwd=ROOT,
@@ -897,7 +909,7 @@ def main(argv: list[str] | None = None) -> int:
     ):
         changes_made = True
 
-    # Vendor subagent profiles are owned by repo-standards. The refresh script
+    # Vendor subagent profiles are owned by repo-shape. The refresh script
     # already called deploy_vendor_profiles.py --check above, so use that result
     # to decide whether the vendor profile surface changed.
     if deploy_check != 0:

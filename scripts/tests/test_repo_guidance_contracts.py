@@ -12,6 +12,17 @@ RUNBOOK_HEADINGS = (
     "## Local commands and paths",
     "## Evidence contract",
     "## Prohibited combinations",
+    "## Playbook routing",
+)
+PLAYBOOK_HEADINGS = (
+    "## When",
+    "## Required skills",
+    "## Composition",
+    "## Doctrine and contracts",
+    "## Local commands and paths",
+    "## Evidence contract",
+    "## Prohibited combinations",
+    "## Runbook routing",
 )
 
 
@@ -55,6 +66,34 @@ class RepoGuidanceContractsTests(unittest.TestCase):
             )
             self.assertRegex(evidence, r"(?m)^- \[ \] ", path.relative_to(REPO_ROOT))
 
+    def test_authored_playbooks_use_the_composition_manifest(self) -> None:
+        playbooks = sorted((REPO_ROOT / ".agents" / "playbooks").glob("*.md"))
+        authored = [path for path in playbooks if path.name != "INDEX.md"]
+
+        self.assertTrue(authored)
+        for path in authored:
+            text = path.read_text(encoding="utf-8")
+            headings = re.findall(r"^## .+$", text, flags=re.MULTILINE)
+            self.assertEqual(
+                list(PLAYBOOK_HEADINGS), headings, path.relative_to(REPO_ROOT)
+            )
+
+            required = section(text, "## Required skills")
+            composition = section(text, "## Composition")
+            evidence = section(text, "## Evidence contract")
+            self.assertRegex(required, r"(?m)^- `/[a-z0-9-]+`", path.relative_to(REPO_ROOT))
+            declared_skills = set(re.findall(r"`/([a-z0-9-]+)`", required))
+            composed_skills = set(re.findall(r"`/([a-z0-9-]+)`", composition))
+            self.assertEqual(
+                set(), composed_skills - declared_skills, path.relative_to(REPO_ROOT)
+            )
+            self.assertGreaterEqual(
+                len(re.findall(r"(?m)^\d+\. ", composition)),
+                2,
+                path.relative_to(REPO_ROOT),
+            )
+            self.assertRegex(evidence, r"(?m)^- \[ \] ", path.relative_to(REPO_ROOT))
+
     def test_unslop_profiles_live_under_contracts(self) -> None:
         self.assertEqual([], list((REPO_ROOT / ".agents" / "unslop").rglob("*.md")))
         self.assertEqual(
@@ -78,18 +117,14 @@ class RepoGuidanceContractsTests(unittest.TestCase):
             ).is_file()
         )
 
-    def test_completed_artifacts_doctrine_matches_the_standard_template(self) -> None:
+    def test_completed_artifacts_doctrine_declares_two_slice_custody(self) -> None:
         doctrine = REPO_ROOT / ".agents" / "doctrine" / "completed-artifacts.md"
-        template = (
-            REPO_ROOT
-            / ".agents"
-            / "skills"
-            / "repo-standards"
-            / "templates"
-            / "completed-artifacts.md"
-        )
+        text = doctrine.read_text(encoding="utf-8")
 
-        self.assertEqual(template.read_bytes(), doctrine.read_bytes())
+        self.assertIn("completed-awaiting-retirement", text)
+        self.assertIn("successor slice", text)
+        self.assertIn("explicit recorded decision", text)
+        self.assertIn("`completing-planning-artifacts` owns", text)
 
 
 if __name__ == "__main__":

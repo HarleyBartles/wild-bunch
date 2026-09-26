@@ -10,14 +10,14 @@ metadata:
   owner: Harley Bartles
   scope: Install or refresh .agents/skills/ from the plugin source.
   use_when:
-  - creating a new worktree.
-  - the marketplace-source submodule has been updated.
-  - .agents/skills/ appears stale.
+    - creating a new worktree.
+    - the marketplace-source submodule has been updated.
+    - .agents/skills/ appears stale.
   do_not_use_when:
-  - only the INDEX.md mesh is stale without any skill changes; use generating-agent-mesh instead.
+    - only the INDEX.md mesh is stale without any skill changes; use generating-agent-mesh instead.
   related_skills:
-  - generating-agent-mesh
-  - using-git-worktrees
+    - generating-agent-mesh
+    - using-git-worktrees
 license: MIT
 ---
 
@@ -38,7 +38,7 @@ py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skill
 py -3 .agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py --check
 ```
 
-This skill runs the bundled `refresh_installed_skills.py` core, which installs/refreshes `.agents/skills/` from the plugins declared in `.agents/plugins/marketplace.json`. When a `marketplace-source` submodule is present, `--apply` fetches it and resets it to `origin/main` before syncing, and `--check` reports if the submodule is behind its remote. It defaults to `--check` mode; pass `--apply` to write files. When running from a linked worktree, add `--apply --allow-shared-checkout`. Pass `--no-roll-marketplace-source` to skip the submodule roll.
+This skill runs the bundled `refresh_installed_skills.py` core, which installs/refreshes `.agents/skills/` from the plugins declared in `.agents/plugins/marketplace.json`. When a `marketplace-source` submodule is present, `--apply` fetches it and resets it to `origin/main` before syncing, and `--check` reports if the submodule is behind its remote. It defaults to `--check` mode; pass `--apply` to write files in a linked worktree. `--allow-shared-checkout` is required only when intentionally applying in the main shared checkout, regardless of its current branch; it is an explicit acknowledgment of that location, not a worktree flag. Pass `--no-roll-marketplace-source` to skip the submodule roll.
 
 ## Plugin source types
 
@@ -80,7 +80,7 @@ It also records:
 
 ## Vendor subagent profiles
 
-For each installed plugin, the core looks for `assets/profiles/*.md` inside the plugin root and delegates the actual copy and orphan removal to `repo-standards/scripts/deploy_vendor_profiles.py`. `refreshing-installed-skills` records the `vendorProfiles` provenance array (which plugin owns which profiles, source path, and file names), while `repo-standards` owns the one-shot deployment.
+For each installed plugin, the core looks for `assets/profiles/*.md` inside the plugin root and delegates the actual copy and orphan removal to `repo-shape/scripts/deploy_vendor_profiles.py`. `refreshing-installed-skills` records the `vendorProfiles` provenance array (which plugin owns which profiles, source path, and file names), while `repo-shape` owns the one-shot deployment.
 
 Profiles are copied into the consumer's agent search path at `.agents/agents/<profile>.md` only when that file does not already exist. Existing files are never overwritten, so a repo that already has `reviewer.md`, `implementer.md`, etc. keeps its own copy. Orphan vendor profiles are removed in the same step.
 

@@ -40,7 +40,7 @@ def _run(cmd: list[str], ctx: Ctx) -> None:
 def _repo_standards_cmd(mode: str, allow_shared: bool) -> list[str]:
     cmd = [
         sys.executable,
-        ".agents/skills/repo-standards/scripts/repo_standards.py",
+        ".agents/skills/repo-shape/scripts/repo_standards.py",
         f"--{mode}",
         "--yes",
     ]
@@ -104,7 +104,7 @@ def _skill_scripts_check(ctx: Ctx) -> None:
     _run(
         [
             sys.executable,
-            ".agents/skills/repo-standards/scripts/validate_skill_scripts.py",
+            ".agents/skills/repo-shape/scripts/validate_skill_scripts.py",
             "--check",
         ],
         ctx,

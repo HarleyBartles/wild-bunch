@@ -1,7 +1,6 @@
 ---
 name: dispatching-parallel-agents
-description: Use when facing 2+ independent tasks that can be worked on without shared
-  state or sequential dependencies.
+description: Use when facing 2+ independent tasks that can be worked on without shared state or sequential dependencies.
 metadata:
   source-id: dispatching-parallel-agents
   source-path: codex-marketplace/plugins/superpowers-plus/skills/dispatching-parallel-agents/SKILL.md
@@ -10,24 +9,24 @@ metadata:
   status: active
   owner: Harley Bartles
   use_when:
-  - facing 2+ independent tasks or failures that can be worked on without
-    shared state.
-  - multiple test files fail with different root causes.
-  - each problem can be understood without context from the others.
+    - facing 2+ independent tasks or failures that can be worked on without shared state.
+    - multiple test files fail with different root causes.
+    - each problem can be understood without context from the others.
   do_not_use_when:
-  - failures are related or share state.
-  - a single agent needs full system context.
-  - tasks have sequential dependencies.
+    - failures are related or share state.
+    - a single agent needs full system context.
+    - tasks have sequential dependencies.
   related_skills:
-  - systematic-debugging
-  - executing-plans
-  - subagent-driven-development
-  - test-driven-development
+    - systematic-debugging
+    - executing-plans
+    - subagent-driven-development
+    - test-driven-development
 license: MIT
 ---
+
 ## Provenance
 
-This marketplace-maintained derivative is based on `obra/superpowers` v6.3.0 commit `b36e0829c6d0140e93cfef2ca599b1b07d4a7797` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
+This marketplace-maintained derivative is based on `obra/superpowers` v6.4.1 commit `5bf4e78011075bcfc0dc295f0724994cd123ee71` under the MIT License. Upstream source is not vendored; this directory contains the maintained Superpowers+ implementation.
 
 # Dispatching Parallel Agents
 
@@ -64,12 +63,14 @@ digraph when_to_use {
 ```
 
 **Use when:**
+
 - 3+ test files failing with different root causes
 - Multiple subsystems broken independently
 - Each problem can be understood without context from others
 - No shared state between investigations
 
 **Don't use when:**
+
 - Failures are related (fix one might fix others)
 - Need to understand full system state
 - Agents would interfere with each other
@@ -79,6 +80,7 @@ digraph when_to_use {
 ### 1. Identify Independent Domains
 
 Group failures by what's broken:
+
 - File A tests: Tool approval flow
 - File B tests: Batch completion behavior
 - File C tests: Abort functionality
@@ -88,6 +90,7 @@ Each domain is independent - fixing tool approval doesn't affect abort tests.
 ### 2. Create Focused Agent Tasks
 
 Each agent gets:
+
 - **Specific scope:** One test file or subsystem
 - **Clear goal:** Make these tests pass
 - **Constraints:** Don't change other code
@@ -109,6 +112,7 @@ Multiple dispatch calls in one response = parallel execution. One per response =
 ### 4. Review and Integrate
 
 When agents return:
+
 - Read each summary
 - Verify fixes don't conflict
 - Run full test suite
@@ -117,6 +121,7 @@ When agents return:
 ## Agent Prompt Structure
 
 Good agent prompts are:
+
 1. **Focused** - One clear problem domain
 2. **Self-contained** - All context needed to understand the problem
 3. **Specific about output** - What should the agent return?
@@ -144,30 +149,24 @@ Return: Summary of what you found and what you fixed.
 
 ## Common Mistakes
 
-**❌ Too broad:** "Fix all the tests" - agent gets lost
-**✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
+**❌ Too broad:** "Fix all the tests" - agent gets lost **✅ Specific:** "Fix agent-tool-abort.test.ts" - focused scope
 
-**❌ No context:** "Fix the race condition" - agent doesn't know where
-**✅ Context:** Paste the error messages and test names
+**❌ No context:** "Fix the race condition" - agent doesn't know where **✅ Context:** Paste the error messages and test names
 
-**❌ No constraints:** Agent might refactor everything
-**✅ Constraints:** "Do NOT change production code" or "Fix tests only"
+**❌ No constraints:** Agent might refactor everything **✅ Constraints:** "Do NOT change production code" or "Fix tests only"
 
-**❌ Vague output:** "Fix it" - you don't know what changed
-**✅ Specific:** "Return summary of root cause and changes"
+**❌ Vague output:** "Fix it" - you don't know what changed **✅ Specific:** "Return summary of root cause and changes"
 
 ## When NOT to Use
 
-**Related failures:** Fixing one might fix others - investigate together first
-**Need full context:** Understanding requires seeing entire system
-**Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
+**Related failures:** Fixing one might fix others - investigate together first **Need full context:** Understanding requires seeing entire system **Exploratory debugging:** You don't know what's broken yet **Shared state:** Agents would interfere (editing same files, using same resources)
 
 ## Real Example from Session
 
 **Scenario:** 6 test failures across 3 files after major refactoring
 
 **Failures:**
+
 - agent-tool-abort.test.ts: 3 failures (timing issues)
 - batch-completion-behavior.test.ts: 2 failures (tools not executing)
 - tool-approval-race-conditions.test.ts: 1 failure (execution count = 0)
@@ -175,6 +174,7 @@ Return: Summary of what you found and what you fixed.
 **Decision:** Independent domains - abort logic separate from batch completion separate from race conditions
 
 **Dispatch:**
+
 ```
 Agent 1 → Fix agent-tool-abort.test.ts
 Agent 2 → Fix batch-completion-behavior.test.ts
@@ -182,6 +182,7 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 ```
 
 **Results:**
+
 - Agent 1: Replaced timeouts with event-based waiting
 - Agent 2: Fixed event structure bug (threadId in wrong place)
 - Agent 3: Added wait for async tool execution to complete
@@ -191,6 +192,7 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 ## Verification
 
 After agents return:
+
 1. **Review each summary** - Understand what changed
 2. **Check for conflicts** - Did agents edit same code?
 3. **Run full suite** - Verify all fixes work together

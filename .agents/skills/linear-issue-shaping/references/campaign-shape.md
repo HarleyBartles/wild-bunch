@@ -10,13 +10,13 @@ Do not encode "a worker can do anything." Workers remain bounded by issue scope,
 
 Classify before shaping so the issue gets the right size and return contract:
 
-| Issue type | Shape | Default PR posture | Return evidence |
-|---|---|---|---|
-| small worker-ready issue | one bounded Linear issue, compact DOD | one PR | standard worker return |
-| campaign issue | one durable Linear parent issue, Linear documents as lane/subtask packets where a chunky campaign needs multiple seams | one PR unless a split condition triggers | stronger return evidence (see below) |
-| planning/tracker issue | parent/tracker or planning-only issue, no execution yet | no PR expected until children are shaped | planning note, no GREEN |
-| GPT-native skillwork | GPT-native skill author/edit/package work | one PR only when the editable source is repo-backed and the issue explicitly targets that repo | skill-source return evidence |
-| non-repo/manual work | UI, connector, account, research, or manual action | no PR | observable completion note |
+| Issue type               | Shape                                                                                                                  | Default PR posture                                                                             | Return evidence                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------ |
+| small worker-ready issue | one bounded Linear issue, compact DOD                                                                                  | one PR                                                                                         | standard worker return               |
+| campaign issue           | one durable Linear parent issue, Linear documents as lane/subtask packets where a chunky campaign needs multiple seams | one PR unless a split condition triggers                                                       | stronger return evidence (see below) |
+| planning/tracker issue   | parent/tracker or planning-only issue, no execution yet                                                                | no PR expected until children are shaped                                                       | planning note, no GREEN              |
+| GPT-native skillwork     | GPT-native skill author/edit/package work                                                                              | one PR only when the editable source is repo-backed and the issue explicitly targets that repo | skill-source return evidence         |
+| non-repo/manual work     | UI, connector, account, research, or manual action                                                                     | no PR                                                                                          | observable completion note           |
 
 Do not route GPT-native skillwork to a worker merely because it touches skill text. Route it to a worker only when the editable source is repo-backed and the issue explicitly targets that repo.
 

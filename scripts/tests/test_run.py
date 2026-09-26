@@ -74,3 +74,13 @@ def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
 
 def test_ci_check_validates_the_installed_skill_projection() -> None:
     assert "installed-skills" in [name for name, _check, _fix in run.CI_CHECKS]
+
+
+def test_operating_model_commands_resolve_from_repo_shape_owner(monkeypatch) -> None:
+    repo_standards = run._repo_standards_cmd("check", False)
+    assert repo_standards[1] == ".agents/skills/repo-shape/scripts/repo_standards.py"
+
+    captured: list[str] = []
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: captured.extend(command))
+    run._skill_scripts_check(run.Ctx("check", False))
+    assert ".agents/skills/repo-shape/scripts/validate_skill_scripts.py" in captured
