@@ -11,9 +11,9 @@ Mutation commands (``init --apply``, ``dispatch``, ``enumerate``,
 ``complete``, ``block``, ``resume``, and the ``freeze``/``refresh``
 aliases) run only on the Devin Desktop runtime; on any other harness they
 report ``unsupported-runtime`` and exit 1 without creating or mutating
-state. ``status``, ``next``, ``validate``, and ``doctor`` are read-only and
-run on any runtime; ``doctor`` exits 1 with ``verdict: inert`` off Devin
-Desktop.
+state. ``status``, ``next``, ``validate``, ``package``, ``plan-coverage``,
+and ``doctor`` are read-only and run on any runtime; ``doctor`` exits 1 with
+``verdict: inert`` off Devin Desktop.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from review_core import acquisition, engine, model, policy, store, witness_log  # noqa: E402
+from review_core import acquisition, context_package, engine, model, policy, store, witness_log  # noqa: E402
 
 
 USAGE_ERRORS = 2
@@ -543,6 +543,47 @@ def _cmd_complete(args, json_mode: bool) -> int:
     return 0 if result.decision.allowed else 1
 
 
+def _cmd_package(args, json_mode: bool) -> int:
+    bad = _require_v2_state(Path(args.state))
+    if bad:
+        return bad
+    state = store.load_state(Path(args.state))
+    scratch = Path(state["scratch_dir"])
+    repo = Path(args.repo).resolve()
+    acquire_dir = scratch / "acquire" / "latest"
+
+    def build(dest: Path) -> dict:
+        return context_package.build_context_package(
+            state=state,
+            action=args.action,
+            role=args.role,
+            assignment_ids=tuple(args.assignment_id or ()),
+            package_dir=dest,
+            acquire_dir=acquire_dir,
+            run_git=functools.partial(_run_git, cwd=repo),
+            evidence_resolver=functools.partial(context_package.evidence_bytes_for_state, state),
+            policies=_sources().policies,
+        )
+
+    if args.out:
+        target = Path(args.out)
+        fragment = build(target)
+    else:
+        fragment, target = context_package.materialize_under(scratch_dir=scratch, action=args.action, build=build)
+    return _emit({**fragment, "package_dir": str(target)}, json_mode)
+
+
+def _cmd_plan_coverage(args, json_mode: bool) -> int:
+    bad = _require_v2_state(Path(args.state))
+    if bad:
+        return bad
+    state = store.load_state(Path(args.state))
+    payload = policy.plan_coverage_payload(state)
+    if args.out:
+        Path(args.out).write_bytes(model.canonical_json(payload) + b"\n")
+    return _emit(payload, json_mode)
+
+
 def _cmd_block(args, json_mode: bool) -> int:
     gate = _runtime_gate()
     if gate:
@@ -696,6 +737,31 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--evidence-file", action="append", default=[])
     p.add_argument("--apply", action="store_true")
 
+    p = sub.add_parser(
+        "package",
+        help=(
+            "build the exact-snapshot reviewer context package for an "
+            "action/role/assignment set under <scratch>/packages/ and emit "
+            "the dispatch payload fragment (read-only on state)"
+        ),
+    )
+    p.add_argument("--state", required=True)
+    p.add_argument("--repo", required=True)
+    p.add_argument("--action", required=True)
+    p.add_argument("--role", required=True)
+    p.add_argument("--assignment-id", action="append", default=[])
+    p.add_argument("--out")
+
+    p = sub.add_parser(
+        "plan-coverage",
+        help=(
+            "emit the deterministic plan-coverage obligations payload from "
+            "the current impact-map union (read-only on state)"
+        ),
+    )
+    p.add_argument("--state", required=True)
+    p.add_argument("--out")
+
     p = sub.add_parser("block", help="open a blocker on the review")
     p.add_argument("--state", required=True)
     p.add_argument("--class", dest="blocker_class", required=True)
@@ -734,6 +800,8 @@ _HANDLERS = {
     "freeze": _cmd_freeze,
     "refresh": _cmd_refresh,
     "complete": _cmd_complete,
+    "package": _cmd_package,
+    "plan-coverage": _cmd_plan_coverage,
     "block": _cmd_block,
     "resume": _cmd_resume,
     "validate": _cmd_validate,
@@ -755,6 +823,8 @@ def main(argv=None) -> int:
         return handler(args, json_mode)
     except model.StateValidationError as exc:
         return _fail(f"{exc.code}: {exc}")
+    except context_package.ContextPackageError as exc:
+        return _fail(str(exc))
     except acquisition.AcquisitionError as exc:
         return _fail(f"{exc.blocker_class}: {exc}")
     except witness_log.WitnessLogError as exc:

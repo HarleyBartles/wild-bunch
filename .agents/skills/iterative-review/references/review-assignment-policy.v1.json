@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "policy_id": "review-core-review-assignment",
+  "version": "1",
+  "role_floors": {
+    "impact-mapper-semantic": {"tier": "strong", "reasoning": "high"},
+    "impact-mapper-contract": {"tier": "strong", "reasoning": "high"},
+    "scope-challenger": {"tier": "final-strong", "reasoning": "final-strong"},
+    "obligation-reviewer": {"tier": "fast", "reasoning": "low"},
+    "exemption-challenger": {"tier": "final-strong", "reasoning": "final-strong"},
+    "finding-adjudicator": {"tier": "strong", "reasoning": "high"},
+    "fix-reviewer": {"tier": "focused", "reasoning": "standard"},
+    "review-repair-verifier": {"tier": "strong", "reasoning": "high"},
+    "blind-final": {"tier": "final-strong", "reasoning": "final-strong"},
+    "closure-auditor": {"tier": "final-strong", "reasoning": "final-strong"}
+  },
+  "obligation_reviewer_composition": "max-over-assignments",
+  "independence": {
+    "impact-mapper-semantic": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self", "impact-mapper-contract"],
+      "distinct_role_contract_from": ["impact-mapper-contract"]
+    },
+    "impact-mapper-contract": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self", "impact-mapper-semantic"],
+      "distinct_role_contract_from": ["impact-mapper-semantic"]
+    },
+    "scope-challenger": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self", "impact-mapper-semantic", "impact-mapper-contract"],
+      "distinct_role_contract_from": ["impact-mapper-semantic", "impact-mapper-contract"]
+    },
+    "obligation-reviewer": {
+      "context_mode": "fresh",
+      "distinct_execution_from": [],
+      "distinct_role_contract_from": []
+    },
+    "exemption-challenger": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self", "obligation-reviewer"],
+      "distinct_role_contract_from": ["obligation-reviewer"]
+    },
+    "finding-adjudicator": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self", "source-role"],
+      "distinct_role_contract_from": ["source-role"]
+    },
+    "fix-reviewer": {
+      "context_mode": "fresh",
+      "distinct_execution_from": [],
+      "distinct_role_contract_from": []
+    },
+    "review-repair-verifier": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self", "source-role"],
+      "distinct_role_contract_from": ["source-role"]
+    },
+    "blind-final": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self"],
+      "distinct_role_contract_from": []
+    },
+    "closure-auditor": {
+      "context_mode": "fresh",
+      "distinct_execution_from": ["self"],
+      "distinct_role_contract_from": []
+    }
+  },
+  "finding_adjudicator_composition": "max-source-and-linked",
+  "repair_verifier_composition": "max-source-target-or-final-strong",
+  "deep_cut_target_kinds": ["exemption-review", "blind-final", "closure-audit", "hosted-check"],
+  "deep_cut_roles": ["exemption-challenger", "blind-final", "closure-auditor"]
+}

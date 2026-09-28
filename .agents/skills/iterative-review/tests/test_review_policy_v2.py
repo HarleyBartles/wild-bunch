@@ -381,11 +381,14 @@ EXPECTED_HAPPY_PATH = [
     "map-impact-contract",
     "plan-coverage",
     "challenge-coverage",
-    "run-exemption-challenge",
     "run-preflight",
     "run-fast-review",
     "run-focused-review",
     "run-strong-review",
+    # The n/a-bound high-risk obligation reviews in its own dispatch so an
+    # exemption-review repair cut leaves the covered obligations intact.
+    "run-strong-review",
+    "run-exemption-challenge",
     "run-final-review",
     "run-closure-audit",
     "mark-ready-for-ci",
@@ -418,11 +421,14 @@ def test_complete_action_false_positive_path(tmp_path):
     actions = [s[0] for s in steps]
     assert (
         actions
-        == EXPECTED_HAPPY_PATH[:10]
+        == EXPECTED_HAPPY_PATH[:9]
         + [
             "adjudicate-findings",
             "close-false-positive",
         ]
+        # The finding path batches all strong obligations into one dispatch,
+        # so it resumes at the exemption gate (index 10), not the second
+        # clean-path strong review.
         + EXPECTED_HAPPY_PATH[10:]
     )
     assert state["green_seal"] is not None
@@ -497,7 +503,9 @@ def test_complete_action_review_repair_path(tmp_path):
     state, bundle, registry, steps = walk_review_repair_path(tmp_path)
     actions = [s[0] for s in steps]
     repair_at = actions.index("enter-review-repair")
-    assert actions[repair_at + 1] == "run-focused-review"
+    # The deferred exemption challenge runs first, then the cut gate re-proves.
+    assert actions[repair_at + 1] == "run-exemption-challenge"
+    assert actions[repair_at + 2] == "run-focused-review"
     assert "verify-review-repair" in actions
     assert actions.index("verify-review-repair") > actions.index("run-focused-review", repair_at)
     assert "close-review-repaired" in actions
@@ -860,14 +868,14 @@ def test_exemption_applicable_returns_to_coverage(tmp_path):
     w = _Walk(tmp_path)
     w.freeze()
     w.ascent_to_exemption()
+    w.review_ascent()
     oid = w.exemption("applicable")
     o = w.state["obligations"][oid]
     assert o["status"] == "pending"
+    # The obligation is pending and still short one strong profile; its
+    # earliest incomplete predicate is the strong review tier.
     decision = policy.next_action(w.state, policies=w.policies)
-    assert decision.action == "challenge-coverage"
-    w.challenge(na=False)
-    w.ascent_after_exemption()
-    # high-risk covered obligation: second distinct profile contract
+    assert decision.action == "run-strong-review"
     w.review(
         "run-strong-review",
         role="obligation-reviewer",
@@ -875,6 +883,7 @@ def test_exemption_applicable_returns_to_coverage(tmp_path):
         tier="strong",
         reasoning="high",
         assignments=[oid],
+        outcomes={oid: "covered"},
     )
     w.remote()
     obs, now = make_remote_observation(w.state)
@@ -887,6 +896,7 @@ def test_exemption_incomplete_blocks_then_resumes(tmp_path):
     w = _Walk(tmp_path)
     w.freeze()
     w.ascent_to_exemption()
+    w.review_ascent()
     w.exemption("incomplete")
     assert w.state["status"] == "blocked"
     actives = [b for b in w.state["blockers"].values() if b["active"]]
@@ -905,7 +915,6 @@ def test_exemption_incomplete_blocks_then_resumes(tmp_path):
     assert not any(b["active"] for b in w.state["blockers"].values())
     # The obligation is still not-applicable; the exemption re-challenges.
     w.exemption("not-applicable-confirmed")
-    w.ascent_after_exemption()
     w.remote()
     obs, now = make_remote_observation(w.state)
     assert policy.evaluate_green(w.state, obs, policies=w.policies, now=now).allowed
@@ -1085,13 +1094,12 @@ def test_repair_impact_map_row(tmp_path, target_kind, action, role, profile, cat
     )
     w.plan(surfaces=["src/foo.py", "src/foo2.py"])
     w.challenge(
-        na=True,
         surface="src/foo.py",
         surfaces=["src/foo.py", "src/foo2.py"],
         hazards=["h-repaired", kept_hazard],
     )
+    w.review_ascent()
     w.exemption()
-    w.ascent_after_exemption()
     _verify_close_repair(w, f)
     w.remote()
     obs, now = make_remote_observation(w.state)
@@ -1112,9 +1120,9 @@ def test_repair_coverage_row(tmp_path, target_kind):
     # Replacement obligations need fresh subjects: an extra surface keeps
     # coverage over the map union while deriving new ids.
     w.plan(surfaces=["src/foo.py", "src/foo2.py"])
-    w.challenge(na=True, surfaces=["src/foo.py", "src/foo2.py"])
+    w.challenge(surfaces=["src/foo.py", "src/foo2.py"])
+    w.review_ascent()
     w.exemption()
-    w.ascent_after_exemption()
     _verify_close_repair(w, f)
     w.remote()
     obs, now = make_remote_observation(w.state)
@@ -1127,7 +1135,10 @@ def test_repair_exemption_review_row(tmp_path):
     affected category and the exemption re-challenges."""
     w = _Walk(tmp_path)
     w.freeze()
-    w.ascent(report_finding=True)
+    # A clean ascent runs the exemption; the repair finding is then reported
+    # at blind-final so an exemption attestation exists to cut.
+    w.ascent()
+    w.final(report=True)
     f = _repair_finding(w)
     ex_att = _role_attestation(w.state, "exemption-challenger")
     _enter_repair(w, f, target_kind="exemption-review", target_ids=[ex_att])
@@ -1135,13 +1146,23 @@ def test_repair_exemption_review_row(tmp_path):
     # map union, so coverage re-challenges that category alone; unrelated
     # current obligations (and the tier reviews bound to them) stay intact.
     w.challenge(
-        na=True,
         categories=["security-privacy"],
         surfaces=["src/foo.py", "src/foo2.py"],
     )
+    # The fresh high-risk obligation is pending; a strong review marks it
+    # not-applicable before the exemption re-challenges.
+    w.review_ascent()
     w.exemption()
+    # The downstream cut reached the reporting blind-final attestation;
+    # final and closure re-prove before the repair verifies.
+    w.final()
+    w.closure()
     _verify_close_repair(w, f)
-    w.remote()
+    # remote() would re-run final; the remote gates run individually here.
+    w.ready()
+    w.transition()
+    w.remote_ci()
+    w.seal()
     obs, now = make_remote_observation(w.state)
     assert policy.evaluate_green(w.state, obs, policies=w.policies, now=now).allowed
 
@@ -1167,6 +1188,9 @@ def test_repair_finding_adjudication_row(tmp_path):
             ]
         },
     )
+    # The high-risk not-applicable mark was deferred while the finding was
+    # open; the exemption challenge confirms it before the final gates.
+    w.exemption()
     # A second finding reported at blind-final drives the repair.
     w.final(report=True)
     f2 = w.reported_finding
@@ -1350,10 +1374,11 @@ def test_repair_local_check_row(tmp_path):
     f = _repair_finding(w)
     pre = next(c["check_id"] for c in w.state["checks"].values() if c["kind"] == "preflight")
     _enter_repair(w, f, target_kind="local-check", target_ids=[pre])
-    # The challenger attestation was cut; coverage re-proves first.
-    w.challenge(na=True)
+    # Every review attestation was cut; coverage re-proves first, then the
+    # tier reviews, then the exemption.
+    w.challenge()
+    w.review_ascent()
     w.exemption()
-    w.ascent_after_exemption()
     _verify_close_repair(w, f)
     w.remote()
     obs, now = make_remote_observation(w.state)

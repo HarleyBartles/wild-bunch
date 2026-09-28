@@ -168,7 +168,7 @@ git push -u origin <feature-branch>
 
 Then create the pull/merge request against <base-branch> with the forge's tooling — its CLI if one is available, or the creation URL most forges print when you push — following the repo's PR template and conventions if present, and report the URL to your human partner.
 
-Before opening the PR or flipping it out of draft, consult `.agents/runbooks/pr.md` `## Draft PR policy` so the PR opens as draft and only flips to ready once the preflight passes.
+Before opening a PR or changing its draft state, follow repository-declared PR workflow guidance when it exists, including any local draft-to-ready transition. If no such guidance exists, follow this skill's portable publication guidance.
 
 Keep the worktree — your human partner iterates on PR feedback there.
 

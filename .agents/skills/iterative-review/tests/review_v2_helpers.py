@@ -22,6 +22,7 @@ sys.path.insert(0, str(TESTS_DIR.parent / "scripts"))
 from review_core import acquisition as acq  # noqa: E402
 from review_core import model  # noqa: E402
 from review_core import policy  # noqa: E402
+from review_core import report as report_mod  # noqa: E402
 
 
 def make_empty_v2_state(tmp_path: Path, **overrides: object) -> dict:
@@ -1621,6 +1622,79 @@ def _attestation_id(state, att: dict) -> str:
     )
 
 
+def _result_for_role(role, aid, *, outcome, evidence_id, verified_obligation_ids=()):
+    """One assignment_results claim entry for a role-dispatched review."""
+    if role == "obligation-reviewer":
+        result = {"kind": "obligation", "outcome": outcome, "evidence_ids": [evidence_id]}
+    elif role == "exemption-challenger":
+        result = {
+            "kind": "exemption-challenge",
+            "outcome": outcome,
+            "hypothesis_assignment_ids": [],
+            "evidence_ids": [evidence_id],
+        }
+    elif role == "fix-reviewer":
+        result = {
+            "kind": "fix-review",
+            "outcome": outcome,
+            "verified_obligation_ids": sorted(verified_obligation_ids),
+            "evidence_ids": [evidence_id],
+        }
+    elif role == "blind-final":
+        result = {"kind": "blind-final", "outcome": outcome, "evidence_ids": [evidence_id]}
+    elif role == "closure-auditor":
+        result = {"kind": "closure-audit", "outcome": outcome, "evidence_ids": [evidence_id]}
+    else:
+        return None
+    return {"assignment_id": aid, **result}
+
+
+def _attach_report_claims(
+    state,
+    att: dict,
+    *,
+    role: str,
+    outcomes=None,
+    exemption_outcome=None,
+    verified_obligation_ids=(),
+    structured_output=None,
+) -> dict:
+    """Attach the report-derived claims the kernel pops at install and rewrite
+    the verdict to the report-derived value. ``outcomes`` maps an assignment
+    (obligation) id to its typed outcome; ``structured_output`` carries the
+    mapper/challenger product binding."""
+    att = dict(att)
+    results = []
+    d = state["dispatches"][att["dispatch_id"]]
+    for aid in sorted(d["assignment_ids"]):
+        if role == "exemption-challenger":
+            outcome = exemption_outcome or "not-applicable-confirmed"
+        elif role == "fix-reviewer":
+            outcome = "verified"
+        else:
+            outcome = (outcomes or {}).get(aid, "covered")
+        r = _result_for_role(
+            role,
+            aid,
+            outcome=outcome,
+            evidence_id=att["evidence_id"],
+            verified_obligation_ids=verified_obligation_ids,
+        )
+        if r is not None:
+            results.append(r)
+    att["assignment_results"] = results
+    att["structured_output"] = structured_output if structured_output is not None else {"kind": "assignment-results"}
+    if role == "exemption-challenger" and exemption_outcome is not None:
+        att["exemption_outcome"] = exemption_outcome
+    pseudo = {
+        "assignments": [{"result": {k: v for k, v in e.items() if k != "assignment_id"}} for e in results],
+        "findings": att["finding_ids"],
+        "uncertainties": att["uncertainties"],
+    }
+    att["verdict"] = report_mod.derive_verdict(pseudo)
+    return att
+
+
 class _Walk:
     """Drive a live v2 state through the real ingestion + complete_action
     surface, asserting lawful ordering and one-history-event semantics."""
@@ -1940,12 +2014,18 @@ class _Walk:
         plural=True,
         exemption_outcome=None,
         report=False,
+        outcomes=None,
+        verified_obligation_ids=(),
+        structured_output=None,
+        report_oid=None,
     ) -> dict:
         """Dispatch -> launch -> complete -> run the review action.
 
         With report=True the review reports a fresh finding sourced to its own
         attestation (verdict findings); the finding is stashed on
-        self.reported_finding."""
+        self.reported_finding. ``outcomes`` maps an assigned obligation id to
+        its typed report outcome (default covered); ``report_oid`` pins the
+        obligation the reported finding attaches to."""
         serial, did = self._register(
             role=role,
             profile=profile,
@@ -1959,19 +2039,41 @@ class _Walk:
         att = self._attestation(
             did,
             serial=serial,
-            verdict="findings" if report else verdict,
+            verdict=verdict,
             finding_ids=finding_ids,
             audit=audit,
         )
         findings = list(findings)
+        finding_oid = report_oid
+        if report and finding_oid is None and role == "obligation-reviewer":
+            # The finding attaches to one of this dispatch's obligations; its
+            # outcome stays as declared (the finding is adjudicated
+            # separately, not via the obligation outcome).
+            finding_oid = next(
+                (
+                    aid
+                    for aid in sorted(self.state["dispatches"][did]["assignment_ids"])
+                    if aid in self.state["obligations"]
+                ),
+                None,
+            )
+        att = _attach_report_claims(
+            self.state,
+            att,
+            role=role,
+            outcomes=outcomes,
+            exemption_outcome=exemption_outcome,
+            verified_obligation_ids=verified_obligation_ids,
+            structured_output=structured_output,
+        )
         if report:
+            # The report carries a finding, so the lawful verdict is findings;
+            # the attestation id derives from it and the finding binds it.
+            att["verdict"] = "findings"
             att_id = _attestation_id(self.state, att)
-            finding = _finding_at_strong(self, source_id=att_id)
+            finding = _finding_at_strong(self, source_id=att_id, oid=finding_oid)
             findings.append(finding)
             self.reported_finding = finding
-        if exemption_outcome is not None:
-            att = dict(att)
-            att["exemption_outcome"] = exemption_outcome
         if plural:
             self.run(action, {"attestations": [att], "findings": findings})
         else:
@@ -1984,10 +2086,21 @@ class _Walk:
         serial, did = self._register(role=role, profile=profile, tier="strong", reasoning="high")
         self._launch(did, serial=serial)
         att = self._attestation(did, serial=serial)
+        impact_map = _map_payload(self.state, role=role, entries=entries)
+        att = _attach_report_claims(
+            self.state,
+            att,
+            role=role,
+            structured_output={
+                "kind": "impact-map",
+                "subject_sha256": model.sha256_json(model.impact_map_subject(impact_map)),
+                "record": impact_map,
+            },
+        )
         self.run(
             action,
             {
-                "impact_map": _map_payload(self.state, role=role, entries=entries),
+                "impact_map": impact_map,
                 "attestation": att,
                 "findings": [],
             },
@@ -2008,24 +2121,24 @@ class _Walk:
     def ascent(
         self, *, report_finding=False, exemption_outcome="not-applicable-confirmed", surface="src/foo.py", tag=""
     ):
-        """maps -> plan -> challenge -> exemption -> preflight -> tier reviews.
+        """maps -> plan -> challenge -> preflight -> tier reviews -> exemption.
         When report_finding, the covering strong review reports a finding
-        (verdict findings); it is stashed on self.reported_finding.
-        exemption_outcome drives the challenger's exemption_outcome payload
-        field for the high-risk not-applicable obligation. surface/tag vary
+        (verdict findings); it is stashed on self.reported_finding and the
+        exemption is deferred until the finding resolves. surface/tag vary
         subject bytes so a repair re-ascent derives fresh replacement ids."""
         self.ascent_to_exemption(surface=surface, tag=tag)
-        self.exemption(exemption_outcome)
-        return self.ascent_after_exemption(report_finding=report_finding)
+        att = self.review_ascent(report_finding=report_finding)
+        if not report_finding:
+            self.exemption(exemption_outcome)
+        return att
 
     def ascent_to_exemption(self, *, surface="src/foo.py", tag=""):
-        """maps -> plan -> challenge (the head of `ascent`)."""
+        """maps -> plan -> challenge (the coverage-plan head of `ascent`)."""
         self.maps(surface=surface, tag=tag)
         self.plan(surface=surface)
-        # challenge-coverage: scope-challenger attestation + revised obligations
-        # (hypotheses auto-derive; the high-risk obligation goes not-applicable
-        # with the challenger attestation as its seed backing).
-        self.challenge(na=True, surface=surface)
+        # challenge-coverage: scope-challenger attestation + revised
+        # obligations, all installed pending; status is report-derived later.
+        self.challenge(surface=surface)
 
     def maps(self, *, surface="src/foo.py", tag=""):
         self.map_impact(
@@ -2086,15 +2199,14 @@ class _Walk:
             )
         self.run("plan-coverage", {"obligations": plan_recs})
 
-    def challenge(self, *, na=True, surface="src/foo.py", surfaces=None, hazards=None, categories=None):
+    def challenge(self, *, surface="src/foo.py", surfaces=None, hazards=None, categories=None):
         """challenge-coverage: scope-challenger attestation + revised
-        obligations. When na, the high-risk obligation goes not-applicable
-        with the challenger attestation as its seed backing; otherwise it is
-        claimed covered. `surfaces`/`hazards` override the obligation surface
-        list and the inventory hazard set so repair re-ascents can bind fresh
-        subjects while still covering the map union. `categories` limits the
-        revision to the named categories; the inventory still binds every
-        current obligation (revised plus surviving)."""
+        obligations, all installed pending (status is report-derived later).
+        `surfaces`/`hazards` override the obligation surface list and the
+        inventory hazard set so repair re-ascents can bind fresh subjects
+        while still covering the map union. `categories` limits the revision
+        to the named categories; the inventory still binds every current
+        obligation (revised plus surviving)."""
         surf_list = surfaces or [surface]
         inv_hazards = hazards or ["h-con", "h-sem"]
         categories = categories or list(model.OBLIGATION_CATEGORIES)
@@ -2107,33 +2219,26 @@ class _Walk:
         )
         self._launch(did, serial=serial)
         chall_att = self._attestation(did, serial=serial)
-        chall_att_id = _attestation_id(self.state, chall_att)
 
         revised = []
         for cat in categories:
             if cat == "security-privacy":
-                risk, status, scope, cons = (
-                    "high",
-                    "not-applicable" if na else "covered",
-                    "surface",
-                    ["security"],
-                )
+                risk, scope, cons = "high", "surface", ["security"]
             elif cat == "documentation-contract":
-                risk, status, scope, cons = "low", "covered", "hunk", ["none"]
+                risk, scope, cons = "low", "hunk", ["none"]
             elif cat == "performance-resources":
-                risk, status, scope, cons = "low", "covered", "surface", ["none"]
+                risk, scope, cons = "low", "surface", ["none"]
             else:
-                risk, status, scope, cons = "low", "covered", "cross-surface", ["security"]
+                risk, scope, cons = "low", "cross-surface", ["security"]
             revised.append(
                 _obligation_payload(
                     self.state,
                     category=cat,
                     risk=risk,
                     consequences=cons,
-                    status=status,
+                    status="pending",
                     scope_level=scope,
                     surfaces=surf_list,
-                    na_att=(chall_att_id,) if status == "not-applicable" else (),
                 )
             )
         # The inventory entry lists every obligation category; its
@@ -2178,12 +2283,27 @@ class _Walk:
                 for m in self.state["impact_maps"].values()
                 if m["role"] == "impact-mapper-contract" and policy._current(self.state, m, m["impact_map_id"])
             ),
-            "challenger_attestation_id": chall_att_id,
+            "challenger_attestation_id": _attestation_id(self.state, chall_att),
             "entries": inv_entries,
             "evidence_id": inv_ev,
             "snapshot_epoch": self.state["snapshot"]["epoch"],
             "snapshot_fingerprint": self.state["snapshot"]["fingerprint"],
         }
+        chall_att = _attach_report_claims(
+            self.state,
+            chall_att,
+            role="scope-challenger",
+            structured_output={
+                "kind": "coverage-inventory",
+                "subject_sha256": model.sha256_json(model.coverage_inventory_subject(inv)),
+                "revised_obligations_sha256": model.sha256_json(revised),
+                "record": inv,
+                "revised_obligations": revised,
+            },
+        )
+        # The claims rewrite the verdict; the inventory binds the attestation
+        # id derived from the claimed record.
+        inv["challenger_attestation_id"] = _attestation_id(self.state, chall_att)
         self.run(
             "challenge-coverage",
             {
@@ -2218,10 +2338,17 @@ class _Walk:
         )
         return high_oid
 
-    def ascent_after_exemption(self, *, report_finding=False):
-        """preflight -> tier reviews (the tail of `ascent`)."""
+    def review_ascent(self, *, na=True, report_finding=False):
+        """preflight (if needed) -> tier reviews over every pending obligation,
+        grouped by its scheduled gate tier. The strong review marks the
+        high-risk obligation not-applicable when na is set (deferring the
+        exemption challenge); otherwise it claims it covered, which then
+        needs a second distinct strong profile. With report_finding the
+        covering strong review reports a finding on one strong obligation
+        (verdict findings); it is stashed on self.reported_finding."""
         snap = self.state["snapshot"]
-        self.local_check("run-preflight", kind="preflight", item=self.items[0])
+        if not policy.preflight_current_and_green(self.state, self.policies)[0]:
+            self.local_check("run-preflight", kind="preflight", item=self.items[0])
 
         obligations = [
             o
@@ -2229,11 +2356,12 @@ class _Walk:
             if o["snapshot_epoch"] == snap["epoch"]
             and o["snapshot_fingerprint"] == snap["fingerprint"]
             and policy._current(self.state, o, o["obligation_id"])
+            and o["status"] == "pending"
         ]
-        covered = [o for o in obligations if o["status"] == "covered"]
-        fast_ids = sorted(o["obligation_id"] for o in covered if o["minimum_capability_tier"] == "fast")
-        focused_ids = sorted(o["obligation_id"] for o in covered if o["minimum_capability_tier"] == "focused")
-        strong_ids = sorted(o["obligation_id"] for o in covered if o["obligation_id"] not in fast_ids + focused_ids)
+        fast_ids = sorted(o["obligation_id"] for o in obligations if policy._scheduled_gate_tier(o) == "fast")
+        focused_ids = sorted(o["obligation_id"] for o in obligations if policy._scheduled_gate_tier(o) == "focused")
+        strong_ids = sorted(o["obligation_id"] for o in obligations if policy._scheduled_gate_tier(o) == "strong")
+        final_ids = sorted(o["obligation_id"] for o in obligations if policy._scheduled_gate_tier(o) == "final-strong")
         if fast_ids:
             self.review(
                 "run-fast-review",
@@ -2252,39 +2380,75 @@ class _Walk:
                 reasoning="standard",
                 assignments=focused_ids,
             )
-        if report_finding:
-            # The finding's source_id must resolve to the reporting
-            # attestation, so its derived id is computed before the action.
-            # (finding_ids stays empty: listing the finding would make the
-            # attestation id and finding id a cyclic derivation.)
-            serial, did = self._register(
-                role="obligation-reviewer",
-                profile="reviewer-a",
-                tier="strong",
-                reasoning="high",
-                assignments=strong_ids,
-            )
-            self._launch(did, serial=serial)
-            att = self._attestation(did, serial=serial, verdict="findings")
-            att_id = _attestation_id(self.state, att)
-            finding = _finding_at_strong(self, source_id=att_id)
-            self.reported_finding = finding
-            self.run(
-                "run-strong-review",
-                {"attestations": [att], "findings": [finding]},
-            )
-            att = dict(att)
-            att["attestation_id"] = att_id
-        else:
-            att = self.review(
-                "run-strong-review",
-                role="obligation-reviewer",
-                profile="reviewer-a",
-                tier="strong",
-                reasoning="high",
-                assignments=strong_ids,
-            )
-        return att
+        if strong_ids or final_ids:
+            att = None
+            if report_finding:
+                # One batched review: the finding and the per-obligation
+                # outcomes land atomically in a single report.
+                outcomes = {}
+                for oid in strong_ids + final_ids:
+                    o = self.state["obligations"][oid]
+                    outcomes[oid] = "not-applicable" if (na and o["risk"] == "high") else "covered"
+                report_oid = next(
+                    (oid for oid in strong_ids + final_ids if self.state["obligations"][oid]["risk"] != "high"),
+                    (strong_ids + final_ids)[0],
+                )
+                return self.review(
+                    "run-strong-review",
+                    role="obligation-reviewer",
+                    profile="reviewer-a",
+                    tier="strong",
+                    reasoning="high",
+                    assignments=strong_ids + final_ids,
+                    outcomes=outcomes,
+                    report=True,
+                    report_oid=report_oid,
+                )
+            # n/a-bound high-risk obligations review in their own dispatch so
+            # the backing attestation covers only them; an exemption-review
+            # cut then leaves unrelated obligations' reviews intact. The n/a
+            # mark runs last: it pre-empts the strong gate via the pending
+            # exemption once it lands.
+            na_ids = [oid for oid in strong_ids + final_ids if na and self.state["obligations"][oid]["risk"] == "high"]
+            covered_ids = [oid for oid in strong_ids + final_ids if oid not in na_ids]
+            if covered_ids:
+                att = self.review(
+                    "run-strong-review",
+                    role="obligation-reviewer",
+                    profile="reviewer-a",
+                    tier="strong",
+                    reasoning="high",
+                    assignments=covered_ids,
+                    outcomes={oid: "covered" for oid in covered_ids},
+                )
+            if na_ids:
+                att = self.review(
+                    "run-strong-review",
+                    role="obligation-reviewer",
+                    profile="reviewer-a",
+                    tier="strong",
+                    reasoning="high",
+                    assignments=na_ids,
+                    outcomes={oid: "not-applicable" for oid in na_ids},
+                )
+            # A covered high-risk obligation needs a second distinct profile.
+            second = [
+                oid
+                for oid in strong_ids + final_ids
+                if self.state["obligations"][oid]["risk"] == "high"
+                and self.state["obligations"][oid]["status"] == "covered"
+            ]
+            if second:
+                self.review(
+                    "run-strong-review",
+                    role="obligation-reviewer",
+                    profile="reviewer-b",
+                    tier="strong",
+                    reasoning="high",
+                    assignments=second,
+                    outcomes={oid: "covered" for oid in second},
+                )
+        return att if (strong_ids or final_ids) else None
 
     def final(self, *, report=False):
         return self.review(
@@ -2447,14 +2611,15 @@ def walk_happy_path(tmp_path):
     return w.state, w.policies, w.registry, w.steps
 
 
-def _finding_at_strong(w, *, source_id):
+def _finding_at_strong(w, *, source_id, oid=None):
     """A finding payload attributed to the strong reviewer's coverage."""
     state = w.state
-    oid = next(
-        o["obligation_id"]
-        for o in state["obligations"].values()
-        if o["status"] == "covered" and o["minimum_capability_tier"] == "strong"
-    )
+    if oid is None:
+        oid = next(
+            o["obligation_id"]
+            for o in state["obligations"].values()
+            if o["minimum_capability_tier"] == "strong" and policy._current(state, o, o["obligation_id"])
+        )
     return _finding_payload(
         state,
         source_kind="review",
@@ -2514,6 +2679,9 @@ def walk_false_positive_path(tmp_path):
             ]
         },
     )
+    # The high-risk not-applicable mark was deferred while the finding was
+    # open; the exemption challenge now confirms it.
+    w.exemption()
     w.remote()
     return w.state, w.policies, w.registry, w.steps
 
@@ -2575,11 +2743,14 @@ def walk_review_repair_path(tmp_path):
             ]
         },
     )
-    # The cut invalidated the focused-tier review; re-ascend that gate.
+    # The high-risk not-applicable mark is pending its exemption challenge
+    # (deferred while the finding was open); the focused-tier review the cut
+    # invalidated re-proves its obligations.
+    w.exemption()
     focused_ids = sorted(
         o["obligation_id"]
         for o in w.state["obligations"].values()
-        if o["status"] == "covered" and o["minimum_capability_tier"] == "focused"
+        if policy._current(w.state, o, o["obligation_id"]) and policy._scheduled_gate_tier(o) == "focused"
     )
     att = w.review(
         "run-focused-review",

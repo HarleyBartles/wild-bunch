@@ -20,6 +20,16 @@ The kernel enforces **process completeness**. It cannot enforce omniscience. A g
 
 All nine must hold for one snapshot epoch at once. `accepted-risk` findings contribute only to `reviewed-with-exceptions`, never to green.
 
+## The recall engine
+
+Coverage is derived, not asserted. At enumeration, `diff.patch` carries the exact bytes hashed into `snapshot.diff_sha256` and `surfaces.json` carries the canonical changed-surface list parsed from them; `acquire` re-verifies both before the snapshot installs, so every later claim is bound to the same diff.
+
+Two independent mapper roles (`impact-mapper-semantic`, `impact-mapper-contract`) each bind a structured `impact-map` report to the installed record's subject digest. Their union - surface to categories, hazards, consequences - is recomputed by the kernel, never taken from a payload. `reviewctl plan-coverage` emits the deterministic obligations payload from that union (one obligation per surface per category, floors from the sealed scope/risk table), and the install-time check refuses any obligation whose declared floors sit below policy.
+
+An independent `scope-challenger` attestation must confirm the coverage inventory spans the whole union; the inventory may add surfaces, never drop them. Obligations install `pending` and resolve only through typed reviewer report outcomes bound to the dispatch, assignment set, and snapshot epoch: `covered` and `not-applicable` close an obligation, `findings` keeps it open, and high-risk `not-applicable` marks still require the exemption challenge. Nothing else can mark an obligation covered.
+
+Every reviewer dispatch binds a context package: `reviewctl package` materializes the bound patch, the head-revision bytes of every coverage surface, the resolved authority evidence, the hazard framing for the dispatch's assignments, and the instruction manifest carrying the sealed assignment-policy floors and independence constraints. The dispatch record binds the package, instruction-manifest, data-manifest, and hazard-framing digests, so a reviewer cannot be launched against context that differs from what the kernel sealed.
+
 ## Version-1 versus version-2 authority
 
 `reviewctl.py` is the only mutation authority for `schema_version: 2` state. The legacy tools that read review state directly (`next_node.py`, `compile_metrics.py`) refuse version-2 state outright; the remaining legacy helpers (`resolved_ledger.py` and friends) operate on compiled metrics and logs, never on review state, so no legacy path can create a version-2 green seal. A version-1 `ready` verdict is review assistance, not proof of reviewed green: version-1 state has no snapshot binding, no witness records, and no epoch-scoped evidence, so nothing in it can satisfy predicate evaluation.

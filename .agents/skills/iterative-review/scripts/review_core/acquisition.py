@@ -25,7 +25,7 @@ import types
 import urllib.parse
 from pathlib import Path
 
-from . import discovery_policy, engine, feedback_policy, model, witness_log
+from . import discovery_policy, engine, feedback_policy, model, surfaces, witness_log
 
 REQUIRED_AUTHORITY_KINDS = ("repo-law", "pr-description")
 _PR_JSON_FIELDS = (
@@ -224,7 +224,12 @@ def enumerate_acquisition(
     rc, out, err = run_git(["diff", merge_base, head_sha])
     if rc != 0:
         raise AcquisitionError("snapshot-drift", f"diff failed: {err.strip()}")
-    diff_sha256 = model.sha256_hex(out.encode("utf-8", errors="surrogateescape"))
+    diff_bytes = out.encode("utf-8", errors="surrogateescape")
+    diff_sha256 = model.sha256_hex(diff_bytes)
+    try:
+        surface_list = surfaces.parse_diff_surfaces(out)
+    except surfaces.SurfaceParseError as exc:
+        raise AcquisitionError("tool-blocked", f"git diff output unparsable: {exc}") from exc
     pr_metadata_sha256 = model.sha256_json(_pr_metadata_projection(pr_meta))
 
     witness_pol = witness_log.TranscriptWitnessPolicy(
@@ -485,6 +490,12 @@ def enumerate_acquisition(
         "drift_reasons": None,
     }
     out_dir.mkdir(parents=True, exist_ok=True)
+    # Named artifacts, not evidence aliases: diff.patch carries the exact
+    # bytes hashed into snapshot.diff_sha256, and surfaces.json carries the
+    # canonical changed-surface seed derived from it. acquire re-verifies
+    # both against the snapshot before binding the directory.
+    (out_dir / "diff.patch").write_bytes(diff_bytes)
+    (out_dir / "surfaces.json").write_bytes(surfaces.surfaces_document(surface_list))
     (out_dir / "data.json").write_bytes(model.canonical_json(data))
     (ev_dir / "manifest.json").write_text(json.dumps(evidence_map, indent=2, sort_keys=True), encoding="utf-8")
     (out_dir / "enumeration.json").write_text(
@@ -631,6 +642,27 @@ class LiveAuthorityDiscovery:
                 )
         if len(seen) != len(bound):
             raise AcquisitionError("tampered-source", "authority records diverge from witnessed manifest")
+        # Named artifacts bind through the snapshot, not the evidence table:
+        # diff.patch must hash to the witnessed diff_sha256, and surfaces.json
+        # must re-parse to the same surface list the patch derives.
+        try:
+            patch_bytes = (self._dir / "diff.patch").read_bytes()
+        except OSError as exc:
+            raise AcquisitionError("tampered-source", f"diff.patch missing or unreadable: {exc}") from exc
+        if model.sha256_hex(patch_bytes) != data["snapshot"].get("diff_sha256"):
+            raise AcquisitionError("tampered-source", "diff.patch digest diverges from snapshot.diff_sha256")
+        try:
+            recorded_surfaces = model.strict_json_loads(
+                (self._dir / "surfaces.json").read_bytes(), source="surfaces.json"
+            )
+        except (OSError, ValueError) as exc:
+            raise AcquisitionError("tampered-source", f"surfaces.json missing or invalid: {exc}") from exc
+        try:
+            reparsed = surfaces.parse_diff_surfaces(patch_bytes.decode("utf-8", errors="surrogateescape"))
+        except surfaces.SurfaceParseError as exc:
+            raise AcquisitionError("tampered-source", f"diff.patch unparsable: {exc}") from exc
+        if not isinstance(recorded_surfaces, list) or list(reparsed) != recorded_surfaces:
+            raise AcquisitionError("tampered-source", "surfaces.json diverges from diff.patch")
         return data, sources
 
     def _find_segment(self, subject_sha: str):

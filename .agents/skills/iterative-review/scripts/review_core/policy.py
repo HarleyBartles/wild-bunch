@@ -17,6 +17,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Protocol
 
 from . import model
+from . import report
 from . import store
 
 # ---------------------------------------------------------------------------
@@ -687,6 +688,56 @@ def coverage_plan_covers_map_union(state: dict, policies) -> tuple[bool, tuple[s
     return True, ()
 
 
+_HIGH_RISK_CONSEQUENCES = frozenset({"security", "authorization", "privacy", "secrets", "irreversible-data-loss"})
+
+
+def plan_coverage_payload(state: dict, policies=None) -> dict:
+    """Deterministic ``plan-coverage`` payload from the current map union.
+
+    One obligation per union surface per OBLIGATION_CATEGORIES member, ordered
+    by surface then category order; floors via ``obligation_floor`` so the
+    install-time check re-verifies them. Refuses when either impact map is not
+    current - the same refusal the ``coverage`` predicate reports."""
+    ok, _ = impact_maps_complete(state, policies)
+    if not ok:
+        _fail(
+            "coverage",
+            "impact_maps",
+            "plan-coverage requires one current impact map per mapper role",
+        )
+    union = _map_union(state)
+    obligations = []
+    for surface in sorted(union):
+        slot = union[surface]
+        consequences = list(slot["consequences"])
+        substantive = [c for c in consequences if c in model.SUBSTANTIVE_CONSEQUENCES]
+        if any(c in _HIGH_RISK_CONSEQUENCES for c in consequences):
+            risk = "high"
+        elif substantive:
+            risk = "medium"
+        else:
+            risk = "low"
+        scope_level = "cross-surface" if substantive else "surface"
+        tier, reasoning = obligation_floor(scope_level, risk, consequences)
+        for category in model.OBLIGATION_CATEGORIES:
+            obligations.append(
+                {
+                    "category": category,
+                    "surfaces": [surface],
+                    "scope_level": scope_level,
+                    "risk": risk,
+                    "consequences": consequences,
+                    "minimum_capability_tier": tier,
+                    "minimum_reasoning_floor": reasoning,
+                    "assignees": [],
+                    "status": "pending",
+                    "evidence_ids": [],
+                    "not_applicable_attestation_ids": [],
+                }
+            )
+    return {"obligations": obligations}
+
+
 def scope_challenge_complete(state: dict, policies) -> tuple[bool, tuple[str, ...]]:
     inv = state["coverage_inventory"]
     if inv is None or not _current(state, inv, inv["coverage_inventory_id"]):
@@ -727,8 +778,13 @@ def _obligation_tier(obligation: dict) -> str:
     return tier
 
 
-def coverage_complete(state: dict, policies) -> tuple[bool, tuple[str, ...]]:
-    ok, reasons = scope_challenge_complete(state, policies)
+def _coverage_plan_installed(state: dict, policies) -> tuple[bool, tuple[str, ...]]:
+    """The coverage plan's install-time half: the inventory covers the map
+    union, every obligation resolves and carries assignees, declared floors
+    are at or above policy, and high-risk obligations bind an
+    opposite-polarity hypothesis pair. Obligation *status* is report-derived
+    and resolved later by the review tiers; it is not checked here."""
+    ok, _ = scope_challenge_complete(state, policies)
     if not ok:
         return False, ("coverage",)
     inv = state["coverage_inventory"]
@@ -755,8 +811,6 @@ def coverage_complete(state: dict, policies) -> tuple[bool, tuple[str, ...]]:
             continue
         if not o["assignees"]:
             return False, ("coverage",)
-        if o["status"] not in ("covered", "not-applicable"):
-            return False, ("coverage",)
         tier, reasoning = obligation_floor(o["scope_level"], o["risk"], o["consequences"])
         if _TIER_ORDER.index(o["minimum_capability_tier"]) < _TIER_ORDER.index(tier):
             return False, ("coverage",)
@@ -770,6 +824,22 @@ def coverage_complete(state: dict, policies) -> tuple[bool, tuple[str, ...]]:
                     families.setdefault(h["family"], set()).add(h["polarity"])
             if not any({"claim", "counterexample"} <= ps for ps in families.values()):
                 return False, ("coverage",)
+    return True, ()
+
+
+def coverage_complete(state: dict, policies) -> tuple[bool, tuple[str, ...]]:
+    """The coverage gate: the installed plan plus report-derived status. Every
+    current obligation must be covered or not-applicable, and a
+    not-applicable obligation must carry its witnessing attestation (plus an
+    exemption-challenger attestation when high risk)."""
+    ok, _ = _coverage_plan_installed(state, policies)
+    if not ok:
+        return False, ("coverage",)
+    for oid, o in state["obligations"].items():
+        if not _current(state, o, oid):
+            continue
+        if o["status"] not in ("covered", "not-applicable"):
+            return False, ("coverage",)
         if o["status"] == "not-applicable":
             if not o["not_applicable_attestation_ids"]:
                 return False, ("coverage",)
@@ -1294,11 +1364,19 @@ def _pending_exemptions(state: dict) -> list[dict]:
         if not _current(state, o, o["obligation_id"]) or o["status"] != "not-applicable" or o["risk"] != "high":
             continue
         atts = [state["reviews"].get(a) for a in o["not_applicable_attestation_ids"]]
+        current_atts = [a for a in atts if a is not None and _current(state, a, a["attestation_id"])]
+        # The obligation-reviewer's not-applicable mark must be current for
+        # the exemption gate to be pending; if the mark itself was cut, the
+        # obligation is unproven and routes back through coverage instead.
+        has_reviewer = any(
+            _role_of_dispatch(state, state["dispatches"].get(a["dispatch_id"], {})) == "obligation-reviewer"
+            for a in current_atts
+        )
+        if not has_reviewer:
+            continue
         has_challenger = any(
-            a is not None
-            and _current(state, a, a["attestation_id"])
-            and _role_of_dispatch(state, state["dispatches"].get(a["dispatch_id"], {})) == "exemption-challenger"
-            for a in atts
+            _role_of_dispatch(state, state["dispatches"].get(a["dispatch_id"], {})) == "exemption-challenger"
+            for a in current_atts
         )
         if not has_challenger:
             out.append(o)
@@ -1328,7 +1406,7 @@ def _derived_stage(state: dict, policies) -> str:
     ok, _ = scope_challenge_complete(state, policies)
     if not ok:
         return "coverage"
-    ok, _ = coverage_complete(state, policies)
+    ok, _ = _coverage_plan_installed(state, policies)
     if not ok:
         return "coverage-challenge"
     ok, _ = preflight_current_and_green(state, policies)
@@ -1343,6 +1421,9 @@ def _derived_stage(state: dict, policies) -> str:
     ok, _ = strong_reviews_complete(state, policies)
     if not ok:
         return "strong-review"
+    ok, _ = coverage_complete(state, policies)
+    if not ok:
+        return "coverage-challenge"
     if _findings_requiring_adjudication(state) or _findings_fixing(state) or _findings_broken_closure(state):
         return "resolution"
     if _findings_repairing(state) or _open_repairs(state):
@@ -2014,14 +2095,212 @@ def _bind_now(out: dict, rec: dict) -> dict:
     return rec
 
 
-def _install_attestations(out: dict, attestations: list) -> None:
+def _pop_report_claims(a: dict) -> dict | None:
+    """Pop the report-derived claims a witnessed attestation carries.
+
+    ``structured_output``, ``assignment_results`` and ``exemption_outcome``
+    are consumed by the kernel and never stored on the record. Returns None
+    when the attestation carries no report claims (a pre-report witness
+    path); the caller then applies no report-derived checks or outcomes.
+    """
+    claims = {}
+    for key in ("structured_output", "assignment_results", "exemption_outcome"):
+        if key in a:
+            claims[key] = a.pop(key)
+    if not claims:
+        return None
+    so = claims.get("structured_output")
+    if so is not None and not isinstance(so, dict):
+        _fail("bad-type", "attestations", "structured_output claim must be an object")
+    ar = claims.get("assignment_results")
+    if ar is not None:
+        if not isinstance(ar, list):
+            _fail("bad-type", "attestations", "assignment_results claim must be a list")
+        for i, entry in enumerate(ar):
+            if (
+                not isinstance(entry, dict)
+                or not isinstance(entry.get("assignment_id"), str)
+                or not entry["assignment_id"]
+                or not isinstance(entry.get("kind"), str)
+                or not isinstance(entry.get("outcome"), str)
+            ):
+                _fail(
+                    "bad-type",
+                    "attestations",
+                    f"assignment_results[{i}] must carry assignment_id, kind and outcome",
+                )
+    eo = claims.get("exemption_outcome")
+    if eo is not None and eo not in model.EXEMPTION_CHALLENGE_OUTCOMES:
+        _fail("bad-value", "attestations", "exemption_outcome is not a lawful outcome")
+    return claims
+
+
+def _report_derived_verdict(rec: dict, claims: dict, payload_findings) -> str:
+    """The verdict a report's claims lawfully derive for this attestation.
+
+    ``rec["finding_ids"]`` is the declared linkage to prior findings; the
+    payload's own findings sourced to this attestation id are the report's
+    findings proper (a same-action finding cannot sit in finding_ids without
+    a cyclic derivation)."""
+    matched = [f for f in payload_findings if isinstance(f, dict) and f.get("source_id") == rec.get("attestation_id")]
+    pseudo = {
+        "assignments": [
+            {"result": {k: v for k, v in c.items() if k != "assignment_id"}}
+            for c in claims.get("assignment_results") or ()
+        ],
+        "findings": list(rec.get("finding_ids") or ()) + matched,
+        "uncertainties": rec.get("uncertainties") or [],
+    }
+    return report.derive_verdict(pseudo)
+
+
+def _obligation_for_assignment(out: dict, aid: str) -> dict | None:
+    """Resolve an assignment id to its obligation: a direct obligation id or
+    the parent of a hypothesis assignment."""
+    o = out["obligations"].get(aid)
+    if o is not None:
+        return o
+    h = out["hypothesis_assignments"].get(aid)
+    if h is not None:
+        return out["obligations"].get(h["obligation_id"])
+    return None
+
+
+def _apply_obligation_outcomes(out: dict, att: dict, claims: dict | None) -> None:
+    """Derive obligation status from a typed report's assignment results.
+
+    obligation-reviewer reports resolve the dispatch's assigned obligations;
+    fix-reviewer reports mark verified_obligation_ids covered. covered and
+    not-applicable only land from a dispatch tiered at or above the
+    obligation's effective floor (a lower tier may report findings but
+    cannot satisfy); findings and incomplete always apply."""
+    if claims is None:
+        return
+    d = out["dispatches"].get(att["dispatch_id"])
+    if d is None:
+        return
+    role = _role_of_dispatch(out, d)
+    rs = out["route_selections"].get(d["route_selection_id"])
+    results = claims.get("assignment_results") or ()
+    if role == "obligation-reviewer":
+        incomplete_oids = []
+        for entry in results:
+            if entry.get("kind") != "obligation":
+                continue
+            aid = entry["assignment_id"]
+            if aid not in d["assignment_ids"]:
+                _fail(
+                    "assignment-mismatch",
+                    "attestations",
+                    f"assignment result {aid!r} is not in the dispatch assignment set",
+                )
+            o = _obligation_for_assignment(out, aid)
+            if o is None or not _current(out, o, o["obligation_id"]):
+                continue
+            outcome = entry["outcome"]
+            qualified = rs is not None and _TIER_ORDER.index(rs["required_capability_tier"]) >= _TIER_ORDER.index(
+                _tier_max(_obligation_tier(o), o["minimum_capability_tier"])
+            )
+            if outcome == "covered":
+                if qualified:
+                    o["status"] = "covered"
+            elif outcome == "not-applicable":
+                if qualified:
+                    o["status"] = "not-applicable"
+                    if att["attestation_id"] not in o["not_applicable_attestation_ids"]:
+                        o["not_applicable_attestation_ids"] = sorted(
+                            set(o["not_applicable_attestation_ids"]) | {att["attestation_id"]}
+                        )
+            elif outcome == "findings":
+                o["status"] = "pending"
+            elif outcome == "incomplete":
+                o["status"] = "pending"
+                incomplete_oids.append(o["obligation_id"])
+        if incomplete_oids:
+            _open_blocker(
+                out,
+                blocker_id=f"incomplete-review:{att['attestation_id']}",
+                blocker_class="incomplete-review",
+                reason=f"obligation review returned incomplete for {sorted(incomplete_oids)}",
+                evidence_ids=[att["evidence_id"]],
+            )
+    elif role == "fix-reviewer":
+        for entry in results:
+            if entry.get("kind") != "fix-review" or entry.get("outcome") != "verified":
+                continue
+            for oid in entry.get("verified_obligation_ids") or ():
+                o = out["obligations"].get(oid)
+                if o is not None and _current(out, o, oid):
+                    o["status"] = "covered"
+
+
+def _install_attestations(out: dict, attestations: list, *, payload_findings=()) -> list:
+    """Install attestation records; returns ``[(record, claims)]`` pairs.
+
+    Each attestation must bind the candidate snapshot, resolve to a current
+    dispatch, and carry exactly that dispatch's assignment set. When the
+    payload carries report-derived claims, the declared verdict must equal
+    the verdict those claims derive; typed outcomes then apply."""
+    snap = out["snapshot"]
+    installed = []
     for a in attestations:
+        a = dict(a)
+        claims = _pop_report_claims(a)
         rec = _bind_now(out, a)
+        if rec["snapshot_epoch"] != snap["epoch"] or rec["snapshot_fingerprint"] != snap["fingerprint"]:
+            _fail("snapshot-mismatch", "attestations", "attestation does not bind the candidate snapshot")
+        d = out["dispatches"].get(rec.get("dispatch_id"))
+        if d is None or not _current(out, d, rec["dispatch_id"]):
+            _fail(
+                "dangling-ref",
+                "attestations",
+                f"unknown or non-current dispatch {rec.get('dispatch_id')!r}",
+            )
+        if sorted(rec.get("assignment_ids") or ()) != sorted(d["assignment_ids"]):
+            _fail(
+                "assignment-mismatch",
+                "attestations",
+                "attestation assignment_ids must equal the dispatch assignment_ids",
+            )
+        if claims is not None:
+            role = _role_of_dispatch(out, d)
+            allowed_kinds = report.lawful_result_kinds(role)
+            for entry in claims.get("assignment_results") or ():
+                kind = entry.get("kind")
+                if kind not in allowed_kinds:
+                    _fail(
+                        "bad-kind",
+                        "attestations",
+                        f"report result kind {kind!r} is not lawful for role {role!r}",
+                    )
+                if entry.get("outcome") not in report.lawful_result_outcomes(kind):
+                    _fail(
+                        "bad-value",
+                        "attestations",
+                        f"report outcome {entry.get('outcome')!r} is not lawful for kind {kind!r}",
+                    )
+                if entry["assignment_id"] not in d["assignment_ids"]:
+                    _fail(
+                        "assignment-mismatch",
+                        "attestations",
+                        f"assignment result {entry['assignment_id']!r} is not in the dispatch assignment set",
+                    )
         rec["attestation_id"] = ""
         rec["attestation_id"] = model.derived_id(
             "attestation", rec["snapshot_epoch"], model.review_wrapper_subject(rec)
         )
+        if claims is not None:
+            derived = _report_derived_verdict(rec, claims, payload_findings)
+            if rec["verdict"] != derived:
+                _fail(
+                    "verdict-mismatch",
+                    "attestations",
+                    f"verdict {rec['verdict']!r} != report-derived {derived!r}",
+                )
         out["reviews"][rec["attestation_id"]] = rec
+        _apply_obligation_outcomes(out, rec, claims)
+        installed.append((rec, claims))
+    return installed
 
 
 def _install_findings(out: dict, findings: list) -> None:
@@ -2095,6 +2374,34 @@ def _install_checks(out: dict, checks: list) -> None:
         out["checks"][rec["check_id"]] = rec
 
 
+def _check_obligation_install(rec: dict, path: str) -> None:
+    """Install-time floor for a new obligation: it must enter pending and its
+    declared minimums may raise, never lower, the computed policy floor."""
+    for field in (
+        "scope_level",
+        "risk",
+        "consequences",
+        "minimum_capability_tier",
+        "minimum_reasoning_floor",
+    ):
+        if rec.get(field) is None:
+            _fail("missing-field", path, f"obligation requires {field}")
+    if rec.get("status") != "pending":
+        _fail("bad-status", path, "new obligations must enter pending; status is report-derived")
+    if rec["scope_level"] not in _SCOPE_TIER or rec["risk"] not in _RISK_TIER:
+        _fail("bad-value", path, "obligation scope_level/risk is not lawful")
+    if (
+        rec["minimum_capability_tier"] not in _TIER_ORDER
+        or rec["minimum_reasoning_floor"] not in model.REASONING_FLOORS
+    ):
+        _fail("bad-value", path, "obligation minimums are not lawful")
+    floor_t, floor_r = obligation_floor(rec["scope_level"], rec["risk"], rec["consequences"])
+    if _TIER_ORDER.index(rec["minimum_capability_tier"]) < _TIER_ORDER.index(floor_t):
+        _fail("floor-below-policy", path, "obligation capability tier below the computed policy floor")
+    if model.REASONING_FLOORS.index(rec["minimum_reasoning_floor"]) < model.REASONING_FLOORS.index(floor_r):
+        _fail("floor-below-policy", path, "obligation reasoning floor below the computed policy floor")
+
+
 def _install_obligations(out: dict, records: list, policies, *, replace_categories=()) -> None:
     epoch = out["snapshot"]["epoch"]
     fp = out["snapshot"]["fingerprint"]
@@ -2113,6 +2420,7 @@ def _install_obligations(out: dict, records: list, policies, *, replace_categori
                 del out["hypothesis_assignments"][hid]
     for o in records:
         rec = _bind_now(out, o)
+        _check_obligation_install(rec, "obligations")
         rec["obligation_id"] = model.derived_id("obligation", epoch, model.obligation_subject(rec))
         hids = []
         for h in policies.hypotheses.derive(obligation=rec):
@@ -2357,19 +2665,29 @@ def _h_map_impact(out: dict, data: dict, policies) -> None:
     rec = _bind_now(out, data["impact_map"])
     rec["impact_map_id"] = model.derived_id("impact-map", rec["snapshot_epoch"], model.impact_map_subject(rec))
     out["impact_maps"][rec["impact_map_id"]] = rec
-    _install_attestations(out, [data["attestation"]])
+    installed = _install_attestations(out, [data["attestation"]], payload_findings=data["findings"])
     _install_findings(out, data["findings"])
+    expected = model.sha256_json(model.impact_map_subject(rec))
+    for att, claims in installed:
+        so = (claims or {}).get("structured_output")
+        if not isinstance(so, dict) or so.get("kind") != "impact-map" or so.get("subject_sha256") != expected:
+            _fail(
+                "structured-output-mismatch",
+                "attestations",
+                "impact-mapper structured_output must bind the installed impact-map subject",
+            )
 
 
 def _h_plan_coverage(out: dict, data: dict, policies) -> None:
     for o in data["obligations"]:
         rec = _bind_now(out, o)
+        _check_obligation_install(rec, "obligations")
         rec["obligation_id"] = model.derived_id("obligation", rec["snapshot_epoch"], model.obligation_subject(rec))
         out["obligations"][rec["obligation_id"]] = rec
 
 
 def _h_challenge_coverage(out: dict, data: dict, policies) -> None:
-    _install_attestations(out, [data["attestation"]])
+    installed = _install_attestations(out, [data["attestation"]], payload_findings=data["findings"])
     _install_findings(out, data["findings"])
     revised = data["revised_obligations"]
     _install_obligations(
@@ -2383,6 +2701,39 @@ def _h_challenge_coverage(out: dict, data: dict, policies) -> None:
         "coverage-inventory", rec["snapshot_epoch"], model.coverage_inventory_subject(rec)
     )
     out["coverage_inventory"] = rec
+    expected_subject = model.sha256_json(model.coverage_inventory_subject(rec))
+    expected_revised = model.sha256_json(revised)
+    for att, claims in installed:
+        so = (claims or {}).get("structured_output")
+        if (
+            not isinstance(so, dict)
+            or so.get("kind") != "coverage-inventory"
+            or so.get("subject_sha256") != expected_subject
+            or so.get("revised_obligations_sha256") != expected_revised
+        ):
+            _fail(
+                "structured-output-mismatch",
+                "attestations",
+                "scope-challenger structured_output must bind the installed "
+                "coverage-inventory subject and revised-obligations digests",
+            )
+        if rec["challenger_attestation_id"] != att["attestation_id"]:
+            _fail(
+                "structured-output-mismatch",
+                "coverage_inventory",
+                "challenger_attestation_id must equal the installed challenger attestation",
+            )
+        for field, role in (
+            ("semantic_impact_map_id", "impact-mapper-semantic"),
+            ("contract_impact_map_id", "impact-mapper-contract"),
+        ):
+            m = out["impact_maps"].get(rec.get(field))
+            if m is None or not _current(out, m, rec.get(field)) or m["role"] != role:
+                _fail(
+                    "dangling-ref",
+                    "coverage_inventory",
+                    f"{field} must resolve to a current {role} impact map",
+                )
 
 
 def _h_checks(out: dict, data: dict, policies) -> None:
@@ -2390,53 +2741,40 @@ def _h_checks(out: dict, data: dict, policies) -> None:
 
 
 def _h_reviews(out: dict, data: dict, policies) -> None:
-    _install_attestations(out, data["attestations"])
+    _install_attestations(out, data["attestations"], payload_findings=data["findings"])
     _install_findings(out, data["findings"])
 
 
 def _h_single_review(out: dict, data: dict, policies) -> None:
-    _install_attestations(out, [data["attestation"]])
+    _install_attestations(out, [data["attestation"]], payload_findings=data["findings"])
     _install_findings(out, data["findings"])
 
 
 def _h_exemption_challenge(out: dict, data: dict, policies) -> None:
-    # Each exemption-challenger payload carries an `exemption_outcome` derived
-    # from its witnessed raw report; it is consumed here, never stored.
-    outcomes = {}
-    atts = []
+    # Each exemption-challenger payload carries an `exemption_outcome` report
+    # claim; _pop_report_claims consumes it at install and it is never stored.
     for a in data["attestations"]:
-        a = dict(a)
-        oc = a.pop("exemption_outcome", None)
+        a = a if isinstance(a, dict) else {}
         d = out["dispatches"].get(a.get("dispatch_id"))
         challenger = d is not None and _role_of_dispatch(out, d) == "exemption-challenger"
-        if challenger and oc not in model.EXEMPTION_CHALLENGE_OUTCOMES:
+        has_claim = "exemption_outcome" in a
+        if challenger and not has_claim:
             _fail(
                 "missing-field",
                 "attestations",
                 "exemption-challenger attestation requires exemption_outcome",
             )
-        if not challenger and oc is not None:
+        if not challenger and has_claim:
             _fail(
                 "unknown-field",
                 "attestations",
                 "exemption_outcome is only valid on exemption-challenger attestations",
             )
-        atts.append(a)
-        if challenger:
-            probe = _bind_now(out, a)
-            probe["attestation_id"] = ""
-            outcomes[
-                model.derived_id(
-                    "attestation",
-                    probe["snapshot_epoch"],
-                    model.review_wrapper_subject(probe),
-                )
-            ] = oc
-    _install_attestations(out, atts)
+    installed = _install_attestations(out, data["attestations"], payload_findings=data["findings"])
     _install_findings(out, data["findings"])
-    for aid, oc in outcomes.items():
-        att = out["reviews"].get(aid)
-        if att is None:
+    for att, claims in installed:
+        oc = (claims or {}).get("exemption_outcome")
+        if oc is None:
             continue
         d = out["dispatches"].get(att["dispatch_id"])
         for oid in d["assignment_ids"]:
@@ -2444,6 +2782,7 @@ def _h_exemption_challenge(out: dict, data: dict, policies) -> None:
             if o is None or o["status"] != "not-applicable":
                 continue
             if oc == "not-applicable-confirmed":
+                aid = att["attestation_id"]
                 if aid not in o["not_applicable_attestation_ids"]:
                     o["not_applicable_attestation_ids"] = sorted(set(o["not_applicable_attestation_ids"]) | {aid})
             elif oc == "applicable":
@@ -2454,7 +2793,7 @@ def _h_exemption_challenge(out: dict, data: dict, policies) -> None:
             elif oc == "incomplete":
                 _open_blocker(
                     out,
-                    blocker_id=f"exemption-incomplete:{aid}",
+                    blocker_id=f"exemption-incomplete:{att['attestation_id']}",
                     blocker_class="incomplete-review",
                     reason=f"exemption challenge for {oid} returned incomplete",
                     evidence_ids=[att["evidence_id"]],
@@ -2575,7 +2914,7 @@ def _h_enter_fixing(out: dict, data: dict, policies) -> None:
 
 
 def _h_review_fix(out: dict, data: dict, policies) -> None:
-    _install_attestations(out, data["attestations"])
+    _install_attestations(out, data["attestations"], payload_findings=data["findings"])
     _install_findings(out, data["findings"])
 
 
@@ -2670,7 +3009,7 @@ def _h_enter_review_repair(out: dict, data: dict, policies) -> None:
 
 
 def _h_verify_review_repair(out: dict, data: dict, policies) -> None:
-    _install_attestations(out, data["attestations"])
+    _install_attestations(out, data["attestations"], payload_findings=data["findings"])
     _install_findings(out, data["findings"])
     for a in out["reviews"].values():
         d = out["dispatches"].get(a["dispatch_id"])

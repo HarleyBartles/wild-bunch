@@ -39,7 +39,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**First step:** If you were not already routed here by `using-superpowers-plus`, invoke `using-superpowers-plus` first. Then read this skill's baseline (`references/planning-baseline.md`) and the repo's `.agents/runbooks/planning.md` before executing the stage checklist.
+**First step:** If you were not already routed here by `using-superpowers-plus`, invoke `using-superpowers-plus` first. Then read this skill's baseline (`references/planning-baseline.md`) and consult repository-resident planning guidance when the repository declares it, following its own entrypoints and paths. If no applicable local guidance exists, continue with the portable baseline.
 
 **Context:** If working in an isolated worktree, it should have been created via the `using-git-worktrees` skill at execution time.
 
@@ -220,7 +220,7 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 
 **4. Review Focus:** With the spec in front of you, identify up to five untested input classes or failure modes most likely to bite a reasonable user. Put them in `Review Focus`, then add each covering test to the owning task.
 
-**5. Plan Size Check:** Did you think the plan was too large while writing? If yes, did you apply one of the escape hatches in `references/plan-scope-sizing.md`? Is the `Execution Strategy` field filled with an allowed value and a clear rationale?
+**5. Plan Size and Lane Check:** Did you think the plan was too large while writing? If yes, did you apply one of the escape hatches in `references/plan-scope-sizing.md`? Is the `Execution Strategy` field filled with an allowed value and a clear rationale? Treat the template's `subagent-driven-development (recommended)` parenthetical as a candidate, not proof. After the full task structure is visible, ask which lane you actually recommend and compare it with the nearest credible alternative using the evidence required by `handoff-gates` `plan-readiness`. Do not use plan length or task count alone. After the gate, rewrite the saved `Execution Strategy` field to match its selected lane and add a concise plan-specific reason. The gate result is authoritative for the saved field. Keep the required subskill header unchanged.
 
 **6. Plan-readiness rating:** Use the `handoff-gates` `plan-readiness` lane. Rate the plan for execution confidence (8/10 floor, 9/10 target), report the rating in the current handoff, and do not persist it or execute below 8/10.
 
@@ -228,9 +228,9 @@ If you find issues during the self-review, fix them inline and re-run the plan-r
 
 ## Execution Handoff
 
-After the saved plan meets the readiness floor, link the saved plan for human review before implementation. If the human already explicitly supplied an execution method, preserve it: ask them to review the saved plan and confirm that it captures what they want, without reopening lane selection. Otherwise, present the recommended lane and its execution cost:
+After the saved plan meets the readiness floor and its `Execution Strategy` field matches the gate's plan-specific recommendation, link the saved plan for human review before implementation. If the human already explicitly supplied an execution method, preserve it: ask them to review the saved plan and confirm that it captures what they want, without reopening lane selection. Otherwise, report the lane selected by the gate, its nearest alternative, the plan evidence and trade-off, and the execution cost:
 
-> "Plan complete and saved to `.agents/plans/<filename>.md`. The `Execution Strategy` is `<strategy>`. The plan-readiness rating is `<X>/10`. Do you want to proceed with the recommended strategy, or switch to another lane?"
+> "Plan complete and saved to `.agents/plans/<filename>.md`. Plan-readiness selected `<strategy>` over `<alternative>` because `<plan-specific evidence and trade-off>`. The plan-readiness rating is `<X>/10`. Do you want to proceed with the selected strategy, or switch to another lane?"
 
 Describe the choice accurately: `subagent-driven-development` buys a fresh implementer and reviewer per task plus whole-branch review; Native `executing-plans` keeps implementation inline and buys one fresh whole-branch review. Recommend from task coupling, consequence, and verification burden—not from a blanket preference for either lane.
 
