@@ -17,25 +17,25 @@ Use this reference when the session starts, resumes, or the next action is uncle
 | `verification_or_reporting` | QA, closeout posture, validation, review-feedback, or report writing                                                                             | `verification-before-completion` and `writing-with-clarity`                                                                                                            |
 | `skill_work`                | Create, update, validate, package, install, or troubleshoot skills                                                                               | `writing-skills`                                                                                                                                                       |
 
-## Repository composition discovery
+## Repository-resident workflow guidance
 
-For every repo-backed mode, use the root `AGENTS.md` routing pointers to locate the repository's workflow inventories. At session start, resume, and whenever the active concern changes:
+For repo-backed modes, inspect repository-resident guidance related to the active workflow when the repository declares it. Follow the repository's own entrypoints, inventories, and paths. Do not assume a particular filename, directory, or runbook/playbook system.
 
-1. Read `.agents/playbooks/INDEX.md` when the repository exposes it. Match the request's topical concerns against that inventory independently of runbook selection, then read only the applicable playbooks.
-2. Use `.agents/runbooks/INDEX.md` to resolve the available lifecycle stages when the stage route is not already explicit. The selected stage skill still reads its owning runbook as part of the normal handoff.
-3. Treat runbook-to-playbook links as additional predictable composition, not as the only way a playbook becomes available.
+1. Read the repository's declared workflow entrypoint or inventory, when one exists, and use it to identify topical guidance that applies to the request.
+2. When the lifecycle stage is not explicit, use the repository's declared workflow guidance, if available, to resolve it. The selected stage skill also consults local guidance relevant to its stage when that guidance exists.
+3. Treat links between local workflow artifacts as useful routing, not as the only way relevant guidance can be declared.
 
-Do not read every playbook body speculatively. The indexes are the bounded discovery surface; a playbook body loads only when its named concern applies. If an inventory is absent, follow the repository's declared shape and do not invent a local workflow.
+Read only artifacts that apply to the active concern; do not inspect every local guide speculatively. If the repository declares no relevant artifact, continue with the portable skill baseline and do not invent a local workflow. Surface a missing artifact only when the repository's own guidance requires it or its absence changes a material assumption.
 
 ## Repo-backed work handoff
 
 For repo-backed work, the mandatory handoff is:
 
 ```text
-using-superpowers-plus -> repo-worker-base (hygiene) -> stage skill (reads its baseline + local guide)
+using-superpowers-plus -> repo-worker-base (hygiene) -> stage skill (reads its baseline + applicable repository guidance, when present)
 ```
 
-`repo-worker-base` supplies worktree, branch, scratch, validation, and publication boundaries only; it no longer owns stage baselines or the Superpowers composition table. Each stage skill owns its own baseline reference (`references/<stage>-baseline.md`) and reads it together with the repo's `.agents/runbooks/<stage>.md` as its own first step. That runbook is the local stage composition root and resolves every applicable conditional composition under `.agents/playbooks/`. For the ordered stage composition table, see [`superpowers-composition.md`](superpowers-composition.md).
+`repo-worker-base` supplies worktree, branch, scratch, validation, and publication boundaries only; it does not own stage baselines or repository-specific workflow paths. Each stage skill owns its baseline reference (`references/<stage>-baseline.md`) and consults repository-resident guidance relevant to that stage when the repository declares it. The repository decides whether that guidance lives in a runbook, playbook, root instruction file, or another local artifact. For the portable stage-to-skill mapping, see [`superpowers-composition.md`](superpowers-composition.md).
 
 Do not invoke a stage skill directly for repo work without the `repo-worker-base` hygiene handoff.
 

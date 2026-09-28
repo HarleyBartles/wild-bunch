@@ -36,7 +36,7 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 
 **Core principle:** Review early, review often.
 
-**First step:** Read this skill's baseline (`references/code-review-baseline.md`) and the repo's `.agents/runbooks/code-review.md` before executing the stage checklist.
+**First step:** Read this skill's baseline (`references/code-review-baseline.md`). Consult repository-resident review guidance when the repository declares it, following its own entrypoints and paths. If no applicable local guidance exists, continue with the portable baseline.
 
 ## When to Request Review
 
@@ -149,4 +149,4 @@ You: [Fix progress indicators]
 
 See templates at [code-reviewer.md](code-reviewer.md) for commit-range review and [reviewer-prompt.md](reviewer-prompt.md) for prepared branch/PR diff review.
 
-Before requesting review on a PR — or changing a PR's draft state to signal readiness — consult `.agents/runbooks/pr.md` `## Draft PR policy` so the review request aligns with the repo's draft-to-ready transition.
+Before requesting review on a PR or changing its draft state, follow repository-declared PR workflow guidance when it exists, including any local draft-to-ready transition. If no such guidance exists, follow this skill's portable review and publication guidance.

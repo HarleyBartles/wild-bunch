@@ -42,7 +42,7 @@ The brief is the task contract, the off-repo ledger survives compaction, TDD is 
 
 ## Setup
 
-1. Read `references/implementation-baseline.md` and the repository's `.agents/runbooks/implementing.md`.
+1. Read `references/implementation-baseline.md`. Consult repository-resident implementation guidance when the repository declares it, following its own entrypoints and paths. If no applicable local guidance exists, continue with this baseline and the committed plan.
 
 2. Verify the existing linked worktree with `using-git-worktrees`; never begin implementation on `main` or `master` without explicit authority.
 

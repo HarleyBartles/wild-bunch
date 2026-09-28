@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "policy_id": "review-core-hypothesis-derivation",
+  "version": "1",
+  "families": {
+    "authority-scope": [
+      {
+        "name": "authority-coverage",
+        "claim": "The change to {surface} satisfies every governing authority requirement bearing on {category} for {obligation_id}",
+        "counterexample": "The change to {surface} violates or omits a governing authority requirement bearing on {category} for {obligation_id}"
+      }
+    ],
+    "behavioral-correctness": [
+      {
+        "name": "behavioral-equivalence",
+        "claim": "The change to {surface} produces the intended behavior for {category} on all inputs reachable through {obligation_id}",
+        "counterexample": "There exists a reachable input for which the change to {surface} produces wrong behavior for {category} on {obligation_id}"
+      }
+    ],
+    "test-adequacy": [
+      {
+        "name": "test-adequacy",
+        "claim": "Tests covering {surface} would fail if the changed behavior for {category} regressed on {obligation_id}",
+        "counterexample": "A regression in the changed behavior for {category} on {surface} would pass the current tests for {obligation_id}"
+      }
+    ],
+    "security-privacy": [
+      {
+        "name": "security-boundary",
+        "claim": "The change to {surface} introduces no new security or privacy exposure for {category} on {obligation_id}",
+        "counterexample": "The change to {surface} creates a security or privacy exposure for {category} on {obligation_id}"
+      }
+    ],
+    "reliability-concurrency": [
+      {
+        "name": "failure-interleaving",
+        "claim": "The change to {surface} preserves reliability and concurrency invariants for {category} under failure and interleaving on {obligation_id}",
+        "counterexample": "Some failure or interleaving breaks the change to {surface} for {category} on {obligation_id}"
+      }
+    ],
+    "compatibility-migration": [
+      {
+        "name": "compatibility-preservation",
+        "claim": "The change to {surface} preserves compatibility and migration safety for {category} on {obligation_id}",
+        "counterexample": "The change to {surface} breaks a consumer or migration path for {category} on {obligation_id}"
+      }
+    ],
+    "performance-resources": [
+      {
+        "name": "resource-bound",
+        "claim": "The change to {surface} keeps resource use within existing bounds for {category} on {obligation_id}",
+        "counterexample": "The change to {surface} exceeds existing resource bounds for {category} on {obligation_id}"
+      }
+    ],
+    "operability-configuration": [
+      {
+        "name": "operability-surface",
+        "claim": "The change to {surface} keeps the system operable and correctly configured for {category} on {obligation_id}",
+        "counterexample": "The change to {surface} degrades operability or misconfigures {category} on {obligation_id}"
+      }
+    ],
+    "documentation-contract": [
+      {
+        "name": "documentation-fidelity",
+        "claim": "Documentation and declared contracts remain accurate for {surface} under {category} on {obligation_id}",
+        "counterexample": "Documentation or a declared contract is now inaccurate for {surface} under {category} on {obligation_id}"
+      }
+    ],
+    "source-custody": [
+      {
+        "name": "custody-integrity",
+        "claim": "The change to {surface} edits only sources it owns and preserves canonical custody for {category} on {obligation_id}",
+        "counterexample": "The change to {surface} edits a downstream or foreign-custody source for {category} on {obligation_id}"
+      }
+    ]
+  },
+  "high_risk_extra_families": [
+    {
+      "name": "adversarial-witness",
+      "claim": "No honestly-produced artifact can make {surface} appear to satisfy {category} while it does not for {obligation_id}",
+      "counterexample": "An honestly-produced artifact could make {surface} appear to satisfy {category} while it does not for {obligation_id}"
+    },
+    {
+      "name": "rollback-containment",
+      "claim": "If the change to {surface} is wrong for {category}, the failure is contained and reversible on {obligation_id}",
+      "counterexample": "A wrong change to {surface} for {category} is not contained or not reversible on {obligation_id}"
+    }
+  ]
+}

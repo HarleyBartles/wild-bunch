@@ -108,6 +108,15 @@ public sealed partial class GameSession
             ApplyEvent(session, e);
         }
 
+        var missingCaseFileWorldIndex = events.ToList().FindIndex(
+            e => e is WorldGenerated { CaseFile: null });
+        if (missingCaseFileWorldIndex >= 0
+            && !events.Skip(missingCaseFileWorldIndex + 1).OfType<CaseFileGenerated>().Any())
+        {
+            throw new InvalidOperationException(
+                "Cannot replay a legacy WorldGenerated event without a CaseFileGenerated event.");
+        }
+
         // Rebuild the UnrelatedCriminalLedger from the final CaseFile state.
         // The constructor builds the ledger from a placeholder CaseFile (0 suspects),
         // and Apply(CaseFileGenerated) only sets CaseFile — it does not rebuild the

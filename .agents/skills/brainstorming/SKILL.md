@@ -103,7 +103,7 @@ Classify first, announce the path, then create a task for each item on your path
 
 **Architectural:**
 
-1. **Load baseline and local guide** — read this skill's baseline (`references/design-baseline.md`) and the repo's `.agents/runbooks/design.md` before executing the stage checklist.
+1. **Load baseline and applicable local guidance** — read this skill's baseline (`references/design-baseline.md`). Consult repository-resident guidance relevant to design when the repository declares it, following its own entrypoints and paths. If no applicable local guidance exists, continue with the portable baseline.
 2. **Explore project context** — check files, docs, recent commits
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation

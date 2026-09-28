@@ -18,6 +18,7 @@ using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence.GameSessions;
 using WildBunch.Persistence.Serialization;
 using WildBunch.Persistence.Versioning;
+using WildBunch.Persistence;
 using System.Text.Json;
 
 namespace WildBunch.Integration.Tests;
@@ -25,6 +26,45 @@ namespace WildBunch.Integration.Tests;
 public sealed class EfGameSessionRepositoryTests
 {
     private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
+
+    [Fact]
+    public async Task LegacyWorldGenerated_LoadsFromPersistedEvents_AndCurrentWritesUseV2()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateSession();
+        var originalCaseFile = session.CaseFile;
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var worldEvent = await context.StoredEvents.SingleAsync(e =>
+                e.StreamId == session.Id.Value && e.EventType == "WorldGenerated");
+            var payload = System.Text.Json.Nodes.JsonNode.Parse(worldEvent.PayloadJson)!.AsObject();
+            Assert.Equal(2, worldEvent.SchemaVersion);
+            Assert.NotNull(payload["caseFile"]);
+            payload.Remove("caseFile");
+            worldEvent.PayloadJson = payload.ToJsonString();
+            worldEvent.SchemaVersion = 1;
+            await context.SaveChangesAsync();
+
+            var storedLegacyVersion = await context.StoredEvents
+                .Where(e => e.StreamId == session.Id.Value && e.EventType == "WorldGenerated")
+                .Select(e => e.SchemaVersion).SingleAsync();
+            Assert.Equal(1, storedLegacyVersion);
+        }
+
+        var loaded = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(loaded);
+        Assert.Equal(originalCaseFile.TrueCulpritId, loaded!.CaseFile.TrueCulpritId);
+        Assert.Equal(originalCaseFile.Suspects.Select(s => s.Id), loaded.CaseFile.Suspects.Select(s => s.Id));
+
+        var eventStream = await repository.GetEventStreamAsync(session.Id);
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, eventStream);
+        Assert.Equal(originalCaseFile.TrueCulpritId, replayed.CaseFile.TrueCulpritId);
+        Assert.Equal(originalCaseFile.KnownClues.Select(c => c.Id), replayed.CaseFile.KnownClues.Select(c => c.Id));
+        Assert.Contains(await repository.GetByStatusAsync(GameStatus.Active), s => s.Id == session.Id);
+    }
 
     [Fact]
     public async Task SaveAndLoadNewSessionRoundTripsThroughPostgreSql()
@@ -460,8 +500,10 @@ public sealed class EfGameSessionRepositoryTests
         await PersistAsync(commandRepository, unitOfWork, loaded);
 
         var serializer = new GameSessionJsonSerializer();
+        var upcasters = DependencyInjection.CreateDefaultUpcasters();
+        var registry = new PayloadUpcasterRegistry(upcasters);
         var payloadLoader = new PersistedPayloadLoader(
-            new PayloadUpcasterRegistry([]),
+            registry,
             serializer,
             new TravelDiaryDayProjector(),
             rebuildSessionFromEvents: _ => throw new InvalidOperationException("Rebuild not expected in greenfield tests."));
@@ -503,12 +545,13 @@ public sealed class EfGameSessionRepositoryTests
         var context = fixture.CreateContext();
         unitOfWork = new EfGameSessionUnitOfWork(context);
         var serializer = new GameSessionJsonSerializer();
+        var registry = new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters());
         var payloadLoader = new PersistedPayloadLoader(
-            new PayloadUpcasterRegistry([]),
+            registry,
             serializer,
             new TravelDiaryDayProjector(),
             rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
-        return new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
+        return new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), registry, payloadLoader);
     }
 
     private static async Task PersistAsync(

@@ -18,6 +18,6 @@ public sealed record WorldGenerated : IDomainEvent
     public required SaltSource SaltSource { get; init; }
     public required GameEntropy GameEntropy { get; init; }
     public required WorldSnapshot World { get; init; }
-    public required CaseFileSnapshot CaseFile { get; init; }
+    public CaseFileSnapshot? CaseFile { get; init; }
     public DateTimeOffset OccurredAt => DateTimeOffset.UtcNow;
 }

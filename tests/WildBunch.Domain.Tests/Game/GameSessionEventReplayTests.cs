@@ -28,6 +28,24 @@ namespace WildBunch.Domain.Tests.Game;
 public sealed class GameSessionEventReplayTests
 {
     [Fact]
+    public void RehydrateFromEvents_Rejects_WorldGenerated_Without_CaseFile_Source()
+    {
+        var world = CreateWorldWithLayouts();
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, CreateCaseFile(), GameDifficulty.Standard, GameEntropy.Classic,
+            "test-seed", SaltSource.CreateFixed("test-salt"));
+        var events = session.UncommittedEvents
+            .Where(e => e is not CaseFileGenerated)
+            .Select(e => e is WorldGenerated generated
+                ? (IDomainEvent)(generated with { CaseFile = null! })
+                : e)
+            .ToList();
+
+        Assert.Throws<InvalidOperationException>(() => GameSession.RehydrateFromEvents(
+            session.Id, world, events));
+    }
+
+    [Fact]
     public void RehydrateFromEvents_Preserves_Town_Layouts_Across_Replay()
     {
         // Command path: build a world with layouts and start a game through the

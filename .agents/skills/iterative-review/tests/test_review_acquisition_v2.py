@@ -19,6 +19,7 @@ sys.path.insert(0, str(SCRIPTS))
 from review_core import model, policy, witness_log  # noqa: E402
 from review_core import acquisition as acq  # noqa: E402
 from review_core import feedback_policy as fbp  # noqa: E402
+from review_core import surfaces  # noqa: E402
 import review_v2_helpers as helpers  # noqa: E402
 from review_v2_helpers import FakeGh, FakeGit  # noqa: E402
 
@@ -603,8 +604,11 @@ class TestAcquireBindings:
                 }
             )
         )
+        patch = b"patch bytes"
+        (out / "diff.patch").write_bytes(patch)
+        (out / "surfaces.json").write_bytes(surfaces.surfaces_document(surfaces.parse_diff_surfaces(patch.decode())))
         data = {
-            "snapshot": {"authority_manifest_sha256": "x"},
+            "snapshot": {"authority_manifest_sha256": "x", "diff_sha256": model.sha256_hex(patch)},
             "manifest_payload": payload,
             "authorities": [
                 {
@@ -1136,6 +1140,71 @@ class TestAcquireBindings:
             return real_read(self, *a, **k)
 
         monkeypatch.setattr(Path, "read_bytes", flaky)
+        src = _source(out_dir, scratch)
+        with pytest.raises(acq.AcquisitionError, match="tampered-source"):
+            src.acquire(action="freeze-review-input", current_snapshot=None)
+
+
+class TestAcquisitionArtifacts:
+    """diff.patch and surfaces.json are named artifacts of the acquisition
+    dir, bound through snapshot.diff_sha256 and re-parse consistency."""
+
+    _DIFF = (
+        "diff --git a/src/foo.py b/src/foo.py\n"
+        "index 1111111..2222222 100644\n"
+        "--- a/src/foo.py\n"
+        "+++ b/src/foo.py\n"
+        "@@ -10,2 +10,2 @@ def f():\n"
+        " context line\n"
+        "-old line\n"
+        "+new line\n"
+    )
+
+    def test_enumerate_writes_diff_patch_and_surfaces(self, tmp_path):
+        git = FakeGit({"AGENTS.md": "# law"}, diff=self._DIFF)
+        summary, out_dir, _s = _enumerate(tmp_path, git=git)
+        patch = (out_dir / "diff.patch").read_bytes()
+        assert patch == self._DIFF.encode("utf-8")
+        data = json.loads((out_dir / "data.json").read_text())
+        assert data["snapshot"]["diff_sha256"] == model.sha256_hex(patch)
+        recorded = json.loads((out_dir / "surfaces.json").read_bytes())
+        assert recorded == list(surfaces.parse_diff_surfaces(self._DIFF))
+        assert [e["path"] for e in recorded] == ["src/foo.py"]
+        assert recorded[0]["change_kind"] == "modified"
+        assert summary["enumeration_id"]
+
+    def test_acquire_rejects_missing_diff_patch(self, tmp_path):
+        summary, out_dir, scratch = _enumerate(tmp_path)
+        _transcript_with_marker(scratch, summary["enumeration_id"], out_dir=out_dir)
+        (out_dir / "diff.patch").unlink()
+        src = _source(out_dir, scratch)
+        with pytest.raises(acq.AcquisitionError, match="tampered-source"):
+            src.acquire(action="freeze-review-input", current_snapshot=None)
+
+    def test_acquire_rejects_digest_mismatched_diff_patch(self, tmp_path):
+        summary, out_dir, scratch = _enumerate(tmp_path)
+        _transcript_with_marker(scratch, summary["enumeration_id"], out_dir=out_dir)
+        (out_dir / "diff.patch").write_bytes(b"other diff bytes")
+        src = _source(out_dir, scratch)
+        with pytest.raises(acq.AcquisitionError, match="tampered-source"):
+            src.acquire(action="freeze-review-input", current_snapshot=None)
+
+    def test_acquire_rejects_missing_surfaces_json(self, tmp_path):
+        summary, out_dir, scratch = _enumerate(tmp_path)
+        _transcript_with_marker(scratch, summary["enumeration_id"], out_dir=out_dir)
+        (out_dir / "surfaces.json").unlink()
+        src = _source(out_dir, scratch)
+        with pytest.raises(acq.AcquisitionError, match="tampered-source"):
+            src.acquire(action="freeze-review-input", current_snapshot=None)
+
+    def test_acquire_rejects_surfaces_inconsistent_with_patch(self, tmp_path):
+        summary, out_dir, scratch = _enumerate(tmp_path)
+        _transcript_with_marker(scratch, summary["enumeration_id"], out_dir=out_dir)
+        (out_dir / "surfaces.json").write_bytes(
+            surfaces.surfaces_document(
+                ({"path": "evil.py", "change_kind": "modified", "renamed_from": None, "hunks": []},)
+            )
+        )
         src = _source(out_dir, scratch)
         with pytest.raises(acq.AcquisitionError, match="tampered-source"):
             src.acquire(action="freeze-review-input", current_snapshot=None)

@@ -478,16 +478,22 @@ def _map_data_builder(dd: _DispatchDouble, st: dict, dispatch: dict, att: dict):
         }
     ]
     map_path = dd._file(f"map-{dd.serial}.json", {"role": role, "entries": entries})
+    impact_map = {
+        "impact_map_id": "",
+        "role": role,
+        "entries": entries,
+        "evidence_id": "@map",
+        "snapshot_epoch": snap["epoch"],
+        "snapshot_fingerprint": snap["fingerprint"],
+    }
+    att["structured_output"] = {
+        "kind": "impact-map",
+        "subject_sha256": model.sha256_json(model.impact_map_subject(impact_map)),
+        "record": impact_map,
+    }
     return (
         {
-            "impact_map": {
-                "impact_map_id": "",
-                "role": role,
-                "entries": entries,
-                "evidence_id": "@map",
-                "snapshot_epoch": snap["epoch"],
-                "snapshot_fingerprint": snap["fingerprint"],
-            },
+            "impact_map": impact_map,
             "attestation": att,
             "findings": [],
         },
@@ -1539,7 +1545,6 @@ class TestEngineTransactions:
         w2 = helpers._Walk(tmp_path / "pre")
         w2.freeze()
         w2.ascent_to_exemption()
-        w2.exemption()
         path2 = _persist_state(tmp_path / "pre", w2.state)
         runner = _CommandRunnerDouble(path2, w2.registry, tmp_path / "pre", w2.policies)
         sources = engine.WitnessSources(
@@ -2219,6 +2224,275 @@ class TestEnumerateCompleteFlow:
         err = capsys.readouterr().err
         assert "tool-blocked" in err
         assert "Traceback" not in err
+
+
+class TestPackageVerb:
+    """``reviewctl package`` materializes the exact-snapshot reviewer context
+    package under <scratch>/packages/ and emits the dispatch fragment. It is
+    read-only on state and works before Plan-4 live dispatch wiring."""
+
+    _DIFF = (
+        "diff --git a/src/foo.py b/src/foo.py\n"
+        "index 1111111..2222222 100644\n"
+        "--- a/src/foo.py\n"
+        "+++ b/src/foo.py\n"
+        "@@ -10,2 +10,2 @@ def f():\n"
+        " context line\n"
+        "-old line\n"
+        "+new line\n"
+    )
+
+    def _live(self, monkeypatch, git=None, gh=None, runtime="devin-desktop"):
+        import reviewctl
+
+        monkeypatch.setenv(engine.RUNTIME_ENV_VAR, runtime)
+        if git is not None:
+            monkeypatch.setattr(reviewctl, "_run_git", lambda a, cwd=None: git(a))
+        if gh is not None:
+            monkeypatch.setattr(reviewctl, "_run_gh", lambda a, cwd=None: gh(a))
+        return reviewctl
+
+    def _frozen(self, reviewctl, tmp_path):
+        state = tmp_path / "review-state.json"
+        scratch = tmp_path / "scratch"
+        rc = reviewctl.main(
+            [
+                "init",
+                "--state",
+                str(state),
+                "--review-id",
+                "rev-1",
+                "--scratch-dir",
+                str(scratch),
+                "--apply",
+            ]
+        )
+        assert rc == 0
+        rc = reviewctl.main(["enumerate", "--state", str(state), "--repo", str(tmp_path), "--pr", "7"])
+        assert rc == 0
+        acquire_dir = scratch / "acquire" / "latest"
+        enum_id = json.loads((acquire_dir / "enumeration.json").read_text())["enumeration_id"]
+        helpers.acq_transcript_with_marker(scratch, enum_id, out_dir=acquire_dir)
+        rc = reviewctl.main(
+            [
+                "complete",
+                "--state",
+                str(state),
+                "--action",
+                "freeze-review-input",
+                "--acquired",
+                str(acquire_dir),
+                "--apply",
+            ]
+        )
+        assert rc == 0
+        return state, scratch
+
+    def test_package_emits_fragment_and_default_dir(self, tmp_path, monkeypatch, capsys):
+        reviewctl = self._live(
+            monkeypatch,
+            git=helpers.FakeGit({"src/foo.py": "head content\n"}, diff=self._DIFF),
+            gh=helpers.FakeGh(),
+        )
+        state, scratch = self._frozen(reviewctl, tmp_path)
+        capsys.readouterr()
+        generation = store.load_state(state)["generation"]
+        rc = reviewctl.main(
+            [
+                "package",
+                "--state",
+                str(state),
+                "--repo",
+                str(tmp_path),
+                "--action",
+                "map-impact",
+                "--role",
+                "impact-mapper-semantic",
+                "--json",
+            ]
+        )
+        assert rc == 0
+        frag = json.loads(capsys.readouterr().out)
+        assert set(frag) >= {
+            "assignment_ids",
+            "context_evidence_ids",
+            "instruction_manifest_sha256",
+            "data_manifest_sha256",
+            "context_package_sha256",
+            "hazard_framing_sha256",
+            "required_tool_classes",
+            "package_dir",
+        }
+        pkg = Path(frag["package_dir"])
+        assert pkg.parent == scratch / "packages"
+        assert pkg.name.startswith("map-impact-")
+        assert (pkg / "patch.diff").read_bytes() == self._DIFF.encode("utf-8")
+        assert (pkg / "data" / "files" / "src" / "foo.py").read_text() == "head content\n"
+        # read-only on state: freeze generation unchanged
+        assert store.load_state(state)["generation"] == generation
+
+    def test_package_refuses_before_snapshot(self, tmp_path, monkeypatch, capsys):
+        reviewctl = self._live(
+            monkeypatch,
+            git=helpers.FakeGit({"src/foo.py": "x"}, diff=self._DIFF),
+            gh=helpers.FakeGh(),
+        )
+        state = tmp_path / "review-state.json"
+        scratch = tmp_path / "scratch"
+        rc = reviewctl.main(
+            [
+                "init",
+                "--state",
+                str(state),
+                "--review-id",
+                "rev-1",
+                "--scratch-dir",
+                str(scratch),
+                "--apply",
+            ]
+        )
+        assert rc == 0
+        capsys.readouterr()
+        rc = reviewctl.main(
+            [
+                "package",
+                "--state",
+                str(state),
+                "--repo",
+                str(tmp_path),
+                "--action",
+                "map-impact",
+                "--role",
+                "impact-mapper-semantic",
+            ]
+        )
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "no-snapshot" in err
+        assert "Traceback" not in err
+
+
+class TestPlanCoverageProducer:
+    """``reviewctl plan-coverage`` emits the deterministic obligations payload
+    from the current impact-map union (Plan 3 Task 7)."""
+
+    _FP = "f" * 64
+
+    def _union_state(self, entries_by_role):
+        state = {
+            "snapshot": {"epoch": 1, "fingerprint": self._FP},
+            "impact_maps": {},
+            "review_repairs": {},
+        }
+        for role, entries in entries_by_role.items():
+            mid = f"map:{role}"
+            state["impact_maps"][mid] = {
+                "impact_map_id": mid,
+                "role": role,
+                "entries": entries,
+                "evidence_id": f"ev:{role}",
+                "snapshot_epoch": 1,
+                "snapshot_fingerprint": self._FP,
+            }
+        return state
+
+    def _entry(self, surface, *, category="file", consequences=("none",), hazards=()):
+        return {
+            "surface": surface,
+            "category": category,
+            "hazards": list(hazards),
+            "consequences": list(consequences),
+        }
+
+    def test_emits_obligation_per_surface_category(self, tmp_path):
+        state = self._union_state(
+            {
+                "impact-mapper-semantic": [self._entry("src/foo.py")],
+                "impact-mapper-contract": [self._entry("src/foo.py")],
+            }
+        )
+        payload = policy.plan_coverage_payload(state)
+        obs = payload["obligations"]
+        assert [o["category"] for o in obs] == list(model.OBLIGATION_CATEGORIES)
+        assert all(o["surfaces"] == ["src/foo.py"] for o in obs)
+        assert all(
+            o["status"] == "pending"
+            and o["assignees"] == []
+            and o["evidence_ids"] == []
+            and o["not_applicable_attestation_ids"] == []
+            for o in obs
+        )
+
+    def test_substantive_consequence_gives_cross_surface(self, tmp_path):
+        state = self._union_state(
+            {
+                "impact-mapper-semantic": [self._entry("src/a.py", consequences=("none",))],
+                "impact-mapper-contract": [self._entry("src/b.py", consequences=("migration-rollback",))],
+            }
+        )
+        payload = policy.plan_coverage_payload(state)
+        by_surface = {}
+        for o in payload["obligations"]:
+            by_surface.setdefault(o["surfaces"][0], o)
+        assert by_surface["src/a.py"]["scope_level"] == "surface"
+        assert by_surface["src/b.py"]["scope_level"] == "cross-surface"
+
+    def test_risk_classification_rules(self, tmp_path):
+        state = self._union_state(
+            {
+                "impact-mapper-semantic": [
+                    self._entry("src/sec.py", consequences=("security",)),
+                    self._entry("src/med.py", consequences=("concurrency-recovery",)),
+                    self._entry("src/low.py", consequences=("none",)),
+                ],
+                "impact-mapper-contract": [self._entry("src/low.py")],
+            }
+        )
+        payload = policy.plan_coverage_payload(state)
+        by_surface = {}
+        for o in payload["obligations"]:
+            by_surface.setdefault(o["surfaces"][0], o)
+        assert by_surface["src/sec.py"]["risk"] == "high"
+        assert by_surface["src/med.py"]["risk"] == "medium"
+        assert by_surface["src/low.py"]["risk"] == "low"
+        # floors track policy.obligation_floor exactly
+        for o in payload["obligations"]:
+            tier, reasoning = policy.obligation_floor(o["scope_level"], o["risk"], o["consequences"])
+            assert o["minimum_capability_tier"] == tier
+            assert o["minimum_reasoning_floor"] == reasoning
+
+    def test_refuses_without_current_maps(self, tmp_path):
+        state = self._union_state({"impact-mapper-semantic": [self._entry("src/foo.py")]})
+        with pytest.raises(model.StateValidationError, match="coverage"):
+            policy.plan_coverage_payload(state)
+
+    def test_emitted_payload_passes_install(self, tmp_path):
+        w = helpers._Walk(tmp_path)
+        w.freeze()
+        w.maps()
+        payload = policy.plan_coverage_payload(w.state, policies=w.policies)
+        w.run("plan-coverage", payload)
+        # The install satisfied the coverage predicate: challenge is lawful.
+        w.challenge()
+
+    def test_cli_emits_payload_to_out_and_stdout(self, tmp_path, capsys):
+        import reviewctl
+
+        w = helpers._Walk(tmp_path)
+        w.freeze()
+        w.maps()
+        state = _persist_state(tmp_path, w.state)
+        out_file = tmp_path / "payload.json"
+        rc = reviewctl.main(["plan-coverage", "--state", str(state), "--out", str(out_file)])
+        assert rc == 0
+        payload = json.loads(out_file.read_bytes())
+        assert [o["category"] for o in payload["obligations"]] == list(model.OBLIGATION_CATEGORIES)
+        capsys.readouterr()
+        rc = reviewctl.main(["plan-coverage", "--state", str(state), "--json"])
+        assert rc == 0
+        assert json.loads(capsys.readouterr().out) == payload
+        # round-trip: the emitted payload installs through complete_action
+        w.run("plan-coverage", payload)
 
 
 class TestHooksRenderAndJsonFlag:

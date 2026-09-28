@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from . import model, policy, store
+from . import assignment_policy, hypothesis_policy, model, policy, store
 
 
 # ---------------------------------------------------------------------------
@@ -200,43 +200,6 @@ class _BuiltinLocalChecks:
         return ()
 
 
-class _BuiltinReviewAssignments:
-    """Derives each dispatch's requirement from role and obligation floors."""
-
-    @property
-    def source_id(self) -> str:
-        return "review-core-assignments"
-
-    @property
-    def source_version(self) -> str:
-        return "1"
-
-    @property
-    def sha256(self) -> str:
-        return model.sha256_hex(b"review-core-assignments:1")
-
-    def requirement(self, *, state: dict, role: str, assignment_ids: tuple) -> policy.RoleRequirement:
-        floor_t, floor_r = policy._role_floor(role)
-        if role == "obligation-reviewer":
-            floor_t, floor_r = "fast", "low"
-            for aid in assignment_ids:
-                o = state["obligations"].get(aid)
-                if o is None:
-                    continue
-                t, r = policy.obligation_floor(o["scope_level"], o["risk"], o["consequences"])
-                if model.CAPABILITY_TIERS.index(t) > model.CAPABILITY_TIERS.index(floor_t):
-                    floor_t = t
-                if model.REASONING_FLOORS.index(r) > model.REASONING_FLOORS.index(floor_r):
-                    floor_r = r
-        return policy.RoleRequirement(
-            capability_tier=floor_t,
-            reasoning_floor=floor_r,
-            context_mode="fresh",
-            distinct_execution_from=(),
-            distinct_role_contract_from=(),
-        )
-
-
 class _BuiltinCommandExecution:
     @property
     def source_id(self) -> str:
@@ -258,41 +221,6 @@ class _BuiltinCommandExecution:
             "snapshot_epoch": snapshot["epoch"],
             "snapshot_fingerprint": snapshot["fingerprint"],
         }
-
-
-class _BuiltinHypotheses:
-    """Minimal derivation: each obligation yields one claim/counterexample
-    pair. Later plans may inject a richer manifest-driven derivation."""
-
-    @property
-    def source_id(self) -> str:
-        return "review-core-hypotheses"
-
-    @property
-    def source_version(self) -> str:
-        return "1"
-
-    @property
-    def sha256(self) -> str:
-        return model.sha256_hex(b"review-core-hypotheses:1")
-
-    def derive(self, *, obligation: dict) -> tuple:
-        oid = obligation["obligation_id"]
-        sha = self.sha256
-        return (
-            {
-                "hypothesis_id": f"{oid}:claim",
-                "polarity": "claim",
-                "statement": f"{obligation['category']} holds for {oid}",
-                "derivation_policy_sha256": sha,
-            },
-            {
-                "hypothesis_id": f"{oid}:counterexample",
-                "polarity": "counterexample",
-                "statement": f"{obligation['category']} fails for {oid}",
-                "derivation_policy_sha256": sha,
-            },
-        )
 
 
 def _default_ingestion_policy() -> store.EvidenceIngestionPolicy:
@@ -340,9 +268,9 @@ def load_witness_sources(
             policies=policy.PolicyBundle(
                 witness_verifier=_FailClosedWitnessVerifier(),
                 local_checks=_BuiltinLocalChecks(),
-                review_assignments=_BuiltinReviewAssignments(),
+                review_assignments=assignment_policy.SealedReviewAssignmentPolicy(),
                 command_execution=_BuiltinCommandExecution(),
-                hypotheses=_BuiltinHypotheses(),
+                hypotheses=hypothesis_policy.SealedHypothesisDerivationPolicy(),
             ),
             evidence_ingestion_policy=_default_ingestion_policy(),
         )
@@ -372,9 +300,9 @@ def load_witness_sources(
         policies=policy.PolicyBundle(
             witness_verifier=verifier,
             local_checks=_BuiltinLocalChecks(),
-            review_assignments=_BuiltinReviewAssignments(),
+            review_assignments=assignment_policy.SealedReviewAssignmentPolicy(),
             command_execution=_BuiltinCommandExecution(),
-            hypotheses=_BuiltinHypotheses(),
+            hypotheses=hypothesis_policy.SealedHypothesisDerivationPolicy(),
             discovery_policy_origin="base-revision",
         ),
         evidence_ingestion_policy=_default_ingestion_policy(),
