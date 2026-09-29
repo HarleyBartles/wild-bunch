@@ -14,6 +14,6 @@ Every repository-local skill is named exactly once in `repo.local_skills`, its d
 
 ## Native refresh
 
-Run `codex plugin marketplace upgrade wild-bunch` in a trusted Wild Bunch checkout. This upgrades the Git catalog snapshot and its installed Git-subdirectory payloads. Other repositories do not inherit the activation keys. Before this migration merges, field tests override the catalog's ref to the published PR branch; payload refs remain `main`. After merge the checked-in catalog ref is sufficient.
+Run `codex plugin marketplace upgrade wild-bunch` in a trusted Wild Bunch checkout. This upgrades the Git catalog snapshot and its installed Git-subdirectory payloads. Other repositories do not inherit the activation keys. Native installation may also write user-level enablement; keep these four identities disabled or absent at user scope so repository activation remains the owner. Before this migration merges, field tests override the catalog's ref to the published PR branch; payload refs remain `main`. After merge the checked-in catalog ref is sufficient.
 
 Devin activation and field testing remain deferred. The adopted AOM scaffold's empty `.devin/config.json` declares no dependencies.

@@ -11,6 +11,7 @@ enabled = true
 
 [plugins."frontend-pack@wild-bunch"]
 enabled = true
+
 [marketplaces.wild-bunch]
 source_type = "git"
 source = "https://github.com/HarleyBartles/wild-bunch.git"

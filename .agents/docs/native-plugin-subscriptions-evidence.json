@@ -1,0 +1,239 @@
+{
+  "primary": {
+    "installed": [
+      {
+        "pluginId": "game-studio@wild-bunch",
+        "name": "game-studio",
+        "marketplaceName": "wild-bunch",
+        "version": "0.1.2",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/openai/plugins.git",
+          "path": "plugins/game-studio",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      },
+      {
+        "pluginId": "dotnet-pack@wild-bunch",
+        "name": "dotnet-pack",
+        "marketplaceName": "wild-bunch",
+        "version": "1.0.0",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+          "path": "dist/plugins/dotnet-pack",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      },
+      {
+        "pluginId": "architecture-pack@wild-bunch",
+        "name": "architecture-pack",
+        "marketplaceName": "wild-bunch",
+        "version": "1.0.0",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+          "path": "dist/plugins/architecture-pack",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      },
+      {
+        "pluginId": "frontend-pack@wild-bunch",
+        "name": "frontend-pack",
+        "marketplaceName": "wild-bunch",
+        "version": "0.1.0",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+          "path": "dist/plugins/frontend-pack",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      }
+    ],
+    "skill_read_commands": [
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/dotnet-pack/1.0.0/skills/dotnet/SKILL.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/frontend-pack/0.1.0/skills/react/SKILL.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/game-studio/0.1.2/skills/game-studio/SKILL.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/architecture-pack/1.0.0/skills/hexagonal-architecture/SKILL.md'\"",
+        "exit_code": 0
+      }
+    ],
+    "session_transcript_sha256": "79c3090892ce9b9312e4572edeb11bb777554265b3bb7b35639adce2428dfc8e",
+    "result": "Read all four resolved native plugin `SKILL.md` files.\n\n| Invoked skill | Applicable rule |\n|---|---|\n| `/game-studio:game-studio` | Define the DOM HUD and menu layer early, even when the game playfield uses canvas or WebGL. |\n| `/architecture-pack:hexagonal-architecture` | Keep framework-specific types in adapters; connect the API to the C# core through explicit ports. |\n| `/dotnet-pack:dotnet` | Put gameplay business logic in handlers or domain services, keeping API endpoints focused on transport. |\n| `/frontend-pack:react` | Use `useEffect` to synchronize with external systems; derive display state during rendering. |\n\nResolved file paths:\n\n- [game-studio/SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/game-studio/0.1.2/skills/game-studio/SKILL.md)\n- [hexagonal-architecture/SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/architecture-pack/1.0.0/skills/hexagonal-architecture/SKILL.md)\n- [dotnet/SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/dotnet-pack/1.0.0/skills/dotnet/SKILL.md)\n- [react/SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/frontend-pack/0.1.0/skills/react/SKILL.md)\n\nNo edits, product-source inspection, or tests performed."
+  },
+  "linked_worktree": {
+    "installed": [
+      {
+        "pluginId": "game-studio@wild-bunch",
+        "name": "game-studio",
+        "marketplaceName": "wild-bunch",
+        "version": "0.1.2",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/openai/plugins.git",
+          "path": "plugins/game-studio",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      },
+      {
+        "pluginId": "dotnet-pack@wild-bunch",
+        "name": "dotnet-pack",
+        "marketplaceName": "wild-bunch",
+        "version": "1.0.0",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+          "path": "dist/plugins/dotnet-pack",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      },
+      {
+        "pluginId": "architecture-pack@wild-bunch",
+        "name": "architecture-pack",
+        "marketplaceName": "wild-bunch",
+        "version": "1.0.0",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+          "path": "dist/plugins/architecture-pack",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      },
+      {
+        "pluginId": "frontend-pack@wild-bunch",
+        "name": "frontend-pack",
+        "marketplaceName": "wild-bunch",
+        "version": "0.1.0",
+        "installed": true,
+        "enabled": true,
+        "source": {
+          "source": "git-subdir",
+          "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+          "path": "dist/plugins/frontend-pack",
+          "ref": "main"
+        },
+        "marketplaceSource": {
+          "sourceType": "git",
+          "source": "https://github.com/HarleyBartles/wild-bunch.git"
+        },
+        "installPolicy": "INSTALLED_BY_DEFAULT",
+        "authPolicy": "ON_INSTALL"
+      }
+    ],
+    "skill_read_commands": [
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/frontend-pack/0.1.0/skills/react/SKILL.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/game-studio/0.1.2/skills/game-studio/SKILL.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/architecture-pack/1.0.0/skills/hexagonal-architecture/SKILL.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "\"C:\\\\Users\\\\hbart\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath 'C:/Users/hbart/.codex/plugins/cache/wild-bunch/dotnet-pack/1.0.0/skills/dotnet/SKILL.md'\"",
+        "exit_code": 0
+      }
+    ],
+    "session_transcript_sha256": "e6acb647d907fee5d06598a2261f2f65dcfc305d6f0091a8694ba143a5db8858",
+    "result": "Read all four native cached skills resolved by the catalog:\n\n- `/game-studio:game-studio`: [SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/game-studio/0.1.2/skills/game-studio/SKILL.md). Rule: Default to Phaser for 2D browser games.\n- `/architecture-pack:hexagonal-architecture`: [SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/architecture-pack/1.0.0/skills/hexagonal-architecture/SKILL.md). Rule: Keep framework-specific annotations, SDK types, and configuration in adapters.\n- `/dotnet-pack:dotnet`: [SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/dotnet-pack/1.0.0/skills/dotnet/SKILL.md). Rule: Keep domain logic free of framework and UI concerns.\n- `/frontend-pack:react`: [SKILL.md](C:/Users/hbart/.codex/plugins/cache/wild-bunch/frontend-pack/0.1.0/skills/react/SKILL.md). Rule: Keep hooks at the top level, outside loops, conditions, and nested functions.\n\nNo edits, product-source inspection, or tests performed."
+  },
+  "unrelated": {
+    "installed": [],
+    "available": [],
+    "representative_skill_occurrences": {
+      "game-studio:game-studio": 0,
+      "architecture-pack:hexagonal-architecture": 0,
+      "dotnet-pack:dotnet": 0,
+      "frontend-pack:react": 0
+    }
+  },
+  "upgrade": {
+    "selectedMarketplaces": [
+      "wild-bunch"
+    ],
+    "upgradedRoots": [
+      "C:\\Users\\hbart\\.codex\\.tmp\\marketplaces\\wild-bunch"
+    ],
+    "errors": []
+  },
+  "architecture_before": {
+    "files": 57,
+    "package_digest_sha256": "5021535cdda1cf18847f2d1b853d64be1dec526c6a3cee1feb0792ec949070b1",
+    "portable_manifest": false
+  },
+  "architecture_after": {
+    "files": 58,
+    "package_digest_sha256": "bc3b7c108ba382abc92b59d9c69971d265d63ec4e1964bd78f955a303ff1eef9",
+    "portable_manifest": true
+  }
+}
