@@ -56,3 +56,9 @@ Upgrade added portable `plugin.json`; every resulting cached file path and SHA-2
 Passed: `deploy_operating_standards.py --check`; `repo_standards.py --check --standard repo-plugin-subscriptions`; the full eight-standard check; and `py -3 -m pytest scripts/tests -q` (22 passed). The normal tracked hook ran canonical apply/check: .NET build, 1,190 passing .NET tests with 10 existing skips, npm installation, TypeScript checking, 309 passing Vitest tests across 42 files, production build and whitespace checks. Skips are not counted as passes.
 
 Draft PRs intentionally skip the repository's hosted validation job. Publication and fresh independent review results belong in the PR.
+
+## Independent review limitations
+
+A fresh whole-branch review of `c51181a..b29d125` found two upstream AOM validator gaps. Both were reproduced using disposable fixture copies: removing the native marketplace registration still returns no findings, and paths `.//plugins/game-studio` or `./C:/plugins/game-studio` also return no findings on this Windows host. The current Wild Bunch configuration has an explicit Git-backed marketplace and the exact safe relative paths required by the handover; native discovery, invocation and Upgrade prove those configured inputs.
+
+Disposition: retain the deployed AOM resources and their verified provenance, and defer generic validator hardening to the Marketplace source owner. No malformed input is configured here. The passing standard check is not proof that every invalid registration or path is rejected. No Marketplace source was edited and no upstream issue or message was sent as part of this migration.
