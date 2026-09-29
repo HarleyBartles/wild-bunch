@@ -96,8 +96,8 @@
 
 - [x] Run changed behavior suites and relevant platform wrapper checks using the repository's documented commands. Do not use grep-only file-presence checks as a substitute for behavior.
 - [x] Run `py -3 tools/run.py ci --check` against the completed tree, including the full existing .NET, web, repository-owned script, Markdown, and whitespace lanes.
-- [ ] Validate the tracked hook from a staged snapshot and confirm its generated-path staging captures skill removals/additions, standards deployments, and the freshness README but no mesh indexes. Confirm hosted CI uses the same pinned deployed standards and does not need Codex or ambient plugins.
-- [ ] Inspect final diff for exact subscription/standard sets, deployment provenance, no Marketplace source edits, resolved decision links, no replacement mesh, and preserved game/web checks.
-- [ ] Commit through the normal tracked hook; do not bypass it. Push the branch, open a Draft PR against `main`, attach the PR to this task, and verify GitHub reports the expected head SHA, base, and Draft state. Review the resulting hosted checks and report any pending/running checks accurately.
+- [x] Validate the tracked hook from a staged snapshot and confirm its generated-path staging captures skill removals/additions, standards deployments, and the freshness README but no mesh indexes. Confirm hosted CI uses the same pinned deployed standards and does not need Codex or ambient plugins.
+- [x] Inspect final diff for exact subscription/standard sets, deployment provenance, no Marketplace source edits, resolved decision links, no replacement mesh, and preserved game/web checks.
+- [x] Commit through the normal tracked hook; do not bypass it. Push the branch, open a Draft PR against `main`, attach the PR to this task, and verify GitHub reports the expected head SHA, base, and Draft state. Review the resulting hosted checks and report any pending/running checks accurately.
 
 **Exit:** The migration is reviewable in a Draft PR with local canonical/hook evidence and verified GitHub publication state.
