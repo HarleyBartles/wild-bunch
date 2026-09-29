@@ -33,5 +33,3 @@ def test_hosted_ci_executes_the_tracked_hook() -> None:
     assert "REPO_STANDARDS_HOSTED_COMMIT: HEAD" in text
     assert "run: githooks/pre-commit" in text
     assert "cp githooks/pre-commit" not in text
-
-

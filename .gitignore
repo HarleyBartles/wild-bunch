@@ -493,4 +493,7 @@ $RECYCLE.BIN/
 
 # Tool/MCP output dirs (agent-generated, not tracked)
 .codex/
+!/.codex/
+/.codex/*
+!/.codex/config.toml
 .playwright-mcp/
