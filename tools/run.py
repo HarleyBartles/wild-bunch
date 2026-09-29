@@ -50,18 +50,6 @@ def _repo_standards_cmd(mode: str, allow_shared: bool) -> list[str]:
     return cmd
 
 
-def _skills_cmd(mode: str, allow_shared: bool) -> list[str]:
-    cmd = [
-        sys.executable,
-        "tools/refresh_marketplace_skills.py",
-        f"--{mode}",
-        "--no-roll-marketplace-source",
-    ]
-    if mode == "apply" and allow_shared:
-        cmd.append("--allow-shared-checkout")
-    return cmd
-
-
 def _adr_freshness_cmd(mode: str) -> list[str]:
     return [sys.executable, "scripts/update_adr_freshness.py", f"--{mode}"]
 
@@ -98,15 +86,6 @@ def _skill_scripts_check(ctx: Ctx) -> None:
     )
 
 
-def _skills_apply(ctx: Ctx) -> None:
-    _run(_skills_cmd("apply", ctx.allow_shared), ctx)
-    _run(_skills_cmd("check", ctx.allow_shared), ctx)
-
-
-def _skills_check(ctx: Ctx) -> None:
-    _run(_skills_cmd("check", ctx.allow_shared), ctx)
-
-
 def _adr_freshness_apply(ctx: Ctx) -> None:
     _run(_adr_freshness_cmd("apply"), ctx)
     _run(_adr_freshness_cmd("check"), ctx)
@@ -133,12 +112,11 @@ def _build_web(ctx: Ctx) -> None:
 
 
 def _diff_check(ctx: Ctx) -> None:
-    _run(["git", "diff", "--check", "--", ".", ":(exclude).agents/skills"], ctx)
+    _run(["git", "diff", "--check"], ctx)
 
 
 CI_CHECKS = (
     ("repo-standards", _repo_standards_check, "py -3 tools/run.py ci --apply"),
-    ("installed-skills", _skills_check, "py -3 tools/run.py ci --apply"),
     ("skill-scripts", _skill_scripts_check, "repair the reported skill script contracts"),
     ("decision-freshness", _adr_freshness_check, "py -3 tools/run.py ci --apply"),
     ("dotnet-build", _build_dotnet, "dotnet build"),
@@ -150,7 +128,6 @@ CI_CHECKS = (
 
 def _ci_apply(ctx: Ctx) -> None:
     _repo_standards_apply(ctx)
-    _skills_apply(ctx)
     _skill_scripts_check(ctx)
     _adr_freshness_apply(ctx)
 

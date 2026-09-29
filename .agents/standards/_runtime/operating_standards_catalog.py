@@ -15,6 +15,7 @@ import surface_contracts
 _ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _REVISION = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 _REQUIRED = {"id", "title", "surfaces", "resources", "check", "apply", "requires"}
+_OPTIONAL_STANDARD_FIELDS = {"legacy_migration"}
 _COMPOSITION_FIELDS = {
     "id",
     "origin",
@@ -35,6 +36,7 @@ class OperatingStandard:
     check: bool
     apply: bool
     requires: tuple[str, ...]
+    legacy_migration: str = "infer"
 
 
 @dataclass(frozen=True)
@@ -121,7 +123,7 @@ def load_catalog(
     ids: set[str] = set()
     assigned: dict[str, str] = {}
     for index, row in enumerate(rows):
-        if not isinstance(row, dict) or set(row) != _REQUIRED:
+        if not isinstance(row, dict) or not _REQUIRED <= set(row) or set(row) - (_REQUIRED | _OPTIONAL_STANDARD_FIELDS):
             raise ValueError(f"standard[{index}] must contain exactly: {', '.join(sorted(_REQUIRED))}")
         standard_id = row["id"]
         title = row["title"]
@@ -135,6 +137,9 @@ def load_catalog(
         surfaces = _string_list(row["surfaces"], field="surfaces", standard_id=standard_id)
         resources = _string_list(row["resources"], field="resources", standard_id=standard_id)
         requires = _string_list(row["requires"], field="requires", standard_id=standard_id, allow_empty=True)
+        legacy_migration = row.get("legacy_migration", "infer")
+        if legacy_migration not in {"infer", "explicit"}:
+            raise ValueError(f"standard {standard_id} legacy_migration must be infer or explicit")
         for surface_id in surfaces:
             if surface_id in assigned:
                 raise ValueError(f"surface {surface_id} assigned more than once")
@@ -156,6 +161,7 @@ def load_catalog(
                 row["check"],
                 row["apply"],
                 requires,
+                legacy_migration,
             )
         )
 

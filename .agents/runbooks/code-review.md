@@ -44,7 +44,7 @@ Reviewing a Wild Bunch diff, branch, or pull request.
 ## Local commands and paths
 
 Use `py -3 tools/run.py ci --check` for deliberate CI-parity proof. Apply the
-canonical command when selected standards or skill projections change.
+canonical command when selected standards or plugin subscriptions change.
 
 ## Evidence contract
 

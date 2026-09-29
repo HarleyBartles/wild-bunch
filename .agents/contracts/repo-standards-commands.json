@@ -1,8 +1,19 @@
 {
-  "apply": ["@python", "tools/run.py", "ci", "--apply", "--allow-shared-checkout"],
-  "check": ["@python", "tools/run.py", "ci", "--check", "--diagnostics"],
+  "apply": [
+    "@python",
+    "tools/run.py",
+    "ci",
+    "--apply",
+    "--allow-shared-checkout"
+  ],
+  "check": [
+    "@python",
+    "tools/run.py",
+    "ci",
+    "--check",
+    "--diagnostics"
+  ],
   "generated_paths": [
-    ".agents/skills/**",
     ".agents/agents/**",
     ".agents/standards/**",
     "docs/decisions/README.md"

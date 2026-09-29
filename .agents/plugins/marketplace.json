@@ -7,8 +7,10 @@
     {
       "name": "game-studio",
       "source": {
-        "source": "local",
-        "path": ".agents/plugins/game-studio"
+        "source": "git-subdir",
+        "url": "https://github.com/openai/plugins.git",
+        "path": "./plugins/game-studio",
+        "ref": "main"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",
@@ -19,10 +21,10 @@
     {
       "name": "dotnet-pack",
       "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "dist/plugins/dotnet-pack"
+        "source": "git-subdir",
+        "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "path": "./dist/plugins/dotnet-pack",
+        "ref": "main"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",
@@ -33,10 +35,10 @@
     {
       "name": "architecture-pack",
       "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "dist/plugins/architecture-pack"
+        "source": "git-subdir",
+        "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "path": "./dist/plugins/architecture-pack",
+        "ref": "main"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",
@@ -47,10 +49,10 @@
     {
       "name": "frontend-pack",
       "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "dist/plugins/frontend-pack"
+        "source": "git-subdir",
+        "url": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "path": "./dist/plugins/frontend-pack",
+        "ref": "main"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",

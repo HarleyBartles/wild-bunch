@@ -4,7 +4,7 @@
     {
       "id": "marketplace-skill-management",
       "origin": "marketplace",
-      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
       "implementation_root": ".agents/standards/marketplace-skill-management",
       "check": [
         "@python",
@@ -28,7 +28,7 @@
     {
       "id": "root-agent-router",
       "origin": "marketplace",
-      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
       "implementation_root": ".agents/standards/root-agent-router",
       "check": [
         "@python",
@@ -52,7 +52,7 @@
     {
       "id": "runbook-composition",
       "origin": "marketplace",
-      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
       "implementation_root": ".agents/standards/runbook-composition",
       "check": [
         "@python",
@@ -76,7 +76,7 @@
     {
       "id": "playbook-composition",
       "origin": "marketplace",
-      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
       "implementation_root": ".agents/standards/playbook-composition",
       "check": [
         "@python",
@@ -100,7 +100,7 @@
     {
       "id": "tracked-validation-hook",
       "origin": "marketplace",
-      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
       "implementation_root": ".agents/standards/tracked-validation-hook",
       "check": [
         "@python",
@@ -124,7 +124,7 @@
     {
       "id": "markdown-formatting",
       "origin": "marketplace",
-      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
       "implementation_root": ".agents/standards/markdown-formatting",
       "check": [
         "@python",
@@ -148,7 +148,7 @@
     {
       "id": "completed-artifact-custody",
       "origin": "marketplace",
-      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
       "implementation_root": ".agents/standards/completed-artifact-custody",
       "check": [
         "@python",
@@ -162,6 +162,30 @@
         ".agents/standards/_runtime/repo_standards.py",
         "--run-standard",
         "completed-artifact-custody",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    },
+    {
+      "id": "repo-plugin-subscriptions",
+      "origin": "marketplace",
+      "revision": "5fcfb473948fd0f32998ffce31d8e528f2261572",
+      "implementation_root": ".agents/standards/repo-plugin-subscriptions",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "repo-plugin-subscriptions",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "repo-plugin-subscriptions",
         "--apply",
         "--yes",
         "@allow-shared-checkout"
