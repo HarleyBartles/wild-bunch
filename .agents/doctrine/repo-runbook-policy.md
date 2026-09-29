@@ -20,18 +20,16 @@ mapped runbooks and playbooks.
 |---|---|---|
 | code-style.md | `.agents/playbooks/code-style.md` | required |
 | testing.md | `.agents/playbooks/testing.md` | required |
-| security.md | `.agents/playbooks/security.md` | present |
-| marketplace-generation.md | `.agents/playbooks/marketplace-generation.md` | present |
-| skill-authoring.md | `.agents/playbooks/skill-authoring.md` | present |
+| security.md | `.agents/playbooks/security.md` | optional |
+| marketplace-generation.md | `.agents/playbooks/marketplace-generation.md` | optional |
+| skill-authoring.md | `.agents/playbooks/skill-authoring.md` | optional |
+| asset-selection-cut-normalization.md | `.agents/playbooks/asset-selection-cut-normalization.md` | optional |
+| completing-plans.md | `.agents/playbooks/completing-plans.md` | optional |
+| dev-overlay.md | `.agents/playbooks/dev-overlay.md` | optional |
+| seeded-game-setup.md | `.agents/playbooks/seeded-game-setup.md` | optional |
+| town-hub-asset-production.md | `.agents/playbooks/town-hub-asset-production.md` | optional |
+| ui-browser-check.md | `.agents/playbooks/ui-browser-check.md` | optional |
 
-## Additional repository-specific playbooks
-
-- `.agents/playbooks/asset-selection-cut-normalization.md`
-- `.agents/playbooks/completing-plans.md`
-- `.agents/playbooks/dev-overlay.md`
-- `.agents/playbooks/seeded-game-setup.md`
-- `.agents/playbooks/town-hub-asset-production.md`
-- `.agents/playbooks/ui-browser-check.md`
 
 ## Root contributor and review surfaces
 

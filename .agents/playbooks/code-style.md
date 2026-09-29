@@ -4,16 +4,27 @@
 
 Writing or reviewing source whose language or framework conventions matter.
 
-## Required skills
+## Required capabilities
 
-- `/dotnet` for C# and .NET surfaces.
-- `/react` for React component structure.
-- `/web-styling` for browser styling choices.
+- Apply C# and .NET design and style guidance.
+- Design React component structure and browser styling.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
 1. Classify each touched source surface as .NET, React, or browser styling.
-2. Invoke only its declared capability (`/dotnet`, `/react`, or `/web-styling`)
+2. Invoke only its declared capability (C# and .NET implementation conventions, React component architecture, or browser styling conventions)
    and bind coding discipline plus any frontend doctrine.
 3. Run the focused formatter, compiler, or typecheck for that surface, then the
    testing runbook's canonical gate at delivery.

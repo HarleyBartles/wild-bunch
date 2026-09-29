@@ -3,7 +3,7 @@ name: dotnet
 description: Use when building or reviewing .NET ecosystem applications, C# language patterns, ASP.NET Core APIs, and common library choices. Do not use when the work is SQL/EF deep tuning, cloud deployment, or a language other than C#/.NET.
 metadata:
   source-id: dotnet
-  source-path: codex-marketplace/plugins/dotnet-pack/skills/dotnet/SKILL.md
+  source-path: skills/dotnet/SKILL.md
   provenance-name: Dotnet first-party skill
   source-category: first_party
   status: active

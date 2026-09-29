@@ -8,11 +8,11 @@ authority:
   latest_check_url: https://www.domainlanguage.com/ddd/reference/
   revision: current
   retrieved_at: "2026-07-20"
-  content_sha256: b7638db7a6addbeeea90182b1b015068648eb86e570779a3f23f4b188b9f7da8
+  content_sha256: b418ba94806d461b0bb54ff89f65e1c51c53d453cca6d4f768ee0b76ccc43233
   license: Copyright Eric Evans / Domain Language; reference extraction
   license_url: https://www.domainlanguage.com/ddd/reference/
 decomposition:
-  reconciled_against: b7638db7a6addbeeea90182b1b015068648eb86e570779a3f23f4b188b9f7da8
+  reconciled_against: b418ba94806d461b0bb54ff89f65e1c51c53d453cca6d4f768ee0b76ccc43233
   references:
   - path: references/operational-guidance.md
     source_sections:

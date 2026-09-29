@@ -58,9 +58,9 @@ def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
     visited: list[str] = []
     mechanical_steps = (
         "_repo_standards_apply",
-        "_skill_scripts_check",
         "_skills_apply",
-        "_mesh_apply",
+        "_skill_scripts_check",
+        "_adr_freshness_apply",
     )
     product_steps = ("_build_dotnet", "_test_dotnet", "_build_web", "_diff_check")
 
@@ -72,15 +72,29 @@ def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
     assert visited == list(mechanical_steps)
 
 
-def test_ci_check_validates_the_installed_skill_projection() -> None:
-    assert "installed-skills" in [name for name, _check, _fix in run.CI_CHECKS]
+def test_ci_check_keeps_standards_and_skill_refresh_without_mesh() -> None:
+    names = [name for name, _check, _fix in run.CI_CHECKS]
+    assert "repo-standards" in names
+    assert "installed-skills" in names
+    assert "decision-freshness" in names
+    assert "agent-mesh" not in names
 
 
-def test_operating_model_commands_resolve_from_repo_shape_owner(monkeypatch) -> None:
+def test_commands_use_deployed_standards_and_pinned_refresh_adapter(monkeypatch) -> None:
     repo_standards = run._repo_standards_cmd("check", False)
-    assert repo_standards[1] == ".agents/skills/repo-shape/scripts/repo_standards.py"
+    assert repo_standards[1] == ".agents/standards/_runtime/repo_standards.py"
+    assert repo_standards[-1] == "--check"
+
+    apply_standards = run._repo_standards_cmd("apply", True)
+    assert apply_standards[-3:] == ["--apply", "--yes", "--allow-shared-checkout"]
+
+    skill_refresh = run._skills_cmd("check", False)
+    assert skill_refresh[1] == "tools/refresh_marketplace_skills.py"
+    assert "--no-roll-marketplace-source" in skill_refresh
+
+    assert run._adr_freshness_cmd("check")[1:] == ["scripts/update_adr_freshness.py", "--check"]
 
     captured: list[str] = []
     monkeypatch.setattr(run, "_run", lambda command, _ctx: captured.extend(command))
     run._skill_scripts_check(run.Ctx("check", False))
-    assert ".agents/skills/repo-shape/scripts/validate_skill_scripts.py" in captured
+    assert captured[1:] == ["scripts/validate_repo_skill_scripts.py", "--check"]

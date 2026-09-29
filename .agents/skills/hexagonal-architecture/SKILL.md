@@ -3,7 +3,7 @@ name: hexagonal-architecture
 description: Use when isolating domain logic from frameworks, UI, and databases through ports and adapters. Do not use when the domain is trivial or the project is a thin framework wrapper.
 metadata:
   source-id: hexagonal-architecture
-  source-path: codex-marketplace/plugins/architecture-pack/skills/hexagonal-architecture/SKILL.md
+  source-path: skills/hexagonal-architecture/SKILL.md
   provenance-name: Hexagonal Architecture first-party skill
   source-category: first_party
   status: active

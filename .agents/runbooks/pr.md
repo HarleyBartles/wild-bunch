@@ -4,19 +4,30 @@
 
 Opening, updating, or publishing a Wild Bunch pull request.
 
-## Required skills
+## Required capabilities
 
-- `/publishing-source`
-- `/repo-worker-base`
-- `/verification-before-completion`
+- Verify repository state, validation evidence, and publication prerequisites.
+- Publish a branch and open or update a Draft PR, then verify its head and checks.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
-1. Use `/repo-worker-base` to confirm dedicated-worktree, branch, clean-tree,
+1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.
-2. Use `/verification-before-completion` to bind the publication claim to the
+2. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
-3. Use `/publishing-source` to push the task branch and create or update the
+3. Use GitHub branch and Draft PR publication to push the task branch and create or update the
    Draft PR against `main`.
 4. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
    applicable hosted checks with the published tree.

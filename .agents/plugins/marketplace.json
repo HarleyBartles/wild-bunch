@@ -5,48 +5,6 @@
   },
   "plugins": [
     {
-      "name": "agent-operating-model",
-      "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/agent-operating-model"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    },
-    {
-      "name": "repo-worker-pack",
-      "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/repo-worker-pack"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    },
-    {
-      "name": "superpowers-plus",
-      "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/superpowers-plus"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Coding"
-    },
-    {
       "name": "game-studio",
       "source": {
         "source": "local",
@@ -64,7 +22,7 @@
         "source": "github",
         "owner": "HarleyBartles",
         "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/dotnet-pack"
+        "path": "dist/plugins/dotnet-pack"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",
@@ -78,7 +36,7 @@
         "source": "github",
         "owner": "HarleyBartles",
         "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/architecture-pack"
+        "path": "dist/plugins/architecture-pack"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",
@@ -92,49 +50,7 @@
         "source": "github",
         "owner": "HarleyBartles",
         "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/frontend-pack"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    },
-    {
-      "name": "mcp-usage-pack",
-      "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/mcp-usage-pack"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    },
-    {
-      "name": "writing-pack",
-      "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/writing-pack"
-      },
-      "policy": {
-        "installation": "INSTALLED_BY_DEFAULT",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    },
-    {
-      "name": "unslop-plus",
-      "source": {
-        "source": "github",
-        "owner": "HarleyBartles",
-        "repo": "agent-asset-marketplace",
-        "path": "codex-marketplace/plugins/unslop-plus"
+        "path": "dist/plugins/frontend-pack"
       },
       "policy": {
         "installation": "INSTALLED_BY_DEFAULT",

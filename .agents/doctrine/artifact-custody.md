@@ -12,11 +12,17 @@
 
 ## Durable outputs
 
-- Architecture decisions belong in `docs/adr/`.
+- Architecture decisions belong in `docs/decisions/`.
 - Current agent rules belong in `.agents/doctrine/`, `.agents/contracts/`, or
   `.agents/runbooks/` according to their authority role.
-- Binding repo-specific anti-slop profiles live under
-  `.agents/contracts/unslop/`; scoped profiles use
-  `<scope>/.agents/contracts/unslop/`. Portable profiles remain owned by
-  `unslop-profiles`.
-- Generated indexes are navigation only and are never edited by hand.
+- Binding repo-specific review profiles live under `.agents/contracts/unslop/`;
+  scoped profiles use `<scope>/.agents/contracts/unslop/`.
+
+## Agent document placement
+
+- `AGENTS.md` files route work to the guidance that owns it.
+- Doctrine records repository rules; contracts define executable or independently consumed agreements.
+- Runbooks bind lifecycle stages to repository paths, commands, and evidence.
+- Playbooks bind topical workflows to repository-specific decisions and proof.
+- Human-facing explanations belong in `README.md` files or ordinary documents under `docs/`.
+- Directory inventories are not maintained as generated files; keep useful discovery in the owning README or router.

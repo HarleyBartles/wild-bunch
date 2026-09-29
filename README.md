@@ -5,8 +5,7 @@ A C#/.NET Western adventure game with a React/Vite web play surface, Onion/DDD/C
 ## For developers
 
 - `AGENTS.md` — auto-injected agent law and routing to repo doctrine. Start here if you are an agent or a contributor working alongside one.
-- [INDEX.md](INDEX.md) — generated navigation index for the whole repo.
-- [docs/](docs/INDEX.md) — repo documentation and ADR log.
+- [Decision records](docs/decisions/README.md) — architecture decisions and their status history.
 
 ## Run the pre-alpha locally
 

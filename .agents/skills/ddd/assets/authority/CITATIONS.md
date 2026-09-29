@@ -14,6 +14,7 @@
 
 - Copyright Eric Evans / Domain Language, Inc.
 - Vendored page snapshot used under reference extraction; operational prose is MIT-licensed first-party synthesis.
+- The retained HTML snapshot has LF line endings. Recorded SHA-256 values describe those committed bytes.
 
 ## Human review
 

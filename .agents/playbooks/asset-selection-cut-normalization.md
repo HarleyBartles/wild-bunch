@@ -5,9 +5,21 @@
 A town-hub candidate accepted by `/town-hub-asset-judgment` needs deterministic
 sheet slicing, background removal, normalization, staging, or promotion.
 
-## Required skills
+## Required capabilities
 
-- `/town-hub-asset-judgment`
+- None.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- town-hub-asset-judgment (when selecting or promoting a generated Wild Bunch asset).
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 

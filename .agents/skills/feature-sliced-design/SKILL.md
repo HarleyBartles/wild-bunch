@@ -12,6 +12,13 @@ description: >-
   FSD with frameworks (Next.js App Router and Pages Router, Nuxt, Vite,
   Astro), or implementing common patterns such as authentication, API
   handling, Redux, and TanStack Query (React Query) within FSD.
+metadata:
+  source-id: feature-sliced-design
+  source-path: skills/feature-sliced-design/SKILL.md
+  source-category: first_party
+  source_author: Feature-Sliced Design (feature-sliced/skills)
+  source_license: MIT
+  source_repo: https://github.com/feature-sliced/skills
 ---
 
 # Feature-Sliced Design (FSD) v2.1

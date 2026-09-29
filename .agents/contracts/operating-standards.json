@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "standards": [
+    {
+      "id": "marketplace-skill-management",
+      "origin": "marketplace",
+      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "implementation_root": ".agents/standards/marketplace-skill-management",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "marketplace-skill-management",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "marketplace-skill-management",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    },
+    {
+      "id": "root-agent-router",
+      "origin": "marketplace",
+      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "implementation_root": ".agents/standards/root-agent-router",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "root-agent-router",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "root-agent-router",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    },
+    {
+      "id": "runbook-composition",
+      "origin": "marketplace",
+      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "implementation_root": ".agents/standards/runbook-composition",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "runbook-composition",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "runbook-composition",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    },
+    {
+      "id": "playbook-composition",
+      "origin": "marketplace",
+      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "implementation_root": ".agents/standards/playbook-composition",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "playbook-composition",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "playbook-composition",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    },
+    {
+      "id": "tracked-validation-hook",
+      "origin": "marketplace",
+      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "implementation_root": ".agents/standards/tracked-validation-hook",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "tracked-validation-hook",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "tracked-validation-hook",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    },
+    {
+      "id": "markdown-formatting",
+      "origin": "marketplace",
+      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "implementation_root": ".agents/standards/markdown-formatting",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "markdown-formatting",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "markdown-formatting",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    },
+    {
+      "id": "completed-artifact-custody",
+      "origin": "marketplace",
+      "revision": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
+      "implementation_root": ".agents/standards/completed-artifact-custody",
+      "check": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "completed-artifact-custody",
+        "--check"
+      ],
+      "apply": [
+        "@python",
+        ".agents/standards/_runtime/repo_standards.py",
+        "--run-standard",
+        "completed-artifact-custody",
+        "--apply",
+        "--yes",
+        "@allow-shared-checkout"
+      ],
+      "generated_paths": [],
+      "requires": []
+    }
+  ]
+}

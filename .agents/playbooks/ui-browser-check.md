@@ -4,11 +4,21 @@
 
 Browser behavior, layout, interaction, or player-flow evidence is required.
 
-## Required skills
+## Required capabilities
 
-- `/game-playtest`
-- `/wild-bunch-browser-game` when client state authority is in question.
-- `/playwright-testing` when the change includes automated browser tests.
+- Run browser playtests and automated browser checks when the task calls for them.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- wild-bunch-browser-game (when client state authority is in question).
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
@@ -16,9 +26,9 @@ Browser behavior, layout, interaction, or player-flow evidence is required.
    server, client, or presentation ownership.
 2. Start PostgreSQL and this worktree's API/web servers with the helpers below;
    prove the browser points at the matching worktree API.
-3. Use `/game-playtest` with a deterministic scenario to exercise behavior,
+3. Use interactive gameplay browser validation with a deterministic scenario to exercise behavior,
    layout, and interaction while recording console/network state.
-4. Add `/playwright-testing` only when implementing or diagnosing automated
+4. Add automated browser test implementation only when implementing or diagnosing automated
    browser coverage, and keep that result separate from manual playtest proof.
 5. Stop only this worktree's worker-started servers after evidence is captured.
 

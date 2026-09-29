@@ -6,7 +6,7 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 
 ## Source-of-truth split
 
-- Repo state (code, docs, ADRs, and generated mesh) is the source of truth for implementation.
+- Repo state (code, docs, decisions, and deployed standards) is the source of truth for implementation.
 - External control planes (GitHub PRs, Linear issues) provide publication and issue facts, but the live repo is the authority for current implementation state.
 
 ## Build and test commands
@@ -18,9 +18,9 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 
 ## Routing pointers
 
-- Lifecycle runbooks: [.agents/runbooks/INDEX.md](.agents/runbooks/INDEX.md)
-- Topical playbooks: [.agents/playbooks/INDEX.md](.agents/playbooks/INDEX.md)
-- Scoped routing: [.devin/rules/INDEX.md](.devin/rules/INDEX.md)
+- Lifecycle runbooks: [repo workflow policy](.agents/doctrine/repo-runbook-policy.md)
+- Topical playbooks: [testing](.agents/playbooks/testing.md) and [code style](.agents/playbooks/code-style.md)
+- Scoped routing: [Devin rules](.devin/rules/scripts.md)
 - Testing instructions: [.agents/playbooks/testing.md](.agents/playbooks/testing.md)
 - Code style guidelines: [.agents/playbooks/code-style.md](.agents/playbooks/code-style.md)
 - Review guidelines: [.agents/runbooks/code-review.md](.agents/runbooks/code-review.md)

@@ -13,9 +13,9 @@ The current town-hub tracks are `town-hub-buildings`, `town-hub-roads`, and
 `town-hub-ground`. The buildings track holds the filler-building families;
 the road and ground tracks hold tile families.
 
-Use `INDEX.md` for the exact inventory of files and directories; this README
-describes the shape and purpose of the project rather than enumerating every
-asset.
+Use the directory structure and asset-family documentation to locate source,
+staging, and production files. This README describes the project layout and
+asset custody.
 
 The web project consumes shipped assets after promotion. It is not the place
 to keep working asset files.

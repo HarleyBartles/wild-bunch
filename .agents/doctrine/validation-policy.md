@@ -24,5 +24,4 @@ Tests rendering `RouterProvider` use `createAppRouter()`, never the shared
 router singleton, because TanStack Router retains state between tests. Async
 lazy-route assertions use an appropriate explicit wait.
 
-Generated mesh validation covers the whole routed tree. `TestResults/`,
-`node_modules/`, and other ignored outputs remain excluded.
+`TestResults/`, `node_modules/`, and other ignored outputs remain excluded.

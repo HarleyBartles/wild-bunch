@@ -3,7 +3,7 @@ name: react
 description: Use when building or reviewing React component architecture, hooks usage, and performance patterns. Do not use when the work is framework-agnostic styling, routing, or state management owned by another skill.
 metadata:
   source-id: react
-  source-path: codex-marketplace/plugins/frontend-pack/skills/react/SKILL.md
+  source-path: skills/react/SKILL.md
   provenance-name: React first-party skill
   source-category: first_party
   status: active

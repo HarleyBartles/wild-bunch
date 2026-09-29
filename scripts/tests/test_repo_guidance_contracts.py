@@ -1,130 +1,39 @@
 from pathlib import Path
-import re
+import json
 import unittest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
-RUNBOOK_HEADINGS = (
-    "## When",
-    "## Required skills",
-    "## Composition",
-    "## Doctrine and contracts",
-    "## Local commands and paths",
-    "## Evidence contract",
-    "## Prohibited combinations",
-    "## Playbook routing",
-)
-PLAYBOOK_HEADINGS = (
-    "## When",
-    "## Required skills",
-    "## Composition",
-    "## Doctrine and contracts",
-    "## Local commands and paths",
-    "## Evidence contract",
-    "## Prohibited combinations",
-    "## Runbook routing",
-)
-
-
-def section(text: str, heading: str) -> str:
-    match = re.search(
-        rf"^{re.escape(heading)}\s*$\n(.*?)(?=^## |\Z)",
-        text,
-        flags=re.MULTILINE | re.DOTALL,
-    )
-    if match is None:
-        raise AssertionError(f"missing section {heading}")
-    return match.group(1)
 
 
 class RepoGuidanceContractsTests(unittest.TestCase):
-    def test_authored_runbooks_use_the_composition_manifest(self) -> None:
-        runbooks = sorted((REPO_ROOT / ".agents" / "runbooks").glob("*.md"))
-        authored = [path for path in runbooks if path.name != "INDEX.md"]
-
-        self.assertTrue(authored)
-        for path in authored:
-            text = path.read_text(encoding="utf-8")
-            headings = re.findall(r"^## .+$", text, flags=re.MULTILINE)
-            self.assertEqual(
-                list(RUNBOOK_HEADINGS), headings, path.relative_to(REPO_ROOT)
-            )
-
-            required = section(text, "## Required skills")
-            composition = section(text, "## Composition")
-            evidence = section(text, "## Evidence contract")
-            self.assertRegex(required, r"(?m)^- `/[a-z0-9-]+`", path.relative_to(REPO_ROOT))
-            declared_skills = set(re.findall(r"`/([a-z0-9-]+)`", required))
-            composed_skills = set(re.findall(r"`/([a-z0-9-]+)`", composition))
-            self.assertEqual(
-                set(), composed_skills - declared_skills, path.relative_to(REPO_ROOT)
-            )
-            self.assertGreaterEqual(
-                len(re.findall(r"(?m)^\d+\. ", composition)),
-                2,
-                path.relative_to(REPO_ROOT),
-            )
-            self.assertRegex(evidence, r"(?m)^- \[ \] ", path.relative_to(REPO_ROOT))
-
-    def test_authored_playbooks_use_the_composition_manifest(self) -> None:
-        playbooks = sorted((REPO_ROOT / ".agents" / "playbooks").glob("*.md"))
-        authored = [path for path in playbooks if path.name != "INDEX.md"]
-
-        self.assertTrue(authored)
-        for path in authored:
-            text = path.read_text(encoding="utf-8")
-            headings = re.findall(r"^## .+$", text, flags=re.MULTILINE)
-            self.assertEqual(
-                list(PLAYBOOK_HEADINGS), headings, path.relative_to(REPO_ROOT)
-            )
-
-            required = section(text, "## Required skills")
-            composition = section(text, "## Composition")
-            evidence = section(text, "## Evidence contract")
-            self.assertRegex(required, r"(?m)^- `/[a-z0-9-]+`", path.relative_to(REPO_ROOT))
-            declared_skills = set(re.findall(r"`/([a-z0-9-]+)`", required))
-            composed_skills = set(re.findall(r"`/([a-z0-9-]+)`", composition))
-            self.assertEqual(
-                set(), composed_skills - declared_skills, path.relative_to(REPO_ROOT)
-            )
-            self.assertGreaterEqual(
-                len(re.findall(r"(?m)^\d+\. ", composition)),
-                2,
-                path.relative_to(REPO_ROOT),
-            )
-            self.assertRegex(evidence, r"(?m)^- \[ \] ", path.relative_to(REPO_ROOT))
+    def test_refresh_provenance_keeps_only_declared_subscriptions_and_local_skills(self) -> None:
+        manifest = json.loads((REPO_ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
+        provenance = json.loads((REPO_ROOT / ".agents/skills/.provenance.json").read_text(encoding="utf-8"))
+        plugins = [plugin["name"] for plugin in manifest["plugins"]]
+        self.assertEqual(["game-studio", "dotnet-pack", "architecture-pack", "frontend-pack"], plugins)
+        self.assertEqual(plugins, provenance["syncedPlugins"])
+        self.assertEqual(set(manifest["repo"]["local_skills"]), set(provenance["localSkills"]))
+        for skill in manifest["repo"]["local_skills"]:
+            self.assertTrue((REPO_ROOT / ".agents/skills" / skill / "SKILL.md").is_file(), skill)
 
     def test_unslop_profiles_live_under_contracts(self) -> None:
         self.assertEqual([], list((REPO_ROOT / ".agents" / "unslop").rglob("*.md")))
         self.assertEqual(
             [],
-            list(
-                (
-                    REPO_ROOT / "src" / "WildBunch.Web" / ".agents" / "unslop"
-                ).rglob("*.md")
-            ),
+            list((REPO_ROOT / "src" / "WildBunch.Web" / ".agents" / "unslop").rglob("*.md")),
         )
         self.assertTrue((REPO_ROOT / ".agents" / "contracts" / "unslop").is_dir())
         self.assertTrue(
-            (
-                REPO_ROOT
-                / "src"
-                / "WildBunch.Web"
-                / ".agents"
-                / "contracts"
-                / "unslop"
-                / "play-surface-ui.md"
-            ).is_file()
+            (REPO_ROOT / "src" / "WildBunch.Web" / ".agents" / "contracts" / "unslop" / "play-surface-ui.md").is_file()
         )
 
     def test_completed_artifacts_doctrine_declares_two_slice_custody(self) -> None:
         doctrine = REPO_ROOT / ".agents" / "doctrine" / "completed-artifacts.md"
         text = doctrine.read_text(encoding="utf-8")
-
         self.assertIn("completed-awaiting-retirement", text)
         self.assertIn("successor slice", text)
         self.assertIn("explicit recorded decision", text)
-        self.assertIn("`completing-planning-artifacts` owns", text)
+        self.assertIn("planning-artifact lifecycle capability owns", text)
 
 
 if __name__ == "__main__":

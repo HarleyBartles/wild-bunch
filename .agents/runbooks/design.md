@@ -4,13 +4,25 @@
 
 Designing a Wild Bunch feature or behavior before implementation planning.
 
-## Required skills
+## Required capabilities
 
-- `/brainstorming`
+- Facilitate structured feature discovery, clarify behavior, and produce an accepted design specification.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
-1. Use `/brainstorming` to settle the behavior and produce the design artifact.
+1. Use structured feature-design facilitation to settle the behavior and produce the design artifact.
 2. Bind each affected Wild Bunch surface to the doctrine below and name its
    validation lane before accepting the design.
 3. Save the accepted specification under `.agents/specs/` for planning; keep
@@ -23,7 +35,7 @@ Designing a Wild Bunch feature or behavior before implementation planning.
   domain, persistence, command, query, or projection work.
 - Add [frontend standards](../doctrine/frontend-standards.md) for browser work.
 - Add [validation doctrine](../doctrine/validation-policy.md) to select evidence
-  lanes and [mesh policy](../doctrine/mesh-policy.md) for agent-surface changes.
+  lanes and [artifact custody](../doctrine/artifact-custody.md) for agent-surface changes.
 
 ## Local commands and paths
 
@@ -33,12 +45,12 @@ Active design specifications live in `.agents/specs/`.
 
 - [ ] The accepted specification is present under `.agents/specs/`.
 - [ ] It names every applicable doctrine and contract.
-- [ ] It identifies the focused, integration, browser, or mesh evidence the
+- [ ] It identifies the focused, integration, browser, or repository-shape evidence the
   implementation must produce.
 
 ## Prohibited combinations
 
-- Do not reproduce `/brainstorming` discovery, self-review, or handoff steps.
+- Do not reproduce structured feature-design facilitation discovery, self-review, or handoff steps.
 
 ## Playbook routing
 

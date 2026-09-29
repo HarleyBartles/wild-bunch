@@ -3,7 +3,7 @@ name: frontend-ux
 description: Use when designing, reviewing, or debugging frontend user interfaces and the task calls for accessibility, layout, interaction, or UX guidance.
 metadata:
   source-id: frontend-ux
-  source-path: codex-marketplace/plugins/frontend-pack/skills/frontend-ux/SKILL.md
+  source-path: skills/frontend-ux/SKILL.md
   provenance-name: Frontend UX first-party skill
   source-category: first_party
   status: active

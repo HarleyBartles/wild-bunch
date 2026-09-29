@@ -5,13 +5,23 @@
 Changing the UUID codec, game-setup pipeline, difficulty, entropy, starting
 town, or setup-owned player facts.
 
-## Required skills
+## Required capabilities
 
-- `/seed-ownership`
-- `/wild-bunch-domain-modeling` when gameplay invariants change.
-- `/wild-bunch-dotnet-architecture` when application or persistence boundaries change.
-- `/test-driven-development`
-- `/verification-before-completion`
+- Develop focused behavior tests and verify implementation evidence.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- seed-ownership
+- wild-bunch-domain-modeling (when gameplay invariants change)
+- wild-bunch-dotnet-architecture (when application or persistence boundaries change)
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
@@ -19,9 +29,9 @@ town, or setup-owned player facts.
    entropy, or player owned.
 2. Add `/wild-bunch-domain-modeling` or `/wild-bunch-dotnet-architecture` only
    when the classified fact crosses those boundaries.
-3. Use `/test-driven-development` to change codec directions, setup flow, and
+3. Use behavior-focused test development to change codec directions, setup flow, and
    the focused round-trip or integration lane together.
-4. Use `/verification-before-completion` to prove the resolved seed world and
+4. Use evidence-based result verification to prove the resolved seed world and
    setup behavior through the public pipeline and canonical gate.
 
 ## Doctrine and contracts
