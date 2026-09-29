@@ -4,15 +4,27 @@
 
 Turning settled Wild Bunch requirements into an executable plan or roadmap.
 
-## Required skills
+## Required capabilities
 
-- `/writing-plans` for one bounded plan.
-- `/writing-roadmaps` when the goal requires consecutive plans.
+- Author an executable plan from an approved specification for a bounded change.
+- Design a roadmap when delivery requires multiple consecutive plans.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
-1. Select exactly one owner: `/writing-plans` for a bounded change or
-   `/writing-roadmaps` for multiple consecutive plans.
+1. Select exactly one owner: spec-to-plan authoring for a bounded change or
+   multi-plan roadmap design for multiple consecutive plans.
 2. Read the accepted specification and bind the applicable doctrine, contracts,
    repository paths, and validation commands below.
 3. Save and commit the active artifact in its declared home before execution.
@@ -45,7 +57,7 @@ Turning settled Wild Bunch requirements into an executable plan or roadmap.
 
 ## Prohibited combinations
 
-- Do not run `/writing-plans` and `/writing-roadmaps` over the same artifact.
+- Do not run spec-to-plan authoring and multi-plan roadmap design over the same artifact.
 - Do not copy their portable planning or handoff workflow into this runbook.
 
 ## Playbook routing

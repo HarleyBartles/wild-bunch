@@ -5,18 +5,29 @@
 A Wild Bunch plan, specification, roadmap, checkpoint, audit, or tracker reaches
 completion, explicit abandonment, or successor-slice retirement.
 
-## Required skills
+## Required capabilities
 
-- `/completing-planning-artifacts`
-- `/cleanup-custody` when completion, abandonment, or promotion is ambiguous.
+- Decide when plans and specs are complete and ready for retirement or promotion.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- cleanup-custody (when completion, abandonment, or promotion is ambiguous).
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
-1. Use `/completing-planning-artifacts` in the completing slice to promote
+1. Use planning artifact lifecycle management in the completing slice to promote
    durable content, mark the artifact `completed-awaiting-retirement`, and keep
    it tracked through that slice's merge.
 2. In the next substantive slice, use the same skill's successor ingress lane
-   before substantive edits. Add `/cleanup-custody` only when promotion or
+   before substantive edits. Add artifact and workspace custody review only when promotion or
    lifecycle state is ambiguous.
 3. Remove eligible marked artifacts and live links as that successor slice's
    first commit, then run `py -3 tools/run.py ci --apply` to regenerate navigation.
@@ -47,7 +58,7 @@ substantive successor PR.
 - [ ] Durable decisions and rules exist at their current authority owners.
 - [ ] The completing slice retains each `completed-awaiting-retirement` artifact.
 - [ ] The successor slice removes only eligible marked artifacts and live links.
-- [ ] The generated mesh is current.
+- [ ] The selected standards are current.
 - [ ] Git records both the artifact's creation and completed removal.
 
 ## Prohibited combinations

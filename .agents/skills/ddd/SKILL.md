@@ -3,7 +3,7 @@ name: ddd
 description: Use when modeling a complex business domain, defining bounded contexts, or choosing tactical DDD patterns. Do not use when the domain is simple CRUD or when a more specific skill already owns the abstraction.
 metadata:
   source-id: ddd
-  source-path: codex-marketplace/plugins/architecture-pack/skills/ddd/SKILL.md
+  source-path: skills/ddd/SKILL.md
   provenance-name: Ddd first-party skill
   source-category: first_party
   status: active

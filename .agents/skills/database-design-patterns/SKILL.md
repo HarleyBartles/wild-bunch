@@ -3,7 +3,7 @@ name: database-design-patterns
 description: Use when designing relational database schemas, normalizing data, choosing keys and constraints, or applying transactions, indexing, and partitioning patterns. Do not use when the task is engine-specific operations or NoSQL design.
 metadata:
   source-id: database-design-patterns
-  source-path: codex-marketplace/plugins/architecture-pack/skills/database-design-patterns/SKILL.md
+  source-path: skills/database-design-patterns/SKILL.md
   provenance-name: Database Design Patterns first-party skill
   source-category: first_party
   status: active

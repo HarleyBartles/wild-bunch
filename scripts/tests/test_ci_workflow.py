@@ -33,3 +33,17 @@ def test_hosted_ci_executes_the_tracked_hook() -> None:
     assert "REPO_STANDARDS_HOSTED_COMMIT: HEAD" in text
     assert "run: githooks/pre-commit" in text
     assert "cp githooks/pre-commit" not in text
+
+
+def test_generated_paths_cover_consumer_owned_refresh_outputs_without_mesh() -> None:
+    declaration = json.loads(
+        (ROOT / ".agents" / "contracts" / "repo-standards-commands.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert declaration["generated_paths"] == [
+        ".agents/skills/**",
+        ".agents/agents/**",
+        ".agents/standards/**",
+        "docs/decisions/README.md",
+    ]

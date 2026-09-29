@@ -3,7 +3,7 @@ name: playwright-testing
 description: Use when writing, reviewing, or debugging Playwright end-to-end tests for web applications.
 metadata:
   source-id: playwright-testing
-  source-path: codex-marketplace/plugins/frontend-pack/skills/playwright-testing/SKILL.md
+  source-path: skills/playwright-testing/SKILL.md
   provenance-name: Playwright Testing first-party skill
   source-category: first_party
   status: active

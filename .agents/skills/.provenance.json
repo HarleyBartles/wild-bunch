@@ -1,18 +1,12 @@
 {
-  "manifestSha": "e067435d7008089c4d1b96c15d0732333677c17a",
+  "manifestSha": "ae148c5c7f7b86d759b1d0db6e837abf23cbcb9f",
   "syncedPlugins": [
-    "agent-operating-model",
-    "repo-worker-pack",
-    "superpowers-plus",
     "game-studio",
     "dotnet-pack",
     "architecture-pack",
-    "frontend-pack",
-    "mcp-usage-pack",
-    "writing-pack",
-    "unslop-plus"
+    "frontend-pack"
   ],
-  "syncedSkills": 76,
+  "syncedSkills": 23,
   "localSkills": [
     "dev-control-boundary",
     "seed-ownership",
@@ -23,7 +17,7 @@
   ],
   "marketplace": {
     "source": "HarleyBartles/agent-asset-marketplace",
-    "sourcePath": "codex-marketplace/plugins"
+    "sourcePath": "dist/plugins"
   },
   "localPlugins": [
     {
@@ -34,5 +28,5 @@
   ],
   "marketplaceFile": ".agents/plugins/marketplace.json",
   "vendorProfiles": [],
-  "syncedAt": "2026-09-28T14:35:54.829677"
+  "syncedAt": "2026-09-29T15:35:17.662178"
 }

@@ -3,7 +3,7 @@ name: web-styling
 description: Use when choosing or refactoring CSS approaches across CSS Modules, Sass, Less, and styled-components. Do not use when the work is design system governance or framework-specific component libraries.
 metadata:
   source-id: web-styling
-  source-path: codex-marketplace/plugins/frontend-pack/skills/web-styling/SKILL.md
+  source-path: skills/web-styling/SKILL.md
   provenance-name: Web Styling first-party skill
   source-category: first_party
   status: active

@@ -4,22 +4,34 @@
 
 Adding, changing, or running Wild Bunch tests and validation gates.
 
-## Required skills
+## Required capabilities
 
-- `/test-driven-development` while constructing behavior changes.
-- `/verification-before-completion` before passing or completion claims.
+- Construct observable behavior through focused, behavior-first tests.
+- Verify claims against current repository and hosted evidence.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
 1. Use the owning capability and validation doctrine to select the smallest
    lane that observes the changed behavior.
-2. Use `/test-driven-development` for the focused red-green cycle; add real
+2. Use behavior-focused test development for the focused red-green cycle; add real
    PostgreSQL or browser evidence only when the boundary requires it.
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
 4. Apply generated surfaces when needed, stage the intended tree, and let the
    normal hook run the canonical check.
-5. Use `/verification-before-completion` to report focused and canonical proof
+5. Use evidence-based result verification to report focused and canonical proof
    for the same tested state.
 
 ## Doctrine and contracts

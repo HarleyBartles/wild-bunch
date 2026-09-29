@@ -30,9 +30,9 @@ concrete destinations.
 
 ## Ownership
 
-`completing-planning-artifacts` owns the two-slice completion and retirement
-lifecycle. `cleanup-custody` owns ambiguous custody classification and
-promotion-before-removal judgment. The `completing-plans.md` playbook binds
+The planning-artifact lifecycle capability owns the two-slice completion and
+retirement sequence. Artifact custody guidance owns ambiguous classification
+and promotion-before-removal judgment. The `completing-plans.md` playbook binds
 those capabilities to Wild Bunch paths and evidence. For current conventions,
 use `.agents/doctrine/*.md`, `.agents/runbooks/*.md`,
 `.agents/playbooks/*.md`, and active plans and specs.

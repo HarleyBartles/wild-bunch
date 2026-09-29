@@ -4,15 +4,26 @@
 
 Producing or revising a town-hub building, road, ground, or prop asset.
 
-## Required skills
+## Required capabilities
 
-- `/imagegen` when raster generation is needed.
-- `/town-hub-asset-judgment`
+- Generate raster assets when the task requires new imagery.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- town-hub-asset-judgment
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
 1. Read the asset operations/spec, matching art doctrine, and master/family bible.
-2. Use `/imagegen` only when a new raster candidate is required; retain source
+2. Use raster image generation only when a new raster candidate is required; retain source
    and staging custody declared below.
 3. Use `/town-hub-asset-judgment` to accept, retry, or reject the candidate at
    required views and game scale.

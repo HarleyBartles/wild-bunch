@@ -8,7 +8,7 @@
 
 **Tech Stack:** C#/.NET 10, System.Text.Json, xUnit, EF Core/PostgreSQL.
 
-**Spec:** [BUNCH-151](https://linear.app/harleys-workspace/issue/BUNCH-151/worldgenerated-event-deserialization-breaks-on-older-event-stream); `.agents/doctrine/event-sourcing-integrity.md`; `docs/adr/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md`.
+**Spec:** [BUNCH-151](https://linear.app/harleys-workspace/issue/BUNCH-151/worldgenerated-event-deserialization-breaks-on-older-event-stream); `.agents/doctrine/event-sourcing-integrity.md`; `docs/decisions/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md`.
 
 **Execution Strategy:** `executing-plans` because event decoding, replay behavior, and persistence proof are sequential changes to one stream contract.
 
@@ -89,7 +89,7 @@
 **Files:**
 - Extend: `tests/WildBunch.Integration.Tests/Versioning/WorldGeneratedLegacyEventTests.cs`
 - Check or extend: `tests/WildBunch.Integration.Tests/FullReplayEqualityTests.cs` only if the focused integration fixture cannot prove snapshot/replay equality itself
-- Update: `.agents/doctrine/event-sourcing-integrity.md` or `docs/adr/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md`
+- Update: `.agents/doctrine/event-sourcing-integrity.md` or `docs/decisions/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md`
 
 **Interfaces:**
 - Consumes: Task 1's registered upcaster and nullable legacy event behavior; `EfGameSessionRepository.GetByIdAsync`, `GetEventStreamAsync`, `GetByStatusAsync`, and the existing full-replay test fixture.

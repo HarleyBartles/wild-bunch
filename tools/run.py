@@ -40,43 +40,30 @@ def _run(cmd: list[str], ctx: Ctx) -> None:
 def _repo_standards_cmd(mode: str, allow_shared: bool) -> list[str]:
     cmd = [
         sys.executable,
-        ".agents/skills/repo-shape/scripts/repo_standards.py",
+        ".agents/standards/_runtime/repo_standards.py",
         f"--{mode}",
-        "--yes",
     ]
-    if mode == "apply" and allow_shared:
-        cmd.append("--allow-shared-checkout")
+    if mode == "apply":
+        cmd.append("--yes")
+        if allow_shared:
+            cmd.append("--allow-shared-checkout")
     return cmd
 
 
 def _skills_cmd(mode: str, allow_shared: bool) -> list[str]:
     cmd = [
         sys.executable,
-        ".agents/skills/refreshing-installed-skills/scripts/refresh_installed_skills.py",
+        "tools/refresh_marketplace_skills.py",
         f"--{mode}",
+        "--no-roll-marketplace-source",
     ]
     if mode == "apply" and allow_shared:
         cmd.append("--allow-shared-checkout")
     return cmd
 
 
-def _mesh_generate_cmd(mode: str, allow_shared: bool) -> list[str]:
-    cmd = [
-        sys.executable,
-        ".agents/skills/generating-agent-mesh/scripts/generate_index_mesh.py",
-        f"--{mode}",
-    ]
-    if mode == "apply" and allow_shared:
-        cmd.append("--allow-shared-checkout")
-    return cmd
-
-
-def _mesh_validate_cmd() -> list[str]:
-    return [
-        sys.executable,
-        ".agents/skills/generating-agent-mesh/scripts/validate_agent_mesh.py",
-        "--check",
-    ]
+def _adr_freshness_cmd(mode: str) -> list[str]:
+    return [sys.executable, "scripts/update_adr_freshness.py", f"--{mode}"]
 
 
 def _dotnet_build_cmd() -> list[str]:
@@ -104,7 +91,7 @@ def _skill_scripts_check(ctx: Ctx) -> None:
     _run(
         [
             sys.executable,
-            ".agents/skills/repo-shape/scripts/validate_skill_scripts.py",
+            "scripts/validate_repo_skill_scripts.py",
             "--check",
         ],
         ctx,
@@ -120,15 +107,13 @@ def _skills_check(ctx: Ctx) -> None:
     _run(_skills_cmd("check", ctx.allow_shared), ctx)
 
 
-def _mesh_apply(ctx: Ctx) -> None:
-    _run(_mesh_generate_cmd("apply", ctx.allow_shared), ctx)
-    _run(_mesh_generate_cmd("check", ctx.allow_shared), ctx)
-    _run(_mesh_validate_cmd(), ctx)
+def _adr_freshness_apply(ctx: Ctx) -> None:
+    _run(_adr_freshness_cmd("apply"), ctx)
+    _run(_adr_freshness_cmd("check"), ctx)
 
 
-def _mesh_check(ctx: Ctx) -> None:
-    _run(_mesh_generate_cmd("check", ctx.allow_shared), ctx)
-    _run(_mesh_validate_cmd(), ctx)
+def _adr_freshness_check(ctx: Ctx) -> None:
+    _run(_adr_freshness_cmd("check"), ctx)
 
 
 def _build_dotnet(ctx: Ctx) -> None:
@@ -153,9 +138,9 @@ def _diff_check(ctx: Ctx) -> None:
 
 CI_CHECKS = (
     ("repo-standards", _repo_standards_check, "py -3 tools/run.py ci --apply"),
-    ("skill-scripts", _skill_scripts_check, "repair the reported skill script contracts"),
     ("installed-skills", _skills_check, "py -3 tools/run.py ci --apply"),
-    ("agent-mesh", _mesh_check, "py -3 tools/run.py ci --apply"),
+    ("skill-scripts", _skill_scripts_check, "repair the reported skill script contracts"),
+    ("decision-freshness", _adr_freshness_check, "py -3 tools/run.py ci --apply"),
     ("dotnet-build", _build_dotnet, "dotnet build"),
     ("dotnet-test", _test_dotnet, "dotnet test"),
     ("web", _build_web, "npm --prefix src/WildBunch.Web run build"),
@@ -165,9 +150,9 @@ CI_CHECKS = (
 
 def _ci_apply(ctx: Ctx) -> None:
     _repo_standards_apply(ctx)
-    _skill_scripts_check(ctx)
     _skills_apply(ctx)
-    _mesh_apply(ctx)
+    _skill_scripts_check(ctx)
+    _adr_freshness_apply(ctx)
 
 
 def _ci_check(ctx: Ctx) -> None:

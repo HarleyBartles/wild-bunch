@@ -5,10 +5,10 @@ All scripts are idempotent and safe to re-run. Inspect this folder before
 running ad-hoc commands for dev server management, database setup, or image
 processing.
 
-Generic repo-maintenance mechanics (skill sync, index mesh generation,
-repo-standards checks) are handled by the bundled marketplace skills under
-`.agents/skills/`. This directory contains only operational, repo-specific
-scripts and thin wrappers over canonical commands.
+Repository maintenance uses the source-pinned helpers and selected standards
+deployed under `.agents/standards/`, orchestrated by `tools/run.py`. This
+directory contains operational Wild Bunch scripts and thin wrappers over
+canonical commands.
 
 ## Shared requirements
 
@@ -80,14 +80,8 @@ The primary backend is Pillow in Python 3.11+ with the package installed in
 the active environment. The selection and promotion note lives in
 `.agents/playbooks/asset-selection-cut-normalization.md`.
 
-## Extension hooks
+## Skill ownership
 
-The following scripts are not invoked directly; they are extension points for
-the bundled marketplace skills.
-
-- `scripts/generate_index_mesh_extra.py` (and `.sh`/`.ps1` wrappers) is called
-  by `generating-agent-mesh` after it generates the `INDEX.md` mesh. It appends
-  the ADR freshness table to `docs/adr/INDEX.md`.
 - Repository-local skills are declared by exact name in
   `.agents/plugins/marketplace.json` under `repo.local_skills`. The installed
   refresh capability validates those names and preserves their directories.

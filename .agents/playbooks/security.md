@@ -5,17 +5,29 @@
 A Wild Bunch change affects tool side effects, permissions, secrets, hidden
 truth, or a sensitive mutation boundary.
 
-## Required skills
+## Required capabilities
 
-- `/connector-safety` for connector and tool mutations.
-- `/risk-gates` when scope, authority, source truth, or safety needs a gate.
+- Evaluate connector and tool mutations for authority and side effects.
+- Apply scope and safety gates when authority, source truth, or impact requires them.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
-1. Use `/risk-gates` to identify the authority, scope, hidden truth, and
+1. Use scope, authority, source-truth, and consequence review to identify the authority, scope, hidden truth, and
    irreversible consequence before any sensitive mutation.
 2. Bind the approved action to the architecture and gameplay doctrine below.
-3. Use `/connector-safety` for the external tool or connector mutation and its
+3. Use safe connector and tool mutation for the external tool or connector mutation and its
    readback; keep unrelated writes separate.
 4. Run the focused security/behavior tests and the testing runbook's delivery gate.
 

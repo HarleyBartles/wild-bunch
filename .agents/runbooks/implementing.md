@@ -4,26 +4,33 @@
 
 Implementing an approved Wild Bunch change in a task worktree.
 
-## Required skills
+## Required capabilities
 
-- `/test-driven-development`
-- `/verification-before-completion`
-- `/wild-bunch-domain-modeling` for gameplay and aggregate decisions.
-- `/wild-bunch-dotnet-architecture` for C# application and persistence boundaries.
-- `/wild-bunch-browser-game` for browser state and presentation ownership.
-- `/seed-ownership`, `/dev-control-boundary`, or
-  `/town-hub-asset-judgment` when that focused judgment is in scope.
+- Develop observable behavior through focused, behavior-first tests.
+- Verify claims against current repository and hosted evidence.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
 1. Read the approved plan and invoke only the focused Wild Bunch capability
    skills whose declared boundaries the change crosses.
 2. Bind those decisions to the applicable doctrine and contracts below.
-3. Use `/test-driven-development` to construct each observable behavior through
+3. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
 4. Apply generated agent surfaces with `py -3 tools/run.py ci --apply`, stage
    the intended tree, and use the normal hooked commit.
-5. Use `/verification-before-completion` to reconcile the committed head with
+5. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 
 ## Doctrine and contracts

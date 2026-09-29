@@ -3,7 +3,7 @@ name: wcag
 description: Use when auditing web content accessibility against WCAG 2.2 or mapping success criteria to a verification plan. Do not use when the work is general UX design or automated tooling setup only.
 metadata:
   source-id: wcag
-  source-path: codex-marketplace/plugins/frontend-pack/skills/wcag/SKILL.md
+  source-path: skills/wcag/SKILL.md
   provenance-name: Wcag first-party skill
   source-category: first_party
   status: active

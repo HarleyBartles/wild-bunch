@@ -5,19 +5,31 @@
 Changing plugin subscriptions, the pinned marketplace source, a local plugin,
 or a registered repository-local skill.
 
-## Required skills
+## Required capabilities
 
-- `/refreshing-installed-skills`
-- `/repo-standards`
+- Refresh installed skill projections from pinned source and inspect ownership and provenance.
+- Apply and check the consumer-selected repository standards.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
 1. Edit only the authored subscription, pinned marketplace source, local plugin,
    or registered local skill that owns the change.
-2. Use `/refreshing-installed-skills` to rebuild installed projections from
+2. Use pinned-source skill projection refresh to rebuild installed projections from
    those sources; never patch projected skill content as the fix.
-3. Use `/repo-standards` through `py -3 tools/run.py ci --apply` to reconcile
-   repository shape, hook custody, provenance, and generated mesh.
+3. Use consumer-selected repository standards through `py -3 tools/run.py ci --apply` to reconcile
+   repository shape, hook custody, provenance, and generated skill projections.
 4. Stage source and generated outputs together and verify their agreement at
    the normal hooked commit.
 

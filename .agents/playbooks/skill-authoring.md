@@ -4,22 +4,33 @@
 
 Creating or changing a repository-local Wild Bunch skill.
 
-## Required skills
+## Required capabilities
 
-- `/writing-skills`
-- `/refreshing-installed-skills`
-- `/repo-standards`
+- Design and author a focused repository capability and its behavior tests.
+- Refresh skill projections and run selected repository standards.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
-1. Use `/writing-skills` to define and test one focused Wild Bunch capability or
+1. Use capability skill design and authoring to define and test one focused Wild Bunch capability or
    judgment; keep repository lifecycle sequencing in runbooks.
 2. Create the authored source under `.agents/skills/<exact-name>/` and register
    that exact name in the marketplace manifest's local-skill list without
    relying on a prefix.
-3. Use `/refreshing-installed-skills` to prove refresh preserves local custody.
-4. Use `/repo-standards` through the marketplace-generation and testing
-   runbooks to validate projection, provenance, mesh, and committed shape.
+3. Use pinned-source skill projection refresh to prove refresh preserves local custody.
+4. Use consumer-selected repository standards through the marketplace-generation and testing
+   runbooks to validate projection, provenance, and committed shape.
 
 ## Doctrine and contracts
 
@@ -39,7 +50,7 @@ contract, runbook, script, or portable skill already owns.
 - [ ] Directory, frontmatter, and `repo.local_skills` names match exactly.
 - [ ] Focused tests exercise the skill's declared capability boundary.
 - [ ] Refresh preserves the skill without marketplace provenance.
-- [ ] Generated mesh and repository standards checks pass.
+- [ ] Selected repository standard checks pass.
 
 ## Prohibited combinations
 

@@ -3,7 +3,8 @@
   "check": ["@python", "tools/run.py", "ci", "--check", "--diagnostics"],
   "generated_paths": [
     ".agents/skills/**",
-    "**/INDEX.md",
-    "**/INDEX.json"
+    ".agents/agents/**",
+    ".agents/standards/**",
+    "docs/decisions/README.md"
   ]
 }

@@ -4,21 +4,32 @@
 
 Reviewing a Wild Bunch diff, branch, or pull request.
 
-## Required skills
+## Required capabilities
 
-- `/requesting-code-review` for review construction.
-- `/receiving-code-review` when resolving feedback.
-- `/verification-before-completion` before approval or completion claims.
+- Provide independent review of a committed diff and select relevant domain and quality lenses.
+- Analyze review feedback, resolve findings with evidence, and verify the resulting head.
+
+## Optional capabilities
+
+- None.
+
+## Required repository-owned skills
+
+- None.
+
+## Optional repository-owned skills
+
+- None.
 
 ## Composition
 
-1. Use `/requesting-code-review` to review the actual committed diff and select
+1. Use independent code review to review the actual committed diff and select
    the applicable Wild Bunch capability and anti-slop lenses.
 2. Check the diff against the doctrine, contracts, local commands, and evidence
    obligations below rather than against the PR summary.
-3. Route every accepted finding through `/receiving-code-review`; re-check the
+3. Route every accepted finding through review finding analysis and correction; re-check the
    repaired diff rather than trusting the response.
-4. Use `/verification-before-completion` to bind the final verdict to the
+4. Use evidence-based result verification to bind the final verdict to the
    current local head and, when a PR exists, its remote head and checks.
 
 ## Doctrine and contracts
@@ -28,12 +39,12 @@ Reviewing a Wild Bunch diff, branch, or pull request.
 - Frontend changes: [frontend standards](../doctrine/frontend-standards.md).
 - Tests: [validation doctrine](../doctrine/validation-policy.md).
 - Apply relevant binding profiles from `../contracts/unslop/` and scoped
-  contract homes; portable profiles remain owned by `/unslop-profiles`.
+  contract homes; use an available review capability for portable profiles.
 
 ## Local commands and paths
 
-Use `py -3 tools/run.py ci --check` for deliberate CI-parity proof. Regenerate
-the mesh through the canonical apply capability when routed files change.
+Use `py -3 tools/run.py ci --check` for deliberate CI-parity proof. Apply the
+canonical command when selected standards or skill projections change.
 
 ## Evidence contract
 
@@ -41,7 +52,7 @@ the mesh through the canonical apply capability when routed files change.
 - [ ] Applicable backend, frontend, validation, and anti-slop authorities were checked.
 - [ ] Each finding is resolved, rejected with evidence, or reported as open.
 - [ ] Local proof and applicable GitHub checks match the reviewed head.
-- [ ] Required ADR and mesh changes are present.
+- [ ] Required decision records and repository-shape changes are present.
 
 ## Prohibited combinations
 
