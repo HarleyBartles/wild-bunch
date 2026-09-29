@@ -2,12 +2,11 @@
 
 ## When
 
-Changing plugin subscriptions, the pinned marketplace source, a local plugin,
-or a registered repository-local skill.
+Changing native plugin subscriptions, deployed tooling resources, or a registered repository-local skill.
 
 ## Required capabilities
 
-- Refresh installed skill projections from pinned source and inspect ownership and provenance.
+- Validate native subscriptions and inspect authored local-skill custody.
 - Apply and check the consumer-selected repository standards.
 
 ## Optional capabilities
@@ -24,38 +23,36 @@ or a registered repository-local skill.
 
 ## Composition
 
-1. Edit only the authored subscription, pinned marketplace source, local plugin,
-   or registered local skill that owns the change.
-2. Use pinned-source skill projection refresh to rebuild installed projections from
-   those sources; never patch projected skill content as the fix.
-3. Use consumer-selected repository standards through `py -3 tools/run.py ci --apply` to reconcile
-   repository shape, hook custody, provenance, and generated skill projections.
-4. Stage source and generated outputs together and verify their agreement at
-   the normal hooked commit.
+1. Edit `.agents/plugins/marketplace.json` and `.codex/config.toml` for plugin dependencies; keep exact local-skill registrations.
+2. Install through `codex plugin add <plugin-name>@wild-bunch` and refresh through `codex plugin marketplace upgrade wild-bunch` in the trusted repository. Keep plugin payloads in Codex's cache.
+3. Apply and check consumer-selected standards through `py -3 tools/run.py ci --apply` and `--check`. A tooling-submodule update is a separate deliberate pin change with AOM deployment provenance.
+4. Stage the authored configuration and deployed resources together and verify at the normal hooked commit.
 
 ## Doctrine and contracts
 
 [Repository skills policy](../doctrine/repo-skills-policy.md) owns source
 custody. Exact `repo.local_skills` names identify local skills; every other
-installed skill directory is a projection.
+skill directory in `.agents/skills/` is an unregistered custody error.
 
 ## Local commands and paths
 
 - Authored subscription: `.agents/plugins/marketplace.json`
-- Pinned source: `.agents/plugins/marketplace-source`
+- Native activation: `.codex/config.toml`
+- Pinned tooling resources: `.agents/plugins/marketplace-source`
+- Plugin refresh: `codex plugin marketplace upgrade wild-bunch`
 - Apply: `py -3 tools\run.py ci --apply`
 - Check: `py -3 tools\run.py ci --check`
 
 ## Evidence contract
 
-- [ ] Authored marketplace configuration and submodule gitlink are staged.
-- [ ] Installed skill bytes and `.provenance.json` resolve from those sources.
-- [ ] Every local skill is registered by exact name and survives refresh.
-- [ ] Generated indexes and the committed projection agree.
+- [ ] Native activation keys resolve to the declared marketplace and selected plugins.
+- [ ] Plugin skills are discoverable and invocable in the repo and its worktrees, with unrelated-repo isolation.
+- [ ] Every local skill is registered by exact name and survives native refresh.
+- [ ] Selected operating standards pass using deployed resources.
 
 ## Prohibited combinations
 
-- Do not hand-edit marketplace-projected skill files.
+- Do not copy plugin payloads or project their skills into `.agents/skills/`.
 - Do not infer local custody from a name or prefix.
 
 ## Runbook routing

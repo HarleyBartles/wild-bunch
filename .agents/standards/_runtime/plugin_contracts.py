@@ -13,17 +13,14 @@ from surface_contracts import Finding
 @dataclass(frozen=True)
 class ConsumerContract:
     surface_exceptions: tuple[str, ...]
-    unslop_profile_roots: tuple[str, ...]
 
 
 def load_consumer_contract(repo_root: Path) -> ConsumerContract:
     path = repo_root / ".agents/contracts/agent-operating-model.json"
     data = json.loads(path.read_text(encoding="utf-8"))
     exceptions = data.get("surface_exceptions", [])
-    roots = data.get("unslop_profile_roots", [])
     return ConsumerContract(
         surface_exceptions=tuple(item["id"] for item in exceptions if isinstance(item, dict) and "id" in item),
-        unslop_profile_roots=tuple(item for item in roots if isinstance(item, str)),
     )
 
 

@@ -1,0 +1,18 @@
+[plugins]
+
+[plugins."game-studio@wild-bunch"]
+enabled = true
+
+[plugins."dotnet-pack@wild-bunch"]
+enabled = true
+
+[plugins."architecture-pack@wild-bunch"]
+enabled = true
+
+[plugins."frontend-pack@wild-bunch"]
+enabled = true
+
+[marketplaces.wild-bunch]
+source_type = "git"
+source = "https://github.com/HarleyBartles/wild-bunch.git"
+ref = "main"

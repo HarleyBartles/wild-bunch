@@ -80,4 +80,6 @@ Wild Bunch is an unofficial, independent re-imagining inspired by the game publi
 
 ## Repo-local plugin posture
 
-This repo default-installs Codex plugins from [HarleyBartles/agent-asset-marketplace](https://github.com/HarleyBartles/agent-asset-marketplace). Their canonical configuration is [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json); vendored skills and provenance are generated from it.
+Wild Bunch subscribes to Game Studio, Architecture Pack, .NET Pack, and Frontend Pack through native Codex Git plugins. [The repo marketplace](.agents/plugins/marketplace.json) owns their Git-subdirectory sources, each tracking `main`; [Codex config](.codex/config.toml) enables them in this repository and its trusted worktrees. Plugin payloads live in Codex's cache.
+
+Install with `codex plugin add <plugin-name>@wild-bunch` and refresh with `codex plugin marketplace upgrade wild-bunch`. Keep these identities disabled or absent at user scope so activation remains repo-only. See [field-test evidence and pre-merge instructions](.agents/docs/native-plugin-subscriptions-evidence.md) and [repository skills policy](.agents/doctrine/repo-skills-policy.md) for local-skill and tooling custody. Devin integration is deferred.

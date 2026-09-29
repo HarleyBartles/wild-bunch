@@ -8,7 +8,6 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MARKETPLACE_PATH = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
-PROVENANCE_PATH = REPO_ROOT / ".agents" / "skills" / ".provenance.json"
 SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
 
 
@@ -20,10 +19,9 @@ def _frontmatter_name(skill_path: Path) -> str:
 
 def test_local_skill_custody_uses_exact_registration_only():
     marketplace = json.loads(MARKETPLACE_PATH.read_text(encoding="utf-8"))
-    provenance = json.loads(PROVENANCE_PATH.read_text(encoding="utf-8"))
     registered = marketplace["repo"]["local_skills"]
 
-    assert sorted(registered) == sorted(provenance["localSkills"])
+    assert sorted(registered) == sorted(path.name for path in SKILLS_ROOT.iterdir() if path.is_dir())
     assert len(registered) == len(set(registered))
 
     for name in registered:

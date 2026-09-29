@@ -42,10 +42,12 @@ REGISTERED_VALIDATORS = frozenset(
         "optional-agents-router-contract",
         "playbook-set-contract",
         "repo-runbook-policy-contract",
+        "repo-plugin-subscriptions-contract",
         "review-contract",
         "runbook-set-contract",
         "shared-checkout-contract",
         "submodule-contract",
+        "unslop-contract",
     }
 )
 

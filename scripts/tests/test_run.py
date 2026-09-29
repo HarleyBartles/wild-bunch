@@ -58,7 +58,6 @@ def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
     visited: list[str] = []
     mechanical_steps = (
         "_repo_standards_apply",
-        "_skills_apply",
         "_skill_scripts_check",
         "_adr_freshness_apply",
     )
@@ -72,25 +71,13 @@ def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
     assert visited == list(mechanical_steps)
 
 
-def test_ci_check_keeps_standards_and_skill_refresh_without_mesh() -> None:
-    names = [name for name, _check, _fix in run.CI_CHECKS]
-    assert "repo-standards" in names
-    assert "installed-skills" in names
-    assert "decision-freshness" in names
-    assert "agent-mesh" not in names
-
-
-def test_commands_use_deployed_standards_and_pinned_refresh_adapter(monkeypatch) -> None:
+def test_commands_use_deployed_standards(monkeypatch) -> None:
     repo_standards = run._repo_standards_cmd("check", False)
     assert repo_standards[1] == ".agents/standards/_runtime/repo_standards.py"
     assert repo_standards[-1] == "--check"
 
     apply_standards = run._repo_standards_cmd("apply", True)
     assert apply_standards[-3:] == ["--apply", "--yes", "--allow-shared-checkout"]
-
-    skill_refresh = run._skills_cmd("check", False)
-    assert skill_refresh[1] == "tools/refresh_marketplace_skills.py"
-    assert "--no-roll-marketplace-source" in skill_refresh
 
     assert run._adr_freshness_cmd("check")[1:] == ["scripts/update_adr_freshness.py", "--check"]
 

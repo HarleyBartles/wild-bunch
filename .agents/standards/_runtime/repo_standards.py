@@ -646,7 +646,12 @@ def _check_surface(
     surf_id = str(surface.get("id", ""))
     if _surface_is_explicitly_excepted(surface, exceptions):
         return findings
+    opted_in = (repo_root / ".agents/contracts/operating-standards.json").is_file()
+    if surf_id == "repo-plugin-subscriptions" and not opted_in:
+        return findings
     if enabled_surface_ids is not None and surf_id and surf_id not in enabled_surface_ids:
+        return findings
+    if surf_id == "unslop-contract" and implementation_root is None:
         return findings
     kind = str(surface.get("kind", "file"))
     optional = bool(surface.get("optional", False))
@@ -709,7 +714,7 @@ def _check_surface(
         findings.extend(_check_hooks_path(repo_root, str(Path(rel).parent).replace("\\", "/")))
         return findings
 
-    if optional and not full.exists():
+    if optional and not full.exists() and surf_id != "unslop-contract":
         return findings
 
     validator = document_contracts.DOCUMENT_VALIDATORS.get(str(surface.get("validator", "")))
@@ -746,6 +751,9 @@ def _apply_surface(
     if surf_id in {"runbook-set", "playbook-set"} and skill_link_contract.has_custom_composition_paths(repo_root):
         return False
     if _surface_is_explicitly_excepted(surface, exceptions):
+        return False
+    opted_in = (repo_root / ".agents/contracts/operating-standards.json").is_file()
+    if surf_id == "repo-plugin-subscriptions" and not opted_in:
         return False
     if enabled_surface_ids is not None and surf_id and surf_id not in enabled_surface_ids:
         return False
@@ -1144,7 +1152,7 @@ while the contract is absent."""
         refreshed_contract = plugin_contracts.load_consumer_contract(repo_root)
         refreshed_exceptions = set(refreshed_contract.surface_exceptions)
     else:
-        refreshed_contract = plugin_contracts.ConsumerContract(tuple(exceptions), ())
+        refreshed_contract = plugin_contracts.ConsumerContract(tuple(exceptions))
         refreshed_exceptions = set(exceptions)
     refreshed_enabled = _enabled_surface_ids(surfaces, refreshed_exceptions)
     refreshed_graph = _check_composition_graph(repo_root)

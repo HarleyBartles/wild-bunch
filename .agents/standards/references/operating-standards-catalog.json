@@ -14,6 +14,21 @@
       "requires": []
     },
     {
+      "id": "repo-plugin-subscriptions",
+      "title": "Repo plugin subscriptions",
+      "surfaces": ["repo-plugin-subscriptions"],
+      "resources": [
+        "skills/repo-shape/scripts/repo_plugin_subscriptions.py",
+        "skills/repo-shape/references/repo-plugin-subscriptions-standard.md",
+        "skills/repo-shape/templates/repo-plugin-subscriptions/codex-marketplace.json",
+        "skills/repo-shape/templates/repo-plugin-subscriptions/codex-config.toml",
+        "skills/repo-shape/templates/repo-plugin-subscriptions/devin-config.json"
+      ],
+      "check": true,
+      "apply": true,
+      "requires": []
+    },
+    {
       "id": "root-agent-router",
       "title": "Root agent router",
       "surfaces": ["root-agents-md", "docs-agents-md", "agent-docs-agents-md"],
@@ -130,6 +145,20 @@
       "check": true,
       "apply": true,
       "requires": []
+    },
+    {
+      "id": "unslop",
+      "title": "Unslop profiles",
+      "surfaces": ["unslop-contract"],
+      "resources": [
+        "skills/repo-shape/references/unslop-standard.md",
+        "skills/repo-shape/references/unslop-contract.schema.json",
+        "skills/repo-shape/scripts/unslop_standard.py"
+      ],
+      "check": true,
+      "apply": true,
+      "requires": [],
+      "legacy_migration": "explicit"
     }
   ],
   "migration_surfaces": ["operating-model-contract"]

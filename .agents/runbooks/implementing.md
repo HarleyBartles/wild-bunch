@@ -66,7 +66,7 @@ exact staged snapshot.
 - [Testing](../playbooks/testing.md) - whenever behavior or validation changes.
 - [Security](../playbooks/security.md) - when side effects, permissions, secrets, hidden truth, or sensitive mutation boundaries change.
 - [Dev overlay](../playbooks/dev-overlay.md) - when developer controls or panels change.
-- [Marketplace generation](../playbooks/marketplace-generation.md) - when plugin subscriptions, pinned marketplace source, local plugins, or local skills change.
+- [Marketplace generation](../playbooks/marketplace-generation.md) - when native plugin subscriptions, pinned tooling resources, or local skills change.
 - [Seeded game setup](../playbooks/seeded-game-setup.md) - when setup ownership or deterministic setup changes.
 - [Skill authoring](../playbooks/skill-authoring.md) - when a repository-local skill changes.
 - [Town-hub asset production](../playbooks/town-hub-asset-production.md) - when town-hub assets are produced or revised.
