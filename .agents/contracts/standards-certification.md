@@ -55,7 +55,7 @@ successful runs. A fixture verifies CRLF normalization stays within the
 declared generated output while unrelated CRLF work survives. The canonical
 gate runs the 41 Python behavior tests. All current scoped checks have Windows
 execution evidence. The complete hook also passed a clean detached clone of
-commit `dcb7c177211da5bba81a4c7c0bf9eb22924bc7b7`, with no `.gitmodules` file
+commit `df6a1190c23a59723380969646a3b8e11405d847`, with no `.gitmodules` file
 or Marketplace source submodule. GitHub intentionally skips Draft PR checks;
 an actual hosted Linux result cannot be claimed until the PR is marked ready.
 The standard remains not fully certified until that evidence is available.
