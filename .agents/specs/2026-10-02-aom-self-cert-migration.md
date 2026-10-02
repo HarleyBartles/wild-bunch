@@ -48,6 +48,8 @@ Router policy: root at most 40 lines; scoped routers, if introduced, at most 15 
 - Retired paths have no live callers or guidance routes. Native plugin declarations and authored skills retain their behavior and custody.
 - Focused behavior checks pass, then the ordinary hooked commit proves the complete staged product. Hosted parity is separately exercised against that committed counterpart.
 
-## Assessment evidence and limits
+## Implementation evidence and limits
 
-On 2026-10-02 the helper-created worktree passed `py -3 -m pytest scripts/tests -q` (22 tests) and the historical `py -3 .agents/standards/_runtime/repo_standards.py --check` (eight declared standards). These are focused baseline results, not proof of current v2 certification or a complete product baseline. The plan commit uses the normal complete hook. No implementation files were changed during assessment.
+The implementation is on `codex/aom-self-cert-migration`. The source and definition pin is `b481f98ae90aa45e5271d10fe1f7aaeb6c7047aa`. It removes the AOM source gitlink, `.gitmodules`, and the complete `.agents/standards/` deployment tree while preserving the four separate native plugin dependencies and six authored skills. Task and review evidence is recorded in the implementation plan and the repository-owned certification.
+
+The focused suite passed with 39 tests on Windows. The ordinary hooked commit runs the complete product gate. The committed tree is also exercised in a clean detached clone using the hook's hosted parity mode. These local runs do not establish hosted Linux results: GitHub Actions skips Draft PR checks. The tracked-hook certification remains pending the first non-draft hosted run. The historical 2026-09-29 plugin field report is retained as dated evidence, not a claim of fresh-process runtime or authentication validation.

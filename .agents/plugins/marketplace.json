@@ -60,15 +60,5 @@
       },
       "category": "Productivity"
     }
-  ],
-  "repo": {
-    "local_skills": [
-      "wild-bunch-browser-game",
-      "wild-bunch-domain-modeling",
-      "wild-bunch-dotnet-architecture",
-      "seed-ownership",
-      "dev-control-boundary",
-      "town-hub-asset-judgment"
-    ]
-  }
+  ]
 }

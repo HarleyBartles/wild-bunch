@@ -5,10 +5,9 @@ All scripts are idempotent and safe to re-run. Inspect this folder before
 running ad-hoc commands for dev server management, database setup, or image
 processing.
 
-Repository maintenance uses the source-pinned helpers and selected standards
-deployed under `.agents/standards/`, orchestrated by `tools/run.py`. This
-directory contains operational Wild Bunch scripts and thin wrappers over
-canonical commands.
+Repository maintenance uses the Wild Bunch checks under `scripts/`, orchestrated
+by `tools/run.py`. This directory contains repository-owned operational scripts
+and thin wrappers over canonical commands.
 
 ## Shared requirements
 
@@ -82,9 +81,11 @@ the active environment. The selection and promotion note lives in
 
 ## Skill ownership
 
-- Repository-local skills are declared by exact name in
-  `.agents/plugins/marketplace.json` under `repo.local_skills`. The installed
-  refresh capability validates those names and preserves their directories.
+- Repository-authored skills live under `.agents/skills/` and identify
+  themselves in frontmatter. Codex plugin dependencies live in
+  `.agents/plugins/marketplace.json` and are installed in Codex's cache.
+- Executable skill scripts are tested with repository behavior tests; no
+  external validator or projection refresh is required.
 
 ## Conventions
 

@@ -57,8 +57,10 @@ def test_diagnostics_is_rejected_outside_ci_check(capsys) -> None:
 def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
     visited: list[str] = []
     mechanical_steps = (
-        "_repo_standards_apply",
-        "_skill_scripts_check",
+        "_activate_hook",
+        "_operating_standards_check",
+        "_agent_routers_check",
+        "_plugin_subscriptions_check",
         "_adr_freshness_apply",
     )
     product_steps = ("_build_dotnet", "_test_dotnet", "_build_web", "_diff_check")
@@ -71,17 +73,20 @@ def test_ci_apply_only_materializes_mechanical_surfaces(monkeypatch) -> None:
     assert visited == list(mechanical_steps)
 
 
-def test_commands_use_deployed_standards(monkeypatch) -> None:
-    repo_standards = run._repo_standards_cmd("check", False)
-    assert repo_standards[1] == ".agents/standards/_runtime/repo_standards.py"
-    assert repo_standards[-1] == "--check"
+def test_ci_check_invokes_repository_owned_contracts(monkeypatch) -> None:
+    captured: list[list[str]] = []
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: captured.append(command))
+    for check in (run._operating_standards_check, run._agent_routers_check, run._plugin_subscriptions_check):
+        check(run.Ctx("check", False))
+    assert [command[1:] for command in captured] == [
+        ["scripts/check_operating_standards.py", "--check"],
+        ["scripts/check_agent_routers.py", "--check"],
+        ["scripts/check_plugin_subscriptions.py", "--check"],
+    ]
 
-    apply_standards = run._repo_standards_cmd("apply", True)
-    assert apply_standards[-3:] == ["--apply", "--yes", "--allow-shared-checkout"]
 
-    assert run._adr_freshness_cmd("check")[1:] == ["scripts/update_adr_freshness.py", "--check"]
-
-    captured: list[str] = []
-    monkeypatch.setattr(run, "_run", lambda command, _ctx: captured.extend(command))
-    run._skill_scripts_check(run.Ctx("check", False))
-    assert captured[1:] == ["scripts/validate_repo_skill_scripts.py", "--check"]
+def test_ci_apply_activates_tracked_hook(monkeypatch) -> None:
+    captured: list[list[str]] = []
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: captured.append(command))
+    run._activate_hook(run.Ctx("apply", False))
+    assert captured == [["git", "config", "core.hooksPath", "githooks"]]

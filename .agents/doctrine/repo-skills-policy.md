@@ -1,19 +1,15 @@
-# Repository skills policy
+# Repository skills and plugins policy
 
 ## Source custody
 
-- `.agents/plugins/marketplace.json` owns the four Git-subdirectory subscriptions. Their payload refs track `main`.
-- `.codex/config.toml` registers the Git-backed `wild-bunch` marketplace from this repository's published `main` and enables only its selected plugin identities. Codex owns installation and cache refresh.
-- `.agents/skills/` contains only the exact authored names in `repo.local_skills`. Plugin skills remain in Codex's cache and have no repository projection or `.provenance.json`.
-- `.agents/plugins/marketplace-source` remains pinned for the Markdown formatter wheel and the skill-script validator. Selected operating-standard implementations are deployed into `.agents/standards/` with their own provenance, so checks run without an ambient plugin. The submodule is not an installed plugin source and is not rolled by a refresh workflow.
-- Update a tooling pin deliberately, deploy standards through AOM's `deploy_operating_standards.py`, and prove the repository gates. Native Marketplace Upgrade changes cached plugins, not this tooling pin or deployed standards.
+- `.agents/plugins/marketplace.json` declares the four repository plugin dependencies and their Git sources and paths. Their payload refs intentionally track `main`.
+- `.codex/config.toml` binds the Git-backed `wild-bunch` catalog and enables the selected plugin identities. Codex owns installation and cache refresh.
+- `.agents/skills/` contains skills authored for Wild Bunch. Each skill's frontmatter name matches its containing directory. Installed plugin skills remain in Codex's cache.
+- `scripts/check_plugin_subscriptions.py --check` checks Codex catalog syntax, selectors, paths, matching marketplace registration, and local activations. It does not fetch, install, or establish authentication, access, trust, or runtime availability.
+- Devin can read the repository's scoped rules, but this repository does not declare plugin dependencies for Devin. Do not describe Codex plugin activation as Devin support.
 
-## Registration invariant
+## Authoring and validation
 
-Every repository-local skill is named exactly once in `repo.local_skills`, its directory and frontmatter name match that entry, and its authored bytes survive plugin installation and refresh. Names and prefixes alone do not establish custody.
+Keep reusable game behavior in repository-owned skills when a skill is useful across tasks. Test any executable skill scripts through the same repository-owned behavior-test lane as other Python scripts. Do not require an external validator or a parallel registration inventory for skills without executable scripts.
 
-## Native refresh
-
-Run `codex plugin marketplace upgrade wild-bunch` in a trusted Wild Bunch checkout. This upgrades the Git catalog snapshot and its installed Git-subdirectory payloads. Other repositories do not inherit the activation keys. Native installation may also write user-level enablement; keep these four identities disabled or absent at user scope so repository activation remains the owner. Before this migration merges, field tests override the catalog's ref to the published PR branch; payload refs remain `main`. After merge the checked-in catalog ref is sufficient.
-
-Devin activation and field testing remain deferred. The adopted AOM scaffold's empty `.devin/config.json` declares no dependencies.
+When changing plugin declarations or authored-skill custody, update this policy and the `repo-plugin-subscriptions` certification in `.agents/contracts/standards-certification.md` in the same change.

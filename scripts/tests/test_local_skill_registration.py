@@ -1,13 +1,11 @@
-"""Contracts for explicitly registered repository-local skills."""
+"""Behavior for repository-authored skill custody."""
 
-import json
 from pathlib import Path
 
 import yaml
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-MARKETPLACE_PATH = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
 SKILLS_ROOT = REPO_ROOT / ".agents" / "skills"
 
 
@@ -17,23 +15,16 @@ def _frontmatter_name(skill_path: Path) -> str:
     return yaml.safe_load(frontmatter)["name"]
 
 
-def test_local_skill_custody_uses_exact_registration_only():
-    marketplace = json.loads(MARKETPLACE_PATH.read_text(encoding="utf-8"))
-    registered = marketplace["repo"]["local_skills"]
-
-    assert sorted(registered) == sorted(path.name for path in SKILLS_ROOT.iterdir() if path.is_dir())
-    assert len(registered) == len(set(registered))
-
-    for name in registered:
-        skill_path = SKILLS_ROOT / name / "SKILL.md"
+def test_each_repository_skill_declares_its_directory_name():
+    for skill_path in sorted(SKILLS_ROOT.glob("*/SKILL.md")):
+        name = skill_path.parent.name
         assert skill_path.is_file(), f"registered local skill is missing: {name}"
         assert _frontmatter_name(skill_path) == name
 
-    for suffix in ("py", "ps1", "sh"):
-        assert not (REPO_ROOT / "scripts" / f"validate_local_skills_extra.{suffix}").exists()
-
 
 def test_marketplace_manifest_is_configuration_not_narrative():
-    marketplace = json.loads(MARKETPLACE_PATH.read_text(encoding="utf-8"))
+    import json
 
+    marketplace = json.loads((REPO_ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
     assert "notes" not in marketplace
+    assert "repo" not in marketplace

@@ -1,7 +1,7 @@
 # Validation doctrine
 
 This file records Wild Bunch test-lane ownership and invariants. The executable
-sequence and environment setup live in the [testing runbook](../runbooks/testing.md).
+sequence and environment setup live in the [testing playbook](../playbooks/testing.md).
 
 ## Repository test lanes
 

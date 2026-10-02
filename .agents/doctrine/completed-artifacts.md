@@ -1,38 +1,21 @@
-## Scope
+# Completed planning artifacts
 
-Completed planning-artifact custody truth for this repository.
+Plans and specifications guide only the work they describe. At the next
+substantive slice, inspect prior plans, specifications, roadmaps, and
+checkpoints with their related implementation and delivery evidence. Decide
+whether each artifact's entire scope shipped, remains live, or was explicitly
+abandoned. A checkbox, status marker, merged PR, or age can prompt review but
+cannot decide the result by itself.
 
-## Doctrine
+Retire an artifact only after its whole scope is complete or abandonment is
+explicit, durable decisions and operating guidance are at their current
+owners, and the successor branch contains that promoted knowledge. Keep
+future or ambiguous work. Do not restore authority to an artifact because it
+remains in Git. Preserve its history through the completing pull request, then
+remove eligible artifacts and stale links in the next substantive slice.
 
-Completed plans, specifications, roadmaps, checkpoints, and similar execution
-artifacts are not retained in the tracked repository. Git history is the
-immutable record. A completed artifact is not an authority: do not use it as
-a source of canonical command sequences, a template for current
-implementation, or an authoritative example of repo conventions. Completion
-does not create a durable exception for an artifact type.
-
-A completing slice marks every governed artifact exactly
-`completed-awaiting-retirement` and retains it through that slice's merge.
-The next substantive successor slice removes those marked artifacts as its
-first commit after verifying that durable content was promoted. An artifact
-may instead be abandoned only through an explicit recorded decision; absence,
-inactivity, scratch output, or deletion does not establish abandonment.
-
-When a completed artifact leaves the tracked tree, an optional disposable
-convenience copy may live at
-`<main-checkout>/../_agent-scratch/<repo-name>/completed/<artifact-type>/`
-with no manifest, retention promise, or evidentiary role.
-
-Durable content promotes before removal: enduring architecture decisions
-belong in the repository's declared ADR home; operating rules belong in
-`.agents/doctrine/` or `.agents/runbooks/`. The completion runbook names the
-concrete destinations.
-
-## Ownership
-
-The planning-artifact lifecycle capability owns the two-slice completion and
-retirement sequence. Artifact custody guidance owns ambiguous classification
-and promotion-before-removal judgment. The `completing-plans.md` playbook binds
-those capabilities to Wild Bunch paths and evidence. For current conventions,
-use `.agents/doctrine/*.md`, `.agents/runbooks/*.md`,
-`.agents/playbooks/*.md`, and active plans and specs.
+Durable architecture decisions belong in `docs/decisions/`. Operating rules
+belong in `.agents/doctrine/`, `.agents/runbooks/`, or `.agents/playbooks/`.
+When scope or promotion is unclear, retain the artifact and state the evidence
+needed for a later classification. Any marker is optional evidence; it is not
+a discovery path or deletion prerequisite.

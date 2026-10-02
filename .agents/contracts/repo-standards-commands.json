@@ -14,8 +14,6 @@
     "--diagnostics"
   ],
   "generated_paths": [
-    ".agents/agents/**",
-    ".agents/standards/**",
     "docs/decisions/README.md"
   ]
 }

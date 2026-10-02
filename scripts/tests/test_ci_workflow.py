@@ -30,6 +30,7 @@ def test_hosted_ci_executes_the_tracked_hook() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "fetch-depth: 2" in text
+    assert "submodules: true" not in text
     assert "REPO_STANDARDS_HOSTED_COMMIT: HEAD" in text
     assert "run: githooks/pre-commit" in text
     assert "cp githooks/pre-commit" not in text

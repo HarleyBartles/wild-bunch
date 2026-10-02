@@ -1,5 +1,9 @@
 # Native Codex plugin subscription field test
 
+Historical field evidence from 2026-09-29. Current standard subscriptions and
+assessments live in [the v2 subscription record](../contracts/operating-standards.json)
+and [certification](../contracts/standards-certification.md).
+
 Tested on 29 September 2026 with Codex CLI `0.159.0`, based on Wild Bunch `c51181a` and Marketplace PR #343 (`5fcfb473948fd0f32998ffce31d8e528f2261572`). [The extracted JSON](native-plugin-subscriptions-evidence.json) records native plugin metadata, successful cached-skill reads, session transcript hashes, invocation results and the Upgrade response.
 
 ## Catalog and payload refs

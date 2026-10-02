@@ -13,26 +13,19 @@ completion, explicit abandonment, or successor-slice retirement.
 
 - None.
 
-## Required repository-owned skills
-
-- cleanup-custody (when completion, abandonment, or promotion is ambiguous).
-
-## Optional repository-owned skills
-
-- None.
-
 ## Composition
 
-1. Use planning artifact lifecycle management in the completing slice to promote
-   durable content, mark the artifact `completed-awaiting-retirement`, and keep
-   it tracked through that slice's merge.
-2. In the next substantive slice, use the same skill's successor ingress lane
-   before substantive edits. Add artifact and workspace custody review only when promotion or
-   lifecycle state is ambiguous.
-3. Remove eligible marked artifacts and live links as that successor slice's
-   first commit, then run `py -3 tools/run.py ci --apply` to regenerate navigation.
+1. At a successor slice, inspect prior plans, specifications, roadmaps, and
+   checkpoints alongside their code and delivery evidence. Classify the whole
+   scope as shipped, still live, or explicitly abandoned.
+2. Promote durable decisions and operating rules to their current owners.
+   Retain future or ambiguous artifacts; a marker, unchecked step, or merged
+   PR prompts assessment but cannot determine completion by itself.
+3. Remove eligible artifacts and stale links in the successor's first
+   substantive commit. A status marker can help humans but is neither
+   required nor sufficient for classification.
 4. Record explicit abandonment and promote durable content before removing an
-   artifact that did not complete.
+   artifact whose scope did not ship.
 
 ## Doctrine and contracts
 
@@ -45,19 +38,19 @@ completion, explicit abandonment, or successor-slice retirement.
 - Active homes: `.agents/plans/`, `.agents/specs/`, `.agents/roadmaps/`
 - Optional convenience copy: the repo-segregated completed-artifact directory
   beneath the scratch root resolved by host or repository policy.
-- Regenerate: `py -3 tools\run.py ci --apply`
-- Verify: `py -3 tools\run.py ci --check`
+- Verify: `py -3 tools\run.py ci --check`; the normal hook checks the staged
+  candidate and refreshes owned decision freshness output.
 
-Plan creation is committed before execution. Completion marking remains in the
-completing PR; removal and generated index changes arrive in the next
-substantive successor PR.
+Plan creation is committed before execution. Retain the current plan and spec
+through their completing pull request. The next substantive slice assesses
+them semantically and retires only work shown to be complete or abandoned.
 
 ## Evidence contract
 
 - [ ] Completion proof covers the artifact's acceptance criteria.
 - [ ] Durable decisions and rules exist at their current authority owners.
-- [ ] The completing slice retains each `completed-awaiting-retirement` artifact.
-- [ ] The successor slice removes only eligible marked artifacts and live links.
+- [ ] The successor classification covers the full artifact scope and current delivery evidence.
+- [ ] Durable content is promoted before eligible artifacts and stale links are removed.
 - [ ] The selected standards are current.
 - [ ] Git records both the artifact's creation and completed removal.
 
