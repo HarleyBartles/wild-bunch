@@ -51,10 +51,12 @@ sets up PostgreSQL, .NET 10, Node 20, and Python 3.12, then runs that same hook
 in detached committed-tree parity mode. The behavior fixture verified that a
 staged failing configuration remains a failure despite an unstaged repair,
 and that unrelated changes survive a successful run. All current scoped
-checks have Windows execution evidence. GitHub intentionally skips Draft PR
-checks; an actual hosted Linux result cannot be claimed until the PR is marked
-ready. The standard remains not fully certified until that evidence is
-available.
+checks have Windows execution evidence. The complete hook passed both the
+normal commit path and a clean detached clone of commit
+`dcb7c177211da5bba81a4c7c0bf9eb22924bc7b7`, with no `.gitmodules` file or
+Marketplace source submodule. GitHub intentionally skips Draft PR checks; an
+actual hosted Linux result cannot be claimed until the PR is marked ready. The
+standard remains not fully certified until that evidence is available.
 
 ## completed-artifact-custody
 
