@@ -16,14 +16,6 @@ class RepoGuidanceContractsTests(unittest.TestCase):
             (REPO_ROOT / "src" / "WildBunch.Web" / ".agents" / "contracts" / "unslop" / "play-surface-ui.md").is_file()
         )
 
-    def test_completed_artifacts_doctrine_declares_two_slice_custody(self) -> None:
-        doctrine = REPO_ROOT / ".agents" / "doctrine" / "completed-artifacts.md"
-        text = doctrine.read_text(encoding="utf-8")
-        self.assertIn("completed-awaiting-retirement", text)
-        self.assertIn("successor slice", text)
-        self.assertIn("explicit recorded decision", text)
-        self.assertIn("planning-artifact lifecycle capability owns", text)
-
 
 if __name__ == "__main__":
     unittest.main()

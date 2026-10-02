@@ -153,4 +153,4 @@ town, and has no mechanical effect yet.
 | [ADR-0034-playthrough-archive-lifecycle-and-one-active-playthrough-invariant.md](ADR-0034-playthrough-archive-lifecycle-and-one-active-playthrough-invariant.md) | live | 2026-06-27 |
 | [ADR-0035-react-shell-with-phaser-as-renderer-input-adapter-for-playfield-surfaces.md](ADR-0035-react-shell-with-phaser-as-renderer-input-adapter-for-playfield-surfaces.md) | live | 2026-06-28 |
 | [ADR-0036-dev-enabled-action-pattern.md](ADR-0036-dev-enabled-action-pattern.md) | live | 2026-07-10 |
-| [ADR-0037-ambient-capabilities-opt-in-standards-and-decision-documentation.md](ADR-0037-ambient-capabilities-opt-in-standards-and-decision-documentation.md) | live | 2026-09-29 |
+| [ADR-0037-ambient-capabilities-opt-in-standards-and-decision-documentation.md](ADR-0037-ambient-capabilities-opt-in-standards-and-decision-documentation.md) | superseded | 2026-10-02 |

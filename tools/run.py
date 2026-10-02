@@ -37,19 +37,6 @@ def _run(cmd: list[str], ctx: Ctx) -> None:
     subprocess.run(cmd, cwd=ROOT, check=True)
 
 
-def _repo_standards_cmd(mode: str, allow_shared: bool) -> list[str]:
-    cmd = [
-        sys.executable,
-        ".agents/standards/_runtime/repo_standards.py",
-        f"--{mode}",
-    ]
-    if mode == "apply":
-        cmd.append("--yes")
-        if allow_shared:
-            cmd.append("--allow-shared-checkout")
-    return cmd
-
-
 def _adr_freshness_cmd(mode: str) -> list[str]:
     return [sys.executable, "scripts/update_adr_freshness.py", f"--{mode}"]
 
@@ -66,24 +53,24 @@ def _npm_cmd(*args: str) -> list[str]:
     return [shutil.which("npm") or "npm", "--prefix", str(WEB_DIR), *args]
 
 
-def _repo_standards_apply(ctx: Ctx) -> None:
-    _run(_repo_standards_cmd("apply", ctx.allow_shared), ctx)
-    _run(_repo_standards_cmd("check", ctx.allow_shared), ctx)
+def _operating_standards_check(ctx: Ctx) -> None:
+    _run([sys.executable, "scripts/check_operating_standards.py", "--check"], ctx)
 
 
-def _repo_standards_check(ctx: Ctx) -> None:
-    _run(_repo_standards_cmd("check", ctx.allow_shared), ctx)
+def _agent_routers_check(ctx: Ctx) -> None:
+    _run([sys.executable, "scripts/check_agent_routers.py", "--check"], ctx)
 
 
-def _skill_scripts_check(ctx: Ctx) -> None:
-    _run(
-        [
-            sys.executable,
-            "scripts/validate_repo_skill_scripts.py",
-            "--check",
-        ],
-        ctx,
-    )
+def _plugin_subscriptions_check(ctx: Ctx) -> None:
+    _run([sys.executable, "scripts/check_plugin_subscriptions.py", "--check"], ctx)
+
+
+def _test_script_behaviors(ctx: Ctx) -> None:
+    _run([sys.executable, "-m", "pytest", "scripts/tests", "-q"], ctx)
+
+
+def _activate_hook(ctx: Ctx) -> None:
+    _run(["git", "config", "core.hooksPath", "githooks"], ctx)
 
 
 def _adr_freshness_apply(ctx: Ctx) -> None:
@@ -116,8 +103,10 @@ def _diff_check(ctx: Ctx) -> None:
 
 
 CI_CHECKS = (
-    ("repo-standards", _repo_standards_check, "py -3 tools/run.py ci --apply"),
-    ("skill-scripts", _skill_scripts_check, "repair the reported skill script contracts"),
+    ("operating-standards", _operating_standards_check, "repair the subscription or certification record"),
+    ("agent-routers", _agent_routers_check, "repair the reported AGENTS.md router contract"),
+    ("plugin-subscriptions", _plugin_subscriptions_check, "repair the native Codex plugin declaration"),
+    ("script-behavior-tests", _test_script_behaviors, "py -3 -m pytest scripts/tests -q"),
     ("decision-freshness", _adr_freshness_check, "py -3 tools/run.py ci --apply"),
     ("dotnet-build", _build_dotnet, "dotnet build"),
     ("dotnet-test", _test_dotnet, "dotnet test"),
@@ -127,8 +116,10 @@ CI_CHECKS = (
 
 
 def _ci_apply(ctx: Ctx) -> None:
-    _repo_standards_apply(ctx)
-    _skill_scripts_check(ctx)
+    _activate_hook(ctx)
+    _operating_standards_check(ctx)
+    _agent_routers_check(ctx)
+    _plugin_subscriptions_check(ctx)
     _adr_freshness_apply(ctx)
 
 

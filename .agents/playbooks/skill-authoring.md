@@ -7,7 +7,7 @@ Creating or changing a repository-local Wild Bunch skill.
 ## Required capabilities
 
 - Design and author a focused repository capability and its behavior tests.
-- Refresh skill projections and run selected repository standards.
+- Validate authored skill custody and test executable script behavior.
 
 ## Optional capabilities
 
@@ -25,12 +25,12 @@ Creating or changing a repository-local Wild Bunch skill.
 
 1. Use capability skill design and authoring to define and test one focused Wild Bunch capability or
    judgment; keep repository lifecycle sequencing in runbooks.
-2. Create the authored source under `.agents/skills/<exact-name>/` and register
-   that exact name in the marketplace manifest's local-skill list without
-   relying on a prefix.
-3. Use pinned-source skill projection refresh to prove refresh preserves local custody.
-4. Use consumer-selected repository standards through the marketplace-generation and testing
-   runbooks to validate projection, provenance, and committed shape.
+2. Create the authored source under `.agents/skills/<skill-name>/` and set the
+   frontmatter `name` to the directory name.
+3. If the skill owns executable scripts, cover their behavior in
+   `scripts/tests/` and include those tests in the repository check lane.
+4. Update the repository skill policy and its certification when source
+   custody or validation behavior changes.
 
 ## Doctrine and contracts
 
@@ -41,16 +41,16 @@ contract, runbook, script, or portable skill already owns.
 ## Local commands and paths
 
 - Source: `.agents/skills/<exact-name>/`
-- Registration: `.agents/plugins/marketplace.json` `repo.local_skills`
+- Plugin dependencies: `.agents/plugins/marketplace.json`
+- Authored skill policy: `../doctrine/repo-skills-policy.md`
 - Validation: [marketplace generation](marketplace-generation.md) followed by
   [testing](testing.md)
 
 ## Evidence contract
 
-- [ ] Directory, frontmatter, and `repo.local_skills` names match exactly.
+- [ ] Directory and frontmatter names match exactly.
 - [ ] Focused tests exercise the skill's declared capability boundary.
-- [ ] Refresh preserves the skill without marketplace provenance.
-- [ ] Selected repository standard checks pass.
+- [ ] Executable scripts have behavior coverage in the repository test lane.
 
 ## Prohibited combinations
 

@@ -2,6 +2,3 @@
 # Windows skill-sync output aligned with Linux CI and prevents line-ending
 # churn in generated agent surfaces.
 * text=auto eol=lf
-
-# Generated INDEX.md files are written with LF by scripts/generate_index_mesh.py.
-**/INDEX.md text eol=lf

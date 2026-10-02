@@ -19,8 +19,9 @@ or seam contract, needs a targeted retry, or is ready for staging/promotion.
 
 ## Method
 
-1. Read the applicable human-facing asset bible and the relevant doctrine under
-   [art](../../doctrine/art/INDEX.md).
+1. Read the applicable human-facing asset bible and relevant doctrine under
+   [art doctrine](../../doctrine/art/), including the building and ground
+   guidance that applies to the candidate.
 2. Compare the candidate at source scale and game scale against family,
    camera/turnaround, prosperity, footprint, transparency, and seam constraints.
 3. Return `accept`, `retry`, or `reject`, with the failed constraint and the

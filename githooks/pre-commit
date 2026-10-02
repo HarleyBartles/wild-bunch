@@ -32,8 +32,6 @@ if [ -n "$HOSTED_COMMIT" ]; then
     exit 1
   fi
 fi
-export REPO_STANDARDS_STAGED_SNAPSHOT=1
-
 AFTER_STATUS=""
 UNSTAGED_PATCH=$(mktemp)
 ORIGINAL_STAGED_PATHS=$(mktemp)
@@ -70,31 +68,9 @@ restore_worktree() {
 trap restore_worktree EXIT
 
 # Remember the user's intended paths before apply-mode tools rewrite the staged
-# snapshot. Mechanical edits to these paths (for example formatter output) are
-# part of the candidate tree; unrelated authored paths remain protected.
+# snapshot. Mechanical edits to these paths are part of the candidate tree;
+# unrelated authored paths remain protected.
 git diff --cached --name-only -z > "$ORIGINAL_STAGED_PATHS"
-
-# The public marketplace source is a build input. Never derive installed skills
-# from submodule bytes that are absent from the staged gitlink or that do not
-# match the commit the superproject index will record.
-if ! SUBMODULE_STATUS=$(git submodule status --recursive); then
-  echo "pre-commit: could not inspect required submodule source" >&2
-  exit 1
-fi
-SUBMODULE_HEAD_DRIFT=$(printf '%s\n' "$SUBMODULE_STATUS" | grep -E '^[+-U]' || true)
-SUBMODULE_WORKTREE_DRIFT=$(git submodule foreach --quiet --recursive '
-  actual=$(git rev-parse HEAD) || exit 1
-  dirty=$(git status --porcelain --untracked-files=all) || exit 1
-  if [ "$actual" != "$sha1" ] || [ -n "$dirty" ]; then
-    printf "%s\n" "$displaypath"
-  fi
-')
-if [ -n "$SUBMODULE_HEAD_DRIFT" ] || [ -n "$SUBMODULE_WORKTREE_DRIFT" ]; then
-  echo "pre-commit: submodule source does not match the staged gitlink or has uncommitted files:" >&2
-  printf '%s\n%s\n' "$SUBMODULE_HEAD_DRIFT" "$SUBMODULE_WORKTREE_DRIFT" >&2
-  echo "pre-commit: commit/stage the intended submodule state or restore it before regenerating derived skills" >&2
-  exit 1
-fi
 
 # Materialize the index in the working tree before regeneration. Every generated
 # file and every validation command must observe the snapshot Git will commit,
