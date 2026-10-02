@@ -90,3 +90,13 @@ def test_ci_apply_activates_tracked_hook(monkeypatch) -> None:
     monkeypatch.setattr(run, "_run", lambda command, _ctx: captured.append(command))
     run._activate_hook(run.Ctx("apply", False))
     assert captured == [["git", "config", "core.hooksPath", "githooks"]]
+
+
+def test_script_behavior_tests_run_through_canonical_runner(monkeypatch) -> None:
+    captured: list[list[str]] = []
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: captured.append(command))
+
+    run._test_script_behaviors(run.Ctx("check", False))
+
+    assert captured == [[sys.executable, "-m", "pytest", "scripts/tests", "-q"]]
+    assert any(name == "script-behavior-tests" for name, _, _ in run.CI_CHECKS)

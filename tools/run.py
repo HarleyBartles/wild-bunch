@@ -65,6 +65,10 @@ def _plugin_subscriptions_check(ctx: Ctx) -> None:
     _run([sys.executable, "scripts/check_plugin_subscriptions.py", "--check"], ctx)
 
 
+def _test_script_behaviors(ctx: Ctx) -> None:
+    _run([sys.executable, "-m", "pytest", "scripts/tests", "-q"], ctx)
+
+
 def _activate_hook(ctx: Ctx) -> None:
     _run(["git", "config", "core.hooksPath", "githooks"], ctx)
 
@@ -102,6 +106,7 @@ CI_CHECKS = (
     ("operating-standards", _operating_standards_check, "repair the subscription or certification record"),
     ("agent-routers", _agent_routers_check, "repair the reported AGENTS.md router contract"),
     ("plugin-subscriptions", _plugin_subscriptions_check, "repair the native Codex plugin declaration"),
+    ("script-behavior-tests", _test_script_behaviors, "py -3 -m pytest scripts/tests -q"),
     ("decision-freshness", _adr_freshness_check, "py -3 tools/run.py ci --apply"),
     ("dotnet-build", _build_dotnet, "dotnet build"),
     ("dotnet-test", _test_dotnet, "dotnet test"),
