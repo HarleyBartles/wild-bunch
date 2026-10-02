@@ -29,8 +29,8 @@ Adding, changing, or running Wild Bunch tests and validation gates.
    PostgreSQL or browser evidence only when the boundary requires it.
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
-4. Apply generated surfaces when needed, stage the intended tree, and let the
-   normal hook run the canonical check.
+4. Refresh ADR freshness metadata when applicable, stage the intended tree,
+   and let the normal hook run the canonical check.
 5. Use evidence-based result verification to report focused and canonical proof
    for the same tested state.
 
@@ -48,12 +48,13 @@ Adding, changing, or running Wild Bunch tests and validation gates.
 py -3 tools\run.py ci --check
 ```
 
-For hook setup or repair, run `ci --apply`; it activates the tracked hook before
-checking upstream repository shape. Hook custody is defined in
-[repo runbook policy](../doctrine/repo-runbook-policy.md).
+For hook setup or repair, run `ci --apply`; it activates the tracked hook,
+refreshes ADR freshness metadata, and checks repository-owned declarations. It
+does not regenerate agent surfaces or install subscribed assets. Hook custody
+is defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
 
-Use `ci --apply` when generated agent surfaces changed and `--diagnostics` only
-to collect independent failures. Persistence changes also run `dotnet tool
+Use `ci --apply` when hook activation or ADR freshness metadata needs updating;
+use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence
 --startup-project src\WildBunch.Api`. Direct PostgreSQL checks use the shared
 service at `localhost:5435`.

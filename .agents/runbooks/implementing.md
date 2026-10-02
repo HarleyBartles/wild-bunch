@@ -28,8 +28,10 @@ Implementing an approved Wild Bunch change in a task worktree.
 2. Bind those decisions to the applicable doctrine and contracts below.
 3. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
-4. Apply generated agent surfaces with `py -3 tools/run.py ci --apply`, stage
-   the intended tree, and use the normal hooked commit.
+4. Refresh ADR freshness metadata and run the repository's structural checks
+   with `py -3 tools/run.py ci --apply`, stage the intended tree, and use the
+   normal hooked commit. This command does not regenerate agent guidance or
+   install subscribed assets.
 5. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 
@@ -52,7 +54,7 @@ exact staged snapshot.
 
 - [ ] The implemented behavior has focused automated or browser proof.
 - [ ] Applicable doctrine and contracts are satisfied at the committed head.
-- [ ] Generated surfaces are staged and current.
+- [ ] Generated ADR freshness metadata is current when applicable.
 - [ ] The normal hooked commit passed the canonical staged-snapshot gate.
 
 ## Prohibited combinations
@@ -66,7 +68,7 @@ exact staged snapshot.
 - [Testing](../playbooks/testing.md) - whenever behavior or validation changes.
 - [Security](../playbooks/security.md) - when side effects, permissions, secrets, hidden truth, or sensitive mutation boundaries change.
 - [Dev overlay](../playbooks/dev-overlay.md) - when developer controls or panels change.
-- [Marketplace generation](../playbooks/marketplace-generation.md) - when native plugin subscriptions, pinned tooling resources, or local skills change.
+- [Plugin subscriptions and authored skills](../playbooks/marketplace-generation.md) - when native plugin subscriptions, AOM standard subscriptions or certification, or repository-authored skills change.
 - [Seeded game setup](../playbooks/seeded-game-setup.md) - when setup ownership or deterministic setup changes.
 - [Skill authoring](../playbooks/skill-authoring.md) - when a repository-local skill changes.
 - [Town-hub asset production](../playbooks/town-hub-asset-production.md) - when town-hub assets are produced or revised.

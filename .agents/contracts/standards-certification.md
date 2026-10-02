@@ -8,7 +8,7 @@ assessment here.
 
 ## root-agent-router
 
-**Assessment:** Self-certified. The root router is 24 lines, within Wild
+**Assessment:** Self-certified. The root router is 34 lines, within Wild
 Bunch's 40-line budget, and points to authoritative contribution, workflow,
 review, publication, testing, security, and subscription guidance. Only the
 root file is an `AGENTS.md`; Wild Bunch has no need for additional routers at
