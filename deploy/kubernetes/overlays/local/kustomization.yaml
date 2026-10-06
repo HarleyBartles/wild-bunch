@@ -10,3 +10,8 @@ images:
     newTag: local
   - name: wild-bunch/api
     newTag: local
+replicas:
+  - name: api
+    count: 1
+  - name: frontend
+    count: 1
