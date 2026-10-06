@@ -42,7 +42,7 @@ kubectl --context kind-wild-bunch-learning -n wild-bunch-learning rollout status
 
 Developer controls remain denied by the Production API. The existing browser shell may still display developer controls; that UI limitation is outside the deployment slice and is not evidence of backend access.
 
-Review actual Pod requests, limits, restarts and node scheduling during the journey before making capacity claims. Requests are starting values for one frontend, one API, a temporary migration Job and local PostgreSQL; they do not establish high availability or production sizing. `kubectl top` requires a metrics provider and is not implied by this setup.
+Review actual Pod requests, limits, restarts and node scheduling during the journey before making capacity claims. On the supplied Linux images, sample current cgroup v2 memory with `kubectl --context kind-wild-bunch-learning -n wild-bunch-learning exec deployment/api -- cat /sys/fs/cgroup/memory.current` and the corresponding frontend/PostgreSQL Pods; the values are point-in-time bytes, not a usage profile. Requests are starting values for one frontend, one API, a temporary migration Job and local PostgreSQL; they do not establish high availability or production sizing. `kubectl top` requires a metrics provider and is not implied by this setup.
 
 To discard the namespace, its game data, Jobs, credentials and PVC, verify this is the intended learning environment and use the explicit destructive flag:
 
