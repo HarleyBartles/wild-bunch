@@ -6,7 +6,12 @@
     "namespace": "wild-bunch-learning",
     "labels": {
       "app.kubernetes.io/name": "wild-bunch-migration",
-      "app.kubernetes.io/part-of": "wild-bunch-learning"
+      "app.kubernetes.io/part-of": "wild-bunch-learning",
+      "learning.wildbunch.dev/release-prefix": "template"
+    },
+    "annotations": {
+      "learning.wildbunch.dev/release-id": "template",
+      "learning.wildbunch.dev/source-sha": "template"
     }
   },
   "spec": {
@@ -16,7 +21,12 @@
       "metadata": {
         "labels": {
           "app.kubernetes.io/name": "wild-bunch-migration",
-          "app.kubernetes.io/part-of": "wild-bunch-learning"
+          "app.kubernetes.io/part-of": "wild-bunch-learning",
+          "learning.wildbunch.dev/release-prefix": "template"
+        },
+        "annotations": {
+          "learning.wildbunch.dev/release-id": "template",
+          "learning.wildbunch.dev/source-sha": "template"
         }
       },
       "spec": {

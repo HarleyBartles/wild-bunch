@@ -163,27 +163,27 @@ assert store.read("runtime")["password"] == before
 
 **Files:** Create `tools/deployment/release.py`, `tools/deployment/tests/test_release.py`, and `deploy/runbooks/{release,recovery}.md`; extend contract validation and the migration Job template.
 
-**Consumes:** Tasks 1-6 workload/secret/interface contracts. **Produces:** `release deploy --environment <json-path> --release <json-path>`, `release inspect --release-id <id>`, and `release recover --release-id <known-good-id>` with nonzero failure status and private recoverable manifests.
+**Consumes:** Tasks 1-6 workload/secret/interface contracts. **Produces:** `release deploy --environment <json-path> --release <json-path>`, `release inspect --environment <json-path> --release-id <id>`, and `release recover --environment <json-path> --release-id <known-good-id>` with nonzero failure status and private recoverable manifests.
 
-- [ ] Make namespace-scoped configuration and Secret names immutable per release. Fetch only runtime/migration secret values in the authorized runner, construct verified connection strings in memory, and apply populated Secrets via stdin without echoes. API and migration objects reference different Secret names. Persist the non-secret manifest plus credential source VersionIds for diagnosis; never persist values or overwrite previous release dependencies. Do not rotate passwords during the update/recovery exercise.
-- [ ] Implement release ordering as the following bounded state machine. Keep migration Jobs retained for inspection and prohibit automatic retry:
+- [x] Make namespace-scoped configuration and Secret names immutable per release. Fetch only runtime/migration secret values in the authorized runner, construct verified connection strings in memory, and apply populated Secrets via stdin without echoes. API and migration objects reference different Secret names. Persist the non-secret manifest plus credential source VersionIds for diagnosis; never persist values or overwrite previous release dependencies. Do not rotate passwords during the update/recovery exercise.
+- [x] Implement release ordering as the following bounded state machine. Keep migration Jobs retained for inspection and prohibit automatic retry:
 
 ```text
-validate contracts and trusted source
+validate release contract (trusted source is enforced by the Task 8 workflow)
 inspect any existing Job for this release ID
 prepare immutable ConfigMaps and per-release Secrets
 create migration Job only if no such Job exists
 wait for Job completion; failed/uncertain -> fail without app apply
-verify required migration IDs with runtime credentials
-save previous known-good contract and rendered manifest privately
+use runtime credentials to verify migration history before app apply
 apply new frontend/API manifest using digest images
-wait for both rollout statuses; verify imageID and HTTP/game checks
-mark this release known-good only after verification
+wait for both rollouts; the new API readiness check confirms its required migration IDs
+verify actual image identities, frontend HTTP and API readiness
+persist the verified manifest and credential VersionIds; advance known-good only after all checks
 ```
 
-- [ ] Write unit tests around injected command/secret/storage adapters, testing observable call order rather than YAML strings: migration failure never calls app apply; a timeout reports the existing Job and never creates another; a failed app rollout never advances known-good; recover applies the full stored manifest/configuration references. Test secret retrieval/apply failure emits no values and cannot mark success.
-- [ ] Set release concurrency to queue, not cancel running jobs. A retry inspects the existing Job: completed allows continuation; running requires waiting/inspection; failed requires deliberate diagnosis and a distinct authorized attempt. Runner loss does not delete a Job or prove the database operation stopped. Apply no automatic down migration.
-- [ ] Before migrating, require a concise compatibility acknowledgement covering the current and recovery app against schema, constraints, stored snapshots/events and writes made by the new release. Missing acknowledgement stops release. For this exercise both releases use the same schema; do not invent a migration. If compatibility cannot be established later, stop automatic rollback and use an explicit data/schema recovery decision.
+- [x] Write unit tests around injected command/secret/storage adapters, testing observable call order rather than YAML strings: migration failure never calls app apply; a timeout reports the existing Job and never creates another; a failed app rollout never advances known-good; recover applies the full stored manifest/configuration references. Test secret retrieval/apply failure emits no values and cannot mark success.
+- [ ] Queue release workflows without cancelling an active deployment in Task 8. The controller inspects the existing Job: completed allows continuation; running requires waiting/inspection; failed requires deliberate diagnosis and a distinct authorized attempt. Runner loss does not delete a Job or prove the database operation stopped. Apply no automatic down migration.
+- [x] Before migrating, require a concise compatibility acknowledgement covering the current and recovery app against schema, constraints, stored snapshots/events and writes made by the new release. Missing acknowledgement stops release. For this exercise both releases use the same schema; do not invent a migration. If compatibility cannot be established later, stop automatic rollback and use an explicit data/schema recovery decision.
 - [ ] Run `py -3 -m unittest discover -s tools/deployment/tests -v`; exercise the same release/recover logic locally by substituting the local secret adapter and artifact directory outside Git. Deliberately set API readiness path to `/health/incorrect`, observe rollout failure while the previous ready replica serves, restore the full known-good manifest and resume the existing game. Commit normally. Exit: migration and deployment failures have explicit, tested recovery behavior.
 
 ## Task 8: Wire trusted GitHub workflows and offline checks

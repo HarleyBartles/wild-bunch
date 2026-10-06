@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import os
 import secrets
 import socket
 import subprocess
@@ -22,6 +23,12 @@ from tools.deployment.contracts import (
     validate_contracts,
 )
 from tools.deployment.process import CommandFailed, REPOSITORY_ROOT, run_checked
+from tools.deployment.release import (
+    KubectlReleaseAdapter,
+    LocalDirectoryReleaseStore,
+    LocalSecretSource,
+    ReleaseController,
+)
 
 
 CLUSTER_NAME = "wild-bunch-learning"
@@ -31,13 +38,11 @@ REGION = "eu-north-1"
 LOCAL_POSTGRES_FORWARD_PORT = 15434
 LOCAL_OVERLAY = REPOSITORY_ROOT / "deploy/kubernetes/overlays/local"
 NAMESPACE_MANIFEST = REPOSITORY_ROOT / "deploy/kubernetes/base/namespace.yaml"
-MIGRATION_JOB_TEMPLATE = REPOSITORY_ROOT / "deploy/kubernetes/jobs/migrate.yaml"
 SECRET_LABELS = {
     "app.kubernetes.io/part-of": NAMESPACE,
     "app.kubernetes.io/managed-by": "wild-bunch-deployment",
 }
 _IMAGE_NAMES = ("frontend", "api", "migrations")
-_COMPATIBILITY_ACK = "Local exercise release uses the existing schema and preserves the recovery image."
 
 
 def _source_sha() -> str:
@@ -52,6 +57,7 @@ def _image_repositories() -> dict[str, str]:
 
 
 def _validate_local_context(source_sha: str, actual_context: str) -> None:
+    release_id = f"local-{source_sha}-{time.monotonic_ns()}"
     environment = EnvironmentContract(
         region=REGION,
         owner_id="local",
@@ -62,14 +68,16 @@ def _validate_local_context(source_sha: str, actual_context: str) -> None:
     )
     release = ReleaseContract(
         owner_id="local",
-        release_id=f"local-{source_sha}-{time.monotonic_ns()}",
+        release_id=release_id,
         source_sha=source_sha,
         images={name: f"wild-bunch/{name}:{source_sha}" for name in _IMAGE_NAMES},
-        config_map_name=f"api-config-{source_sha[:12]}",
-        runtime_secret_name="runtime-database-credential",
-        migration_secret_name="migration-database-credential",
+        config_map_name=f"api-config-{release_id}",
+        runtime_secret_name=f"runtime-{release_id}",
+        migration_secret_name=f"migration-{release_id}",
         recovery_release_id=None,
-        compatibility_acknowledgement=_COMPATIBILITY_ACK,
+        compatibility_acknowledgement=(
+            "schema: existing; constraints: unchanged; data/events: compatible; writes: compatible; recovery: none"
+        ),
     )
     validate_contracts(
         environment,
@@ -274,64 +282,81 @@ def up() -> None:
     print("Run `py -3 -m tools.deployment.local release` to apply a migration and start the application.")
 
 
-def _migration_job(release: ReleaseContract, job_name: str) -> str:
-    try:
-        manifest = json.loads(MIGRATION_JOB_TEMPLATE.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        raise RuntimeError("The checked-in migration Job template is invalid.") from None
-    manifest["metadata"]["name"] = job_name
-    manifest["metadata"].setdefault("annotations", {})["learning.wildbunch.dev/source-sha"] = release.source_sha
-    manifest["metadata"]["labels"]["learning.wildbunch.dev/release-prefix"] = release.source_sha[:12]
-    manifest["spec"]["template"]["metadata"]["annotations"] = {
-        "learning.wildbunch.dev/source-sha": release.source_sha
-    }
-    manifest["spec"]["template"]["spec"]["containers"][0]["image"] = release.images["migrations"]
-    return json.dumps(manifest, separators=(",", ":"))
-
-
-def _local_release(source_sha: str) -> ReleaseContract:
+def _local_environment(actual_context: str) -> EnvironmentContract:
     repositories = _image_repositories()
-    return ReleaseContract(
+    return EnvironmentContract(
+        region=REGION,
         owner_id="local",
-        release_id=f"local-{source_sha}-{time.monotonic_ns()}",
-        source_sha=source_sha,
-        images={name: f"{repositories[name]}:{source_sha}" for name in _IMAGE_NAMES},
-        config_map_name=f"api-config-{source_sha[:12]}",
-        runtime_secret_name="runtime-database-credential",
-        migration_secret_name="migration-database-credential",
-        recovery_release_id=None,
-        compatibility_acknowledgement=_COMPATIBILITY_ACK,
+        cluster_name=CLUSTER_NAME,
+        namespace=NAMESPACE,
+        kubernetes_context=actual_context,
+        image_repositories=repositories,
     )
 
 
-def release() -> None:
+def _local_release(source_sha: str, release_id: str, recovery_release_id: str | None) -> ReleaseContract:
+    repositories = _image_repositories()
+    recovery_text = recovery_release_id if recovery_release_id is not None else "none"
+    return ReleaseContract(
+        owner_id="local",
+        release_id=release_id,
+        source_sha=source_sha,
+        images={name: f"{repositories[name]}:{source_sha}" for name in _IMAGE_NAMES},
+        config_map_name=f"api-config-{release_id}",
+        runtime_secret_name=f"runtime-{release_id}",
+        migration_secret_name=f"migration-{release_id}",
+        recovery_release_id=recovery_release_id,
+        compatibility_acknowledgement=(
+            f"schema: current; constraints: unchanged; data/events: compatible; writes: compatible; recovery: {recovery_text}"
+        ),
+    )
+
+
+def _local_store() -> LocalDirectoryReleaseStore:
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if not local_app_data:
+        raise RuntimeError("LOCALAPPDATA is required for private local release recovery storage.")
+    return LocalDirectoryReleaseStore(Path(local_app_data) / "WildBunch" / "releases")
+
+
+def _release_controller(environment: EnvironmentContract, api_readiness_path: str = "/health/ready") -> ReleaseController:
+    kubernetes = KubectlReleaseAdapter(
+        environment.kubernetes_context,
+        environment.namespace,
+        local=True,
+        api_readiness_path=api_readiness_path,
+    )
+    return ReleaseController(
+        kubernetes,
+        LocalSecretSource(environment.kubernetes_context, environment.namespace),
+        _local_store(),
+        render_workload=kubernetes.render_manifest,
+        expected_context=KUBERNETES_CONTEXT,
+        expected_owner_id="local",
+        allow_local_tags=True,
+    )
+
+
+def release(api_readiness_path: str = "/health/ready") -> None:
     source_sha = _source_sha()
     actual_context = _current_context()
     _validate_local_context(source_sha, actual_context)
-    images = _ensure_local_images(source_sha)
-    release_contract = _local_release(source_sha)
-    for secret_name in ("runtime-database-credential", "migration-database-credential"):
-        if _read_secret_data(secret_name) is None:
-            raise RuntimeError("Local database credentials are missing; run the local up command first.")
-
-    suffix = release_contract.release_id.rsplit("-", maxsplit=1)[1]
-    job_name = f"migration-{source_sha[:12]}-{suffix}"
-    _kubectl(
-        ["-n", NAMESPACE, "apply", "-f", "-"],
-        stdin=_migration_job(release_contract, job_name),
-    )
-    _kubectl(["-n", NAMESPACE, "wait", "--for=condition=complete", f"job/{job_name}", "--timeout=305s"])
-
-    image_by_name = dict(zip(_IMAGE_NAMES, images, strict=True))
-    _kubectl(["-n", NAMESPACE, "set", "image", "deployment/api", f"api={image_by_name['api']}"])
-    _kubectl(
-        ["-n", NAMESPACE, "set", "image", "deployment/frontend", f"frontend={image_by_name['frontend']}"]
-    )
-    _kubectl(["-n", NAMESPACE, "scale", "deployment/api", "deployment/frontend", "--replicas=1"])
-    _kubectl(["-n", NAMESPACE, "rollout", "status", "deployment/api", "--timeout=240s"])
-    _kubectl(["-n", NAMESPACE, "rollout", "status", "deployment/frontend", "--timeout=240s"])
+    _ensure_local_images(source_sha)
+    environment = _local_environment(actual_context)
+    store = _local_store()
+    release_id = f"local-{source_sha}-{time.monotonic_ns()}"
+    release_contract = _local_release(source_sha, release_id, store.current_release_id())
+    record = _release_controller(environment, api_readiness_path).deploy(environment, release_contract)
     print(f"Release {release_contract.release_id} is ready in namespace {NAMESPACE}.")
     print("Open it with `py -3 -m tools.deployment.local port-forward` at http://127.0.0.1:8088.")
+
+
+def recover(release_id: str) -> None:
+    actual_context = _current_context()
+    _validate_local_context("0" * 40, actual_context)
+    environment = _local_environment(actual_context)
+    record = _release_controller(environment).recover(environment, release_id)
+    print(f"Recovered known-good release {record.release.release_id} in namespace {NAMESPACE}.")
 
 
 def port_forward() -> None:
@@ -377,7 +402,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("up", help="start PostgreSQL and initialize private local credentials")
-    commands.add_parser("release", help="run a unique database migration Job before the app rollout")
+    release_parser = commands.add_parser("release", help="run a unique database migration Job before the app rollout")
+    release_parser.add_argument(
+        "--api-readiness-path",
+        choices=("/health/ready", "/health/incorrect"),
+        default="/health/ready",
+        help="Use /health/incorrect only to exercise local failed-release recovery.",
+    )
+    recover_parser = commands.add_parser("recover", help="restore a recorded known-good local release")
+    recover_parser.add_argument("--release-id", required=True)
     commands.add_parser("port-forward", help="forward the frontend to loopback port 8088")
     down_parser = commands.add_parser("down", help="delete exercise workloads and synthetic game data")
     down_parser.add_argument("--confirm-discard", action="store_true")
@@ -387,7 +420,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "up":
             up()
         elif args.command == "release":
-            release()
+            release(args.api_readiness_path)
+        elif args.command == "recover":
+            recover(args.release_id)
         elif args.command == "port-forward":
             port_forward()
         else:

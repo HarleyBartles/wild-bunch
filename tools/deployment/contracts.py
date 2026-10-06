@@ -134,10 +134,35 @@ def validate_contracts(
         raise ContractError("Release source SHA must be a full lowercase Git SHA.")
     if not release.compatibility_acknowledgement.strip():
         raise ContractError("Release compatibility acknowledgement is required.")
+    validate_release_details(release)
     if allow_local_tags:
         _validate_local_tags(environment, release, expected_context)
     else:
         _validate_aws_digests(environment, release)
+
+
+def validate_release_details(release: ReleaseContract) -> None:
+    """Require per-release immutable resource identities and an explicit compatibility assessment."""
+    for name in (release.config_map_name, release.runtime_secret_name, release.migration_secret_name):
+        if not isinstance(name, str) or release.release_id not in name:
+            raise ContractError("ConfigMap and Secret names must be unique to this immutable release ID.")
+    if release.runtime_secret_name == release.migration_secret_name:
+        raise ContractError("Runtime and migration credentials must use separate immutable Secrets.")
+    acknowledgement = release.compatibility_acknowledgement.strip().lower()
+    fields = ("schema:", "constraints:", "data/events:", "writes:", "recovery:")
+    positions = [acknowledgement.find(field) for field in fields]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise ContractError(
+            "Compatibility acknowledgement must cover schema, constraints, stored data/events, writes and recovery."
+        )
+    ends = positions[1:] + [len(acknowledgement)]
+    if any(not acknowledgement[start + len(field) : end].strip(" ;") for field, start, end in zip(fields, positions, ends, strict=True)):
+        raise ContractError("Compatibility acknowledgement fields must each state an explicit assessment.")
+    recovery_field = acknowledgement[positions[-1] + len(fields[-1]) :]
+    if release.recovery_release_id is None and recovery_field.strip(" ;") not in {"none", "no previous release"}:
+        raise ContractError("Compatibility acknowledgement must state recovery: none for a first release.")
+    if release.recovery_release_id is not None and release.recovery_release_id.lower() not in recovery_field:
+        raise ContractError("Compatibility acknowledgement must identify the selected recovery release.")
 
 
 def _validate_local_tags(
