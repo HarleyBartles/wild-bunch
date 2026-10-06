@@ -204,9 +204,9 @@ persist the verified manifest and credential VersionIds; advance known-good only
 
 **Consumes:** Tasks 5-8 resource ownership, state keys and `EnvironmentContract`. **Produces:** `inventory inspect --environment <json-path>` and a teardown procedure ready for review before any paid creation.
 
-- [ ] Implement read-only inventory returning named owned resources and actual status from state plus exercise tags/names. With injected AWS adapters test that scheduled secret deletion and still-present NAT/EIP/log groups count as remaining, foreign ownership is refused, and permission-denied discovery cannot become an empty inventory. Include ECR images, EC2 volumes, RDS-managed secrets, CodeBuild connections/logs and S3 versions/delete markers in inspection scope.
-- [ ] Write the exact environment-then-bootstrap destruction sequence used by Task 11, including bootstrap backend migration to protected local storage before removing the bucket. Tie every inspection to owned names/ARNs; never delete solely from an account-wide service listing. Scheduled deletion remains outstanding until verified removed.
-- [ ] Run `py -3 -m unittest discover -s tools/deployment/tests -v`, perform local synthetic-inventory checks and commit normally. Exit: cleanup source and guidance are concrete at the AWS approval boundary.
+- [x] Implement read-only inventory returning named owned resources and actual status from state plus exercise tags/names. With injected AWS adapters test that scheduled secret deletion and still-present NAT/EIP/log groups count as remaining, foreign ownership is refused, and permission-denied discovery cannot become an empty inventory. Include ECR images, EC2 volumes, RDS-managed secrets, CodeBuild connections/logs and S3 versions/delete markers in inspection scope.
+- [x] Write the exact environment-then-bootstrap destruction sequence used by Task 11, including bootstrap backend migration to protected local storage before removing the bucket. Tie every inspection to owned names/ARNs; never delete solely from an account-wide service listing. Scheduled deletion remains outstanding until verified removed.
+- [x] Run `py -3 -m unittest discover -s tools/deployment/tests -v`, perform local synthetic-inventory checks and commit normally. Exit: cleanup source and guidance are concrete at the AWS approval boundary.
 
 ## AWS execution boundary
 

@@ -18,4 +18,6 @@ Follow [the local Kubernetes runbook](runbooks/local.md) to create the private l
 
 The manually dispatched GitHub Actions paths and their protected prerequisites are in [the GitHub deployment workflow runbook](runbooks/github-workflows.md). They do not expose the game or provision resources from a pull request.
 
+Before any authorized paid exercise, review the [ownership-aware inventory and teardown procedure](runbooks/teardown.md). The inventory is read-only and reports incomplete discovery as an error.
+
 See the plan and specification in `.agents/plans/` and `.agents/specs/` for the full private, disposable deployment design and its authorization gates.

@@ -22,7 +22,7 @@ Select it with `$env:AWS_PROFILE = "wild-bunch-terraform"`. The credential proce
 4. Configure the GitHub `wild-bunch-learning` environment to allow only `main` and require trusted workflow files on that branch. The OIDC subject contains the environment but not the branch or workflow. Confirm the live subject format still matches the bootstrap trust before using the role.
 5. Apply the environment only from its reviewed infrastructure workflow or local bootstrap procedure. Complete the GitHub App installation consent for the Terraform-created CodeConnections connection before starting either private CodeBuild project.
 
-Do not save Terraform plans, state, populated secrets, or AWS output in public workflow artifacts. A Terraform plan refreshes AWS metadata and may reveal account/resource information, so keep saved plans in protected local storage and apply the exact reviewed plan.
+Do not save Terraform state, populated secrets, or AWS output in public workflow artifacts. A Terraform plan refreshes AWS metadata and may reveal account/resource information; the infrastructure workflow stores exact plans privately in the versioned bootstrap bucket and exposes only a sanitized summary for local review before the separately approved apply.
 
 ## Private network and workload boundary
 
