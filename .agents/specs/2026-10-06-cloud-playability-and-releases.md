@@ -1,6 +1,6 @@
 # Public playability and versioned releases
 
-Status: proposed specification for human review. This document describes the agreed direction; it does not authorize implementation or changes to the purchased server.
+Status: approved for implementation planning on 2026-10-06. This document describes the agreed direction; planning approval does not authorize implementation or changes to the purchased server.
 
 ## Outcome and scope
 
