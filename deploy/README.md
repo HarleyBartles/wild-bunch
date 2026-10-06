@@ -14,4 +14,6 @@ The frontend uses a same-origin `/api` path. Nginx forwards that path without st
 
 The migration image contains a self-contained EF Core migration bundle. It receives its database connection from a runtime environment variable or Kubernetes Secret, never from an image layer or command-line argument. Production API startup does not apply migrations; the release process runs the bundle as a distinct, controlled step before changing API Pods.
 
+Follow [the local Kubernetes runbook](runbooks/local.md) to create the private local stack, exercise a release and recovery checks, and remove its synthetic data.
+
 See the plan and specification in `.agents/plans/` and `.agents/specs/` for the full private, disposable deployment design and its authorization gates.

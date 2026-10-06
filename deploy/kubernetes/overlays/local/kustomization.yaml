@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: wild-bunch-learning
+resources:
+  - ../../base
+  - postgres.yaml
+  - config.yaml
+images:
+  - name: wild-bunch/frontend
+    newTag: local
+  - name: wild-bunch/api
+    newTag: local
