@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- This approval authorizes writing this plan. It does not authorize implementation, paid provisioning or public exposure. Implementation requires subsequent authorization. AWS creation and destructive execution require authorization covering the concrete reviewed environment and synthetic data.
+- The user has explicitly authorized implementation and a draft PR. This does not authorize paid AWS provisioning or public exposure. Before any AWS create/destroy action, obtain explicit authorization for the concrete reviewed environment, costs, access and synthetic data.
 - Use the existing worktree `Z:/_agent-worktrees/wild-bunch/codex/aws-kubernetes-learning-design`; inspect its current state before resuming. Keep transient evidence and protected local state outside Git in `Z:/_agent-scratch/wild-bunch/codex-aws-kubernetes-learning-design` with access restricted to the engineer. Scratch placement alone is not access protection.
 - Keep all regional AWS resources in `eu-north-1`. No public game endpoint, player authentication, game feature, demonstration service, service mesh, GitOps controller or autoscaling experiment.
 - Preserve existing development convenience behind `Development`, existing developer-operation denial in `Production`, event sourcing, payload versions and upcasters. Do not use developer mutations for the deployment demonstrations.
@@ -61,9 +61,9 @@ Use namespace `wild-bunch-learning`, frontend port 8080, API port 8080 and stabl
 
 **Consumes:** Existing persistence registration, EF migration assembly and `ConnectionStrings__WildBunchPostgresDb`. **Produces:** `/health` returns 200 for a serving process; `/health/ready` returns 200 only when the runtime identity connects and required migration IDs are present, otherwise generic 503.
 
-- [ ] Build an isolated factory accepting `environment`, database connection and whether to initialize the schema. Write HTTP tests for Production on an empty database, a fully migrated database, an unavailable database, and a database with a later migration-history row. Assert the empty database still has no migration-history table after startup. Test Development separately to preserve its existing migration convenience. Never stop the shared developer PostgreSQL service for a test.
-- [ ] Start the test database with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`; run `dotnet test tests/WildBunch.Integration.Tests --filter FullyQualifiedName~DeploymentHealthTests`. Establish failures for the missing readiness endpoint and Production startup mutation.
-- [ ] Gate the existing call and register an ASP.NET Core readiness health check. Use a fresh scoped DbContext, bounded connection/command timeout and cancellation; obtain required IDs from the image's EF migration assembly and applied IDs from the database. Do not compare only latest IDs or require equality. The implementation shape is:
+- [x] Build an isolated factory accepting `environment`, database connection and whether to initialize the schema. Write HTTP tests for Production on an empty database, a fully migrated database, an unavailable database, and a database with a later migration-history row. Assert the empty database still has no migration-history table after startup. Test Development separately to preserve its existing migration convenience. Never stop the shared developer PostgreSQL service for a test.
+- [x] Start the test database with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`; run `dotnet test tests/WildBunch.Integration.Tests --filter FullyQualifiedName~DeploymentHealthTests`. Establish failures for the missing readiness endpoint and Production startup mutation.
+- [x] Gate the existing call and register an ASP.NET Core readiness health check. Use a fresh scoped DbContext, bounded connection/command timeout and cancellation; obtain required IDs from the image's EF migration assembly and applied IDs from the database. Do not compare only latest IDs or require equality. The implementation shape is:
 
 ```csharp
 if (app.Environment.IsDevelopment())
@@ -75,8 +75,8 @@ if (app.Environment.IsDevelopment())
 // Failures yield a generic unhealthy result; HTTP output contains no exception.
 ```
 
-- [ ] Keep the liveness path independent of the readiness check. Map readiness with `HealthCheckOptions.Predicate` selecting only the database check and a generic response writer. The readiness check must not apply migrations or deserialize whole games.
-- [ ] Run the focused tests and existing Production developer-denial tests with `dotnet test tests/WildBunch.Integration.Tests --filter "FullyQualifiedName~DeploymentHealthTests|FullyQualifiedName~DevEndpointTests"`. Commit the task normally. Exit: API can start before migration in Production and reports its unavailable dependency accurately.
+- [x] Keep the liveness path independent of the readiness check. Map readiness with `HealthCheckOptions.Predicate` selecting only the database check and a generic response writer. The readiness check must not apply migrations or deserialize whole games.
+- [x] Run the focused tests and existing Production developer-denial tests with `dotnet test tests/WildBunch.Integration.Tests --filter "FullyQualifiedName~DeploymentHealthTests|FullyQualifiedName~DevEndpointTests"`. Commit the task normally. Exit: API can start before migration in Production and reports its unavailable dependency accurately.
 
 ## Task 2: Build production Linux images and verify routing
 
@@ -84,17 +84,17 @@ if (app.Environment.IsDevelopment())
 
 **Consumes:** Task 1 endpoint contract and existing frontend assets. **Produces:** Local tags `wild-bunch/{frontend,api,migrations}:<full-sha>`, all built from root context for `linux/amd64`.
 
-- [ ] Run `npm audit --omit=dev --json` in `src/WildBunch.Web`, inspect the current seroval advisory and actual dependency/import reachability using primary upstream sources. Make only a necessary compatible dependency correction and run the web tests/build; if remediation needs product or framework redesign, report the concrete blocker before deploying. Store no audit receipt in Git.
-- [ ] Implement argument-list subprocess execution with nonzero-exit propagation and redaction. Unit tests execute a child process that exits 7 and a child receiving secret stdin; assert failure reports neither stdin nor secret output. Run `py -3 -m unittest discover -s tools/deployment/tests -v`.
-- [ ] Build the API with a pinned .NET 10 SDK builder and ASP.NET 10 runtime; set `ASPNETCORE_HTTP_PORTS=8080`, `ASPNETCORE_ENVIRONMENT=Production`, and non-root runtime user. Build an EF migration bundle from `WildBunch.Persistence` with startup project `WildBunch.Api`, target `linux-x64`; copy it, its required runtime files and sanitized configuration into a separate runtime image. Supply the connection through the environment, never `--connection` arguments.
+- [x] Run `npm audit --omit=dev --json` in `src/WildBunch.Web`, inspect the current seroval advisory and actual dependency/import reachability using primary upstream sources. Make only a necessary compatible dependency correction and run the web tests/build; if remediation needs product or framework redesign, report the concrete blocker before deploying. Store no audit receipt in Git.
+- [x] Implement argument-list subprocess execution with nonzero-exit propagation and redaction. Unit tests execute a child process that exits 7 and a child receiving secret stdin; assert failure reports neither stdin nor secret output. Run `py -3 -m unittest discover -s tools/deployment/tests -v`.
+- [x] Build the API with a pinned .NET 10 SDK builder and ASP.NET 10 runtime; set `ASPNETCORE_HTTP_PORTS=8080`, `ASPNETCORE_ENVIRONMENT=Production`, and non-root runtime user. Build an EF migration bundle from `WildBunch.Persistence` with startup project `WildBunch.Api`, target `linux-x64`; copy it, its required runtime files and sanitized configuration into a separate runtime image. Supply the connection through the environment, never `--connection` arguments.
 
 ```text
-dotnet ef migrations bundle --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release --target-runtime linux-x64 --output /out/efbundle
+dotnet ef migrations bundle --project src/WildBunch.Persistence --startup-project src/WildBunch.Api --configuration Release --self-contained --runtime linux-x64 --output /out/efbundle
 ```
 
-- [ ] Build frontend from root context, including `src/WildBunch.Assets/production`; set `ENV VITE_API_BASE_URL=""` before `npm run build`. Use a pinned non-root Nginx image on 8080. Pin base-image digests after inspecting available supported images; commit the resulting exact digests, EF tool lock and Python dependency pins. No floating `latest` tags.
-- [ ] Configure Nginx `location /api/ { proxy_pass http://api:8080; }` so the prefix survives; add `location = /api` with equivalent proxy behavior. Give known asset prefixes and file extensions `try_files $uri =404`; browser routes use `try_files $uri $uri/ /index.html`. Add a static `/health` and non-secret `X-Wild-Bunch-Release` response header populated at build time from the full SHA.
-- [ ] Implement `images build --source-sha <full-sha>` validating the checked-out source identity and building all three images. Verify `docker inspect` reports non-root users, final API image has no SDK, a browser deep link serves HTML, a missing asset returns 404 and a missing API route preserves API 404. Run actual images on a disposable internal Docker network with no database password in command arguments; stop/remove only those named containers/network afterward. Commit normally. Exit: reproducible runnable production artifacts with intact assets and routing.
+- [x] Build frontend from root context, including `src/WildBunch.Assets/production`; set `ENV VITE_API_BASE_URL=""` before `npm run build`. Use a pinned non-root Nginx image on 8080. Pin base-image digests after inspecting available supported images; commit the resulting exact digests and EF tool lock. No floating `latest` tags.
+- [x] Configure Nginx `location /api/ { proxy_pass http://api:8080; }` so the prefix survives; add `location = /api` with equivalent proxy behavior. Give known asset prefixes and file extensions `try_files $uri =404`; browser routes use `try_files $uri $uri/ /index.html`. Add a static `/health` and non-secret `X-Wild-Bunch-Release` response header populated at build time from the full SHA.
+- [x] Implement `images build --source-sha <full-sha>` validating the checked-out source identity and building all three images. Verify `docker inspect` reports non-root users, final API image has no SDK, a browser deep link serves HTML, a missing asset returns 404 and a missing API route preserves API 404. Run actual images on a disposable internal Docker network with no database password in command arguments; stop/remove only those named containers/network afterward. Commit normally. Exit: reproducible runnable production artifacts with intact assets and routing.
 
 ## Task 3: Initialize restricted database identities safely
 
