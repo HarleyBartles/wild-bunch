@@ -35,6 +35,10 @@
             "imagePullPolicy": "IfNotPresent",
             "env": [
               {
+                "name": "DOTNET_BUNDLE_EXTRACT_BASE_DIR",
+                "value": "/tmp"
+              },
+              {
                 "name": "ConnectionStrings__WildBunchPostgresDb",
                 "valueFrom": {
                   "secretKeyRef": {
