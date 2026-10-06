@@ -12,7 +12,10 @@ RUN npm run build \
 
 FROM nginxinc/nginx-unprivileged:1-alpine3.24@sha256:b9241c6e7b8e9a862f129d8d4199ab64b10390949a78bdd5603379b32c844083 AS runtime
 ARG WILD_BUNCH_RELEASE=unknown
-COPY deploy/containers/nginx.conf /etc/nginx/templates/default.conf.template
+COPY deploy/containers/nginx.conf /tmp/default.conf.template
+RUN sed "s/__WILD_BUNCH_RELEASE__/${WILD_BUNCH_RELEASE}/g" /tmp/default.conf.template \
+    > /etc/nginx/conf.d/default.conf \
+    && rm /tmp/default.conf.template
 COPY --from=build --chown=nginx:nginx /src/src/WildBunch.Web/dist/ /usr/share/nginx/html/
 ENV PORT=8080 \
     WILD_BUNCH_RELEASE=${WILD_BUNCH_RELEASE}
