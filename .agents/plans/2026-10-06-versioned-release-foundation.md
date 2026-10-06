@@ -30,6 +30,7 @@
 - A tag with the wrong version or a tag commit outside main history fails baseline verification before a release is published.
 - Distinct revisions of the same version retain distinct source identity; merge commits with the same source tree can be distinguished without inventing a new game version.
 - Failed canonical CI does not upload a qualifying baseline build manifest.
+- Hosted staged-snapshot validation leaves HEAD at the parent commit; manifest generation restores the tested commit and refuses to record that temporary parent state.
 - Draft PRs retain the existing skip behavior; integration and stabilization branch pushes run the canonical gate.
 
 ## Files and responsibilities
@@ -129,7 +130,16 @@ on:
   workflow_dispatch:
 ```
 
-- [ ] **Step 4:** After the canonical validation step succeeds, run `python tools/release.py manifest --output artifacts/baseline/manifest.json` and upload that one file using the current official GitHub artifact action, with artifact name `baseline-${{ github.sha }}-${{ github.run_attempt }}` and a finite 30-day retention. Checkout remains depth 2 because manifest generation needs only HEAD/tree; local tag verification explicitly fetches history in the release runbook. Upload uses the default success condition and read-only repository permissions. Add no deployment credentials or package-write permission. A failed hook must never reach manifest generation/upload.
+- [ ] **Step 4:** Account for the hosted hook's actual Git state: it soft-resets HEAD to the parent and leaves the tested commit staged. After successful validation, restore HEAD to the exact event commit with `git reset --soft "$GITHUB_SHA"`, then require both staged and unstaged diffs to be empty before generating identity. Use the following separate commands in a default-success step; do not hard-reset or bypass the gate:
+
+```bash
+git reset --soft "$GITHUB_SHA"
+git diff --exit-code
+git diff --cached --exit-code
+python tools/release.py manifest --output artifacts/baseline/manifest.json
+```
+
+Add a temporary-repository test that recreates this soft-reset state, verifies manifest generation rejects it, restores the candidate with the same soft-reset command and verifies the manifest identifies the candidate rather than its parent. Upload that one file using the current official GitHub artifact action, with artifact name `baseline-${{ github.sha }}-${{ github.run_attempt }}` and a finite 30-day retention. Checkout remains depth 2 because manifest generation needs only HEAD/tree; local tag verification explicitly fetches history in the release runbook. Upload uses the default success condition and read-only repository permissions. Add no deployment credentials or package-write permission. A failed hook must never reach restoration, manifest generation or upload.
 
 - [ ] **Step 5:** Run the focused release tests and existing workflow-parity tests: `py -3 -m pytest scripts/tests/test_release.py scripts/tests/test_ci_workflow.py -q`. Review the event/job conditions against successful and failed gate execution. Hosted event execution is verified after authorized publication; do not fabricate remote branch-push evidence locally.
 
