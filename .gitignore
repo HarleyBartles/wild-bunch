@@ -497,3 +497,16 @@ $RECYCLE.BIN/
 /.codex/*
 !/.codex/config.toml
 .playwright-mcp/
+
+# Terraform execution artifacts and private operational inputs; commit .terraform.lock.hcl.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+*.tfvars.json
+!*.tfvars.json.example
+/deploy/terraform/operational/*.json
