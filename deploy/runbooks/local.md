@@ -11,7 +11,7 @@ py -3 -m tools.deployment.local release
 py -3 -m tools.deployment.local port-forward
 ```
 
-The `up` command checks the exact Kubernetes context, loads the three commit-tagged application images plus PostgreSQL into kind, creates the exercise namespace and immutable local Secrets, waits for PostgreSQL, and initializes separate migration and runtime credentials. Generated password values stay in process memory and are delivered to Kubernetes through standard input. Reruns reuse the Secrets held in the namespace and never reset established database roles.
+The `up` command checks the exact Kubernetes context, loads the three commit-tagged application images into kind, creates the exercise namespace and immutable local Secrets, waits for PostgreSQL (pulled by the cluster from its pinned PostgreSQL 16.15 image tag), and initializes separate migration and runtime credentials. Generated password values stay in process memory and are delivered to Kubernetes through standard input. Reruns reuse the Secrets held in the namespace and never reset established database roles.
 
 The release command applies one uniquely named migration Job and waits for success before updating or scaling either application Deployment. A failed Job is retained for inspection and stops the release. Migration and API workloads use separate credentials. The API serves the same game origin through the frontend's internal `/api` proxy; only the browser is exposed, by the loopback frontend port-forward at `http://127.0.0.1:8088`.
 

@@ -101,14 +101,7 @@ def _ensure_local_images(source_sha: str) -> list[str]:
                     "A local image is missing; build all three images with tools.deployment.images first."
                 ) from None
             raise
-    postgres_image = "postgres:16.15-alpine"
-    try:
-        run_checked(["docker", "image", "inspect", postgres_image])
-    except CommandFailed as error:
-        if error.returncode != 1:
-            raise
-        run_checked(["docker", "pull", postgres_image])
-    run_checked(["kind", "load", "docker-image", "--name", CLUSTER_NAME, *tags, postgres_image])
+    run_checked(["kind", "load", "docker-image", "--name", CLUSTER_NAME, *tags])
     return tags
 
 
