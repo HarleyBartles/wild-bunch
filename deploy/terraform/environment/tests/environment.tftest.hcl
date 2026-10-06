@@ -228,6 +228,16 @@ run "keeps_the_environment_private_and_routes_only_private_subnets_through_nat" 
   }
 
   assert {
+    condition     = one([for statement in jsondecode(aws_iam_role_policy.codebuild_release.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:FullRepositoryId"] == "HarleyBartles/wild-bunch" && one([for statement in jsondecode(aws_iam_role_policy.codebuild_release.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:BranchName"] == "main" && one([for statement in jsondecode(aws_iam_role_policy.codebuild_release.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:ProviderAction"] == "GitPull" && one([for statement in jsondecode(aws_iam_role_policy.codebuild_release.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:ProviderPermissionsRequired"] == "read_only"
+    error_message = "The release CodeBuild role must clone only this repository's main branch using read-only Git pull."
+  }
+
+  assert {
+    condition     = one([for statement in jsondecode(aws_iam_role_policy.codebuild_initializer.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:FullRepositoryId"] == "HarleyBartles/wild-bunch" && one([for statement in jsondecode(aws_iam_role_policy.codebuild_initializer.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:BranchName"] == "main" && one([for statement in jsondecode(aws_iam_role_policy.codebuild_initializer.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:ProviderAction"] == "GitPull" && one([for statement in jsondecode(aws_iam_role_policy.codebuild_initializer.policy).Statement : statement if statement.Sid == "UseTheAuthorizedGitHubConnection"]).Condition.StringEquals["codeconnections:ProviderPermissionsRequired"] == "read_only"
+    error_message = "The initializer CodeBuild role must clone only this repository's main branch using read-only Git pull."
+  }
+
+  assert {
     condition     = toset(aws_codebuild_project.release_runner.vpc_config[0].security_group_ids) == toset([aws_security_group.codebuild_release.id])
     error_message = "The private release runner must use its own security group."
   }

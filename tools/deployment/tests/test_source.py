@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.deployment.source import TrustedSourceError, resolve_trusted_source
+from tools.deployment.source import TrustedSourceError, codebuild_main_source_version, resolve_trusted_source
 
 
 def git(directory: Path, *arguments: str) -> str:
@@ -83,6 +83,15 @@ class TrustedSourceTests(unittest.TestCase):
     def test_rejects_alternate_approved_branch(self) -> None:
         with self.assertRaisesRegex(TrustedSourceError, "restricted to main"):
             resolve_trusted_source(self.historical_main, "release")
+
+    def test_codebuild_source_version_binds_a_commit_to_main(self) -> None:
+        self.assertEqual(
+            f"refs/heads/main^{{{self.historical_main}}}",
+            codebuild_main_source_version(self.historical_main),
+        )
+        for value in ("main", "a" * 39, "A" * 40, "--upload-pack=bad"):
+            with self.subTest(value=value), self.assertRaises(TrustedSourceError):
+                codebuild_main_source_version(value)
 
 
 if __name__ == "__main__":

@@ -45,7 +45,9 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_SHA="$(python3 -c 'import os; from tools.deployment.source import resolve_trusted_source; print(resolve_trusted_source(os.environ["SOURCE_SHA"]))')"
+          SOURCE_VERSION="$(python3 -c 'import os; from tools.deployment.source import codebuild_main_source_version; print(codebuild_main_source_version(os.environ["SOURCE_SHA"]))')"
           echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "source_version=$SOURCE_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Assume the database initializer invoker role
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -58,9 +60,10 @@ jobs:
         id: start
         env:
           SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          SOURCE_VERSION: ${{ steps.source.outputs.source_version }}
         run: |
           set -euo pipefail
-          if ! BUILD_ID="$(aws codebuild start-build --no-cli-pager --project-name "$CODEBUILD_PROJECT" --source-version "$SOURCE_SHA" --environment-variables-override "name=WB_EXPECTED_SOURCE_SHA,value=$SOURCE_SHA,type=PLAINTEXT" --query 'build.id' --output text 2> "$RUNNER_TEMP/codebuild-start.log")"; then
+          if ! BUILD_ID="$(aws codebuild start-build --no-cli-pager --project-name "$CODEBUILD_PROJECT" --source-version "$SOURCE_VERSION" --environment-variables-override "name=WB_EXPECTED_SOURCE_SHA,value=$SOURCE_SHA,type=PLAINTEXT" --query 'build.id' --output text 2> "$RUNNER_TEMP/codebuild-start.log")"; then
             echo 'The private database initializer could not be started.'
             exit 1
           fi

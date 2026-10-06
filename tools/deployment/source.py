@@ -50,3 +50,10 @@ def resolve_trusted_source(ref: str, approved_branch: str = "main") -> str:
     if not _COMMIT.fullmatch(commit):
         raise TrustedSourceError("Git returned an invalid commit identity.")
     return commit
+
+
+def codebuild_main_source_version(commit_sha: str) -> str:
+    """Pin CodeBuild to a trusted commit through main so branch-aware IAM conditions apply."""
+    if not isinstance(commit_sha, str) or not _COMMIT.fullmatch(commit_sha):
+        raise TrustedSourceError("CodeBuild source must be a full lowercase commit SHA.")
+    return f"refs/heads/main^{{{commit_sha}}}"

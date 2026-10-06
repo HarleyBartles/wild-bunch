@@ -99,6 +99,16 @@ locals {
         Effect   = "Allow"
         Action   = "codeconnections:UseConnection"
         Resource = aws_codeconnections_connection.github.arn
+        Condition = {
+          StringEquals = {
+            "codeconnections:FullRepositoryId"            = "HarleyBartles/wild-bunch"
+            "codeconnections:OwnerId"                     = "HarleyBartles"
+            "codeconnections:RepositoryName"              = "wild-bunch"
+            "codeconnections:BranchName"                  = "main"
+            "codeconnections:ProviderAction"              = "GitPull"
+            "codeconnections:ProviderPermissionsRequired" = "read_only"
+          }
+        }
       },
     ]
   })
@@ -129,6 +139,16 @@ locals {
         Effect   = "Allow"
         Action   = "codeconnections:UseConnection"
         Resource = aws_codeconnections_connection.github.arn
+        Condition = {
+          StringEquals = {
+            "codeconnections:FullRepositoryId"            = "HarleyBartles/wild-bunch"
+            "codeconnections:OwnerId"                     = "HarleyBartles"
+            "codeconnections:RepositoryName"              = "wild-bunch"
+            "codeconnections:BranchName"                  = "main"
+            "codeconnections:ProviderAction"              = "GitPull"
+            "codeconnections:ProviderPermissionsRequired" = "read_only"
+          }
+        }
       },
     ]
   })

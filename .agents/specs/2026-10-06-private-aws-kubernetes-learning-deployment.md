@@ -76,7 +76,7 @@ Review Terraform plans before apply, distinguish update from replacement, and pr
 
 GitHub-hosted runners use OIDC, OpenID Connect, to obtain temporary AWS credentials. Trust is restricted to this repository and the intended deployment environment and workflow branch. CodeBuild uses scoped service-role credentials. Provisioning authority is separate from ordinary image publication and application release authority. Bootstrap identities are broader but are not reused by normal application releases.
 
-The CodeBuild-to-GitHub connection requires a one-time human authorization, preferably through the supported GitHub App connection. Terraform manages the connection resource and runner infrastructure where supported; the human grants GitHub access. Document this prerequisite rather than claiming that Terraform eliminates identity consent. Bootstrap and teardown must operate from GitHub-hosted runners or the local machine without depending on a runner inside the environment being created or destroyed.
+The CodeBuild-to-GitHub connection requires a one-time human authorization, preferably through the supported GitHub App connection. Terraform manages the connection resource and runner infrastructure where supported; the human grants GitHub access. Restrict each CodeBuild `UseConnection` permission to `HarleyBartles/wild-bunch`, read-only Git pull and the `main` branch, and request a commit with a branch-qualified source version so the branch condition is evaluated. Document this prerequisite rather than claiming that Terraform eliminates identity consent. Bootstrap and teardown must operate from GitHub-hosted runners or the local machine without depending on a runner inside the environment being created or destroyed.
 
 ## Database users and secrets
 
