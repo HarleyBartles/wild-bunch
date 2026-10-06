@@ -1,0 +1,1 @@
+When working in `src/WildBunch.Assets/scripts/`, read [pipeline custody](../docs/asset-operations.md#pipeline-custody) and applicable [unslop profiles](../../../.agents/unslop/README.md) before changing asset helpers; outside this tree these local pointers do not apply.

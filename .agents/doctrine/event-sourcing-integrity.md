@@ -1,5 +1,7 @@
 # Event-sourcing integrity doctrine
 
+Before work governed by this doctrine, read [backend-architecture guards](../unslop/backend-architecture.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+
 This doctrine is the primary repository surface for event-sourcing integrity in
 the Wild Bunch repo. ADR-0028 is the decision record (why the architecture was
 chosen); this doctrine states what must remain true in the implementation and

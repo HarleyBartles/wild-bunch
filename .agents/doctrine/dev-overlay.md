@@ -1,5 +1,7 @@
 # Dev overlay doctrine
 
+Before work governed by this doctrine, read [dev-overlay guards](../unslop/dev-overlay.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+
 This is the binding repository doctrine for the Dev Overlay and Playtest
 Control Plane. All dev-overlay work must follow it.
 

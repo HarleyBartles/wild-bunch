@@ -23,6 +23,10 @@ town, or setup-owned player facts.
 
 - None.
 
+## Unslop before work
+
+Before setup/seed work, read [backend guards](../unslop/backend-architecture.md) in full. Browser setup also requires [play-surface UI](../unslop/play-surface-ui.md); developer preparation requires [dev overlay](../unslop/dev-overlay.md). Maintain [distinct observations](../unslop/README.md#record-and-improve).
+
 ## Composition
 
 1. Use `/seed-ownership` to classify every changed setup fact as seed, pressure,

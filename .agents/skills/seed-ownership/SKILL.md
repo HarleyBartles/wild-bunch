@@ -12,6 +12,8 @@ metadata:
 
 # Seed Ownership
 
+Before using this skill, read the applicable [backend architecture](../../unslop/backend-architecture.md), plus [dev overlay](../../unslop/dev-overlay.md) for developer preparation guards in full. Follow [selection and observations](../../unslop/README.md) when scope changes or a distinct incident warrants recording.
+
 ## Owned decision
 
 Classify one setup fact into exactly one owner: seed identity, difficulty

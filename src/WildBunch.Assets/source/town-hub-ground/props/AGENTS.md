@@ -1,0 +1,1 @@
+When working in `src/WildBunch.Assets/source/town-hub-ground/props/`, read the [props bible](../../../docs/bibles/ground/props-bible.md) and [production playbook](../../../../../.agents/playbooks/town-hub-asset-production.md) before generating or editing props; outside this tree these local pointers do not apply.

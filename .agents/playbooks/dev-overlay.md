@@ -39,7 +39,7 @@ Adding or changing a Wild Bunch developer control or panel.
 ## Doctrine and contracts
 
 - [Dev-overlay doctrine](../doctrine/dev-overlay.md)
-- [Dev-overlay anti-slop contract](../contracts/unslop/dev-overlay.md)
+- Before dev-overlay work, read [dev-overlay guards](../unslop/dev-overlay.md) in full, plus [backend](../unslop/backend-architecture.md) for commands/events and [play-surface UI](../unslop/play-surface-ui.md) for browser/state concerns. Maintain encountered patterns through the [unslop loop](../unslop/README.md#record-and-improve).
 - [Dev-overlay proof contract](../contracts/dev-overlay-proof.md)
 
 ## Local commands and paths

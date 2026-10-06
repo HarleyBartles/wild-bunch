@@ -2,6 +2,15 @@
   "version": 2,
   "standards": [
     {
+      "id": "unslop",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "c72751a0ac2893a3968b70111fbc21bdd3b119f3",
+        "definition": "skills/unslop/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#unslop"
+    },
+    {
       "id": "root-agent-router",
       "source": {
         "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",

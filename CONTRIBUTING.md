@@ -4,13 +4,14 @@ This file is the repo's contributor entry point.
 
 ## Pre-contribution reading
 
+- Before investigating, designing, implementing or reviewing, read [unslop selection and observations](./.agents/unslop/README.md) and the applicable profiles in full.
 - Read root [`AGENTS.md`](./AGENTS.md) for source-of-truth and publication routing.
 - Read [AOM subscriptions](./.agents/contracts/operating-standards.json) and
   [their certification](./.agents/contracts/standards-certification.md) when
   changing an adopted surface; maintain the affected assessment in that change.
 - Read [`.agents/doctrine/repo-runbook-policy.md`](./.agents/doctrine/repo-runbook-policy.md) for this repo's mapping to the cross-repo runbook standard.
 - Read [`.agents/playbooks/code-style.md`](./.agents/playbooks/code-style.md) for
-  source conventions and [the writing contract](./.agents/contracts/unslop/writing.md)
+  source conventions and [the writing profile](./.agents/unslop/writing.md)
   for authored prose.
 
 ## Workflow routing

@@ -12,6 +12,8 @@ metadata:
 
 # Wild Bunch Browser Game
 
+Before using this skill, read the applicable [play-surface UI](../../unslop/play-surface-ui.md), plus [dev overlay](../../unslop/dev-overlay.md) for developer state guards in full. Follow [selection and observations](../../unslop/README.md) when scope changes or a distinct incident warrants recording.
+
 ## Owned decision
 
 Decide whether browser state belongs to React presentation, Phaser playfield

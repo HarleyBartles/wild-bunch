@@ -5,6 +5,10 @@
 Changing repository plugin declarations, authored skill custody, or AOM
 subscription and certification records.
 
+## Unslop before work
+
+Before changing subscriptions, profiles or agent routes, read [routing](../unslop/routing.md) and [writing guards](../unslop/writing.md) in full. Verify reachability from the actual agent work entrypoints and maintain [observations](../unslop/README.md#record-and-improve) plus the affected certification.
+
 ## Composition
 
 1. Declare repository plugins in `.agents/plugins/marketplace.json` and bind

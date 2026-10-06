@@ -128,7 +128,7 @@ Product work uses the established domain/application, API, real PostgreSQL integ
 
 - [Architecture guardrails](../doctrine/architecture-guardrails.md), [gameplay invariants](../doctrine/gameplay-invariants.md), and [event-sourcing integrity](../doctrine/event-sourcing-integrity.md).
 - [Frontend standards](../doctrine/frontend-standards.md), [dev-overlay doctrine](../doctrine/dev-overlay.md), and [security playbook](../playbooks/security.md).
-- [Coding discipline](../doctrine/coding-discipline.md), [validation policy](../doctrine/validation-policy.md), [testing playbook](../playbooks/testing.md), [artifact custody](../doctrine/artifact-custody.md), and [writing contract](../contracts/unslop/writing.md).
+- [Coding discipline](../doctrine/coding-discipline.md), [validation policy](../doctrine/validation-policy.md), [testing playbook](../playbooks/testing.md), [artifact custody](../doctrine/artifact-custody.md), and [writing contract](../unslop/writing.md).
 - [Google identity guidance](https://developers.google.com/identity/openid-connect/openid-connect), [ASP.NET external sign-in without Identity](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/social/social-without-identity?view=aspnetcore-10.0), and [resource authorization](https://learn.microsoft.com/en-us/aspnet/core/security/authorization/resourcebased?view=aspnetcore-10.0).
 - [Gitflow](https://nvie.com/posts/a-successful-git-branching-model/), [SemVer](https://semver.org/), and [Docker Compose project separation](https://docs.docker.com/compose/how-tos/project-name/).
 - [OVH Terraform VPS resource](https://github.com/ovh/terraform-provider-ovh/blob/master/docs/resources/vps.md). Pricing and stock are purchase-time inputs, not enduring architecture requirements.

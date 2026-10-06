@@ -1,5 +1,7 @@
 # Wild Bunch Dev Overlay Unslop Profile
 
+Read this profile in full before dev-overlay work and maintain encountered patterns through the [observation loop](README.md#record-and-improve). Its player-surface constraints apply when player UI is touched; a genuinely developer-only diagnostic may display explicitly labelled internal detail. Approved scenario preparation remains legitimate when normal gameplay still resolves the outcome.
+
 Repo-specific anti-slop profile for Wild Bunch dev overlay work.
 
 Use this profile before designing, implementing, reviewing, or dispatching work on dev overlay panels, dev-only playtest controls, `/api/dev/` inspection, hidden-truth debug surfaces, contextual panel defaults, browser proof, or generated agent evidence.
@@ -27,9 +29,9 @@ A control that merely exposes internal state is not enough unless it helps choos
 
 ## Source profiles to apply with this one
 
-Always apply the repo-resident backend architecture unslop profile for backend/domain/API/persistence/event questions.
+Read and apply [backend architecture](backend-architecture.md) for backend/domain/API/persistence/event questions.
 
-Always apply the repo-resident web play-surface unslop profile when a player-facing surface, HUD/shell behavior, overlay behavior, React state ownership, copy, accessibility, or responsive behavior is touched.
+Read and apply [web play surfaces](play-surface-ui.md) when a player-facing surface, HUD/shell behavior, overlay behavior, React state ownership, copy, accessibility, or responsive behavior is touched.
 
 For dev overlay work, apply this profile in addition to those. Do not duplicate them inside this document.
 

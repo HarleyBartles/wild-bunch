@@ -1,18 +1,20 @@
 # Writing Anti-Slop Profile
 
+Read this profile in full before authored prose and maintain encountered patterns through the [observation loop](README.md#record-and-improve). Concision must preserve meaning; domain terminology is appropriate when it helps its intended reader. Active plans, specifications and durable slop observations are governed artifacts, not scratch merely because they describe an investigation.
+
 Use this profile when writing documents, plans, specs, or any other text artifacts. This profile enforces standards for artifact placement and writing quality.
 
 ## Scratch Artifact Check
 - **CRITICAL**: Before creating any scratch files (draft documents, temporary notes, session artifacts), check `.agents/doctrine/artifact-custody.md` for placement guidance
 - Scratch files must be placed in `Z:\_agent-scratch\wild-bunch\<branch-name>`, never in the repo root
 - Files like `*-review*.md`, `*-scratch*.md`, `*-draft*.md`, `COMMIT_MSG.txt`, `PR_BODY.md` are scratch artifacts that pollute the tree
-- If you find scratch artifacts committed to the repo, remove them as part of self-healing
+- If a committed artifact appears to be scratch, apply the completed-artifact policy before removing it; preserve live, ambiguous and enduring material.
 
 ## Artifact Placement
 - Active plans, specifications, and roadmaps live under `.agents/plans/`,
   `.agents/specs/`, and `.agents/roadmaps/`.
 - Durable doctrine and binding repo-local profiles live under
-  `.agents/doctrine/` and `.agents/contracts/unslop/`.
+  `.agents/doctrine/` and `.agents/unslop/`.
 - Temporary notes, review packages, worker reports, screenshots, and other
   evidence live in `Z:\_agent-scratch\wild-bunch\<branch-name>`.
 - Do not create loose agent files at repo root or commit generated evidence.

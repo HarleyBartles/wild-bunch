@@ -1,5 +1,7 @@
 # Wild Bunch Web Play-Surface Unslop Profile
 
+Read this profile in full before work in its stated scope and maintain encountered patterns through the [observation loop](README.md#record-and-improve). Game-native presentation does not override accessible naming, explicit user direction or real recovery needs. Developer diagnostics may show clearly labelled internal information only within the developer boundary; they must not leak it into player surfaces.
+
 Project-specific anti-slop profile for `src/WildBunch.Web`.
 
 Use this profile before designing, implementing, reviewing, or dispatching work on Wild Bunch web play surfaces, HUD/shell placement, overlays, cockpit transitions, modal surfaces, journal/case/wanted surfaces, travel UI, player-facing copy, and React state ownership.
