@@ -191,6 +191,21 @@ class BotoSecretStore:
         return value
 
 
+def _admin_credentials(client: Any, secret_id: str) -> tuple[str, str]:
+    """Read and validate the RDS-managed administrator credential without logging it."""
+    result = client.get_secret_value(SecretId=secret_id)
+    raw = result.get("SecretString")
+    if not isinstance(raw, str):
+        raise ValueError("The RDS administrator secret is not stored as a JSON string.")
+    value = json.loads(raw)
+    if not isinstance(value, dict):
+        raise ValueError("The RDS administrator secret must contain a JSON object.")
+    username = value.get("username")
+    password = value.get("password")
+    if not isinstance(username, str) or not username or not isinstance(password, str) or not password:
+        raise ValueError("The RDS administrator secret is missing its username or password.")
+    return username, password
+
 class PostgresAdmin:
     """PostgreSQL adapter that uses composed identifiers and parameterized values."""
 
@@ -318,16 +333,17 @@ def main() -> int:
             sslmode=os.environ.get("WB_DB_SSLMODE", "verify-full"),
             sslrootcert=os.environ.get("WB_DB_SSLROOTCERT"),
         )
-        admin = PostgresAdmin(
-            endpoint,
-            username=_required_environment("WB_DB_ADMIN_USERNAME"),
-            password=_required_environment("WB_DB_ADMIN_PASSWORD"),
+        secret_client = boto3.client("secretsmanager")
+        admin_username, admin_password = _admin_credentials(
+            secret_client,
+            _required_environment("WB_DB_ADMIN_SECRET_ID"),
         )
+        admin = PostgresAdmin(endpoint, username=admin_username, password=admin_password)
         secret_ids = {
             "runtime": _required_environment("WB_RUNTIME_SECRET_ID"),
             "migration": _required_environment("WB_MIGRATION_SECRET_ID"),
         }
-        store = BotoSecretStore(boto3.client("secretsmanager"), secret_ids)
+        store = BotoSecretStore(secret_client, secret_ids)
         initialize_database(admin, store, endpoint)
     except InitializationNeedsReconciliation as error:
         print(str(error), file=sys.stderr)

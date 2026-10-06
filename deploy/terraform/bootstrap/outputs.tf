@@ -37,3 +37,8 @@ output "environment_provisioner_role_arn" {
   description = "GitHub Actions role for the separate environment Terraform root."
   value       = aws_iam_role.environment_provisioner.arn
 }
+
+output "database_initializer_invoker_role_arn" {
+  description = "GitHub Actions role limited to starting and polling the private database initializer project."
+  value       = aws_iam_role.database_initializer_invoker.arn
+}

@@ -55,6 +55,39 @@ resource "aws_iam_role_policy" "image_publisher" {
   policy = local.image_publisher_policy
 }
 
+resource "aws_iam_role" "database_initializer_invoker" {
+  name                 = "wild-bunch-learning-database-init-invoker"
+  description          = "Starts and observes only the separately invoked private database initializer."
+  assume_role_policy   = local.github_environment_trust_policy
+  max_session_duration = 3600
+  tags = {
+    Project   = "wild-bunch-learning"
+    ManagedBy = "terraform"
+  }
+}
+
+resource "aws_iam_role_policy" "database_initializer_invoker" {
+  name = "invoke-only-private-database-initializer"
+  role = aws_iam_role.database_initializer_invoker.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "StartOnlyDatabaseInitializer"
+        Effect   = "Allow"
+        Action   = "codebuild:StartBuild"
+        Resource = "arn:${data.aws_partition.current.partition}:codebuild:${var.aws_region}:${data.aws_caller_identity.current.account_id}:project/wild-bunch-learning-codebuild-database-init"
+      },
+      {
+        Sid      = "PollOnlyDatabaseInitializerBuilds"
+        Effect   = "Allow"
+        Action   = "codebuild:BatchGetBuilds"
+        Resource = "arn:${data.aws_partition.current.partition}:codebuild:${var.aws_region}:${data.aws_caller_identity.current.account_id}:build/wild-bunch-learning-codebuild-database-init:*"
+      },
+    ]
+  })
+}
+
 resource "aws_iam_role" "environment_provisioner" {
   name                 = "wild-bunch-learning-infrastructure"
   description          = "Manages the exercise Terraform environment and its separately named service roles."
@@ -213,12 +246,6 @@ data "aws_iam_policy_document" "environment_provisioner" {
       "rds:ModifyDBInstance",
       "rds:ModifyDBParameterGroup",
       "rds:RemoveTagsFromResource",
-      "secretsmanager:CreateSecret",
-      "secretsmanager:DeleteSecret",
-      "secretsmanager:DescribeSecret",
-      "secretsmanager:ListSecretVersionIds",
-      "secretsmanager:TagResource",
-      "secretsmanager:UntagResource",
     ]
     resources = ["*"]
     condition {
@@ -226,6 +253,34 @@ data "aws_iam_policy_document" "environment_provisioner" {
       variable = "aws:RequestedRegion"
       values   = [var.aws_region]
     }
+  }
+
+  statement {
+    sid       = "CreateOnlyNamedApplicationSecrets"
+    effect    = "Allow"
+    actions   = ["secretsmanager:CreateSecret"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "secretsmanager:Name"
+      values   = ["wild-bunch-learning/runtime", "wild-bunch-learning/migration"]
+    }
+  }
+
+  statement {
+    sid    = "MaintainOnlyApplicationSecretContainers"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:DeleteSecret",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:ListSecretVersionIds",
+      "secretsmanager:TagResource",
+      "secretsmanager:UntagResource",
+    ]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:wild-bunch-learning/runtime-*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:wild-bunch-learning/migration-*",
+    ]
   }
 
   statement {
@@ -246,7 +301,7 @@ data "aws_iam_policy_document" "environment_provisioner" {
       "ecr:TagResource",
       "ecr:UntagResource",
     ]
-    resources = ["*"]
+    resources = local.image_repository_arns
     condition {
       test     = "StringEquals"
       variable = "aws:RequestedRegion"
@@ -258,17 +313,6 @@ data "aws_iam_policy_document" "environment_provisioner" {
     sid    = "CodeBuildAndGitHubConnectionLifecycle"
     effect = "Allow"
     actions = [
-      "codebuild:BatchGetProjects",
-      "codebuild:BatchGetReportGroups",
-      "codebuild:CreateProject",
-      "codebuild:CreateWebhook",
-      "codebuild:DeleteProject",
-      "codebuild:DeleteWebhook",
-      "codebuild:DescribeCodeCoverages",
-      "codebuild:DescribeTestCases",
-      "codebuild:ListBuildsForProject",
-      "codebuild:UpdateProject",
-      "codebuild:UpdateWebhook",
       "codeconnections:CreateConnection",
       "codeconnections:DeleteConnection",
       "codeconnections:GetConnection",
@@ -282,6 +326,80 @@ data "aws_iam_policy_document" "environment_provisioner" {
       variable = "aws:RequestedRegion"
       values   = [var.aws_region]
     }
+  }
+
+  statement {
+    sid    = "ManageOnlyNamedExerciseCodeBuildProjects"
+    effect = "Allow"
+    actions = [
+      "codebuild:BatchGetProjects",
+      "codebuild:CreateWebhook",
+      "codebuild:DeleteProject",
+      "codebuild:DeleteWebhook",
+      "codebuild:UpdateWebhook",
+    ]
+    resources = local.environment_codebuild_project_arns
+  }
+
+  statement {
+    sid       = "CreateOrUpdateOnlyPrivateExerciseCodeBuildProjects"
+    effect    = "Allow"
+    actions   = ["codebuild:CreateProject", "codebuild:UpdateProject"]
+    resources = local.environment_codebuild_project_arns
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "codebuild:vpcConfig.vpcId"
+      values   = ["vpc-*"]
+    }
+    condition {
+      test     = "Null"
+      variable = "codebuild:vpcConfig.vpcId"
+      values   = ["false"]
+    }
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "codebuild:vpcConfig.subnets"
+      values   = ["subnet-*"]
+    }
+    condition {
+      test     = "Null"
+      variable = "codebuild:vpcConfig.subnets"
+      values   = ["false"]
+    }
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "codebuild:vpcConfig.securityGroupIds"
+      values   = ["sg-*"]
+    }
+    condition {
+      test     = "Null"
+      variable = "codebuild:vpcConfig.securityGroupIds"
+      values   = ["false"]
+    }
+  }
+
+  statement {
+    sid    = "CreateAndListGitHubOidcProviders"
+    effect = "Allow"
+    actions = [
+      "iam:CreateOpenIDConnectProvider",
+      "iam:ListOpenIDConnectProviders",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "MaintainNamedGitHubOidcProvider"
+    effect = "Allow"
+    actions = [
+      "iam:AddClientIDToOpenIDConnectProvider",
+      "iam:DeleteOpenIDConnectProvider",
+      "iam:GetOpenIDConnectProvider",
+      "iam:RemoveClientIDFromOpenIDConnectProvider",
+      "iam:TagOpenIDConnectProvider",
+      "iam:UntagOpenIDConnectProvider",
+    ]
+    resources = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/*"]
   }
 
   statement {
@@ -332,13 +450,24 @@ data "aws_iam_policy_document" "environment_provisioner" {
       "iam:ListAttachedRolePolicies",
       "iam:ListPolicyVersions",
       "iam:ListRoleTags",
-      "iam:PassRole",
       "iam:PutRolePolicy",
       "iam:TagRole",
       "iam:UntagRole",
       "iam:UpdateAssumeRolePolicy",
     ]
     resources = concat(local.environment_role_arns, local.environment_policy_arns)
+  }
+
+  statement {
+    sid       = "PassOnlyNamedRolesToTheirAWSServices"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = local.environment_role_arns
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["eks.amazonaws.com", "ec2.amazonaws.com", "codebuild.amazonaws.com"]
+    }
   }
 
   statement {

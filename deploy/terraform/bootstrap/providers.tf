@@ -21,9 +21,14 @@ locals {
   environment_policy_arns = [
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/wild-bunch-learning-*"
   ]
+  environment_codebuild_project_arns = [
+    "arn:${data.aws_partition.current.partition}:codebuild:${var.aws_region}:${data.aws_caller_identity.current.account_id}:project/wild-bunch-learning-codebuild-release",
+    "arn:${data.aws_partition.current.partition}:codebuild:${var.aws_region}:${data.aws_caller_identity.current.account_id}:project/wild-bunch-learning-codebuild-database-init",
+  ]
   environment_role_names = [
     "wild-bunch-learning-eks-cluster",
     "wild-bunch-learning-eks-node",
+    "wild-bunch-learning-eks-vpc-cni",
     "wild-bunch-learning-codebuild-release",
     "wild-bunch-learning-codebuild-database-init",
   ]

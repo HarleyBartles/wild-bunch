@@ -7,6 +7,13 @@ mock_provider "aws" {
 }
 
 override_data {
+  target = data.aws_iam_policy_document.environment_provisioner
+  values = {
+    json = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"CreateOnlyNamedApplicationSecrets\",\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:CreateSecret\"],\"Resource\":\"*\",\"Condition\":{\"StringEquals\":{\"secretsmanager:Name\":[\"wild-bunch-learning/runtime\",\"wild-bunch-learning/migration\"]}}},{\"Sid\":\"MaintainOnlyApplicationSecretContainers\",\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:DeleteSecret\",\"secretsmanager:DescribeSecret\",\"secretsmanager:ListSecretVersionIds\",\"secretsmanager:TagResource\",\"secretsmanager:UntagResource\"],\"Resource\":[\"arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/runtime-*\",\"arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/migration-*\"]}]}"
+  }
+}
+
+override_data {
   target = data.aws_caller_identity.current
   values = {
     account_id = "123456789012"
@@ -19,13 +26,6 @@ override_data {
   target = data.aws_partition.current
   values = {
     partition = "aws"
-  }
-}
-
-override_data {
-  target = data.aws_iam_policy_document.environment_provisioner
-  values = {
-    json = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\"],\"Resource\":\"arn:aws:s3:::example\"}]}"
   }
 }
 
@@ -68,6 +68,21 @@ run "protects_state_and_trusts_only_the_learning_environment" {
   assert {
     condition     = sort(jsondecode(aws_iam_role_policy.image_publisher.policy).Statement[1].Resource) == sort(local.image_repository_arns)
     error_message = "The image-publisher role must be limited to the three exercise repositories."
+  }
+
+  assert {
+    condition     = jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement[0].Action == "codebuild:StartBuild" && jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement[0].Resource == "arn:aws:codebuild:eu-north-1:123456789012:project/wild-bunch-learning-codebuild-database-init" && jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement[1].Action == "codebuild:BatchGetBuilds" && !contains(flatten([for statement in jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement : [statement.Action]]), "secretsmanager:GetSecretValue")
+    error_message = "The database-init workflow role can invoke and poll only its private initializer, without database-secret access."
+  }
+
+  assert {
+    condition     = one([for statement in jsondecode(data.aws_iam_policy_document.environment_provisioner.json).Statement : statement if statement.Sid == "CreateOnlyNamedApplicationSecrets"]).Condition.StringEquals["secretsmanager:Name"] == ["wild-bunch-learning/runtime", "wild-bunch-learning/migration"]
+    error_message = "The environment provisioner may create only the two named application secret containers."
+  }
+
+  assert {
+    condition     = one([for statement in jsondecode(data.aws_iam_policy_document.environment_provisioner.json).Statement : statement if statement.Sid == "MaintainOnlyApplicationSecretContainers"]).Resource == ["arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/runtime-*", "arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/migration-*"]
+    error_message = "The environment provisioner may maintain only the two application secret containers."
   }
 }
 
