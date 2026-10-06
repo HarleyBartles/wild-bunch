@@ -1,0 +1,94 @@
+name: Wild Bunch Learning Database Initialization
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Full commit SHA from main whose initializer source should run
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: wild-bunch-learning-database-initializer
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  initialize:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    environment: wild-bunch-learning
+    env:
+      AWS_REGION: eu-north-1
+      CODEBUILD_PROJECT: wild-bunch-learning-codebuild-database-init
+    steps:
+      - name: Check out the privileged workflow revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Resolve the full commit from origin/main
+        id: source
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="$(python3 -c 'import os; from tools.deployment.source import resolve_trusted_source; print(resolve_trusted_source(os.environ["SOURCE_SHA"]))')"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Assume the database initializer invoker role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.WB_DATABASE_INIT_INVOKER_ROLE_ARN }}
+          aws-region: eu-north-1
+          role-session-name: wild-bunch-database-initializer
+
+      - name: Start the isolated private initializer at the trusted source revision
+        id: start
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          if ! BUILD_ID="$(aws codebuild start-build --no-cli-pager --project-name "$CODEBUILD_PROJECT" --source-version "$SOURCE_SHA" --environment-variables-override "name=WB_EXPECTED_SOURCE_SHA,value=$SOURCE_SHA,type=PLAINTEXT" --query 'build.id' --output text 2> "$RUNNER_TEMP/codebuild-start.log")"; then
+            echo 'The private database initializer could not be started.'
+            exit 1
+          fi
+          echo "::add-mask::$BUILD_ID"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the separate private initializer build
+        env:
+          BUILD_ID: ${{ steps.start.outputs.build_id }}
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 185); do
+            if ! STATUS="$(aws codebuild batch-get-builds --no-cli-pager --ids "$BUILD_ID" --query 'builds[0].buildStatus' --output text 2> "$RUNNER_TEMP/codebuild-status.log")"; then
+              echo 'The initializer status could not be read; its AWS execution may still be running.'
+              exit 1
+            fi
+            case "$STATUS" in
+              SUCCEEDED)
+                echo "Database initialization completed for trusted source $SOURCE_SHA." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+                ;;
+              FAILED|FAULT|STOPPED|TIMED_OUT)
+                echo "Database initializer ended with status $STATUS. Review its private CloudWatch log before attempting another initialization."
+                exit 1
+                ;;
+              *) sleep 15 ;;
+            esac
+          done
+          echo 'Initializer monitoring timed out; the CodeBuild operation may still be running. Inspect its status before retrying.'
+          exit 1

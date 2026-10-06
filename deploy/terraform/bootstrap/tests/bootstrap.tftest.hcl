@@ -9,7 +9,7 @@ mock_provider "aws" {
 override_data {
   target = data.aws_iam_policy_document.environment_provisioner
   values = {
-    json = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"CreateOnlyNamedApplicationSecrets\",\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:CreateSecret\"],\"Resource\":\"*\",\"Condition\":{\"StringEquals\":{\"secretsmanager:Name\":[\"wild-bunch-learning/runtime\",\"wild-bunch-learning/migration\"]}}},{\"Sid\":\"MaintainOnlyApplicationSecretContainers\",\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:DeleteSecret\",\"secretsmanager:DescribeSecret\",\"secretsmanager:ListSecretVersionIds\",\"secretsmanager:TagResource\",\"secretsmanager:UntagResource\"],\"Resource\":[\"arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/runtime-*\",\"arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/migration-*\"]}]}"
+    json = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"ReadAndWriteProtectedInfrastructurePlans\",\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::wild-bunch-terraform-state-123456789012-eu-north-1/plans/*\"]},{\"Sid\":\"CreateOnlyNamedApplicationSecrets\",\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:CreateSecret\"],\"Resource\":\"*\",\"Condition\":{\"StringEquals\":{\"secretsmanager:Name\":[\"wild-bunch-learning/runtime\",\"wild-bunch-learning/migration\"]}}},{\"Sid\":\"MaintainOnlyApplicationSecretContainers\",\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:DeleteSecret\",\"secretsmanager:DescribeSecret\",\"secretsmanager:ListSecretVersionIds\",\"secretsmanager:TagResource\",\"secretsmanager:UntagResource\"],\"Resource\":[\"arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/runtime-*\",\"arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/migration-*\"]}]}"
   }
 }
 
@@ -56,6 +56,11 @@ run "protects_state_and_trusts_only_the_learning_environment" {
   }
 
   assert {
+    condition     = one(aws_s3_bucket_lifecycle_configuration.state.rule).filter[0].prefix == "plans/" && one(aws_s3_bucket_lifecycle_configuration.state.rule).expiration[0].days == 7 && one(aws_s3_bucket_lifecycle_configuration.state.rule).noncurrent_version_expiration[0].noncurrent_days == 7
+    error_message = "Private infrastructure plans and their prior versions must expire after seven days."
+  }
+
+  assert {
     condition     = output.github_oidc_subject == "repo:HarleyBartles/wild-bunch:environment:wild-bunch-learning"
     error_message = "OIDC trust must identify the exact repository environment."
   }
@@ -71,6 +76,11 @@ run "protects_state_and_trusts_only_the_learning_environment" {
   }
 
   assert {
+    condition     = one([for statement in jsondecode(aws_iam_role_policy.image_publisher.policy).Statement : statement if statement.Sid == "ReadCurrentReleasePointer"]).Resource == "arn:aws:s3:::wild-bunch-terraform-state-123456789012-eu-north-1/releases/current.json" && one([for statement in jsondecode(aws_iam_role_policy.image_publisher.policy).Statement : statement if statement.Sid == "TransferOnlyReleaseContractsToPrivateStorage"]).Resource == "arn:aws:s3:::wild-bunch-terraform-state-123456789012-eu-north-1/releases/*/contract.json"
+    error_message = "The image-publisher role may transfer only release contracts and read the known-good pointer in private storage."
+  }
+
+  assert {
     condition     = jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement[0].Action == "codebuild:StartBuild" && jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement[0].Resource == "arn:aws:codebuild:eu-north-1:123456789012:project/wild-bunch-learning-codebuild-database-init" && jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement[1].Action == "codebuild:BatchGetBuilds" && !contains(flatten([for statement in jsondecode(aws_iam_role_policy.database_initializer_invoker.policy).Statement : [statement.Action]]), "secretsmanager:GetSecretValue")
     error_message = "The database-init workflow role can invoke and poll only its private initializer, without database-secret access."
   }
@@ -83,6 +93,11 @@ run "protects_state_and_trusts_only_the_learning_environment" {
   assert {
     condition     = one([for statement in jsondecode(data.aws_iam_policy_document.environment_provisioner.json).Statement : statement if statement.Sid == "MaintainOnlyApplicationSecretContainers"]).Resource == ["arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/runtime-*", "arn:aws:secretsmanager:eu-north-1:123456789012:secret:wild-bunch-learning/migration-*"]
     error_message = "The environment provisioner may maintain only the two application secret containers."
+  }
+
+  assert {
+    condition     = one([for statement in jsondecode(data.aws_iam_policy_document.environment_provisioner.json).Statement : statement if statement.Sid == "ReadAndWriteProtectedInfrastructurePlans"]).Resource == ["arn:aws:s3:::wild-bunch-terraform-state-123456789012-eu-north-1/plans/*"] && !contains(one([for statement in jsondecode(data.aws_iam_policy_document.environment_provisioner.json).Statement : statement if statement.Sid == "ReadAndWriteProtectedInfrastructurePlans"]).Action, "s3:DeleteObject")
+    error_message = "The environment provisioner must store and retrieve protected plans without deleting plan history."
   }
 }
 

@@ -16,4 +16,6 @@ The migration image contains a self-contained EF Core migration bundle. It recei
 
 Follow [the local Kubernetes runbook](runbooks/local.md) to create the private local stack, exercise a release and recovery checks, and remove its synthetic data.
 
+The manually dispatched GitHub Actions paths and their protected prerequisites are in [the GitHub deployment workflow runbook](runbooks/github-workflows.md). They do not expose the game or provision resources from a pull request.
+
 See the plan and specification in `.agents/plans/` and `.agents/specs/` for the full private, disposable deployment design and its authorization gates.

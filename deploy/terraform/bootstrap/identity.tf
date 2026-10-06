@@ -39,11 +39,24 @@ locals {
         Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:CompleteLayerUpload",
+          "ecr:DescribeImages",
           "ecr:InitiateLayerUpload",
           "ecr:PutImage",
           "ecr:UploadLayerPart",
         ]
         Resource = local.image_repository_arns
+      },
+      {
+        Sid      = "ReadCurrentReleasePointer"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${local.state_bucket_arn}/${local.release_state_prefix}current.json"
+      },
+      {
+        Sid      = "TransferOnlyReleaseContractsToPrivateStorage"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${local.state_bucket_arn}/${local.release_state_prefix}*/contract.json"
       }
     ]
   })
@@ -125,6 +138,13 @@ data "aws_iam_policy_document" "environment_provisioner" {
       "s3:PutObject",
     ]
     resources = [local.environment_state_object]
+  }
+
+  statement {
+    sid       = "ReadAndWriteProtectedInfrastructurePlans"
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    resources = ["${local.state_bucket_arn}/plans/*"]
   }
 
   statement {
