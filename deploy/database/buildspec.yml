@@ -1,0 +1,26 @@
+version: 0.2
+env:
+  shell: bash
+phases:
+  install:
+    commands:
+      - python3 -m venv /tmp/wild-bunch-initializer-venv
+      - /tmp/wild-bunch-initializer-venv/bin/python -m pip install --no-cache-dir -r deploy/database/requirements.txt
+  pre_build:
+    commands:
+      - test "${CODEBUILD_RESOLVED_SOURCE_VERSION}" = "${WB_EXPECTED_SOURCE_SHA}"
+      - printf '%s' "${WB_EXPECTED_SOURCE_SHA}" | grep -Eq '^[0-9a-f]{40}$'
+      - test "$(sha256sum deploy/database/certs/eu-north-1-bundle.pem | cut -d ' ' -f 1)" = "8d8dc42958c7b9351846609d552b4b38f3b19c92c9d4816b2f814fd148fe18be"
+  build:
+    commands:
+      - |
+        export WB_DB_HOST="${DATABASE_HOST}"
+        export WB_DB_PORT="${DATABASE_PORT}"
+        export WB_DB_SSLMODE="verify-full"
+        export WB_DB_SSLROOTCERT="deploy/database/certs/eu-north-1-bundle.pem"
+        export WB_DB_ADMIN_SECRET_ID="${ADMIN_SECRET_ARN}"
+        export WB_RUNTIME_SECRET_ID="${RUNTIME_SECRET_ARN}"
+        export WB_MIGRATION_SECRET_ID="${MIGRATION_SECRET_ARN}"
+        /tmp/wild-bunch-initializer-venv/bin/python deploy/database/init.py
+artifacts:
+  files: []

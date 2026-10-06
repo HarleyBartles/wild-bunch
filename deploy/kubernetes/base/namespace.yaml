@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wild-bunch-learning
+  labels:
+    app.kubernetes.io/part-of: wild-bunch-learning
+    app.kubernetes.io/managed-by: wild-bunch-deployment
