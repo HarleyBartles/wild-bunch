@@ -1,5 +1,7 @@
 # Versioned Release Foundation Implementation Plan
 
+**Status:** Provisional follow-on draft. The [interactive stable-0.1.0 investigation](2026-10-06-stable-0.1.0-investigation.md) comes first; its agreed baseline and remediation scope must be reconciled into this draft before execution. This plan is not currently approved for implementation.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` (recommended) or `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give Wild Bunch a reproducible `0.1.0` development baseline with one version authority, matching build identity and Gitflow-aware validation, ready for a first versioned release.

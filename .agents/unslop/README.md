@@ -11,7 +11,7 @@ This directory owns profiles and durable observations under the pinned [unslop s
 | Changing profiles, subscriptions or agent guidance | [Routing](routing.md), [writing](writing.md) | Root AGENTS, contributor entrypoint, marketplace and skill-authoring playbooks |
 | Authoring prose, specs, plans or reports | [Writing](writing.md) | Design, planning, publication and code-style guidance |
 | Domain, application, API, persistence, replay, projections or their tests | [Backend architecture](backend-architecture.md) | Design, planning, implementation, architecture doctrine, domain/.NET/seed skills and testing |
-| Browser presentation, client state, player copy, interactions or their tests | [Play-surface UI](play-surface-ui.md) | Frontend doctrine, browser skill, code-style and browser-check playbooks, Devin web rule |
+| Browser presentation, client state, player copy, interactions or their tests | [Play-surface UI](play-surface-ui.md) | Frontend doctrine, browser skill, code-style and browser-check playbooks, scoped web AGENTS pointer |
 | Developer commands, panels, scenario preparation or hidden-truth diagnostics | [Dev overlay](dev-overlay.md), plus backend/web where touched | Dev-overlay playbook, dev-control skill, security and browser-check guidance |
 | Reviewing a diff, PR or worker return | [Code review](code-review.md), plus touched work classes | Code-review runbook and PR handoff |
 
