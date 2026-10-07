@@ -140,6 +140,42 @@ def test_hook_success_preserves_candidate_and_unrelated_work_without_applying(tm
     assert "notes.md" in status
 
 
+@pytest.mark.parametrize(
+    ("candidate", "expected_status"),
+    [("good", 0), ("reject", 17)],
+    ids=["successful-check", "failed-check"],
+)
+def test_hook_restores_intent_to_add_file_and_unstaged_edits(tmp_path, candidate, expected_status):
+    _fixture(tmp_path)
+    generated = tmp_path / "docs/decisions/README.md"
+    generated.write_bytes(b"fresh\n")
+    _git(tmp_path, "add", "docs/decisions/README.md")
+    (tmp_path / "candidate.cfg").write_text(f"{candidate}\n", encoding="utf-8")
+    _git(tmp_path, "add", "candidate.cfg")
+    notes = tmp_path / "notes.md"
+    notes.write_bytes(b"preserve unrelated unstaged bytes\r\n")
+    intent = tmp_path / "intent.txt"
+    intent.write_bytes(b"preserve intent-to-add content\r\n")
+    _git(tmp_path, "add", "-N", "intent.txt")
+    head = _git(tmp_path, "rev-parse", "HEAD")
+    staged_tree = _git(tmp_path, "write-tree")
+
+    result = _run_hook(tmp_path)
+
+    assert result.returncode == expected_status, result.stderr
+    assert _git(tmp_path, "rev-parse", "HEAD") == head
+    assert _git(tmp_path, "write-tree") == staged_tree
+    assert _git(tmp_path, "show", ":candidate.cfg") == candidate
+    assert notes.read_bytes() == b"preserve unrelated unstaged bytes\r\n"
+    assert intent.read_bytes() == b"preserve intent-to-add content\r\n"
+    assert " A intent.txt" in _git(tmp_path, "status", "--short")
+    assert _git(tmp_path, "diff", "--cached", "--name-only").splitlines() == [
+        "candidate.cfg",
+        "docs/decisions/README.md",
+    ]
+    assert "intent.txt" in _git(tmp_path, "diff", "--", "intent.txt")
+
+
 def test_hosted_validation_keeps_detached_head_and_index_unchanged(tmp_path):
     _fixture(tmp_path)
     generated = tmp_path / "docs/decisions/README.md"
