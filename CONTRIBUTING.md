@@ -21,6 +21,8 @@ owners; those owners read the matching local runbook.
 
 ## Repo-specific contribution notes
 
+- For the stable 0.1.0 epic, read the [develop delivery and version contract](.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md#develop-integration-and-per-plan-delivery) before planning or implementing: each JIT plan uses a fresh develop-based worktree and a PR to develop, assesses eligible predecessor-artifact retirement, and advances the shared development version.
+
 - Work on a task branch in a dedicated linked worktree; direct pushes to
   `main` require explicit authorization.
 - Use the focused validation lane while constructing the change, then the
