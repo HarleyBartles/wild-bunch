@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import shared_checkout
+from versioning import VersionIdentityError, check_version_identity
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -102,6 +103,14 @@ def _build_web(ctx: Ctx) -> None:
     _run(_npm_cmd("run", "build"), ctx)
 
 
+def _version_identity_check(_ctx: Ctx) -> None:
+    try:
+        check_version_identity(ROOT)
+    except VersionIdentityError as exc:
+        print(f"[tools/run] build identity: {exc}", file=sys.stderr)
+        raise
+
+
 def _diff_check(ctx: Ctx) -> None:
     hosted_commit = os.environ.get("REPO_STANDARDS_HOSTED_COMMIT")
     if hosted_commit:
@@ -120,6 +129,11 @@ CI_CHECKS = (
     ("dotnet-build", _build_dotnet, "dotnet build"),
     ("dotnet-test", _test_dotnet, "dotnet test"),
     ("web", _build_web, "npm --prefix src/WildBunch.Web run build"),
+    (
+        "build-identity",
+        _version_identity_check,
+        "remove duplicate npm application-version fields or rebuild the web artifact",
+    ),
     (
         "diff-check",
         _diff_check,
@@ -205,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         _run_target(args.target, ctx)
-    except (subprocess.CalledProcessError, CiDiagnosticsError) as exc:
+    except (subprocess.CalledProcessError, CiDiagnosticsError, VersionIdentityError) as exc:
         print(f"[tools/run] target '{args.target}' failed: {exc}", file=sys.stderr)
         return 1
 

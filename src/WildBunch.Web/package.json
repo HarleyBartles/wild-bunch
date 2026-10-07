@@ -1,7 +1,6 @@
 {
   "name": "wildbunch-web",
   "private": true,
-  "version": "0.1.0-dev.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
