@@ -28,3 +28,7 @@ These documents are source assessments, test dispositions and working product de
 ## Use and custody
 
 Read the relevant complete findings and test dispositions when shaping a bounded slice; do not paste every audit into every plan. Preserve finding IDs, corrections and historical uncertainty. These documents are live inputs while the programme is being specified and delivered, not generated test receipts. Consolidate lasting product decisions into the feature matrix, durable architecture decisions into ADRs, and reusable engineering obligations into their owning guidance as the accepted work is completed. Follow completed-artifact custody before retiring any record.
+
+## Cache-state architecture spike
+
+[Fresh cache-state architecture spike](2026-10-07-cache-state-architecture-spike.md) assesses the user's event-history -> continuously maintained cache -> state diagram against primary CQRS/event-sourcing sources. It is design evidence, not an execution plan or a validation receipt.
