@@ -32,10 +32,10 @@ Before implementation, read the applicable [backend](../unslop/backend-architect
 2. Bind those decisions to the applicable doctrine and contracts below.
 3. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
-4. Refresh ADR freshness metadata and run the repository's structural checks
-   with `py -3 tools/run.py ci --apply`, stage the intended tree, and use the
-   normal hooked commit. This command does not regenerate agent guidance or
-   install subscribed assets.
+4. When maintained metadata needs refreshing, run the explicit apply command
+   and review its changes before staging. Then stage the intended tree and use
+   the normal hooked commit; the hook validates the staged candidate and never
+   applies or stages corrections.
 5. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 
@@ -51,8 +51,8 @@ Before implementation, read the applicable [backend](../unslop/backend-architect
 ## Local commands and paths
 
 Select focused tests from [validation doctrine](../doctrine/validation-policy.md),
-then use [testing](../playbooks/testing.md). A normal commit uses the installed hook over the
-exact staged snapshot.
+then use [testing](../playbooks/testing.md). A normal commit uses the installed
+check-only hook over the exact staged snapshot.
 
 ## Evidence contract
 

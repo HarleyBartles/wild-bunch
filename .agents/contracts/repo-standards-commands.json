@@ -12,8 +12,5 @@
     "ci",
     "--check",
     "--diagnostics"
-  ],
-  "generated_paths": [
-    "docs/decisions/README.md"
   ]
 }

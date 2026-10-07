@@ -8,7 +8,7 @@
 
 | # | Title | Status | Plan File | Commit | PR | Rating | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | Stable 0.1.0 investigation and baseline | writing | [Interactive investigation](../investigations/stable-0.1.0/2026-10-06-stable-0.1.0-investigation.md) | See Git history | None | Conversation only | Read the user's selected files in full, discuss findings and agree the baseline; retain the already-authorized unslop and scoped-router work. The [release foundation](../plans/2026-10-06-versioned-release-foundation.md) remains a provisional follow-on draft. |
+| 1 | Stable 0.1.0 investigation and baseline | writing | [Interactive investigation](../investigations/stable-0.1.0/2026-10-06-stable-0.1.0-investigation.md) | See Git history | None | Conversation only | Read the user's selected files in full, discuss findings and agree the baseline; retain the already-authorized unslop and scoped-router work. The earlier blocked release-foundation draft was superseded by the accepted baseline specification and cleanup roadmap; its implementation checklist was not adopted. |
 | 2 | Authenticated owned playthroughs | pending | Not authored | None | None | Conversation only | Google identity, event-backed ownership, atomic per-user active-session rule, authorization and browser resume. |
 | 3 | Public and preprod capability boundary | pending | Not authored | None | None | Conversation only | Public artifacts exclude dev UI and APIs; hosted preprod admits only Harley's stable Google identity. |
 | 4 | Reproducible container runtime | pending | Not authored | None | None | Conversation only | Same-origin web/API, separate Compose projects and PostgreSQL volumes, controlled migrations, durable authentication keys. |

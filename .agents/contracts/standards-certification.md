@@ -42,22 +42,21 @@ router checker checks links and does not score content.
 
 ## tracked-validation-hook
 
-**Assessment:** Implementation and local candidate behavior are verified;
-hosted Linux parity evidence is pending the non-draft GitHub run. The tracked
-`githooks/pre-commit` materializes the staged tree, preserves unrelated
-unstaged and untracked work, runs the complete declared apply/check gate, and
-stages only declared generated output. GitHub Actions checks out two commits,
-sets up PostgreSQL, .NET 10, Node 20, and Python 3.12, then runs that same hook
-in detached committed-tree parity mode. The behavior fixture verified that a
-staged failing configuration remains a failure despite an unstaged repair,
-and that unrelated tracked and untracked changes survive both failed and
-successful runs. A fixture verifies CRLF normalization stays within the
-declared generated output while unrelated CRLF work survives. The canonical gate runs the repository Python behavior fixtures. All current scoped checks have Windows
-execution evidence. The complete hook also passed a clean detached clone of
-commit `df6a1190c23a59723380969646a3b8e11405d847`, with no `.gitmodules` file
-or Marketplace source submodule. GitHub intentionally skips Draft PR checks;
-an actual hosted Linux result cannot be claimed until the PR is marked ready.
-The standard remains not fully certified until that evidence is available.
+**Assessment:** Not certified under the pinned tracked-validation-hook
+standard. Wild Bunch's approved policy is that pre-commit and CI are
+check-only; they never normalize files, stage corrections, or move refs. The
+pinned standard requires hook-side candidate normalization, so its requirement
+conflicts with the repository policy and must be reconciled at the subscription
+boundary before any conformance claim. The tracked hook materializes the staged
+candidate locally, runs only the declared check command, and restores unrelated
+unstaged and untracked work. Hosted mode requires a clean detached checkout at
+the declared `HEAD`, runs the same check command in place, and verifies that
+`HEAD`, the index, and candidate worktree remain unchanged. Behavior tests
+observe stale generated content rejection, partial-staging isolation, success
+and failure restoration, and hosted state preservation. Windows local evidence
+is established by the focused fixture and canonical gate; hosted Linux evidence
+is pending the non-draft GitHub run. Certification remains blocked by the
+policy mismatch even after hosted parity is proven.
 
 ## completed-artifact-custody
 
