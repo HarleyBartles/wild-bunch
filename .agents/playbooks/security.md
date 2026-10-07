@@ -64,3 +64,4 @@ repo files or command output.
 - [Planning](../runbooks/planning.md)
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
+- [Decision records](decision-records.md) - when authority, privacy, or hidden-truth policy changes durably.

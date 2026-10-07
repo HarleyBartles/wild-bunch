@@ -69,3 +69,4 @@ architecture or gameplay doctrine bind the change.
 
 - [Design](../runbooks/design.md)
 - [Implementing](../runbooks/implementing.md)
+- [Decision records](decision-records.md) - when setup ownership or deterministic setup rules change.

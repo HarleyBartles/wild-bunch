@@ -31,11 +31,12 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.
-2. Use evidence-based result verification to bind the publication claim to the
+2. Confirm required decision-record changes are included, or record why the PR does not change a durable decision using the [decision-record playbook](../playbooks/decision-records.md).
+3. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
-3. Use GitHub branch and Draft PR publication to push the task branch and create or update the
+4. Use GitHub branch and Draft PR publication to push the task branch and create or update the
    Draft PR against `main`.
-4. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
+5. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
    applicable hosted checks with the published tree.
 
 ## Doctrine and contracts

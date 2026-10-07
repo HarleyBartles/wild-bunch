@@ -31,6 +31,7 @@ Before design, read [writing guards](../unslop/writing.md) in full. Backend desi
    validation lane before accepting the design.
 3. Save the accepted specification under `.agents/specs/` for planning; keep
    transient exploration in branch-scoped scratch.
+4. Select governing ADRs through the [decision-record playbook](../playbooks/decision-records.md) and identify any durable decision the design makes or changes.
 
 ## Doctrine and contracts
 

@@ -58,3 +58,5 @@ live in [event-sourcing integrity](event-sourcing-integrity.md).
 Seed, difficulty, entropy, and starting-town ownership lives only in
 [game-content seed pipeline](game-content-seed-pipeline.md). Browser authority
 lives in [frontend standards](frontend-standards.md).
+
+For durable architecture decisions, select relevant records through the [decision catalogue](../../docs/decisions/README.md) and follow the [decision-record playbook](../playbooks/decision-records.md).

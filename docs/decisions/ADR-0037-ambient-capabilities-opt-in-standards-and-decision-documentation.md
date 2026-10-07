@@ -2,12 +2,13 @@
 
 ## Status
 
-`superseded`
+`partially superseded`
 
 ## Dated Status History
 
 - 2026-09-29 - live: Wild Bunch adopts seven Marketplace operating standards explicitly, treats ambient plugin skills as capabilities rather than subscriptions, retires generated index mesh navigation, and moves the ADR home to `docs/decisions/`.
 - 2026-10-02 - superseded in part: `.agents/contracts/operating-standards.json` and `.agents/contracts/standards-certification.md` replace the seven-item deployment model with six immutable self-certification references. Repository-owned checks replace the Marketplace deployment runtime. The native Codex plugin catalog remains separate. The ADR location and retirement of generated index navigation remain live.
+- 2026-10-07 - clarified: the decision catalogue is authored, and the generated freshness table was retired because the latest history date does not establish semantic review.
 
 ## Decision Type
 
@@ -52,7 +53,7 @@ At the time, the tracked pre-commit hook and hosted CI used the same checked-in 
 - Removing ambient subscriptions no longer removes a hidden runtime dependency from the canonical validation path.
 - Workflow guidance describes required and optional capabilities while remaining provider-agnostic.
 - The repository no longer maintains generated `INDEX.md` files or a replacement mesh.
-- ADR records and their freshness table have one durable home at `docs/decisions/`.
+- At the time, ADR records and their generated freshness table shared `docs/decisions/README.md`; the table was retired on 2026-10-07 because history dates do not establish semantic review.
 - Repository routing remains authored and intentionally scoped; contributors do not need to update a generated whole-tree inventory.
 
 ## Evidence Surface

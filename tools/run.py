@@ -38,10 +38,6 @@ def _run(cmd: list[str], ctx: Ctx) -> None:
     subprocess.run(cmd, cwd=ROOT, check=True)
 
 
-def _adr_freshness_cmd(mode: str) -> list[str]:
-    return [sys.executable, "scripts/update_adr_freshness.py", f"--{mode}"]
-
-
 def _dotnet_build_cmd() -> list[str]:
     return ["dotnet", "build"]
 
@@ -76,15 +72,6 @@ def _test_tool_behaviors(ctx: Ctx) -> None:
 
 def _activate_hook(ctx: Ctx) -> None:
     _run(["git", "config", "core.hooksPath", "githooks"], ctx)
-
-
-def _adr_freshness_apply(ctx: Ctx) -> None:
-    _run(_adr_freshness_cmd("apply"), ctx)
-    _run(_adr_freshness_cmd("check"), ctx)
-
-
-def _adr_freshness_check(ctx: Ctx) -> None:
-    _run(_adr_freshness_cmd("check"), ctx)
 
 
 def _build_dotnet(ctx: Ctx) -> None:
@@ -125,7 +112,6 @@ CI_CHECKS = (
     ("plugin-subscriptions", _plugin_subscriptions_check, "repair the native Codex plugin declaration"),
     ("script-behavior-tests", _test_script_behaviors, "py -3 -m pytest scripts/tests -q"),
     ("tool-behavior-tests", _test_tool_behaviors, "py -3 -m pytest tools/tests -q"),
-    ("decision-freshness", _adr_freshness_check, "py -3 tools/run.py ci --apply"),
     ("dotnet-build", _build_dotnet, "dotnet build"),
     ("dotnet-test", _test_dotnet, "dotnet test"),
     ("web", _build_web, "npm --prefix src/WildBunch.Web run build"),
@@ -147,7 +133,6 @@ def _ci_apply(ctx: Ctx) -> None:
     _operating_standards_check(ctx)
     _agent_routers_check(ctx)
     _plugin_subscriptions_check(ctx)
-    _adr_freshness_apply(ctx)
 
 
 def _ci_check(ctx: Ctx) -> None:

@@ -2,86 +2,40 @@
 
 ## Status
 
-`planned` | `live` | `superseded` | `deprecated` | `rejected`
+`planned` | `live` | `partially superseded` | `superseded` | `deprecated` | `rejected`
 
-## Dated Status History
+## Dated History
 
-- `YYYY-MM-DD` - status change and short reason.
+- `YYYY-MM-DD` - what was decided or what changed, with the reason when known.
 
 ## Decision Type
 
-One or more values such as `architecture`, `gameplay`, `ui`, `persistence`,
-`operations`, `content`, `testing`, or `process`.
+One or more of `architecture`, `gameplay`, `ui`, `persistence`, `operations`,
+`content`, `testing`, or `process`.
 
 ## Related ADRs
 
 - `depends on`: ADR-0000
-- `informs`: ADR-0000
+- `supersedes`: ADR-0000
+- `superseded by`: ADR-0000
 - `related to`: ADR-0000
 
 ## Context
 
-What problem exists, what source surfaces matter, and why this decision needed a
-stable record.
+What durable question required a decision and what constraints mattered at the time.
 
-## Decision Drivers
+## Decision
 
-- Constraint or invariant one.
-- Constraint or invariant two.
-- Constraint or invariant three.
+State the decision and the scope it governs. Keep historical facts tied to the time of the decision.
 
-## Decision Summary
+## Rationale and Alternatives
 
-Short statement of what was decided.
+Record why this option was chosen and the relevant alternatives or tradeoffs. Omit this section when the source provides no reliable rationale; do not invent one.
 
-## Detailed Decision Breakdown
+## Consequences
 
-Describe the shape of the decision, why it was chosen, and how it behaves.
+Describe durable effects of the decision, including material constraints or risks that follow from it.
 
-## Options Considered and Rejected
+## Successors and Surviving Scope
 
-- Option one.
-- Option two.
-
-## When a Rejected Option Would Have Been Better
-
-Describe the niche scenario where an alternative would have won.
-
-## Benefits
-
-- Benefit one.
-- Benefit two.
-
-## Accepted Tradeoffs
-
-- Tradeoff one.
-- Tradeoff two.
-
-## Risks
-
-- Risk one.
-- Risk two.
-
-## Consequences for Future Work
-
-Explain what the decision makes easier, harder, or more explicit later.
-
-## Implementation Status or Plan
-
-State whether the decision is live, planned, or explicitly not implemented yet.
-
-## Related Stable Source Surfaces
-
-- `src/...`
-- `tests/...`
-- `docs/...`
-
-## Proof of Implementation or Explicit Non-Implementation
-
-Point to the source surfaces that prove the live behavior, or say explicitly
-that this is a planned/future constraint with no implementation yet.
-
-## Review Triggers
-
-- When should this ADR be revisited?
-- What would cause the decision to become obsolete?
+For a partial or full supersession, link the successor and state which parts of this decision remain authoritative. Omit this section when there is no successor.

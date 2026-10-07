@@ -29,14 +29,15 @@ Before implementation, read the applicable [backend](../unslop/backend-architect
 
 1. Read the approved plan and invoke only the focused Wild Bunch capability
    skills whose declared boundaries the change crosses.
-2. Bind those decisions to the applicable doctrine and contracts below.
-3. Use behavior-focused test development to construct each observable behavior through
+2. Follow the decisions named by the plan; use the [decision-record playbook](../playbooks/decision-records.md) to record any discovered divergence or material removal in the same change.
+3. Bind those decisions to the applicable doctrine and contracts below.
+4. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
-4. When maintained metadata needs refreshing, run the explicit apply command
+5. When maintained metadata needs refreshing, run the explicit apply command
    and review its changes before staging. Then stage the intended tree and use
    the normal hooked commit; the hook validates the staged candidate and never
    applies or stages corrections.
-5. Use evidence-based result verification to reconcile the committed head with
+6. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 
 ## Doctrine and contracts
@@ -58,7 +59,7 @@ check-only hook over the exact staged snapshot.
 
 - [ ] The implemented behavior has focused automated or browser proof.
 - [ ] Applicable doctrine and contracts are satisfied at the committed head.
-- [ ] Generated ADR freshness metadata is current when applicable.
+- [ ] Required ADR history and catalogue changes are included, or the unchanged decision boundary is understood.
 - [ ] The normal hooked commit passed the canonical staged-snapshot gate.
 
 ## Prohibited combinations

@@ -82,3 +82,4 @@ service at `localhost:5435`.
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
 - [Pull request](../runbooks/pr.md)
+- [Decision records](decision-records.md) - when an invariant, test boundary, or validation lane becomes a durable repository rule.

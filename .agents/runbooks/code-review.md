@@ -27,9 +27,10 @@ Reviewing a Wild Bunch diff, branch, or pull request.
    the applicable Wild Bunch capability and anti-slop lenses.
 2. Check the diff against the doctrine, contracts, local commands, and evidence
    obligations below rather than against the PR summary.
-3. Route every accepted finding through review finding analysis and correction; re-check the
+3. Compare relevant decisions from the [catalogue](../../docs/decisions/README.md) with the diff and check required history updates using the [decision-record playbook](../playbooks/decision-records.md).
+4. Route every accepted finding through review finding analysis and correction; re-check the
    repaired diff rather than trusting the response.
-4. Use evidence-based result verification to bind the final verdict to the
+5. Use evidence-based result verification to bind the final verdict to the
    current local head and, when a PR exists, its remote head and checks.
 
 ## Doctrine and contracts

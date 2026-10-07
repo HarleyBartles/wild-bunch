@@ -64,3 +64,4 @@ Adding or changing a Wild Bunch developer control or panel.
 
 - [Design](../runbooks/design.md)
 - [Implementing](../runbooks/implementing.md)
+- [Decision records](decision-records.md) - when a developer-control invariant is made, changed, or retired.
