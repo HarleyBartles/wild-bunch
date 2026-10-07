@@ -1,5 +1,7 @@
 # Validation doctrine
 
+Before work governed by this doctrine, read [code-review guards](../unslop/code-review.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+
 This file records Wild Bunch test-lane ownership and invariants. The executable
 sequence and environment setup live in the [testing playbook](../playbooks/testing.md).
 

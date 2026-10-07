@@ -1,0 +1,1 @@
+When working in `scripts/`, read the [script guidance](README.md) and applicable [unslop profiles](../.agents/unslop/README.md) before changing or running repository helpers; outside this tree these local pointers do not apply.

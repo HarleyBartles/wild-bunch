@@ -22,6 +22,10 @@ truth, or a sensitive mutation boundary.
 
 - None.
 
+## Unslop before work
+
+Before assessing game-data or API boundaries, read [backend guards](../unslop/backend-architecture.md) in full; browser visibility also requires [play-surface UI](../unslop/play-surface-ui.md), and developer capabilities require [dev overlay](../unslop/dev-overlay.md). Follow [selection and observations](../unslop/README.md) for newly encountered patterns.
+
 ## Composition
 
 1. Use scope, authority, source-truth, and consequence review to identify the authority, scope, hidden truth, and

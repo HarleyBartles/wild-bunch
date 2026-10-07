@@ -8,15 +8,15 @@ assessment here.
 
 ## root-agent-router
 
-**Assessment:** Self-certified. The root router is 34 lines, within Wild
-Bunch's 40-line budget, and points to authoritative contribution, workflow,
-review, publication, testing, security, and subscription guidance. Only the
-root file is an `AGENTS.md`; Wild Bunch has no need for additional routers at
-arbitrary directory boundaries. `scripts/check_agent_routers.py` checks
-tracked router size, required root routes, local links, and the 15-line,
-single scoped sentence policy if a natural domain router is added. The
-repository check runs it locally and in hosted CI. Human review remains
-responsible for usefulness, safe scope, and whether a new router is needed.
+**Assessment:** Self-certified. The root router is 35 lines, within Wild Bunch's 40-line budget, and points to authoritative contribution, workflow, review, publication, testing, security, subscription and unslop guidance. Thin scoped routers cover established scripts, web, game-content, asset and agent-guidance boundaries; [placement policy](../doctrine/repo-runbook-policy.md#scoped-agent-entrypoints) records their one-sentence scope, read condition and outside-scope disqualifier. They are the scoped pointers for both Codex and Devin; the separate Devin rules were replaced. `scripts/check_agent_routers.py` checks tracked router size, required root routes, local links and the 15-line, single scoped sentence policy through the canonical hook and CI. Semantic review remains responsible for usefulness, safe scope, disqualifiers, harness-independent pointers and whether a new router is needed.
+
+## unslop
+
+**Assessment:** Self-certified for the repository-owned maintenance and routing mechanism. Canonical profiles and observations live in `.agents/unslop/`; the five existing profiles were moved there without retaining competing contract/scoped copies. `README.md` requires full reading of applicable profiles before investigation, design, planning, implementation and review, selects guards by work class, and defines evidence-based maintenance. `routing.md` addresses the concrete discovery gap recorded as U-001 in `observations.md`. Historical recurrence and prior agents' reading or compliance are unknown, not inferred from existing profile content.
+
+Root `AGENTS.md` and `CONTRIBUTING.md` route every repository task to selection and observations. Lifecycle runbooks name the relevant writing, backend, web, dev and review profiles directly. Topical playbooks, owning doctrine, all six repository skills and the thin scoped AGENTS pointers link the profiles at their respective decision points. Profile changes must preserve those routes, applicability, corrective behavior and false-positive boundaries. Occurrence records distinguish separate incidents from duplicate reports and distinguish missing discovery, ineffective correction and ignored useful guidance. Agents revise, narrow, consolidate or retire guards based on those observations while preserving useful evidence.
+
+Mechanical checks establish subscription structure, root routes and local link facts. Semantic review established that the work-point instructions name the profiles to read and that U-001 maps to a corrective guard and feedback loop; U-002 records removal of an obsolete location-only detector rather than freezing the new layout in a replacement test. Neither link existence nor a passing CI gate proves that a later agent read a guard or that it prevented a defect. The upcoming interactive stable-0.1.0 audit and later work must assess observed reach and effect, leave unknown outcomes unknown, and update guards and this assessment when evidence changes the mechanism. This adoption adds no required plugin dependency or telemetry service.
 
 ## runbook-composition
 
@@ -52,8 +52,7 @@ in detached committed-tree parity mode. The behavior fixture verified that a
 staged failing configuration remains a failure despite an unstaged repair,
 and that unrelated tracked and untracked changes survive both failed and
 successful runs. A fixture verifies CRLF normalization stays within the
-declared generated output while unrelated CRLF work survives. The canonical
-gate runs the 41 Python behavior tests. All current scoped checks have Windows
+declared generated output while unrelated CRLF work survives. The canonical gate runs the repository Python behavior fixtures. All current scoped checks have Windows
 execution evidence. The complete hook also passed a clean detached clone of
 commit `df6a1190c23a59723380969646a3b8e11405d847`, with no `.gitmodules` file
 or Marketplace source submodule. GitHub intentionally skips Draft PR checks;
@@ -80,8 +79,7 @@ plan and spec through its completing PR.
 custody. `.agents/plugins/marketplace.json` declares Game Studio, .NET Pack,
 Architecture Pack, and Frontend Pack as Git-subdirectory dependencies;
 `.codex/config.toml` registers the repository catalog and enables these four
-identities. Payload refs intentionally follow upstream `main`. Devin has
-repository rules but no declared plugin dependency. The six
+identities. Payload refs intentionally follow upstream `main`. Codex and Devin use the same scoped AGENTS pointers; Devin has no separate rule layer or declared plugin dependency. The six
 `.agents/skills/*/SKILL.md` files are repository-authored, and each frontmatter
 name matches its directory. `scripts/check_plugin_subscriptions.py` checks
 local Codex syntax, paths, selectors, catalog registration, and activation

@@ -21,6 +21,10 @@ sheet slicing, background removal, normalization, staging, or promotion.
 
 - None.
 
+## Unslop before work
+
+Before authoring selection notes or assessing player presentation, read [writing](../unslop/writing.md) and the relevant [play-surface UI guards](../unslop/play-surface-ui.md) in full. Follow [selection and observations](../unslop/README.md); purely mechanical asset transforms do not acquire unrelated gameplay obligations.
+
 ## Composition
 
 1. Use `/town-hub-asset-judgment` to accept the source family, view, and camera

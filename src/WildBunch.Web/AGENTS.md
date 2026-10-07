@@ -1,0 +1,1 @@
+When working in `src/WildBunch.Web/`, read [frontend doctrine](../../.agents/doctrine/frontend-standards.md), [play-surface guards](../../.agents/unslop/play-surface-ui.md) and the [dev-overlay](../../.agents/playbooks/dev-overlay.md) or [testing](../../.agents/playbooks/testing.md) playbook when that concern applies; outside this tree these local pointers do not apply.

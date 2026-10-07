@@ -1,0 +1,1 @@
+When working in `src/WildBunch.Assets/`, read [asset operations](docs/asset-operations.md), the applicable [asset processing playbook](../../.agents/playbooks/asset-selection-cut-normalization.md) and [unslop profiles](../../.agents/unslop/README.md) before editing, generating or promoting assets; outside this tree these local pointers do not apply.

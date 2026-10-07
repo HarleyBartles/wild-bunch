@@ -12,6 +12,8 @@ metadata:
 
 # Dev Control Boundary
 
+Before using this skill, read the applicable [dev-overlay](../../unslop/dev-overlay.md) and [backend](../../unslop/backend-architecture.md) guards in full. Follow [selection and observations](../../unslop/README.md) when scope changes or a distinct incident warrants recording.
+
 ## Owned decision
 
 Classify a developer control as lawful state preparation or an unlawful forced

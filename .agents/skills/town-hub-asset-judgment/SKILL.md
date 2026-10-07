@@ -12,6 +12,8 @@ metadata:
 
 # Town Hub Asset Judgment
 
+Before using this skill, read the applicable [play-surface UI](../../unslop/play-surface-ui.md) for player presentation and [writing](../../unslop/writing.md) for briefs guards in full. Follow [selection and observations](../../unslop/README.md) when scope changes or a distinct incident warrants recording.
+
 ## Owned decision
 
 Decide whether a candidate belongs to its intended family, satisfies its camera

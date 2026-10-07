@@ -12,6 +12,8 @@ metadata:
 
 # Wild Bunch .NET Architecture
 
+Before using this skill, read the applicable [backend architecture](../../unslop/backend-architecture.md) guards in full. Follow [selection and observations](../../unslop/README.md) when scope changes or a distinct incident warrants recording.
+
 ## Owned decision
 
 Decide which Wild Bunch .NET layer owns a change that crosses domain,

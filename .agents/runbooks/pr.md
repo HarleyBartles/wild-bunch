@@ -21,7 +21,13 @@ Opening, updating, or publishing a Wild Bunch pull request.
 
 - None.
 
+## Unslop before work
+
+Before authoring the PR, read [writing](../unslop/writing.md) and [code-review guards](../unslop/code-review.md) in full; follow their direct links for changed concerns. Confirm the current diff has been reviewed against those guards and update [distinct observations](../unslop/README.md#record-and-improve) when there is new evidence, without adding read or test receipts.
+
 ## Composition
+
+For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan delivery contract](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md#develop-integration-and-per-plan-delivery) before publication. Its explicit user-selected develop base overrides the main defaults below; carry fresh per-plan worktrees, successor-artifact retirement and development-version advancement into the PR. Use the base specified by the active approved work rather than assuming main from this runbook.
 
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.

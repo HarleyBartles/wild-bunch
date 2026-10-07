@@ -26,6 +26,19 @@ Before editing or promoting assets in this project, read:
 - `.agents/doctrine/art/town-hub-ground.md` (for ground, road, or prop work)
 - `.agents/playbooks/asset-selection-cut-normalization.md`
 
+## Bible custody
+
+- Use `*-bible-master.md` for the umbrella document owning a family set's routing table and shared contract; use `*-bible.md` for family-specific or rule-specific guidance beneath it.
+- Keep one master per family set and keep its family bibles in the matching subfolder.
+- Before creating or revising a bible, decide whether its rule belongs in the family master, a family bible or a project-level document.
+- Extend an existing family and routing table instead of creating an ambiguous naming branch; keep routing tables prominent and current.
+- Apply the stale-guidance correction rule below when a bible is misleading, incomplete or wrong.
+
+## Pipeline custody
+
+- Keep asset-pipeline code specific to this project in `src/WildBunch.Assets/scripts/`.
+- `src/WildBunch.Assets/scripts/image_asset_pipeline.py` is the canonical asset staging and promotion implementation; `scripts/image_asset_pipeline.py` at repo root is its compatibility wrapper.
+
 ## Rules
 
 - Keep source custody in `source/`.

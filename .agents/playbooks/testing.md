@@ -21,6 +21,10 @@ Adding, changing, or running Wild Bunch tests and validation gates.
 
 - None.
 
+## Unslop before work
+
+Before test design or assessment, read [backend guards](../unslop/backend-architecture.md) for domain/API/persistence/replay tests and [play-surface UI guards](../unslop/play-surface-ui.md) for web tests in full; dev tests also require [dev overlay](../unslop/dev-overlay.md). Apply [code-review guards](../unslop/code-review.md) when judging claimed coverage. Record distinct misleading-proof incidents through the [observation loop](../unslop/README.md#record-and-improve), not a log of test runs.
+
 ## Composition
 
 1. Use the owning capability and validation doctrine to select the smallest

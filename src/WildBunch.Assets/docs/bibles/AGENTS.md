@@ -1,0 +1,1 @@
+When working in `src/WildBunch.Assets/docs/bibles/`, read [bible custody](../asset-operations.md#bible-custody) and [writing guards](../../../../.agents/unslop/writing.md) before creating or revising family guidance; outside this tree these local pointers do not apply.

@@ -38,8 +38,7 @@ Reviewing a Wild Bunch diff, branch, or pull request.
   and [event-sourcing integrity](../doctrine/event-sourcing-integrity.md).
 - Frontend changes: [frontend standards](../doctrine/frontend-standards.md).
 - Tests: [validation doctrine](../doctrine/validation-policy.md).
-- Apply relevant binding profiles from `../contracts/unslop/` and scoped
-  contract homes; use an available review capability for portable profiles.
+- Read [code-review guards](../unslop/code-review.md) in full before review, plus [backend](../unslop/backend-architecture.md), [play-surface UI](../unslop/play-surface-ui.md), [dev overlay](../unslop/dev-overlay.md) and [writing](../unslop/writing.md) for touched concerns. Changed agent guidance also requires [routing guards](../unslop/routing.md). Select and maintain observations through the [unslop loop](../unslop/README.md).
 
 ## Local commands and paths
 

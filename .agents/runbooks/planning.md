@@ -21,6 +21,10 @@ Turning settled Wild Bunch requirements into an executable plan or roadmap.
 
 - None.
 
+## Unslop before work
+
+Before planning, read [writing guards](../unslop/writing.md) in full and the [backend](../unslop/backend-architecture.md), [web](../unslop/play-surface-ui.md) or [dev-overlay](../unslop/dev-overlay.md) profiles for the behavior being planned. Read [routing guards](../unslop/routing.md) when planning agent guidance. Name those same profiles at the relevant execution tasks; follow [selection and observations](../unslop/README.md).
+
 ## Composition
 
 1. Select exactly one owner: spec-to-plan authoring for a bounded change or

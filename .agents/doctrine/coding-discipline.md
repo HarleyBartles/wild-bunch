@@ -1,5 +1,7 @@
 # Coding Discipline
 
+Before work governed by this doctrine, read [writing guards](../unslop/writing.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+
 ## Code style guidelines
 
 This document defines the code style and coding discipline for Wild Bunch. See the sections below for scope, architecture-stack, and refactoring rules.

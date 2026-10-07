@@ -19,8 +19,7 @@ These are the binding standards for the Wild Bunch web app under
 Player-facing surfaces must be in-world, player-usable surfaces, not cockpit dashboards or product chrome. If a label, counter, callout, modal title, or overlay header does not help the player read or use the surface, cut it.
 
 - Durable play surfaces belong in the HUD/shell or another player-facing route, not in `DebugCockpitRoute`. The debug cockpit can remain utilitarian scaffolding.
-- Player-facing surfaces conform to
-  `src/WildBunch.Web/.agents/contracts/unslop/play-surface-ui.md`.
+- Before browser design, implementation or review, read [play-surface UI guards](../unslop/play-surface-ui.md) in full. For developer panels, also read [dev-overlay guards](../unslop/dev-overlay.md). Apply their relevant scope and maintain distinct observations through the [unslop loop](../unslop/README.md#record-and-improve).
 
 ## Source Truth
 
