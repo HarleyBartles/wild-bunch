@@ -33,8 +33,9 @@ Before test design or assessment, read [backend guards](../unslop/backend-archit
    PostgreSQL or browser evidence only when the boundary requires it.
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
-4. Refresh ADR freshness metadata when applicable, stage the intended tree,
-   and let the normal hook run the canonical check.
+4. When maintained metadata needs refreshing, run the explicit apply command
+   before staging and review the changes it produces. Stage the intended tree,
+   then let the normal check-only hook validate it.
 5. Use evidence-based result verification to report focused and canonical proof
    for the same tested state.
 
@@ -52,13 +53,12 @@ Before test design or assessment, read [backend guards](../unslop/backend-archit
 py -3 tools\run.py ci --check
 ```
 
-For hook setup or repair, run `ci --apply`; it activates the tracked hook,
-refreshes ADR freshness metadata, and checks repository-owned declarations. It
-does not regenerate agent surfaces or install subscribed assets. Hook custody
-is defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
+For hook setup or repository-owned metadata refresh, run `ci --apply` explicitly
+and review its changes before staging. The pre-commit hook invokes only
+`ci --check`; it does not apply changes or stage corrections. Hook custody is
+defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
 
-Use `ci --apply` when hook activation or ADR freshness metadata needs updating;
-use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
+Use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence
 --startup-project src\WildBunch.Api`. Direct PostgreSQL checks use the shared
 service at `localhost:5435`.
@@ -74,7 +74,8 @@ service at `localhost:5435`.
 ## Prohibited combinations
 
 - Do not treat a broad green suite as proof of an unexercised behavior.
-- Do not run `ci --apply` as the final non-mutating proof.
+- Do not treat `ci --apply` as validation proof; use `ci --check` and the
+  check-only commit hook.
 
 ## Runbook routing
 

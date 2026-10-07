@@ -47,6 +47,8 @@
 - Modify: `.agents/playbooks/completing-plans.md`
 - Modify: `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
+- Modify: `.agents/roadmaps/2026-10-06-cloud-playability.md`
+- Modify: `.agents/investigations/stable-0.1.0/2026-10-06-stable-0.1.0-investigation.md`
 - Modify: `scripts/tests/test_precommit_candidate.py`
 - Delete: `.agents/plans/2026-09-26-bunch-151-worldgenerated-legacy-events.md`
 - Delete: `.agents/plans/2026-09-29-ambient-opt-in-standards-and-decisions-home.md`
@@ -61,9 +63,9 @@
 
 - [ ] **Step 3: Run the hook behavior suite after the implementation.** Run `py -3 -m pytest scripts/tests/test_precommit_candidate.py -q`; confirm success and failure preserve staged tree, HEAD, candidate contents, restored unstaged bytes, and untracked bytes, and that stale generated content fails without being repaired or staged.
 
-- [ ] **Step 5: Update live workflow instructions and certification.** Change the implementing, PR, testing, and completing-plans guides so they say to run explicit apply/refresh operations before staging when needed and then rely on the check-only hook. Update the tracked-hook assessment to describe the new behavior and state plainly that strict certification remains pending if the pinned standard's hook-side normalization clause is not met; do not claim Windows/Linux or hosted evidence that has not run. Keep `ci --apply` for explicit existing maintenance and `ci --check` for validation.
+- [ ] **Step 4: Update live workflow instructions and certification.** Change the implementing, PR, testing, and completing-plans guides so they say to run explicit apply/refresh operations before staging when needed and then rely on the check-only hook. Update the tracked-hook assessment to describe the new behavior and state plainly that certification is blocked by the pinned standard's hook-side normalization clause conflicting with the approved no-mutation policy; hosted Linux evidence is a separate pending parity result. Keep `ci --apply` for explicit existing maintenance and `ci --check` for validation.
 
-- [ ] **Step 6: Retire completed and superseded predecessor plans.** Verify the already confirmed merged PRs #181, #182, and #184 remain the delivery evidence for the BUNCH-151, ambient standards, and AOM self-certification plans; their durable event, repository-standard, and certification outcomes now live in current source. Record in the roadmap that the unapproved versioned-release-foundation draft is superseded by the accepted specification and roadmap and that release implementation will be planned JIT from row 18. Confirm no active links remain, then remove these four stale plans in this first substantive commit. Preserve the current plan, current spec/roadmap, Cloud roadmap/spec, and all stable-0.1.0 investigation records.
+- [ ] **Step 5: Retire completed and superseded predecessor plans.** Verify the already confirmed merged PRs #181, #182, and #184 remain the delivery evidence for the BUNCH-151, ambient standards, and AOM self-certification plans; their durable event, repository-standard, and certification outcomes now live in current source. Record in the baseline spec, stable-0.1.0 roadmap, Cloud roadmap and investigation that the blocked versioned-release-foundation draft is superseded by the accepted specification and roadmap and that release implementation will be planned JIT from row 18. Confirm no active links remain, then remove these four stale plans in this first substantive commit. Preserve the current plan, current spec/roadmap, Cloud spec, and all stable-0.1.0 investigation records.
 
 - [ ] **Step 6: Commit the first substantive task.** Run `git diff --check`, inspect the exact staged candidate, and commit normally with `fix: make repository validation check-only`. The updated tracked hook must validate this commit without applying or staging changes.
 

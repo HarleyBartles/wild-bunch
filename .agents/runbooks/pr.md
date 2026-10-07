@@ -43,7 +43,8 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 - This runbook is the publication-proof surface routed from root
   [AGENTS.md](../../AGENTS.md).
 - [Repository command declaration](../contracts/repo-standards-commands.json)
-  defines the canonical apply and check capabilities.
+  defines the canonical apply and check capabilities; pre-commit and hosted
+  validation invoke only check.
 
 ## Local commands and paths
 
@@ -52,6 +53,9 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 - Apply: `py -3 tools/run.py ci --apply`
 - Check: `py -3 tools/run.py ci --check`
 - Diagnostics: `py -3 tools/run.py ci --check --diagnostics`
+- Run apply explicitly before staging when repository-owned metadata needs
+  refreshing; review and stage those changes deliberately.
+- The commit hook validates the staged candidate without mutating or staging it.
 - Pull-request jobs run when the PR is not Draft.
 - Direct pushes to `main` require explicit authorization.
 
