@@ -39,7 +39,6 @@
 
 **Files:**
 - Modify: `githooks/pre-commit`
-- Modify: `tools/run.py`
 - Modify: `.agents/contracts/repo-standards-commands.json`
 - Modify: `.agents/contracts/standards-certification.md`
 - Modify: `.agents/runbooks/implementing.md`
@@ -49,7 +48,6 @@
 - Modify: `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
 - Modify: `scripts/tests/test_precommit_candidate.py`
-- Create: `tools/tests/test_run.py`
 - Delete: `.agents/plans/2026-09-26-bunch-151-worldgenerated-legacy-events.md`
 - Delete: `.agents/plans/2026-09-29-ambient-opt-in-standards-and-decisions-home.md`
 - Delete: `.agents/plans/2026-10-02-aom-self-cert-migration.md`
@@ -61,17 +59,33 @@
 
 - [ ] **Step 2: Change the hook to validate only.** Preserve fail-closed candidate materialization and restoration for local partial staging, but remove `run_declared apply`, generated-path parsing/staging, and any index update. In hosted mode require the supplied commit to equal detached `HEAD`, require a clean checkout, and run the declared check without `git reset`. After validation, fail if the staged tree, HEAD, or candidate worktree changed. Remove `generated_paths` from the command declaration because the hook no longer owns generated-output staging.
 
-- [ ] **Step 3: Make the whitespace gate inspect the candidate.** Update the runner to use `git diff --check HEAD` for the local materialized candidate and `git diff --check <commit>^ <commit>` when `REPO_STANDARDS_HOSTED_COMMIT` is set. Add temporary-repository behavior cases in `tools/tests/test_run.py` for whitespace errors in both states and for clean candidates. Keep command construction argument-safe and preserve subprocess diagnostics/status.
-
-- [ ] **Step 4: Run the hook and runner behavior suites.** Run `py -3 -m pytest scripts/tests/test_precommit_candidate.py tools/tests/test_run.py -q`; compare staged tree, HEAD, staged file contents, restored unstaged bytes, and untracked bytes in the test outcomes.
+- [ ] **Step 3: Run the hook behavior suite after the implementation.** Run `py -3 -m pytest scripts/tests/test_precommit_candidate.py -q`; confirm success and failure preserve staged tree, HEAD, candidate contents, restored unstaged bytes, and untracked bytes, and that stale generated content fails without being repaired or staged.
 
 - [ ] **Step 5: Update live workflow instructions and certification.** Change the implementing, PR, testing, and completing-plans guides so they say to run explicit apply/refresh operations before staging when needed and then rely on the check-only hook. Update the tracked-hook assessment to describe the new behavior and state plainly that strict certification remains pending if the pinned standard's hook-side normalization clause is not met; do not claim Windows/Linux or hosted evidence that has not run. Keep `ci --apply` for explicit existing maintenance and `ci --check` for validation.
 
 - [ ] **Step 6: Retire completed and superseded predecessor plans.** Verify the already confirmed merged PRs #181, #182, and #184 remain the delivery evidence for the BUNCH-151, ambient standards, and AOM self-certification plans; their durable event, repository-standard, and certification outcomes now live in current source. Record in the roadmap that the unapproved versioned-release-foundation draft is superseded by the accepted specification and roadmap and that release implementation will be planned JIT from row 18. Confirm no active links remain, then remove these four stale plans in this first substantive commit. Preserve the current plan, current spec/roadmap, Cloud roadmap/spec, and all stable-0.1.0 investigation records.
 
-- [ ] **Step 7: Commit the first substantive task.** Run `git diff --check`, inspect the exact staged candidate, and commit normally with `fix: make repository validation check-only`. The updated tracked hook must validate this commit without applying or staging changes.
+- [ ] **Step 6: Commit the first substantive task.** Run `git diff --check`, inspect the exact staged candidate, and commit normally with `fix: make repository validation check-only`. The updated tracked hook must validate this commit without applying or staging changes.
 
-### Task 2: Generate and validate one development build identity
+### Task 2: Make whitespace validation inspect the intended candidate
+
+**Files:**
+- Modify: `tools/run.py`
+- Move: `scripts/tests/test_run.py` to `tools/tests/test_run.py`
+
+**Interfaces:** `tools/` owns command-bus behavior tests in `tools/tests/`; the canonical runner executes both command-bus tests and repo-script behavior tests. The whitespace checker compares `HEAD` to the materialized local candidate, or the hosted commit to its parent, without resetting refs or staging changes.
+
+- [ ] **Step 1: Put command-bus behavior tests in their owning surface.** Move the existing runner tests from `scripts/tests/test_run.py` into `tools/tests/test_run.py`. Keep meaningful behavior tests for diagnostic aggregation and invalid CLI combinations; omit tests that only freeze private helper sequencing or assert implementation command strings. Add temporary-Git behavior cases for a clean candidate and trailing whitespace in both a local working-tree candidate and a hosted commit selected by `REPO_STANDARDS_HOSTED_COMMIT=HEAD`. Assert the actual checker passes/fails for the actual Git diff. Run `py -3 -m pytest tools/tests/test_run.py -q` and witness the whitespace cases fail before implementation.
+
+- [ ] **Step 2: Run command-bus tests from the canonical runner.** Add a command-bus test lane to `tools/run.py` so `ci --check` runs `tools/tests` as well as `scripts/tests`. Verify the test lane reports failures through the existing diagnostics behavior.
+
+- [ ] **Step 3: Implement candidate-aware whitespace checking.** Use `git diff --check HEAD` for local materialized candidates and `git diff --check <commit>^ <commit>` for hosted mode. Keep command construction argument-safe and preserve subprocess diagnostics and status.
+
+- [ ] **Step 4: Run focused and canonical command-bus tests.** Run `py -3 -m pytest tools/tests -q`; confirm whitespace defects fail in both candidate modes, clean candidates pass, and `ci --check` includes the tools behavior suite.
+
+- [ ] **Step 5: Commit the runner task.** Commit normally with `fix: validate whitespace in the candidate tree` and let the check-only hook run the canonical gate.
+
+### Task 3: Generate and validate one development build identity
 
 **Files:**
 - Create: `tools/versioning.py`
@@ -99,7 +113,7 @@
 
 - [ ] **Step 7: Commit the identity task.** Commit with `build: generate web development identity`; the check-only hook validates the staged candidate and may create only ignored build/test outputs.
 
-### Task 3: Verify the complete first slice and prepare its develop PR
+### Task 4: Verify the complete first slice and prepare its develop PR
 
 - [ ] **Step 1: Verify required local prerequisites.** Use `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure` for the PostgreSQL lane and install the declared Python test requirements if they are absent. Do not substitute a skipped integration lane for evidence.
 
