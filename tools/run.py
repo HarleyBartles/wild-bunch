@@ -69,6 +69,10 @@ def _test_script_behaviors(ctx: Ctx) -> None:
     _run([sys.executable, "-m", "pytest", "scripts/tests", "-q"], ctx)
 
 
+def _test_tool_behaviors(ctx: Ctx) -> None:
+    _run([sys.executable, "-m", "pytest", "tools/tests", "-q"], ctx)
+
+
 def _activate_hook(ctx: Ctx) -> None:
     _run(["git", "config", "core.hooksPath", "githooks"], ctx)
 
@@ -99,7 +103,11 @@ def _build_web(ctx: Ctx) -> None:
 
 
 def _diff_check(ctx: Ctx) -> None:
-    _run(["git", "diff", "--check"], ctx)
+    hosted_commit = os.environ.get("REPO_STANDARDS_HOSTED_COMMIT")
+    if hosted_commit:
+        _run(["git", "diff", "--check", f"{hosted_commit}^", hosted_commit], ctx)
+        return
+    _run(["git", "diff", "--check", "HEAD"], ctx)
 
 
 CI_CHECKS = (
@@ -107,11 +115,16 @@ CI_CHECKS = (
     ("agent-routers", _agent_routers_check, "repair the reported AGENTS.md router contract"),
     ("plugin-subscriptions", _plugin_subscriptions_check, "repair the native Codex plugin declaration"),
     ("script-behavior-tests", _test_script_behaviors, "py -3 -m pytest scripts/tests -q"),
+    ("tool-behavior-tests", _test_tool_behaviors, "py -3 -m pytest tools/tests -q"),
     ("decision-freshness", _adr_freshness_check, "py -3 tools/run.py ci --apply"),
     ("dotnet-build", _build_dotnet, "dotnet build"),
     ("dotnet-test", _test_dotnet, "dotnet test"),
     ("web", _build_web, "npm --prefix src/WildBunch.Web run build"),
-    ("diff-check", _diff_check, "git diff --check"),
+    (
+        "diff-check",
+        _diff_check,
+        "git diff --check HEAD (or git diff --check <commit>^ <commit> for hosted mode)",
+    ),
 )
 
 
