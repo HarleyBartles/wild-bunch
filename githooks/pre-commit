@@ -110,6 +110,13 @@ else
     git stash push --quiet --keep-index --include-untracked -m "repo-standards pre-commit untracked snapshot $$"
     UNTRACKED_STASHED=1
   fi
+  # Intent-to-add entries are absent from the index tree. Remove their
+  # worktree placeholders so checks see the same candidate as git write-tree.
+  if [ -s "$INTENT_TO_ADD_PATHS" ]; then
+    while IFS= read -r -d '' path; do
+      rm -f -- "$path"
+    done < "$INTENT_TO_ADD_PATHS"
+  fi
   TREE_BEFORE=$(git write-tree)
   git diff --binary --no-ext-diff --full-index -- > "$EXPECTED_WORKTREE_DIFF"
 fi

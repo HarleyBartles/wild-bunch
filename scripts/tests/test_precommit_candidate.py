@@ -41,6 +41,8 @@ def _fixture(root: Path) -> None:
         "from pathlib import Path\n"
         "import sys\n"
         "root = Path.cwd()\n"
+        "if (root / 'intent.txt').exists():\n"
+        "    raise SystemExit(29)\n"
         "if '--apply' in sys.argv:\n"
         "    out = root / 'docs/decisions/README.md'\n"
         "    out.parent.mkdir(parents=True, exist_ok=True)\n"
