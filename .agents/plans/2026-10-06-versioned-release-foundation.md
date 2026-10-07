@@ -1,6 +1,6 @@
 # Versioned Release Foundation Implementation Plan
 
-**Status:** Provisional follow-on draft. The [interactive stable-0.1.0 investigation](2026-10-06-stable-0.1.0-investigation.md) comes first; its agreed baseline and remediation scope must be reconciled into this draft before execution. This plan is not currently approved for implementation.
+**Status:** BLOCKED, provisional follow-on draft, not approved for execution. Review the [stable 0.1.0 baseline specification](../specs/2026-10-07-stable-0.1.0-baseline.md) and its subsequently accepted cleanup roadmap before reconciling this plan. The [investigation](../investigations/stable-0.1.0/README.md) contains findings, not executable plans. Do not begin the implementation checklist below until this draft has been revised and explicitly accepted.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` (recommended) or `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

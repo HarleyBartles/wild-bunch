@@ -2,6 +2,8 @@
 
 Status: approved for implementation planning on 2026-10-06. This document describes the agreed direction; planning approval does not authorize implementation or changes to the purchased server.
 
+**Dated clarification, 2026-10-07:** The user subsequently settled confirmed start over as immediate durable archival, independent of creating a replacement. That confirmed archival is not rolled back if the player leaves setup or never creates another game. The atomic-replacement language below must not override that rule; creation/retry still protects the per-user active-playthrough invariant and cannot archive another user's game. See the [lifecycle decision](../investigations/stable-0.1.0/2026-10-07-playthrough-lifecycle-contract.md) and proposed [baseline specification](2026-10-07-stable-0.1.0-baseline.md). Stable 0.1.0 cleanup precedes the separate account and deployment work.
+
 ## Outcome and scope
 
 Make Wild Bunch a public browser game on a subdomain of `harleybartles.com`, with Google sign-in, private user-owned playthroughs, and a repeatable versioned release process. Establish the release foundations before continuing feature iteration on `develop`. The initial game remains an incomplete pre-alpha; completing gameplay and promising stability are outside this scope.

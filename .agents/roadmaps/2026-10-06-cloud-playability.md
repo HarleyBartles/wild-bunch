@@ -8,7 +8,7 @@
 
 | # | Title | Status | Plan File | Commit | PR | Rating | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | Stable 0.1.0 investigation and baseline | writing | [Interactive investigation](../plans/2026-10-06-stable-0.1.0-investigation.md) | See Git history | None | Conversation only | Read the user's selected files in full, discuss findings and agree the baseline; retain the already-authorized unslop and scoped-router work. The [release foundation](../plans/2026-10-06-versioned-release-foundation.md) remains a provisional follow-on draft. |
+| 1 | Stable 0.1.0 investigation and baseline | writing | [Interactive investigation](../investigations/stable-0.1.0/2026-10-06-stable-0.1.0-investigation.md) | See Git history | None | Conversation only | Read the user's selected files in full, discuss findings and agree the baseline; retain the already-authorized unslop and scoped-router work. The [release foundation](../plans/2026-10-06-versioned-release-foundation.md) remains a provisional follow-on draft. |
 | 2 | Authenticated owned playthroughs | pending | Not authored | None | None | Conversation only | Google identity, event-backed ownership, atomic per-user active-session rule, authorization and browser resume. |
 | 3 | Public and preprod capability boundary | pending | Not authored | None | None | Conversation only | Public artifacts exclude dev UI and APIs; hosted preprod admits only Harley's stable Google identity. |
 | 4 | Reproducible container runtime | pending | Not authored | None | None | Conversation only | Same-origin web/API, separate Compose projects and PostgreSQL volumes, controlled migrations, durable authentication keys. |
@@ -19,9 +19,11 @@ Write only the next implementation plan after inspecting the repository then. Pe
 
 ## Slice boundaries and exits
 
+The first row is governed by the approved [stable 0.1.0 baseline specification](../specs/2026-10-07-stable-0.1.0-baseline.md) and its [cleanup roadmap](2026-10-07-stable-0.1.0-cleanup.md), supported by the [separate investigation records](../investigations/stable-0.1.0/README.md). Brainstorm and accept its implementation plans iteratively. The release-foundation draft alone cannot deliver that row or bypass cleanup.
+
 ### 1. Stable 0.1.0 investigation and release foundation
 
-Investigate interactively before defining remediation or executing the versioning draft. The user supplies the files to read in full; record findings and agreed baseline decisions in the [investigation tracker](../plans/2026-10-06-stable-0.1.0-investigation.md). Classify maintainability and harness issues separately from slop when appropriate. Recording a finding does not authorize its correction. Keep the completed, explicitly retained unslop adoption and scoped-router changes visible in that tracker.
+Investigate interactively before defining remediation or executing the versioning draft. The user supplies the files to read in full; record findings and agreed baseline decisions in the [investigation tracker](../investigations/stable-0.1.0/2026-10-06-stable-0.1.0-investigation.md). Classify maintainability and harness issues separately from slop when appropriate. Recording a finding does not authorize its correction. Keep the completed, explicitly retained unslop adoption and scoped-router changes visible in that tracker.
 
 After baseline agreement and approved remediation, reconcile the provisional release-foundation plan: establish `0.1.0` as the first proposed baseline version, a single authored version source and derived API/web build identity. Preserve the canonical tracked-hook validation lane and run it on `develop`, `release/*`, `hotfix/*` and `main`. Document feature, release, hotfix and merge-back routing, with immutable tags. Produce a reviewable change that can become the first development release before account or hosting work. Creating remote branches, changing repository rules and publishing the first release are explicit subsequent operational actions, not proof supplied by a local document.
 
