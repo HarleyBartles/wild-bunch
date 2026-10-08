@@ -66,9 +66,9 @@
 
 **Files:** `docs/features.md`; `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`; this plan; all Task 2-3 implementation and test paths.
 
-- [ ] Update PLAT-001 evidence to distinguish the new stale-read/coherent-query proof from still-unproven command-load interleaving, malformed cache recovery and partial diary restoration; keep its overall assessment partial.
-- [ ] Add a dated persistence follow-up for the completed PS-03/PS-07 query-read slice and the still-live row 07 scenarios; do not rewrite the static investigation findings as though they never existed.
-- [ ] Compare the committed diff against ADR-0028 and the event-sourcing integrity doctrine; leave ADR-0028 unchanged if the work only implements its existing event-authority/cache-rebuild decision, and state why in the plan.
-- [ ] Verify no migration, event payload or upcaster version changed; confirm generated web identity is `0.1.0-dev.16` and run focused tests for the affected PostgreSQL behavior.
+- [x] Update PLAT-001 evidence to distinguish the new stale-read/coherent-query proof from still-unproven command-load interleaving, malformed cache recovery and partial diary restoration; keep its overall assessment partial.
+- [x] Add a dated persistence follow-up for the completed PS-03/PS-07 query-read slice and the still-live row 07 scenarios; do not rewrite the static investigation findings as though they never existed.
+- [x] Compare the committed diff against ADR-0028 and the event-sourcing integrity doctrine; leave ADR-0028 unchanged because this implements its existing immutable-event/cache-rebuild and CQRS decision without changing an architecture boundary.
+- [x] Verify no migration, event payload or upcaster version changed; confirm generated web identity is `0.1.0-dev.16` and run focused tests for the affected PostgreSQL behavior.
 - [ ] Review the whole branch against this plan, the baseline spec, PLAT-001, backend architecture and code-review unslop profiles, and the code-review runbook; use and disclose the self-review fallback because the active runtime forbids subagents.
 - [ ] Open and attach a PR targeting `develop`; verify the exact source head and successful hosted canonical gate, merge under the active epic authorization, fast-forward `Z:\wild-bunch`, and clean this verified merged worktree and branch while retaining this plan until the next row 07 slice classifies it.
