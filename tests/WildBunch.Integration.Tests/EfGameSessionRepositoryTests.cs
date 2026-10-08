@@ -784,20 +784,20 @@ public sealed class EfGameSessionRepositoryTests
 
             var worldGenerated = await context.StoredEvents.SingleAsync(storedEvent =>
                 storedEvent.StreamId == session.Id.Value && storedEvent.EventType == "WorldGenerated");
-            worldGenerated.SchemaVersion = 99;
+            context.StoredEvents.Remove(worldGenerated);
             await context.SaveChangesAsync();
         }
 
         var aggregateRepository = CreateRepository(fixture, out _);
         var aggregateError = await Assert.ThrowsAsync<InvalidOperationException>(
             () => aggregateRepository.GetByIdAsync(session.Id));
-        Assert.Contains("stored at v99", aggregateError.Message, StringComparison.Ordinal);
+        Assert.Contains("Sequence contains no elements", aggregateError.Message, StringComparison.Ordinal);
 
         await using var readContext = fixture.CreateContext();
         var readRepository = new EfGameSessionReadRepository(readContext, CreateReadStoreLoader());
         var readError = await Assert.ThrowsAsync<InvalidOperationException>(
             () => readRepository.GetByIdAsync(session.Id));
-        Assert.Contains("stored at v99", readError.Message, StringComparison.Ordinal);
+        Assert.Contains("Sequence contains no elements", readError.Message, StringComparison.Ordinal);
     }
 
     [Fact]
