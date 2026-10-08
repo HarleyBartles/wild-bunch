@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import re
 import xml.etree.ElementTree as ElementTree
-
+from pathlib import Path
 
 _DEVELOPMENT_VERSION = re.compile(r"0\.1\.0-dev\.([1-9][0-9]*)\Z")
 
@@ -26,18 +25,19 @@ def read_authored_version(path: Path) -> str:
         raise VersionIdentityError(f"{path}: expected a Project root element")
 
     versions = [
-        child
-        for group in project.findall("PropertyGroup")
-        for child in group.findall("Version")
+        child for group in project.findall("PropertyGroup") for child in group.findall("Version")
     ]
     if len(versions) != 1:
         raise VersionIdentityError(
-            f"{path}: expected exactly one direct Project/PropertyGroup/Version element, found {len(versions)}"
+            f"{path}: expected exactly one direct Project/PropertyGroup/Version element, "
+            f"found {len(versions)}"
         )
 
     version = (versions[0].text or "").strip()
     if _DEVELOPMENT_VERSION.fullmatch(version) is None:
-        raise VersionIdentityError(f"{path}: expected a positive 0.1.0-dev.N version, found {version!r}")
+        raise VersionIdentityError(
+            f"{path}: expected a positive 0.1.0-dev.N version, found {version!r}"
+        )
     return version
 
 
@@ -66,14 +66,16 @@ def check_version_identity(root: Path) -> None:
     package = _object(_read_json(package_path), package_path)
     if "version" in package:
         raise VersionIdentityError(
-            f'{package_path}: remove the root "version" field; Directory.Build.props is the sole application version'
+            f'{package_path}: remove the root "version" field; Directory.Build.props is '
+            "the sole application version"
         )
 
     lock_path = web / "package-lock.json"
     lock = _object(_read_json(lock_path), lock_path)
     if "version" in lock:
         raise VersionIdentityError(
-            f'{lock_path}: remove the root "version" field; Directory.Build.props is the sole application version'
+            f'{lock_path}: remove the root "version" field; Directory.Build.props is '
+            "the sole application version"
         )
     lock_packages = lock.get("packages")
     if not isinstance(lock_packages, dict):
@@ -83,7 +85,8 @@ def check_version_identity(root: Path) -> None:
         raise VersionIdentityError(f'{lock_path}: expected the root package entry at packages[""]')
     if "version" in lock_root:
         raise VersionIdentityError(
-            f'{lock_path}: remove packages[""].version; Directory.Build.props is the sole application version'
+            f'{lock_path}: remove packages[""].version; Directory.Build.props is '
+            "the sole application version"
         )
 
     artifact_path = web / "dist" / "version.json"

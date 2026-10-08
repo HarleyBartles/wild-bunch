@@ -22,7 +22,7 @@ internal sealed class LayoutDeterministicSource
         ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(resolverVersion);
         ArgumentNullException.ThrowIfNull(layoutSalts);
-        
+
         SeedCode = seedCode;
         TownId = townId;
         TownSlot = townSlot;
@@ -43,7 +43,7 @@ internal sealed class LayoutDeterministicSource
     public ulong Roll(string label, LayoutConcern concern)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
-        
+
         var salt = concern switch
         {
             LayoutConcern.Buildings => LayoutSalts.BuildingsSalt ?? "default-buildings",
@@ -52,7 +52,7 @@ internal sealed class LayoutDeterministicSource
             LayoutConcern.Props => LayoutSalts.PropsSalt ?? "default-props",
             _ => throw new ArgumentOutOfRangeException(nameof(concern), concern, null)
         };
-        
+
         // Hash includes seed, town identity, resolver version, concern-specific salt, and label
         var hashInput = $"{SeedCode}|{TownId.Value}|{TownSlot}|{ResolverVersion}|{salt}|{label}";
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(hashInput));

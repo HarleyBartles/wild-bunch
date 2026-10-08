@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider, createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
+import {
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+} from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { SheriffPlace } from "../flow/places/SheriffPlace";
 import { GameSessionProvider } from "../state/GameSessionProvider";

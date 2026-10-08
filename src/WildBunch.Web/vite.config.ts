@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { viteStaticCopy } from "vite-plugin-static-copy";
 
 const webRoot = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(webRoot, "../..");
@@ -17,17 +17,21 @@ function buildIdentityPlugin(): Plugin {
     generateBundle() {
       let version: string;
       try {
-        version = execFileSync(
-          "dotnet",
-          ["msbuild", apiProject, "-getProperty:Version"],
-          { cwd: repositoryRoot, encoding: "utf8" },
-        ).trim();
+        version = execFileSync("dotnet", ["msbuild", apiProject, "-getProperty:Version"], {
+          cwd: repositoryRoot,
+          encoding: "utf8",
+        }).trim();
       } catch (error) {
-        throw new Error(`Could not evaluate application version from ${apiProject}: ${String(error)}`);
+        throw Object.assign(
+          new Error(`Could not evaluate application version from ${apiProject}: ${String(error)}`),
+          { cause: error },
+        );
       }
 
       if (!/^0\.1\.0-dev\.[1-9][0-9]*$/.test(version)) {
-        throw new Error(`MSBuild returned an unsupported development version: ${JSON.stringify(version)}`);
+        throw new Error(
+          `MSBuild returned an unsupported development version: ${JSON.stringify(version)}`,
+        );
       }
 
       this.emitFile({
@@ -46,23 +50,23 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: '../WildBunch.Assets/production/sprites/town-hub-buildings/**/*',
-          dest: 'assets/town-hub-buildings'
+          src: "../WildBunch.Assets/production/sprites/town-hub-buildings/**/*",
+          dest: "assets/town-hub-buildings",
         },
         {
-          src: '../WildBunch.Assets/production/tiles/town-hub-roads/**/*',
-          dest: 'assets/town-hub-roads'
+          src: "../WildBunch.Assets/production/tiles/town-hub-roads/**/*",
+          dest: "assets/town-hub-roads",
         },
         {
-          src: '../WildBunch.Assets/production/tiles/town-hub-ground/**/*',
-          dest: 'assets/town-hub-ground'
+          src: "../WildBunch.Assets/production/tiles/town-hub-ground/**/*",
+          dest: "assets/town-hub-ground",
         },
         {
-          src: '../WildBunch.Assets/production/sprites/town-hub-ground/props/**/*',
-          dest: 'assets/town-hub-ground/props'
-        }
-      ]
-    })
+          src: "../WildBunch.Assets/production/sprites/town-hub-ground/props/**/*",
+          dest: "assets/town-hub-ground/props",
+        },
+      ],
+    }),
   ],
   test: {
     environment: "jsdom",

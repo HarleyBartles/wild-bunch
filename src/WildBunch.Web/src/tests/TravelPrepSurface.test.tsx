@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider, createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
+import {
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+} from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { TravelPrepSurface } from "../flow/TravelPrepSurface";
 import { StartingTownMapScene } from "../components/start-flow/PhaserMapHost";
@@ -19,11 +24,14 @@ import {
   getJournal,
   getWorldMap,
   previewTravel,
-  travel,
 } from "../api/wildBunchApi";
 
 const mockState = vi.hoisted(() => ({
-  games: [] as Array<{ config: { scene: StartingTownMapScene }; destroyed: boolean; destroy: () => void }>,
+  games: [] as Array<{
+    config: { scene: StartingTownMapScene };
+    destroyed: boolean;
+    destroy: () => void;
+  }>,
 }));
 
 vi.mock("phaser", () => {
@@ -34,9 +42,13 @@ vi.mock("phaser", () => {
       this.config = config;
       mockState.games.push(this as never);
     }
-    destroy() { this.destroyed = true; }
+    destroy() {
+      this.destroyed = true;
+    }
   }
-  class Scene { constructor(_key?: string) {} }
+  class Scene {
+    constructor(_key?: string) {}
+  }
   const Scale = { FIT: 0, CENTER_BOTH: 0 };
   return { default: { Game, Scene, Scale }, Game, Scene, Scale };
 });
@@ -95,7 +107,15 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         { id: "dust-fork", name: "Dust Fork", services: 0 },
       ],
       trails: [
-        { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", risk: 1, terrain: 0, waterFeature: 1, rideDayDistance: 3 },
+        {
+          id: "trail-1",
+          fromTownId: "t-town",
+          toTownId: "dust-fork",
+          risk: 1,
+          terrain: 0,
+          waterFeature: 1,
+          rideDayDistance: 3,
+        },
       ],
     },
     caseFile: {
@@ -155,7 +175,9 @@ function createJournal(): JournalDto {
   };
 }
 
-function createPreview(overrides: Partial<TravelPreviewResultDto["preview"]> = {}): TravelPreviewResultDto {
+function createPreview(
+  overrides: Partial<TravelPreviewResultDto["preview"]> = {},
+): TravelPreviewResultDto {
   return {
     success: true,
     message: "Preview ready.",
@@ -182,7 +204,14 @@ function createPreview(overrides: Partial<TravelPreviewResultDto["preview"]> = {
       availableFood: 6,
       requiredHorseFeed: 2,
       availableHorseFeed: 6,
-      horseState: { hunger: 0, thirst: 0, exhaustion: 0, isLame: false, isDead: false, canProvideMountedTravel: true },
+      horseState: {
+        hunger: 0,
+        thirst: 0,
+        exhaustion: 0,
+        isLame: false,
+        isDead: false,
+        canProvideMountedTravel: true,
+      },
       warnings: [],
       routeProfile: {
         trailId: "trail-1",
@@ -210,9 +239,7 @@ function primeMocks(session: GameSessionDto = createSession()) {
       { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
       { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
     ],
-    trails: [
-      { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
-    ],
+    trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
   });
 }
 

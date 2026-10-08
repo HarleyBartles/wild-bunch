@@ -9,7 +9,7 @@ public sealed class LayoutSaltsTests
     public void LayoutSalts_CreatesWithAllFields()
     {
         var salts = new LayoutSalts("buildings-salt", "roads-salt", "dirt-salt", "props-salt");
-        
+
         Assert.Equal("buildings-salt", salts.BuildingsSalt);
         Assert.Equal("roads-salt", salts.RoadsSalt);
         Assert.Equal("dirt-salt", salts.DirtSalt);
@@ -21,7 +21,7 @@ public sealed class LayoutSaltsTests
     {
         var salts1 = new LayoutSalts("a", "b", "c", "d");
         var salts2 = new LayoutSalts("a", "b", "c", "d");
-        
+
         Assert.Equal(salts1, salts2);
     }
 }

@@ -7,16 +7,22 @@ import { GameSessionProvider } from "../state/GameSessionProvider";
 import { JourneyStatus, StartFlowPhase, type GameSessionDto, type JournalDto } from "../api/types";
 import {
   acknowledgeTravelArrival,
-  advanceTravelDay,
   getAvailableActions,
   getGame,
   getJournal,
-  resolveTravelEncounter,
 } from "../api/wildBunchApi";
 
 vi.mock("phaser", () => {
-  class Game { public config: unknown; constructor(c: unknown) { this.config = c; } destroy() {} }
-  class Scene { constructor(_k?: string) {} }
+  class Game {
+    public config: unknown;
+    constructor(c: unknown) {
+      this.config = c;
+    }
+    destroy() {}
+  }
+  class Scene {
+    constructor(_k?: string) {}
+  }
   const Scale = { FIT: 0, CENTER_BOTH: 0 };
   return { default: { Game, Scene, Scale }, Game, Scene, Scale };
 });
@@ -59,7 +65,10 @@ afterEach(() => {
 
 function createCompletedJourneySession(): GameSessionDto {
   return {
-    id: "game-1", status: 0, gameDifficulty: 0, gameEntropy: 1,
+    id: "game-1",
+    status: 0,
+    gameDifficulty: 0,
+    gameEntropy: 1,
     startFlowPhase: StartFlowPhase.GameStarted,
     player: { name: "Ruth", currentTownId: "dust-fork", health: 9 },
     world: {
@@ -67,30 +76,89 @@ function createCompletedJourneySession(): GameSessionDto {
         { id: "t-town", name: "Tumbleweed", services: 0 },
         { id: "dust-fork", name: "Dust Fork", services: 0 },
       ],
-      trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", risk: 1, terrain: 0, waterFeature: 0, rideDayDistance: 3 }],
+      trails: [
+        {
+          id: "trail-1",
+          fromTownId: "t-town",
+          toTownId: "dust-fork",
+          risk: 1,
+          terrain: 0,
+          waterFeature: 0,
+          rideDayDistance: 3,
+        },
+      ],
     },
-    caseFile: { accusationId: null, openingLead: "", caseState: { statusText: "" }, discoveredSuspects: [], caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] }, knownClues: [] },
-    inventory: { wallet: { cash: 14 }, items: [], horseState: null, canteenState: null, capabilities: { mountedTravelAvailable: false, horseUpkeepRequired: false, normalRouteWaterSecure: false, trailUtility: false, closeThreatAvailable: false, firearmThreatAvailable: false, gunfightCapable: false, revolverUsable: false, rifleUsable: false } },
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: { statusText: "" },
+      discoveredSuspects: [],
+      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      knownClues: [],
+    },
+    inventory: {
+      wallet: { cash: 14 },
+      items: [],
+      horseState: null,
+      canteenState: null,
+      capabilities: {
+        mountedTravelAvailable: false,
+        horseUpkeepRequired: false,
+        normalRouteWaterSecure: false,
+        trailUtility: false,
+        closeThreatAvailable: false,
+        firearmThreatAvailable: false,
+        gunfightCapable: false,
+        revolverUsable: false,
+        rifleUsable: false,
+      },
+    },
     clock: { day: 8, turn: 2, timeOfDay: "Morning" },
     pursuitState: { heat: 1 },
     journey: {
-      originTownId: "t-town", originTownName: "Tumbleweed",
-      destinationTownId: "dust-fork", destinationTownName: "Dust Fork",
-      travelMode: 1, status: JourneyStatus.Completed,
-      mountedTravelAvailable: false, waterSecure: true,
-      rideDayDistance: 3, remainingRideDayDistance: 0,
-      baselineRideDays: 3, expectedDays: 3, remainingDays: 0,
-      canteenChargesPerDay: 0, requiredCanteenCharges: 0,
-      availableCanteenCharges: 0, canteenReserveCharges: 0,
-      delayMarginDays: 0, delayRisk: false,
-      requiredFood: 0, availableFood: 0,
-      requiredHorseFeed: 0, availableHorseFeed: 0,
-      horseState: null, daysTravelled: 3, delayDays: 0,
-      pendingEncounter: null, warnings: [],
-      routeProfile: { trailId: "trail-1", risk: 1, terrain: 0, waterFeature: 0, rideDayDistance: 3, mountedRideDayProgress: 1, footRideDayProgress: 0.5, warnings: [] },
+      originTownId: "t-town",
+      originTownName: "Tumbleweed",
+      destinationTownId: "dust-fork",
+      destinationTownName: "Dust Fork",
+      travelMode: 1,
+      status: JourneyStatus.Completed,
+      mountedTravelAvailable: false,
+      waterSecure: true,
+      rideDayDistance: 3,
+      remainingRideDayDistance: 0,
+      baselineRideDays: 3,
+      expectedDays: 3,
+      remainingDays: 0,
+      canteenChargesPerDay: 0,
+      requiredCanteenCharges: 0,
+      availableCanteenCharges: 0,
+      canteenReserveCharges: 0,
+      delayMarginDays: 0,
+      delayRisk: false,
+      requiredFood: 0,
+      availableFood: 0,
+      requiredHorseFeed: 0,
+      availableHorseFeed: 0,
+      horseState: null,
+      daysTravelled: 3,
+      delayDays: 0,
+      pendingEncounter: null,
+      warnings: [],
+      routeProfile: {
+        trailId: "trail-1",
+        risk: 1,
+        terrain: 0,
+        waterFeature: 0,
+        rideDayDistance: 3,
+        mountedRideDayProgress: 1,
+        footRideDayProgress: 0.5,
+        warnings: [],
+      },
     },
-    travelDiary: null, logEntries: [],
-    activeSaloonPersonOfInterest: null, wantedPosters: [],
+    travelDiary: null,
+    logEntries: [],
+    activeSaloonPersonOfInterest: null,
+    wantedPosters: [],
   };
 }
 
@@ -103,9 +171,21 @@ function createInTownSession(): GameSessionDto {
 
 function createJournal(): JournalDto {
   return {
-    id: "game-1", status: 0, clock: { day: 8, turn: 2, timeOfDay: "Morning" },
+    id: "game-1",
+    status: 0,
+    clock: { day: 8, turn: 2, timeOfDay: "Morning" },
     currentTown: { id: "dust-fork", name: "Dust Fork" },
-    caseFile: { accusationId: null, openingLead: "", caseState: { statusText: "" }, caseSummary: "", discoveredSuspects: [], caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] }, knownClues: [], knownWarrants: [], wantedPosters: [] },
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: { statusText: "" },
+      caseSummary: "",
+      discoveredSuspects: [],
+      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      knownClues: [],
+      knownWarrants: [],
+      wantedPosters: [],
+    },
     logEntries: [],
   };
 }

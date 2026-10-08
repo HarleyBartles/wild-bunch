@@ -61,7 +61,8 @@ function connectedDestinations(session: GameSessionDto) {
       continue;
     }
 
-    const destinationTownId = trail.fromTownId === currentTownId ? trail.toTownId : trail.fromTownId;
+    const destinationTownId =
+      trail.fromTownId === currentTownId ? trail.toTownId : trail.fromTownId;
     const town = townMap.get(destinationTownId);
     if (!town) {
       continue;
@@ -86,7 +87,6 @@ export function TravelPrepSurface() {
   const { session, gameId, loading, handleTravel, notice, error } = useGameSession();
   const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
   const [preview, setPreview] = useState<TravelPreviewDto | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
 
   const destinations = useMemo(() => (session ? connectedDestinations(session) : []), [session]);
 
@@ -97,7 +97,6 @@ export function TravelPrepSurface() {
     }
 
     let cancelled = false;
-    setPreviewLoading(true);
 
     void (async () => {
       try {
@@ -108,10 +107,6 @@ export function TravelPrepSurface() {
       } catch {
         if (!cancelled) {
           setPreview(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setPreviewLoading(false);
         }
       }
     })();

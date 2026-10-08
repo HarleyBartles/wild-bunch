@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { acknowledgeTravelArrival, advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
+import {
+  acknowledgeTravelArrival,
+  advanceTravelDay,
+  getGame,
+  resolveTravelEncounter,
+} from "../api/wildBunchApi";
 import type { GameSessionDto, GameTurnResultDto } from "../api/types";
 import { getErrorMessage } from "../components/travel/travelShared";
 
@@ -26,7 +31,10 @@ interface TravelPanelState {
   ) => Promise<void>;
 }
 
-function useTravelMutationState(gameId: string, onTurnResult: UseTravelPanelStateArgs["onTurnResult"]) {
+function useTravelMutationState(
+  gameId: string,
+  onTurnResult: UseTravelPanelStateArgs["onTurnResult"],
+) {
   const queryClient = useQueryClient();
 
   const advanceMutation = useMutation({
@@ -46,7 +54,11 @@ function useTravelMutationState(gameId: string, onTurnResult: UseTravelPanelStat
   });
 
   const resolveMutation = useMutation({
-    mutationFn: (payload: { choiceId: string; bulletSpend?: number | null; bribeAmount?: number | null }) =>
+    mutationFn: (payload: {
+      choiceId: string;
+      bulletSpend?: number | null;
+      bribeAmount?: number | null;
+    }) =>
       resolveTravelEncounter(gameId, payload.choiceId, {
         bulletSpend: payload.bulletSpend,
         bribeAmount: payload.bribeAmount,
@@ -60,7 +72,12 @@ function useTravelMutationState(gameId: string, onTurnResult: UseTravelPanelStat
   return { advanceMutation, acknowledgeMutation, resolveMutation };
 }
 
-export function useTravelPanelState({ gameId, session, busy, onTurnResult }: UseTravelPanelStateArgs): TravelPanelState {
+export function useTravelPanelState({
+  gameId,
+  session,
+  busy,
+  onTurnResult,
+}: UseTravelPanelStateArgs): TravelPanelState {
   const travelSessionQuery = useQuery({
     queryKey: ["travel-session", gameId],
     queryFn: () => getGame(gameId),
@@ -69,7 +86,10 @@ export function useTravelPanelState({ gameId, session, busy, onTurnResult }: Use
     staleTime: 0,
   });
 
-  const { advanceMutation, acknowledgeMutation, resolveMutation } = useTravelMutationState(gameId, onTurnResult);
+  const { advanceMutation, acknowledgeMutation, resolveMutation } = useTravelMutationState(
+    gameId,
+    onTurnResult,
+  );
 
   const actionError =
     getErrorMessage(advanceMutation.error) ||
@@ -79,7 +99,11 @@ export function useTravelPanelState({ gameId, session, busy, onTurnResult }: Use
 
   return {
     session: travelSessionQuery.data ?? session,
-    busy: busy || advanceMutation.isPending || acknowledgeMutation.isPending || resolveMutation.isPending,
+    busy:
+      busy ||
+      advanceMutation.isPending ||
+      acknowledgeMutation.isPending ||
+      resolveMutation.isPending,
     refreshing: travelSessionQuery.isFetching,
     actionError: actionError || null,
     advanceTravelDay: async () => {

@@ -15,17 +15,12 @@ import {
   type JournalDto,
   type TownLayoutDto,
 } from "../api/types";
-import {
-  getAvailableActions,
-  getGame,
-  getJournal,
-  getTownStoreOffers,
-} from "../api/wildBunchApi";
+import { getAvailableActions, getGame, getJournal, getTownStoreOffers } from "../api/wildBunchApi";
 
 const mockState = vi.hoisted(() => ({
   games: [] as Array<{ config: { scene: TownHubScene }; destroyed: boolean; destroy: () => void }>,
   navigate: vi.fn(),
-  search: {} as Record<string, unknown>,
+  search: Object.fromEntries([]),
 }));
 
 vi.mock("phaser", () => {
@@ -98,10 +93,24 @@ function createLayout(): TownLayoutDto {
   return {
     buildings: [
       { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 46, y: 15, width: 8, height: 10 },
+      {
+        kind: BuildingKind.Sheriff,
+        view: BuildingView.Profile,
+        x: 46,
+        y: 15,
+        width: 8,
+        height: 10,
+      },
       { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 80, y: 15, width: 8, height: 10 },
       { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
-      { kind: BuildingKind.Telegraph, view: BuildingView.FrontOblique, x: 46, y: 70, width: 8, height: 10 },
+      {
+        kind: BuildingKind.Telegraph,
+        view: BuildingView.FrontOblique,
+        x: 46,
+        y: 70,
+        width: 8,
+        height: 10,
+      },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
@@ -353,10 +362,7 @@ describe("TownHubSurface accessibility fallback", () => {
 
   it("does not render fallback buttons for unavailable buildings", async () => {
     // Only BuySupplies is available — Sheriff, Saloon, Trailhead are not.
-    primeMocks(
-      createSession(),
-      [AvailableActionKind.BuySupplies],
-    );
+    primeMocks(createSession(), [AvailableActionKind.BuySupplies]);
     renderHub();
 
     await waitFor(() => {

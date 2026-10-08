@@ -31,9 +31,11 @@ Use `develop` as the repository's default base for ordinary development PRs. `ma
 2. Resolve the author decision-record check above before requesting review.
 3. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
-4. Use GitHub branch and Draft PR publication to push the task branch and create or update the
+4. The canonical local and hosted gate is fail-fast and cheapest-first; resolve
+   any formatter or linter failure before it starts builds or tests.
+5. Use GitHub branch and Draft PR publication to push the task branch and create or update the
    Draft PR against the selected base branch (`develop` by default).
-5. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
+6. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
    applicable hosted checks with the published tree.
 
 ## Doctrine and contracts

@@ -12,7 +12,12 @@ interface StorySoFarStepProps {
   gameEntropy?: GameEntropy;
 }
 
-export function StorySoFarStep({ onContinue, seedCode, gameDifficulty, gameEntropy }: StorySoFarStepProps) {
+export function StorySoFarStep({
+  onContinue,
+  seedCode,
+  gameDifficulty,
+  gameEntropy,
+}: StorySoFarStepProps) {
   const prologueQuery = useQuery({
     queryKey: ["prologue", seedCode ?? null, gameDifficulty ?? null, gameEntropy ?? null],
     queryFn: () => getPrologue(seedCode, gameDifficulty, gameEntropy),
@@ -41,8 +46,7 @@ export function StorySoFarStep({ onContinue, seedCode, gameDifficulty, gameEntro
         <ProloguePending>The trail ahead is still coming into focus…</ProloguePending>
       ) : prologueQuery.isError ? (
         <PrologueError>
-          The trail fades into dust before you can make sense of it. Give it a moment and try
-          again.
+          The trail fades into dust before you can make sense of it. Give it a moment and try again.
           <RetryButton type="button" onClick={() => prologueQuery.refetch()}>
             Try again
           </RetryButton>
@@ -67,7 +71,11 @@ const StepCard = styled.article`
   border-radius: 24px;
   border: 1px solid color-mix(in srgb, var(--accent-strong) 20%, transparent);
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-strong) 14%, transparent), transparent 28%),
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent-strong) 14%, transparent),
+      transparent 28%
+    ),
     linear-gradient(180deg, rgba(29, 23, 16, 0.98), rgba(16, 12, 8, 0.98));
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
 `;

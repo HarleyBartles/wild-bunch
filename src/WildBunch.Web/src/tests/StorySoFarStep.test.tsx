@@ -27,7 +27,14 @@ function createPrologue(overrides: Partial<PrologueDto> = {}): PrologueDto {
   };
 }
 
-function renderStep(overrides: { seedCode?: string | null; gameDifficulty?: GameDifficulty; gameEntropy?: GameEntropy; onContinue?: () => void } = {}) {
+function renderStep(
+  overrides: {
+    seedCode?: string | null;
+    gameDifficulty?: GameDifficulty;
+    gameEntropy?: GameEntropy;
+    onContinue?: () => void;
+  } = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -67,9 +74,7 @@ describe("StorySoFarStep", () => {
     expect(
       await screen.findByText(/the outlaw known as black bart robbed the dust fork bank/i),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /ride on/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ride on/i })).toBeInTheDocument();
   });
 
   it("does not render a literal {trueCulpritMainIdentifier} placeholder in the body", async () => {
@@ -169,7 +174,11 @@ describe("StorySoFarStep", () => {
   it("passes the seedCode, gameDifficulty, and gameEntropy to getPrologue", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
-    renderStep({ seedCode: "MY-SEED-42", gameDifficulty: 2 as GameDifficulty, gameEntropy: 3 as GameEntropy });
+    renderStep({
+      seedCode: "MY-SEED-42",
+      gameDifficulty: 2 as GameDifficulty,
+      gameEntropy: 3 as GameEntropy,
+    });
 
     await screen.findByText(/black bart/i);
 
@@ -203,9 +212,7 @@ describe("StorySoFarStep", () => {
     await user.click(retryButton);
 
     await screen.findByText(/black bart/i);
-    expect(
-      screen.getByRole("button", { name: /ride on/i }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: /ride on/i })).toBeEnabled();
   });
 
   it("does not render a checkbox acknowledgement gate", async () => {

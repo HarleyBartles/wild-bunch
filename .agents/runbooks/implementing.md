@@ -25,7 +25,10 @@ Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) 
    configures this checkout's hook path; validation uses `ci --check`. Then
    stage the intended tree and use the normal hooked commit; the hook validates
    the staged candidate and never applies or stages corrections.
-6. Use evidence-based result verification to reconcile the committed head with
+6. The canonical gate is fail-fast and cheapest-first. Resolve a formatter or
+   linter failure before starting builds or behavioral tests; do not wait for
+   downstream test suites when an earlier check has already failed.
+7. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 
 ## Doctrine and contracts

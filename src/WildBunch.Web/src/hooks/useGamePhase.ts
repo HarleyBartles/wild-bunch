@@ -1,14 +1,9 @@
 import { useMemo } from "react";
-import { JourneyStatus, StartFlowPhase } from "../api/types";
+import { StartFlowPhase } from "../api/types";
 import { useGameSession } from "../state/useGameSession";
 
 export type GamePhase =
-  | "pre-session"
-  | "setup"
-  | "prologue"
-  | "town-selection"
-  | "in-town"
-  | "on-trail";
+  "pre-session" | "setup" | "prologue" | "town-selection" | "in-town" | "on-trail";
 
 export interface GamePhaseState {
   phase: GamePhase;
@@ -46,8 +41,10 @@ export function useGamePhase(): GamePhaseState {
       if (session.startFlowPhase === StartFlowPhase.SetupComplete) {
         return { phase: "prologue" as const, hasSession: true, isOnTrail: false };
       }
-      if (session.startFlowPhase === StartFlowPhase.PrologueViewed ||
-          session.startFlowPhase === StartFlowPhase.StartingTownSelected) {
+      if (
+        session.startFlowPhase === StartFlowPhase.PrologueViewed ||
+        session.startFlowPhase === StartFlowPhase.StartingTownSelected
+      ) {
         return { phase: "town-selection" as const, hasSession: true, isOnTrail: false };
       }
       return { phase: "pre-session" as const, hasSession: false, isOnTrail: false };

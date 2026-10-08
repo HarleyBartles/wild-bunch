@@ -67,7 +67,12 @@ const ToggleTrack = styled.div`
   overflow: hidden;
 `;
 
-const ToggleThumb = styled.div<{ $count: number; $index: number; $isFirst: boolean; $isLast: boolean }>`
+const ToggleThumb = styled.div<{
+  $count: number;
+  $index: number;
+  $isFirst: boolean;
+  $isLast: boolean;
+}>`
   position: absolute;
   top: 3px;
   bottom: 3px;

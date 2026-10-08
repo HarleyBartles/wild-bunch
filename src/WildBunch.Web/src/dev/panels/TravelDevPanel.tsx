@@ -55,7 +55,7 @@ export function TravelDevPanel() {
         foeMinimumBribe: foeBribe.trim() === "" ? null : Number(foeBribe),
         encounterMessage: message.trim() === "" ? null : message,
       });
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force override.");
     } finally {
@@ -68,7 +68,7 @@ export function TravelDevPanel() {
     setActionPending(true);
     try {
       await clearTravelOverride(gameId);
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear override.");
     } finally {

@@ -72,7 +72,7 @@ internal static class TownLayoutGenerator
 
         // Assign buildings to zones using seed-derived ordering
         var buildingKinds = GetBuildingKindsForTown(services);
-        
+
         // Handle Trailhead specially - place at north and south tips of major road
         // Trailhead spans 2 tiles horizontally above and below the road (columns 3-6)
         // North Trailhead: row 0, centered at road (x=50)
@@ -83,12 +83,12 @@ internal static class TownLayoutGenerator
             var northTrailheadX = 50; // Center of road
             var northTrailheadY = 5; // Center of row 0 (tile center)
             buildings.Add(new BuildingPlacement(BuildingKind.Trailhead, northTrailheadX, northTrailheadY, BuildingView.Front, 20, 10));
-            
+
             // South Trailhead at row 9, spanning columns 3-6
             var southTrailheadX = 50; // Center of road
             var southTrailheadY = 95; // Center of row 9 (tile center)
             buildings.Add(new BuildingPlacement(BuildingKind.Trailhead, southTrailheadX, southTrailheadY, BuildingView.Front, 20, 10));
-            
+
             // Remove Trailhead from regular building list
             buildingKinds.Remove(BuildingKind.Trailhead);
         }
@@ -98,7 +98,7 @@ internal static class TownLayoutGenerator
         {
             var zonesToUse = new List<(int Row, int Col, bool IsOnSpur)>();
             var remainingBuildings = new List<BuildingKind>(buildingKinds);
-            
+
             // First, assign at least one building to each spur (if spurs exist and we have buildings)
             if (spurZones.Count > 0 && remainingBuildings.Count > 0)
             {
@@ -107,11 +107,11 @@ internal static class TownLayoutGenerator
                 {
                     zonesToUse.Add(spurZones[i]);
                 }
-                
+
                 // Remove assigned buildings from the list
                 remainingBuildings.RemoveRange(0, buildingsForSpurs);
             }
-            
+
             // Then, assign remaining buildings to major road zones
             if (remainingBuildings.Count > 0 && majorRoadZones.Count > 0)
             {
@@ -119,12 +119,12 @@ internal static class TownLayoutGenerator
                 var zonesToFill = GetBuildingZoneCount(prosperity, majorRoadZones.Count);
                 // Ensure we have enough zones for all required buildings (required buildings override prosperity)
                 var zonesNeeded = Math.Min(remainingBuildings.Count, Math.Max(zonesToFill, remainingBuildings.Count));
-                
+
                 // Distribute zones evenly across vertical space instead of bunching at top
                 var distributedMajorRoadZones = DistributeZonesVertically(majorRoadZones, zonesNeeded);
                 zonesToUse.AddRange(distributedMajorRoadZones);
             }
-            
+
             // Place buildings in selected zones
             var buildingIndex = 0;
             for (var i = 0; i < zonesToUse.Count; i++)
@@ -203,7 +203,7 @@ internal static class TownLayoutGenerator
 
             // Mark junction tile (where spur meets the road)
             grid[spurRow, spurJunctionCol] = TileType.SpurStart;
-            
+
             // Mark extension tile (extends further outward)
             if (spurExtensionCol >= 0 && spurExtensionCol < GridWidth)
             {
@@ -228,7 +228,7 @@ internal static class TownLayoutGenerator
         string label)
     {
         ArgumentNullException.ThrowIfNull(layoutSource);
-        
+
         if (isOnSpur)
         {
             // Equal weight between Front, FrontOblique, and mirrored FrontOblique
@@ -300,11 +300,11 @@ internal static class TownLayoutGenerator
 
         // Sort zones by row to get vertical distribution
         var sortedZones = availableZones.OrderBy(z => z.Row).ToList();
-        
+
         // Select zones at regular intervals to distribute vertically
         var step = (double)(sortedZones.Count - 1) / Math.Max(1, zonesNeeded - 1);
         var selectedZones = new List<(int Row, int Col, bool IsOnSpur)>();
-        
+
         for (var i = 0; i < zonesNeeded; i++)
         {
             var index = (int)Math.Round(i * step);

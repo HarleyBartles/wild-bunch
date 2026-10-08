@@ -27,8 +27,13 @@ work also binds [frontend standards](../doctrine/frontend-standards.md).
 
 ## Local commands and paths
 
-Use the focused formatter/compiler owned by the touched project, then the
-canonical gate in [testing](testing.md).
+Use the command bus for formatting and linting. Apply mechanical formatting
+explicitly with `py -3 tools/run.py format --apply <paths>`, review the diff,
+then use `py -3 tools/run.py format --check <paths>` and
+`py -3 tools/run.py lint --check <paths>`. The check targets never modify
+maintained files; do not rely on a commit hook to apply repairs. For delivery,
+use the canonical fail-fast gate in [testing](testing.md), which runs cheap
+format and lint checks before builds and behavioral tests.
 
 ## Evidence contract
 

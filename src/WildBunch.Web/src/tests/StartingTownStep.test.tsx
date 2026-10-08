@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { StartingTownStep } from "../components/start-flow/StartingTownStep";
 import { getStartingTownMap } from "../api/wildBunchApi";
 import type { StartingTownMapDto } from "../api/types";
@@ -41,18 +40,18 @@ function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTow
       { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
       { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
     ],
-    trails: [
-      { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
-    ],
+    trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
     ...overrides,
   };
 }
 
-function renderStep(overrides: {
-  sessionId?: string;
-  selectedTownId?: string | null;
-  onSelectTown?: (townId: string) => void;
-} = {}) {
+function renderStep(
+  overrides: {
+    sessionId?: string;
+    selectedTownId?: string | null;
+    onSelectTown?: (townId: string) => void;
+  } = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -81,7 +80,9 @@ describe("StartingTownStep", () => {
 
     renderStep();
 
-    expect(await screen.findByRole("img", { name: /trail map of starting towns/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("img", { name: /trail map of starting towns/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders the Phaser map host", async () => {
@@ -89,7 +90,9 @@ describe("StartingTownStep", () => {
 
     renderStep();
 
-    expect(await screen.findByRole("img", { name: /trail map of starting towns/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("img", { name: /trail map of starting towns/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows the loading state copy while the map is fetching", () => {

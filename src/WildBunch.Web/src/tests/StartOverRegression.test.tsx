@@ -9,7 +9,12 @@ import { GameSessionProvider } from "../state/GameSessionProvider";
 import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider, useSetDevSurface } from "../dev/DevSurfaceContext";
 import type { DevSurface } from "../dev/DevSurfaceContext";
-import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
+import {
+  AvailableActionKind,
+  type GameSessionDto,
+  type JournalDto,
+  type TownStoreOffersDto,
+} from "../api/types";
 import {
   getAvailableActions,
   getGame,
@@ -204,11 +209,31 @@ function primeMocks() {
     currentJournal: createJournal(),
     wantedPosters: [],
   });
-  mockedInspectNoticeBoard.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedCheckLocalRecords.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedFollowTelegraphLeads.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedGatherLocalGossip.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedLookAroundSaloon.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
+  mockedInspectNoticeBoard.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedCheckLocalRecords.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedFollowTelegraphLeads.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedGatherLocalGossip.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedLookAroundSaloon.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
   mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
     success: true,
     message: "ok",
@@ -293,16 +318,19 @@ describe("Start Over regression — player-facing, not dev-only", () => {
     expect(gameSettingsButton).not.toBeDisabled();
   });
 
-  it.each(allSurfaces)("does NOT render the Game Settings button in the DevOverlay (surface: %s)", (surface) => {
-    primeMocks();
-    renderDevOverlay(true, surface);
+  it.each(allSurfaces)(
+    "does NOT render the Game Settings button in the DevOverlay (surface: %s)",
+    (surface) => {
+      primeMocks();
+      renderDevOverlay(true, surface);
 
-    // The DevOverlay region is present...
-    expect(screen.getByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
+      // The DevOverlay region is present...
+      expect(screen.getByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
 
-    // ...but must NOT expose a Game Settings button. Start Over must stay player-facing.
-    expect(screen.queryByRole("button", { name: /game settings/i })).not.toBeInTheDocument();
-  });
+      // ...but must NOT expose a Game Settings button. Start Over must stay player-facing.
+      expect(screen.queryByRole("button", { name: /game settings/i })).not.toBeInTheDocument();
+    },
+  );
 
   it("reaches Start Over through the player-facing Game Settings overlay, not through dev tooling", async () => {
     primeMocks();

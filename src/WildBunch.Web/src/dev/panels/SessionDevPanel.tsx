@@ -3,7 +3,13 @@ import styled from "styled-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { SegmentedToggle } from "../../components/start-flow/SegmentedToggle";
-import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng, setDevEntropy } from "../devApi";
+import {
+  clearRng,
+  forceDevDifficulty,
+  getSessionDevContext,
+  lockRng,
+  setDevEntropy,
+} from "../devApi";
 
 interface SessionDevPanelProps {
   expanded?: boolean;
@@ -45,7 +51,8 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
     return <MutedText>Loading session context...</MutedText>;
   }
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["dev-session-context", gameId] });
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ["dev-session-context", gameId] });
 
   // Salt contract: blank input → null (handler generates a fresh fixed salt).
   // Non-empty input → trimmed value sent as the exact reproducibility token.
@@ -54,7 +61,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
     setActionPending(true);
     try {
       await lockRng(gameId, { salt: saltInput.trim() === "" ? null : saltInput.trim() });
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to lock RNG.");
     } finally {
@@ -67,7 +74,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
     setActionPending(true);
     try {
       await clearRng(gameId);
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear RNG.");
     } finally {
@@ -80,7 +87,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
     setActionPending(true);
     try {
       await forceDevDifficulty(gameId, { difficulty: value });
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force difficulty.");
     } finally {
@@ -93,7 +100,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
     setActionPending(true);
     try {
       await setDevEntropy(gameId, { entropy: value });
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set entropy.");
     } finally {
@@ -167,7 +174,8 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
             />
           </Field>
           <MutedText>
-            Forcing difficulty changes travel rules going forward. It does not change starting health or cash.
+            Forcing difficulty changes travel rules going forward. It does not change starting
+            health or cash.
           </MutedText>
           <TravelRulesGrid>
             <Row>
@@ -204,7 +212,8 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
             />
           </Field>
           <MutedText>
-            Setting entropy changes travel variance going forward. It does not change past travel outcomes or hidden truth.
+            Setting entropy changes travel variance going forward. It does not change past travel
+            outcomes or hidden truth.
           </MutedText>
           <Row>
             <Label>Salt mode:</Label>

@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { PathSegmentDto, TownProsperity } from '../api/types';
+import { describe, expect, it } from "vitest";
+import { PathSegmentDto, TownProsperity } from "../api/types";
 
-describe('PathSegmentDto', () => {
-  it('stores coordinates', () => {
+describe("PathSegmentDto", () => {
+  it("stores coordinates", () => {
     const dto: PathSegmentDto = { startX: 10, startY: 20, endX: 30, endY: 40 };
     expect(dto.startX).toBe(10);
     expect(dto.startY).toBe(20);
@@ -11,8 +11,8 @@ describe('PathSegmentDto', () => {
   });
 });
 
-describe('TownProsperity', () => {
-  it('has the correct enum values', () => {
+describe("TownProsperity", () => {
+  it("has the correct enum values", () => {
     expect(TownProsperity.Boomtown).toBe(0);
     expect(TownProsperity.Prosperous).toBe(1);
     expect(TownProsperity.Poor).toBe(2);

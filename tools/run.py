@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -12,8 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import shared_checkout
+import style
 from versioning import VersionIdentityError, check_version_identity
-
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_NAME = "tools/run"
@@ -55,6 +56,140 @@ def _npm_cmd(*args: str) -> list[str]:
     return [shutil.which("npm") or "npm", "--prefix", str(WEB_DIR), *args]
 
 
+def _web_dependencies(ctx: Ctx) -> None:
+    binaries = WEB_DIR / "node_modules" / ".bin"
+    if not (binaries / "eslint").exists() or not (binaries / "prettier").exists():
+        _run(_npm_cmd("ci"), ctx)
+        return
+
+    lock = json.loads((WEB_DIR / "package-lock.json").read_text(encoding="utf-8"))
+    tool_names = (
+        "@eslint/js",
+        "eslint",
+        "eslint-config-prettier",
+        "eslint-plugin-react-hooks",
+        "prettier",
+        "typescript-eslint",
+    )
+    mismatched = []
+    for name in tool_names:
+        lock_entry = lock.get("packages", {}).get(f"node_modules/{name}")
+        installed_path = WEB_DIR / "node_modules" / Path(name) / "package.json"
+        if lock_entry is None or not installed_path.is_file():
+            mismatched.append(name)
+            continue
+        installed = json.loads(installed_path.read_text(encoding="utf-8"))
+        if installed.get("version") != lock_entry.get("version"):
+            mismatched.append(name)
+    if mismatched:
+        raise BusTargetError(
+            "web style dependencies do not match the lockfile ("
+            + ", ".join(mismatched)
+            + "); repair: npm --prefix src/WildBunch.Web ci"
+        )
+
+
+def _style_files(ctx: Ctx, *, mutation: bool) -> dict[str, list[str]]:
+    try:
+        return style.select_files(ROOT, ctx.target_args, allow_default_scope=not mutation)
+    except style.StylePathError as exc:
+        raise BusTargetError(str(exc)) from exc
+
+
+def _format(ctx: Ctx) -> None:
+    groups = _style_files(ctx, mutation=ctx.mode == "apply")
+    commands = style.formatter_commands(groups, check=ctx.mode == "check")
+    before = {path: (ROOT / path).read_bytes() for paths in groups.values() for path in paths}
+    for language, command in commands:
+        if language == "web":
+            _web_dependencies(ctx)
+        try:
+            _run(command, ctx)
+        except subprocess.CalledProcessError:
+            if ctx.mode == "check":
+                print(
+                    "[tools/run] repair: py -3 tools/run.py format --apply <diagnostic-path>",
+                    file=sys.stderr,
+                )
+                print(
+                    "[tools/run] focused recheck: py -3 tools/run.py format --check "
+                    "<diagnostic-path>",
+                    file=sys.stderr,
+                )
+            raise
+    if ctx.mode == "apply":
+        changed = [
+            path for path, original in before.items() if (ROOT / path).read_bytes() != original
+        ]
+        if changed:
+            print("[tools/run] formatted files:")
+            for path in changed:
+                print(f"  {path}")
+        else:
+            print("[tools/run] format apply found no changes")
+
+
+def _lint(ctx: Ctx) -> None:
+    groups = _style_files(ctx, mutation=False)
+    for language, command in style.linter_commands(groups):
+        if language == "web":
+            _web_dependencies(ctx)
+        try:
+            _run(command, ctx)
+        except subprocess.CalledProcessError:
+            print(
+                "[tools/run] repair: correct the reported lint diagnostics; "
+                "this target never auto-fixes",
+                file=sys.stderr,
+            )
+            print(
+                "[tools/run] focused recheck: py -3 tools/run.py lint --check <diagnostic-path>",
+                file=sys.stderr,
+            )
+            raise
+
+
+def _check_python_format(ctx: Ctx) -> None:
+    groups = style.select_files(ROOT, (), allow_default_scope=True)
+    for language, command in style.formatter_commands(groups, check=True):
+        if language == "python":
+            _run(command, ctx)
+
+
+def _check_python_lint(ctx: Ctx) -> None:
+    groups = style.select_files(ROOT, (), allow_default_scope=True)
+    for language, command in style.linter_commands(groups):
+        if language == "python":
+            _run(command, ctx)
+
+
+def _check_web_style(ctx: Ctx) -> None:
+    groups = style.select_files(ROOT, (), allow_default_scope=True)
+    if "web" not in groups:
+        return
+    _web_dependencies(ctx)
+    for language, command in style.formatter_commands(groups, check=True):
+        if language == "web":
+            _run(command, ctx)
+    for language, command in style.linter_commands(groups):
+        if language == "web":
+            _run(command, ctx)
+
+
+def _check_dotnet_format(ctx: Ctx) -> None:
+    groups = style.select_files(ROOT, (), allow_default_scope=True)
+    for language, command in style.formatter_commands(groups, check=True):
+        if language == "dotnet":
+            _run(command, ctx)
+
+
+def _check_dotnet_lint(ctx: Ctx) -> None:
+    groups = style.select_files(ROOT, (), allow_default_scope=True)
+    for language, command in style.linter_commands(groups):
+        if language == "dotnet":
+            _run(command, ctx)
+
+
 def _operating_standards_check(ctx: Ctx) -> None:
     _run([sys.executable, "tools/check_operating_standards.py", "--check"], ctx)
 
@@ -80,14 +215,28 @@ def _build_dotnet(ctx: Ctx) -> None:
 
 
 def _test_dotnet(ctx: Ctx) -> None:
-    os.environ["ConnectionStrings__WildBunchPostgresDb"] = "Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres"
+    os.environ["ConnectionStrings__WildBunchPostgresDb"] = (
+        "Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres"
+    )
     _run(_dotnet_test_cmd(ctx.target_args), ctx)
 
 
 def _build_web(ctx: Ctx) -> None:
-    _run(_npm_cmd("ci"), ctx)
+    _check_web_style(ctx)
     _run(_npm_cmd("run", "typecheck"), ctx)
     _run(_npm_cmd("run", "test"), ctx)
+    _run(_npm_cmd("run", "build"), ctx)
+
+
+def _web_typecheck(ctx: Ctx) -> None:
+    _run(_npm_cmd("run", "typecheck"), ctx)
+
+
+def _web_test(ctx: Ctx) -> None:
+    _run(_npm_cmd("run", "test"), ctx)
+
+
+def _web_build(ctx: Ctx) -> None:
     _run(_npm_cmd("run", "build"), ctx)
 
 
@@ -133,6 +282,49 @@ CI_CHECKS = (
         "py -3 tools/check_plugin_subscriptions.py --check",
     ),
     (
+        "python-format",
+        _check_python_format,
+        "run py -3 tools/run.py format --apply <diagnostic-path> and review the mechanical diff",
+        "py -3 tools/run.py format --check <diagnostic-path>",
+    ),
+    (
+        "python-lint",
+        _check_python_lint,
+        "correct Ruff diagnostics without using automatic lint fixes",
+        "py -3 tools/run.py lint --check <diagnostic-path>",
+    ),
+    (
+        "web-style",
+        _check_web_style,
+        "format the reported source mechanically, then correct ESLint diagnostics explicitly",
+        "py -3 tools/run.py format --check <diagnostic-path> and "
+        "py -3 tools/run.py lint --check <diagnostic-path>",
+    ),
+    (
+        "dotnet-format",
+        _check_dotnet_format,
+        "run py -3 tools/run.py format --apply <diagnostic-path> and review the mechanical diff",
+        "py -3 tools/run.py format --check <diagnostic-path>",
+    ),
+    (
+        "dotnet-analyzers",
+        _check_dotnet_lint,
+        "correct SDK analyzer diagnostics explicitly",
+        "py -3 tools/run.py lint --check <diagnostic-path>",
+    ),
+    (
+        "dotnet-build",
+        _build_dotnet,
+        "correct the reported compiler or build error",
+        "py -3 tools/run.py dotnet-build --check",
+    ),
+    (
+        "web-typecheck",
+        _web_typecheck,
+        "correct the reported TypeScript error",
+        "npm --prefix src/WildBunch.Web run typecheck",
+    ),
+    (
         "script-behavior-tests",
         _test_script_behaviors,
         "correct the failing tracked-hook or standalone script behavior test",
@@ -145,22 +337,22 @@ CI_CHECKS = (
         "py -3 -m pytest tools/tests -q",
     ),
     (
-        "dotnet-build",
-        _build_dotnet,
-        "correct the reported compiler or build error",
-        "py -3 tools/run.py dotnet-build --check",
-    ),
-    (
         "dotnet-test",
         _test_dotnet,
         "correct the failing .NET test or implementation",
         "py -3 tools/run.py dotnet-test --check",
     ),
     (
-        "web",
-        _build_web,
-        "correct the reported web typecheck, test, or build failure",
-        "py -3 tools/run.py web --check",
+        "web-tests",
+        _web_test,
+        "correct the failing web behavior test",
+        "npm --prefix src/WildBunch.Web run test",
+    ),
+    (
+        "web-build",
+        _web_build,
+        "correct the reported web build error",
+        "npm --prefix src/WildBunch.Web run build",
     ),
     (
         "build-identity",
@@ -217,6 +409,8 @@ def _ci_check(ctx: Ctx) -> None:
 
 TARGETS = {
     "ci": {"check": _ci_check},
+    "format": {"check": _format, "apply": _format},
+    "lint": {"check": _lint},
     "dotnet-build": {"check": _build_dotnet},
     "dotnet-test": {"check": _test_dotnet},
     "web": {"check": _build_web},
@@ -226,12 +420,39 @@ TARGETS = {
 
 TARGET_DESCRIPTIONS = {
     "ci": (
-        "Run the complete repository check gate. --check validates the selected candidate, "
-        "including Python tests, .NET build/tests, web checks/build, version identity, and whitespace. "
-        "Prerequisites: Python 3, .NET SDK, Node.js/npm, and the configured PostgreSQL test service. "
-        "Checks may create ignored build outputs but do not repair maintained files. "
-        "Manual --diagnostics continues after failures for troubleshooting; the commit/CI gate is fail-fast. "
+        "Run the complete repository check gate in cheapest-first order: whitespace and repository "
+        "contracts; Python, web, and .NET format/lint; .NET build and web typecheck; then behavior "
+        "tests and web build. A normal gate stops at the first failure. Prerequisites: Python 3 "
+        "with "
+        "repo requirements, .NET SDK 10.0.301, Node.js 20.19+ with npm, and PostgreSQL at "
+        "localhost:5435 for .NET integration tests. Checks may create ignored dependency/build "
+        "outputs but do not repair maintained files. Manual --diagnostics continues after "
+        "independent failures; it is never used by commit/CI gates. "
         "Target-specific arguments: none."
+    ),
+    "format": (
+        "Check formatting without changes or apply formatting to explicit supported file paths; "
+        "--all is required for a mutating whole-repository pass. Omitting paths in --check checks "
+        "the full supported scope. C# uses `dotnet format whitespace WildBunch.sln --include`, "
+        "Python uses `python -m ruff format`, and web JavaScript/TypeScript/TSX/SCSS "
+        "uses `npm --prefix "
+        "src/WildBunch.Web exec -- prettier`. Markdown, generated, "
+        "dependency, vendor, and build files are excluded. --apply changes only selected source "
+        "files and reports changed paths. Prerequisites: .NET SDK for C#, Ruff from "
+        "`tools/requirements.txt` for Python, and locked npm dependencies for web files."
+    ),
+    "lint": (
+        "Run check-only language diagnostics; this target never applies lint fixes. Omitted paths "
+        "check the full supported scope. Python uses `python -m ruff check`, web "
+        "JavaScript/TypeScript/TSX "
+        "uses `npm --prefix src/WildBunch.Web exec -- eslint --config "
+        "src/WildBunch.Web/eslint.config.js` with type-aware TypeScript rules and core "
+        "React Hooks rules, "
+        "and C# uses "
+        "`dotnet format analyzers` with SDK analyzers. Markdown, generated, dependency, vendor, "
+        "and build files are excluded. Correct diagnostics explicitly, then rerun this target. "
+        "Prerequisites: Python with `tools/requirements.txt`, locked web dependencies for TS/TSX, "
+        "and .NET SDK for C#."
     ),
     "dotnet-build": (
         "Build the .NET solution without modifying maintained source. Mode: --check. "
@@ -244,22 +465,25 @@ TARGET_DESCRIPTIONS = {
         "Arguments after -- are forwarded to `dotnet test`."
     ),
     "web": (
-        "Install locked dependencies, typecheck, test, and build the web app. Mode: --check. "
+        "Install locked dependencies, format-check, lint, typecheck, test, and build the web app. "
+        "Mode: --check. "
         "Prerequisites: Node.js/npm. `npm ci` may create ignored node_modules and build outputs. "
         "Target-specific arguments: none."
     ),
     "python-tests": (
         "Run repository script and command-bus behavior tests. Mode: --check. "
-        "Prerequisite: Python 3 with pytest. Arguments after -- are forwarded to both pytest suites."
+        "Prerequisite: Python 3 with pytest. Arguments after -- are forwarded to both "
+        "pytest suites."
     ),
     "setup-hooks": (
-        "Set or verify this checkout's Git hook path. --apply sets local core.hooksPath to githooks; "
-        "--check verifies that exact value. --apply changes local Git configuration, not tracked files. "
+        "Set or verify this checkout's Git hook path. --apply sets local core.hooksPath to "
+        "githooks; --check verifies that exact value. --apply changes local Git configuration, "
+        "not tracked files. "
         "Prerequisite: Git. Target-specific arguments: none."
     ),
 }
 
-TARGET_ARGUMENTS = {"dotnet-build", "dotnet-test", "python-tests"}
+TARGET_ARGUMENTS = {"format", "lint", "dotnet-build", "dotnet-test", "python-tests"}
 
 
 def _run_target(target: str, ctx: Ctx) -> None:
@@ -273,7 +497,9 @@ def _root_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=f"Wild Bunch repository command bus. Available targets:\n{target_list}"
     )
-    parser.add_argument("target", nargs="?", choices=list(TARGETS), help="named repository operation")
+    parser.add_argument(
+        "target", nargs="?", choices=list(TARGETS), help="named repository operation"
+    )
     return parser
 
 
@@ -285,9 +511,13 @@ def _target_parser(target: str) -> argparse.ArgumentParser:
     modes = TARGETS[target]
     group = parser.add_mutually_exclusive_group()
     if "apply" in modes:
-        group.add_argument("--apply", action="store_true", help="apply the target's documented changes")
+        group.add_argument(
+            "--apply", action="store_true", help="apply the target's documented changes"
+        )
     if "check" in modes:
-        group.add_argument("--check", action="store_true", help="check without changing maintained files")
+        group.add_argument(
+            "--check", action="store_true", help="check without changing maintained files"
+        )
     if target == "setup-hooks":
         parser.add_argument(
             "--allow-shared-checkout",
@@ -298,11 +528,25 @@ def _target_parser(target: str) -> argparse.ArgumentParser:
         parser.add_argument(
             "--diagnostics",
             action="store_true",
-            help="manual troubleshooting only: continue after independent failures; not the commit/CI gate",
+            help="manual troubleshooting only: continue after independent failures; "
+            "not the commit/CI gate",
+        )
+    if target == "format":
+        parser.add_argument(
+            "--all",
+            action="store_true",
+            help="explicitly select all supported repository files for format --apply",
         )
     parser.add_argument("--verbose", "-v", action="store_true", help="print each sub-command")
     if target in TARGET_ARGUMENTS:
-        parser.add_argument("target_args", nargs=argparse.REMAINDER, help="arguments forwarded to the selected target")
+        parser.add_argument(
+            "target_args",
+            nargs=argparse.REMAINDER,
+            help=(
+                "file paths for format/lint or arguments forwarded to the selected target; "
+                "format --apply requires paths or --all"
+            ),
+        )
     return parser
 
 
@@ -323,6 +567,8 @@ def main(argv: list[str] | None = None) -> int:
     args.check = getattr(args, "check", False)
     target_args = tuple(getattr(args, "target_args", ()))
     args.target_args = target_args[1:] if target_args[:1] == ("--",) else target_args
+    if getattr(args, "all", False):
+        args.target_args = (*args.target_args, "--all")
 
     if not args.apply and not args.check:
         parser.print_usage(sys.stderr)

@@ -41,19 +41,25 @@ export function TownLayoutDevPanel({ expanded = false }: TownLayoutDevPanelProps
       }
     };
 
-    loadSalts();
+    void loadSalts();
   }, [gameId]);
 
-  const handleCopyBundle = () => {
+  const handleCopyBundle = async () => {
     if (!salts) return;
     const bundle = JSON.stringify(salts, null, 2);
-    navigator.clipboard.writeText(bundle);
-    setStatusMessage("Bundle copied to clipboard");
-    setStatusType("success");
-    setTimeout(() => {
-      setStatusMessage(null);
-      setStatusType(null);
-    }, 2000);
+    try {
+      await navigator.clipboard.writeText(bundle);
+      setStatusMessage("Bundle copied to clipboard");
+      setStatusType("success");
+      setTimeout(() => {
+        setStatusMessage(null);
+        setStatusType(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy town layout salts:", error);
+      setStatusMessage("Failed to copy bundle");
+      setStatusType("error");
+    }
   };
 
   const handleSetSalts = async () => {
@@ -235,8 +241,8 @@ const StatusMessage = styled.div<{ $type: "success" | "error" }>`
   font-size: 0.82rem;
   padding: 4px 8px;
   border-radius: 4px;
-  background: ${props => props.$type === "success" ? "rgba(76, 175, 80, 0.1)" : "rgba(244, 67, 54, 0.1)"};
-  color: ${props => props.$type === "success" ? "#4caf50" : "#f44336"};
+  background: ${(props) => (props.$type === "success" ? "rgba(76, 175, 80, 0.1)" : "rgba(244, 67, 54, 0.1)")};
+  color: ${(props) => (props.$type === "success" ? "#4caf50" : "#f44336")};
 `;
 
 const ButtonRow = styled.div`

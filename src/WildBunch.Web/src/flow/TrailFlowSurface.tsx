@@ -37,7 +37,8 @@ const ArrivalLead = styled.p`
 `;
 
 export function TrailFlowSurface() {
-  const { session, gameId, loading, handleTravelTurnResult, handleAcknowledgeArrival } = useGameSession();
+  const { session, gameId, loading, handleTravelTurnResult, handleAcknowledgeArrival } =
+    useGameSession();
 
   if (!session || !gameId) {
     return null;

@@ -120,12 +120,7 @@ export function CockpitOverlayFrame({
               </PanelSubtitle>
             ) : null}
           </div>
-          <Button
-            ref={closeButtonRef}
-            type="button"
-            $variant="ghost"
-            onClick={onClose}
-          >
+          <Button ref={closeButtonRef} type="button" $variant="ghost" onClick={onClose}>
             Close
           </Button>
         </ModalHeader>

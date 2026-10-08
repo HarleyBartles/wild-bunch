@@ -1,4 +1,9 @@
-import { TrailBeatSlotType, type GameClockDto, type ClueTimeAnchorDto, type TrailBeatSlotDto } from "../api/types";
+import {
+  TrailBeatSlotType,
+  type GameClockDto,
+  type ClueTimeAnchorDto,
+  type TrailBeatSlotDto,
+} from "../api/types";
 
 export function formatClockBeat(clock: GameClockDto): string {
   return clock.beatLabel || `Day ${clock.day}, ${clock.timeOfDay}`;

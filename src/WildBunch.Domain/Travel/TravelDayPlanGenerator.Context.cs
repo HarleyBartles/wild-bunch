@@ -907,9 +907,9 @@ internal static partial class TravelDayPlanGenerator
             TrailTerrain.Mountains => "The trail went quiet in the high places.",
             _ => "The trail stayed quiet."
         };
-    }
+}
 
-    internal sealed record UnluckyEncounterCandidate(
-        TravelDayEncounterState Encounter,
-        bool RequiresHorse,
-        bool IsDelayEvent);
+internal sealed record UnluckyEncounterCandidate(
+    TravelDayEncounterState Encounter,
+    bool RequiresHorse,
+    bool IsDelayEvent);

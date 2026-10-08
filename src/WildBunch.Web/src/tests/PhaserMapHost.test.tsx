@@ -5,7 +5,11 @@ import type { StartingTownMapDto } from "../api/types";
 import Phaser from "phaser";
 
 const mockState = vi.hoisted(() => ({
-  games: [] as Array<{ config: { scene: StartingTownMapScene }; destroyed: boolean; destroy: () => void }>,
+  games: [] as Array<{
+    config: { scene: StartingTownMapScene };
+    destroyed: boolean;
+    destroy: () => void;
+  }>,
 }));
 
 vi.mock("phaser", () => {
@@ -40,18 +44,18 @@ function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTow
       { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
       { id: "hardpan", name: "Hardpan", services: 0, x: 100, y: 300 },
     ],
-    trails: [
-      { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
-    ],
+    trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
     ...overrides,
   };
 }
 
-function renderHost(overrides: {
-  mapData?: StartingTownMapDto;
-  selectedTownId?: string | null;
-  onTownSelected?: (townId: string) => void;
-} = {}) {
+function renderHost(
+  overrides: {
+    mapData?: StartingTownMapDto;
+    selectedTownId?: string | null;
+    onTownSelected?: (townId: string) => void;
+  } = {},
+) {
   const onTownSelected = overrides.onTownSelected ?? vi.fn();
   const mapData = overrides.mapData ?? createMapData();
 
@@ -74,7 +78,9 @@ describe("PhaserMapHost", () => {
   });
 
   it("destroys the Phaser game on unmount", () => {
-    const { unmount } = render(<PhaserMapHost mapData={createMapData()} selectedTownId={null} onTownSelected={vi.fn()} />);
+    const { unmount } = render(
+      <PhaserMapHost mapData={createMapData()} selectedTownId={null} onTownSelected={vi.fn()} />,
+    );
 
     expect(mockState.games).toHaveLength(1);
     expect(mockState.games[0].destroyed).toBe(false);
@@ -124,7 +130,7 @@ describe("PhaserMapHost truth boundary", () => {
   it("does not give the scene access to any API function", () => {
     renderHost();
 
-    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    const scene = mockState.games[0].config.scene;
     expect((scene as unknown as Record<string, unknown>).api).toBeUndefined();
     expect((scene as unknown as Record<string, unknown>).requestJson).toBeUndefined();
     expect((scene as unknown as Record<string, unknown>).fetch).toBeUndefined();
@@ -136,7 +142,7 @@ describe("PhaserMapHost truth boundary", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     renderHost({ onTownSelected });
 
-    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    const scene = mockState.games[0].config.scene;
     scene.selectTown("t-town");
 
     expect(onTownSelected).toHaveBeenCalledTimes(1);
@@ -148,7 +154,7 @@ describe("PhaserMapHost truth boundary", () => {
   it("does not mutate selectedTownId when selectTown is called", () => {
     renderHost({ selectedTownId: null });
 
-    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    const scene = mockState.games[0].config.scene;
     const before = scene.selectedTownId;
     scene.selectTown("t-town");
 
@@ -159,7 +165,7 @@ describe("PhaserMapHost truth boundary", () => {
   it("receives selectedTownId as a readonly prop, not as stored truth", () => {
     renderHost({ selectedTownId: "dust-fork" });
 
-    const scene = mockState.games[0].config.scene as StartingTownMapScene;
+    const scene = mockState.games[0].config.scene;
     expect(scene.selectedTownId).toBe("dust-fork");
     scene.selectTown("t-town");
     expect(scene.selectedTownId).toBe("dust-fork");

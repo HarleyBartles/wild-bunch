@@ -13,7 +13,13 @@ export function TravelDiaryNotebook({ travelDiary, refreshing }: TravelDiaryNote
     <NotebookCard>
       <SectionHeader>
         <strong>Travel diary</strong>
-        <span>{refreshing ? "Refreshing..." : travelDiary?.days.length ? `${travelDiary.days.length} entries` : "Blank pages"}</span>
+        <span>
+          {refreshing
+            ? "Refreshing..."
+            : travelDiary?.days.length
+              ? `${travelDiary.days.length} entries`
+              : "Blank pages"}
+        </span>
       </SectionHeader>
 
       {travelDiary?.days.length ? (

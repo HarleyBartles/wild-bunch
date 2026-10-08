@@ -19,12 +19,21 @@ import { useGameSessionMutations } from "./useGameSessionMutations";
 import { useGameSessionQueries } from "./useGameSessionQueries";
 import { useGameSessionState } from "./useGameSessionState";
 
-type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
+type BusyMode =
+  "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
 
 export function useCurrentGameSession() {
   const queryClient = useQueryClient();
 
   const state = useGameSessionState();
+  const {
+    setDeclaredWantedIdentityHandle,
+    setError,
+    setNotice,
+    setResetToken,
+    setStoredGameId,
+    setWantedPosters,
+  } = state;
   const gameId = state.storedGameId;
 
   const {
@@ -42,7 +51,6 @@ export function useCurrentGameSession() {
   // The readWantedPosters API call adds them to KnownWarrants and the journal,
   // but we should use the session DTO to avoid requiring a separate API call
   // every time we want to declare an identity.
-  const setWantedPosters = state.setWantedPosters;
   useEffect(() => {
     const posters = sessionQuery.data?.wantedPosters;
     setWantedPosters(posters ?? []);
@@ -116,7 +124,9 @@ export function useCurrentGameSession() {
   const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
-  const canConfrontSaloonPersonOfInterest = Boolean(session?.activeSaloonPersonOfInterest && state.declaredWantedIdentityHandle);
+  const canConfrontSaloonPersonOfInterest = Boolean(
+    session?.activeSaloonPersonOfInterest && state.declaredWantedIdentityHandle,
+  );
 
   const handleSetupGame = useCallback(
     async (request: SetupGameRequest) => {
@@ -125,15 +135,12 @@ export function useCurrentGameSession() {
     [setupGameMutation],
   );
 
-  const handleMarkPrologueViewed = useCallback(
-    async () => {
-      if (!gameId) {
-        return;
-      }
-      await markPrologueViewedMutation.mutateAsync(gameId);
-    },
-    [gameId, markPrologueViewedMutation],
-  );
+  const handleMarkPrologueViewed = useCallback(async () => {
+    if (!gameId) {
+      return;
+    }
+    await markPrologueViewedMutation.mutateAsync(gameId);
+  }, [gameId, markPrologueViewedMutation]);
 
   const handleStartGameWithTown = useCallback(
     async (townId: string) => {
@@ -160,9 +167,9 @@ export function useCurrentGameSession() {
       const activeGameId = result.currentSession.id;
       queryClient.setQueryData(["session", activeGameId], result.currentSession);
       await invalidateGameQueries(activeGameId);
-      state.setNotice(result.message);
+      setNotice(result.message);
     },
-    [queryClient, invalidateGameQueries, state.setNotice],
+    [queryClient, invalidateGameQueries, setNotice],
   );
 
   const handleTravel = useCallback(
@@ -233,12 +240,12 @@ export function useCurrentGameSession() {
 
   const handleReset = useCallback(() => {
     window.localStorage.removeItem(storageKey);
-    state.setStoredGameId(null);
-    state.setWantedPosters([]);
-    state.setDeclaredWantedIdentityHandle("");
-    state.setNotice("");
-    state.setError("");
-    state.setResetToken((current) => current + 1);
+    setStoredGameId(null);
+    setWantedPosters([]);
+    setDeclaredWantedIdentityHandle("");
+    setNotice("");
+    setError("");
+    setResetToken((current) => current + 1);
     if (gameId) {
       queryClient.removeQueries({ queryKey: ["session", gameId] });
       queryClient.removeQueries({ queryKey: ["actions", gameId] });
@@ -247,12 +254,12 @@ export function useCurrentGameSession() {
   }, [
     gameId,
     queryClient,
-    state.setStoredGameId,
-    state.setWantedPosters,
-    state.setDeclaredWantedIdentityHandle,
-    state.setNotice,
-    state.setError,
-    state.setResetToken,
+    setStoredGameId,
+    setWantedPosters,
+    setDeclaredWantedIdentityHandle,
+    setNotice,
+    setError,
+    setResetToken,
   ]);
 
   const archivePlaythrough = useCallback(async () => {

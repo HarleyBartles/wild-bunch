@@ -18,7 +18,6 @@ import type {
   TravelPreviewResultDto,
   SaloonPersonOfInterestConfrontationResultDto,
   WantedPostersResultDto,
-  WantedSuspectConfrontationResultDto,
 } from "./types";
 import { requestJson } from "./httpClient";
 
@@ -63,7 +62,9 @@ export function getTownStoreOffers(gameId: string, townId: string) {
 }
 
 export function previewTravel(gameId: string, destinationTownId: string) {
-  return requestJson<TravelPreviewResultDto>(`/api/games/${gameId}/travel/preview/${destinationTownId}`);
+  return requestJson<TravelPreviewResultDto>(
+    `/api/games/${gameId}/travel/preview/${destinationTownId}`,
+  );
 }
 
 export function buyStoreItem(gameId: string, townId: string, request: BuyStoreItemRequest) {
@@ -117,46 +118,67 @@ export function readWantedPosters(gameId: string) {
 }
 
 export function inspectNoticeBoard(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/notice-board/inspect`, {
-    method: "POST",
-  });
+  return requestJson<InvestigationActionResultDto>(
+    `/api/games/${gameId}/investigations/notice-board/inspect`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function checkLocalRecords(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/local-records/check`, {
-    method: "POST",
-  });
+  return requestJson<InvestigationActionResultDto>(
+    `/api/games/${gameId}/investigations/local-records/check`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function followTelegraphLeads(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/telegraph-leads/follow`, {
-    method: "POST",
-  });
+  return requestJson<InvestigationActionResultDto>(
+    `/api/games/${gameId}/investigations/telegraph-leads/follow`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function gatherLocalGossip(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/local-gossip/gather`, {
-    method: "POST",
-  });
+  return requestJson<InvestigationActionResultDto>(
+    `/api/games/${gameId}/investigations/local-gossip/gather`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function lookAroundSaloon(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(`/api/games/${gameId}/investigations/saloon/look-around`, {
-    method: "POST",
-  });
+  return requestJson<InvestigationActionResultDto>(
+    `/api/games/${gameId}/investigations/saloon/look-around`,
+    {
+      method: "POST",
+    },
+  );
 }
 
-export function confrontSaloonPersonOfInterest(gameId: string, declaredWantedIdentityHandle: string) {
-  return requestJson<SaloonPersonOfInterestConfrontationResultDto>(`/api/games/${gameId}/investigations/saloon/confront`, {
-    method: "POST",
-    body: JSON.stringify({
-      declaredWantedIdentityHandle,
-    }),
-  });
+export function confrontSaloonPersonOfInterest(
+  gameId: string,
+  declaredWantedIdentityHandle: string,
+) {
+  return requestJson<SaloonPersonOfInterestConfrontationResultDto>(
+    `/api/games/${gameId}/investigations/saloon/confront`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        declaredWantedIdentityHandle,
+      }),
+    },
+  );
 }
 
 export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdentityHandle: string) {
-  return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle) as Promise<WantedSuspectConfrontationResultDto>;
+  return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle);
 }
 
 export function getPrologue(

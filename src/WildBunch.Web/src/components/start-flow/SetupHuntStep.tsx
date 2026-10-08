@@ -53,7 +53,6 @@ export function SetupHuntStep({
   gameDifficulty,
   gameEntropy,
   seedDraft,
-  seedDirty,
   decodeError,
   onPlayerNameChange,
   onGameDifficultyChange,
@@ -79,8 +78,8 @@ export function SetupHuntStep({
     <StepCard>
       <StepHeading>Set up your hunt</StepHeading>
       <StepLead>
-        Name yourself, pick your difficulty and entropy, and set the seed for the world
-        you will chase the culprit through.
+        Name yourself, pick your difficulty and entropy, and set the seed for the world you will
+        chase the culprit through.
       </StepLead>
 
       <StepForm onSubmit={handleSubmit}>
@@ -114,9 +113,7 @@ export function SetupHuntStep({
             value={gameDifficulty}
             onSelect={onGameDifficultyChange}
           />
-          <DifficultyDescription>
-            {difficultyDescriptions[gameDifficulty]}
-          </DifficultyDescription>
+          <DifficultyDescription>{difficultyDescriptions[gameDifficulty]}</DifficultyDescription>
         </FieldGroup>
 
         <FieldGroup>
@@ -126,9 +123,7 @@ export function SetupHuntStep({
             value={gameEntropy}
             onSelect={onGameEntropyChange}
           />
-          <DifficultyDescription>
-            {entropyDescriptions[gameEntropy]}
-          </DifficultyDescription>
+          <DifficultyDescription>{entropyDescriptions[gameEntropy]}</DifficultyDescription>
         </FieldGroup>
 
         <Field>
@@ -172,7 +167,11 @@ const StepCard = styled.article`
   border-radius: 24px;
   border: 1px solid color-mix(in srgb, var(--accent-strong) 20%, transparent);
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-strong) 14%, transparent), transparent 28%),
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent-strong) 14%, transparent),
+      transparent 28%
+    ),
     linear-gradient(180deg, rgba(29, 23, 16, 0.98), rgba(16, 12, 8, 0.98));
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
 `;

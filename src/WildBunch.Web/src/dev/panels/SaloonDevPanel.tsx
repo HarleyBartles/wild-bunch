@@ -12,7 +12,7 @@ interface SaloonDevPanelProps {
   expanded?: boolean;
 }
 
-export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
+export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelProps) {
   const { gameId } = useGameSession();
   const queryClient = useQueryClient();
 
@@ -50,14 +50,12 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
     try {
       await forceSaloonOverride(gameId, {
         forcedKind,
-        forcedSuspectId: forcedKind === "Suspect" && selectedSuspectId !== ""
-          ? selectedSuspectId
-          : null,
-        forcedCitizenRoleKey: forcedKind === "Citizen" && selectedCitizenRoleKey !== ""
-          ? selectedCitizenRoleKey
-          : null,
+        forcedSuspectId:
+          forcedKind === "Suspect" && selectedSuspectId !== "" ? selectedSuspectId : null,
+        forcedCitizenRoleKey:
+          forcedKind === "Citizen" && selectedCitizenRoleKey !== "" ? selectedCitizenRoleKey : null,
       });
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force override.");
     } finally {
@@ -70,7 +68,7 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
     setActionPending(true);
     try {
       await clearSaloonOverride(gameId);
-      refresh();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear override.");
     } finally {
@@ -134,7 +132,8 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
               {!data.activeSaloonPoi.suspectId && !data.activeSaloonPoi.suspectName && (
                 <MutedText>
                   Citizen POI — {data.activeSaloonPoi.descriptor}
-                  {data.activeSaloonPoi.citizenRole && ` (role: ${data.activeSaloonPoi.citizenRole})`}
+                  {data.activeSaloonPoi.citizenRole &&
+                    ` (role: ${data.activeSaloonPoi.citizenRole})`}
                 </MutedText>
               )}
             </PoiCard>
@@ -255,9 +254,9 @@ export function SaloonDevPanel({ expanded = false }: SaloonDevPanelProps) {
                     </Select>
                   </Field>
                   <CitizenNote>
-                    Source-backed cast of {data.citizenInfo.availableArchetypes.length} citizen roles.
-                    Citizen features come from the shared suspect vocabulary — the role selector
-                    chooses the citizen role, not a separate visual feature. The feature is
+                    Source-backed cast of {data.citizenInfo.availableArchetypes.length} citizen
+                    roles. Citizen features come from the shared suspect vocabulary — the role
+                    selector chooses the citizen role, not a separate visual feature. The feature is
                     concealed during lookaround and revealed only after mistaken take-in.
                   </CitizenNote>
                 </>
@@ -353,9 +352,7 @@ function SuspectCard({ suspect }: { suspect: SaloonSuspectDevDto }) {
         <SuspectFact>Known features: {suspect.warrantKnownFeatures.join("; ")}</SuspectFact>
       )}
       {suspect.warrantSummary && <SuspectFact>Warrant: {suspect.warrantSummary}</SuspectFact>}
-      {suspect.ineligibilityReason && (
-        <SuspectReason>{suspect.ineligibilityReason}</SuspectReason>
-      )}
+      {suspect.ineligibilityReason && <SuspectReason>{suspect.ineligibilityReason}</SuspectReason>}
     </SuspectRow>
   );
 }

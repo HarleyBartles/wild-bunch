@@ -7,11 +7,21 @@ import {
   formatBeatSlotLabel,
   formatBeatSlots,
 } from "../ui/beatFormatters";
-import { TrailBeatSlotType, type GameClockDto, type ClueTimeAnchorDto, type TrailBeatSlotDto } from "../api/types";
+import {
+  TrailBeatSlotType,
+  type GameClockDto,
+  type ClueTimeAnchorDto,
+  type TrailBeatSlotDto,
+} from "../api/types";
 
 describe("formatClockBeat", () => {
   it("uses beatLabel when available", () => {
-    const clock: GameClockDto = { day: 1, turn: 0, timeOfDay: "Morning", beatLabel: "Morning of Day 1" };
+    const clock: GameClockDto = {
+      day: 1,
+      turn: 0,
+      timeOfDay: "Morning",
+      beatLabel: "Morning of Day 1",
+    };
     expect(formatClockBeat(clock)).toBe("Morning of Day 1");
   });
 
@@ -23,7 +33,12 @@ describe("formatClockBeat", () => {
 
 describe("formatClueWhen", () => {
   it("uses timeOfDayLabel when available", () => {
-    const anchor: ClueTimeAnchorDto = { recency: 1, day: 2, turn: 1, timeOfDayLabel: "Afternoon of Day 2" };
+    const anchor: ClueTimeAnchorDto = {
+      recency: 1,
+      day: 2,
+      turn: 1,
+      timeOfDayLabel: "Afternoon of Day 2",
+    };
     expect(formatClueWhen(anchor)).toBe("Afternoon of Day 2");
   });
 
@@ -54,8 +69,9 @@ describe("formatRemainingRideDays", () => {
 
 describe("formatInvestigationNotice", () => {
   it("prepends beat narration to message", () => {
-    expect(formatInvestigationNotice("You spent the morning at the saloon", "No new gossip."))
-      .toBe("You spent the morning at the saloon No new gossip.");
+    expect(formatInvestigationNotice("You spent the morning at the saloon", "No new gossip.")).toBe(
+      "You spent the morning at the saloon No new gossip.",
+    );
   });
 
   it("falls back to message-only when beatNarration is null", () => {
@@ -75,8 +91,20 @@ describe("formatBeatSlotLabel", () => {
 describe("formatBeatSlots", () => {
   it("formats slots with titles", () => {
     const slots: TrailBeatSlotDto[] = [
-      { slotIndex: 0, slotType: TrailBeatSlotType.Minor, label: "Minor", title: "A lucky find", message: "You find supplies." },
-      { slotIndex: 1, slotType: TrailBeatSlotType.Quiet, label: "Quiet", title: null, message: null },
+      {
+        slotIndex: 0,
+        slotType: TrailBeatSlotType.Minor,
+        label: "Minor",
+        title: "A lucky find",
+        message: "You find supplies.",
+      },
+      {
+        slotIndex: 1,
+        slotType: TrailBeatSlotType.Quiet,
+        label: "Quiet",
+        title: null,
+        message: null,
+      },
     ];
     const result = formatBeatSlots(slots);
     expect(result).toEqual(["Minor event: A lucky find", "Quiet stretch"]);

@@ -4,7 +4,13 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SessionDevPanel } from "../dev/panels/SessionDevPanel";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng, setDevEntropy } from "../dev/devApi";
+import {
+  clearRng,
+  forceDevDifficulty,
+  getSessionDevContext,
+  lockRng,
+  setDevEntropy,
+} from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
   getSessionDevContext: vi.fn(),
