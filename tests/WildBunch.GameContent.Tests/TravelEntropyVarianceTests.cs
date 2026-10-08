@@ -22,8 +22,8 @@ namespace WildBunch.GameContent.Tests;
 ///
 /// Tests use the seed codec round-trip (SeedWorld -&gt; UUID via
 /// CreateRepresentativeSeedCode) rather than stored UUIDs, so codec changes
-/// don't break them. Dev routes (ForceDevSaltSource, ForceDevTravelOverride)
-/// isolate specific scenarios.
+/// don't break them. Tests establish fixed salt inputs at player genesis, while
+/// the supported travel override isolates specific encounter scenarios.
 ///
 /// See BUNCH-93.
 /// </summary>

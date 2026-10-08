@@ -31,9 +31,6 @@ vi.mock("phaser", () => {
 });
 
 vi.mock("../dev/devApi", () => ({
-  getTownLayoutSalts: vi.fn(),
-  setTownLayoutSalts: vi.fn(),
-  generateRandomTownLayoutSalts: vi.fn(),
   getSessionAudit: vi.fn(),
   getTravelDevContext: vi.fn(),
   forceTravelOverride: vi.fn(),

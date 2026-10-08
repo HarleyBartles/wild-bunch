@@ -90,8 +90,6 @@ public static class DependencyInjection
         services.AddScoped<ForceSaloonOverrideHandler>();
         services.AddScoped<ClearSaloonOverrideHandler>();
         services.AddScoped<GetSessionDevContextHandler>();
-        services.AddScoped<ForceDevSaltSourceHandler>();
-        services.AddScoped<ClearDevSaltSourceHandler>();
         services.AddScoped<ForceDevDifficultyHandler>();
         services.AddScoped<SetDevEntropyHandler>();
 

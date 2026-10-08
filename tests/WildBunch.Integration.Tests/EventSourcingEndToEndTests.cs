@@ -9,6 +9,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.GameContent.NewGame;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
@@ -149,6 +150,56 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         Assert.Equal("PlayerSetupCompleted", audit.Entries[0].EventType);
         Assert.Equal("TownActionContextEntered", audit.Entries[6].EventType);
         Assert.Equal("StoreItemPurchased", audit.Entries[7].EventType);
+    }
+
+    [Fact]
+    public async Task GeneratedTownLayoutFacts_SurvivePersistenceAndEventReplay()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+
+        var factory = new SeededNewGameFactory(new DeterministicSaltSourceFactory());
+        var seedCode = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorldResolver.CreateCanonicalSeedWorld()));
+        var (world, caseFile, seedCodeText, saltSource) = factory.ResolveWorld(
+            "Ranger Vale",
+            GameDifficulty.Standard,
+            seedCode,
+            GameEntropy.Classic);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, seedCodeText, saltSource);
+        var expectedTown = world.Towns.First();
+        var expectedLayout = expectedTown.Layout!;
+        var expectedSalts = Assert.IsType<LayoutSalts>(expectedLayout.LayoutSalts);
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.BuildingsSalt));
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.RoadsSalt));
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.DirtSalt));
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.PropsSalt));
+
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+
+        var persistedEvents = await repo.GetEventStreamAsync(session.Id);
+        var replayed = GameSession.RehydrateFromEvents(session.Id, world, persistedEvents);
+        var replayedTown = replayed.World.GetTown(expectedTown.Id);
+        var replayedLayout = Assert.IsType<TownLayout>(replayedTown.Layout);
+
+        Assert.Equal(expectedTown.Id, replayedTown.Id);
+        Assert.Equal(expectedLayout.Buildings, replayedLayout.Buildings);
+        Assert.Equal(expectedLayout.PlayerSpawnX, replayedLayout.PlayerSpawnX);
+        Assert.Equal(expectedLayout.PlayerSpawnY, replayedLayout.PlayerSpawnY);
+        Assert.Equal(expectedLayout.Prosperity, replayedLayout.Prosperity);
+        Assert.Equal(expectedLayout.Paths, replayedLayout.Paths);
+        Assert.Equal(expectedLayout.TileGrid, replayedLayout.TileGrid);
+        Assert.Equal(expectedLayout.ResolverVersion, replayedLayout.ResolverVersion);
+        var replayedSalts = Assert.IsType<LayoutSalts>(replayedLayout.LayoutSalts);
+        Assert.Equal(expectedSalts.BuildingsSalt, replayedSalts.BuildingsSalt);
+        Assert.Equal(expectedSalts.RoadsSalt, replayedSalts.RoadsSalt);
+        Assert.Equal(expectedSalts.DirtSalt, replayedSalts.DirtSalt);
+        Assert.Equal(expectedSalts.PropsSalt, replayedSalts.PropsSalt);
     }
 
     [Fact]

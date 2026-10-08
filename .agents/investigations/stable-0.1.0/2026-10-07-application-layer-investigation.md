@@ -6,6 +6,8 @@
 
 **Test remediation:** [The source-to-test follow-up](2026-10-07-application-test-followup.md) maps each AP finding to existing tests and the behavioral proof needed after correction, including obsolete expectations, useful assertions to retain and genuine coverage gaps.
 
+**Dated disposition, 2026-10-08:** The town-layout override, its prep/start commands and the session RNG lock/clear commands described in this source snapshot were retired from the 0.1.0 candidate. Findings and file inventory rows about those paths are historical evidence, not current implementation recommendations; see the dated outcomes in the [Application test follow-up](2026-10-07-application-test-followup.md) and the [developer control feature record](../../../docs/features.md#dev-001-developer-salt-controls).
+
 ## Folder ownership
 
 | Current owner | Assessment | Proposed disposition |

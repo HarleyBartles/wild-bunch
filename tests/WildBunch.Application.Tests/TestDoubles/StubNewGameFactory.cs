@@ -25,8 +25,6 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<GameEntropy> RequestedEntropies { get; } = [];
 
-    public List<LayoutSalts?> RequestedDevLayoutSalts { get; } = [];
-
     public GameSession CreatedSession => _sessionToReturn;
 
     public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
@@ -39,21 +37,6 @@ public sealed class StubNewGameFactory : INewGameFactory
         RequestedGameDifficulties.Add(gameDifficulty);
         RequestedSetupSeedCodes.Add(setupSeedCode);
         RequestedEntropies.Add(gameEntropy);
-        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000", _sessionToReturn.SaltSource);
-    }
-
-    public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
-        string playerName,
-        GameDifficulty gameDifficulty,
-        string? setupSeedCode,
-        GameEntropy gameEntropy,
-        LayoutSalts? devLayoutSalts)
-    {
-        RequestedPlayerNames.Add(playerName);
-        RequestedGameDifficulties.Add(gameDifficulty);
-        RequestedSetupSeedCodes.Add(setupSeedCode);
-        RequestedEntropies.Add(gameEntropy);
-        RequestedDevLayoutSalts.Add(devLayoutSalts);
         return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000", _sessionToReturn.SaltSource);
     }
 

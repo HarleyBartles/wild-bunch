@@ -6,6 +6,8 @@
 
 **Test follow-up:** [The Domain test assessment](2026-10-07-domain-test-followup.md) maps these findings to existing assertions and fixtures, missing invariant proof, conditional feature retirement and behavioral consolidation. Strict CQRS remains a baseline requirement.
 
+**Dated disposition, 2026-10-08:** The developer salt override events and zero-event prepped-start path described in this static snapshot were retired from the 0.1.0 candidate. Their findings and file inventory rows remain historical evidence, not current implementation recommendations; see the dated [Domain test follow-up](2026-10-07-domain-test-followup.md) and [developer control feature record](../../../docs/features.md#dev-001-developer-salt-controls). Normal event-backed setup and persisted generated layout facts remain supported.
+
 ## Patterns and ownership to protect
 
 The repository's domain/.NET/seed skills, backend and developer unslop profiles, gameplay invariants, architecture guardrails, seed pipeline and event-sourcing doctrine informed this audit. The selected architecture remains appropriate: `GameSession` owns external commands and event production, cohesive internal children own narrow rules and state, Application orchestrates, and Persistence stores history and reconstructs caches. The user's stricter target is that every session fact has event authority; the current zero-event preparation exception is recorded debt.

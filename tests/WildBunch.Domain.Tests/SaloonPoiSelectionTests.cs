@@ -146,9 +146,7 @@ public sealed class SaloonPoiSelectionTests
 
         foreach (var salt in salts)
         {
-            var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
-            session.ForceDevSaltSource(SaltSource.CreateFixed(salt));
-            session.MarkEventsCommitted();
+            var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect(salt);
 
             var result = session.LookAroundSaloon();
             Assert.True(result.Success);

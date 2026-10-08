@@ -3,13 +3,7 @@ import styled from "styled-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { SegmentedToggle } from "../../components/start-flow/SegmentedToggle";
-import {
-  clearRng,
-  forceDevDifficulty,
-  getSessionDevContext,
-  lockRng,
-  setDevEntropy,
-} from "../devApi";
+import { forceDevDifficulty, getSessionDevContext, setDevEntropy } from "../devApi";
 
 interface SessionDevPanelProps {
   expanded?: boolean;
@@ -32,9 +26,7 @@ const entropyOptions: ReadonlyArray<{ value: string; label: string }> = [
 export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
   const { gameId } = useGameSession();
   const queryClient = useQueryClient();
-  const [saltInput, setSaltInput] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [actionPending, setActionPending] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["dev-session-context", gameId],
@@ -54,57 +46,23 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ["dev-session-context", gameId] });
 
-  // Salt contract: blank input → null (handler generates a fresh fixed salt).
-  // Non-empty input → trimmed value sent as the exact reproducibility token.
-  const handleLock = async () => {
-    setError(null);
-    setActionPending(true);
-    try {
-      await lockRng(gameId, { salt: saltInput.trim() === "" ? null : saltInput.trim() });
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to lock RNG.");
-    } finally {
-      setActionPending(false);
-    }
-  };
-
-  const handleClear = async () => {
-    setError(null);
-    setActionPending(true);
-    try {
-      await clearRng(gameId);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to clear RNG.");
-    } finally {
-      setActionPending(false);
-    }
-  };
-
   const handleForceDifficulty = async (value: string) => {
     setError(null);
-    setActionPending(true);
     try {
       await forceDevDifficulty(gameId, { difficulty: value });
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force difficulty.");
-    } finally {
-      setActionPending(false);
     }
   };
 
   const handleSetEntropy = async (value: string) => {
     setError(null);
-    setActionPending(true);
     try {
       await setDevEntropy(gameId, { entropy: value });
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set entropy.");
-    } finally {
-      setActionPending(false);
     }
   };
 
@@ -229,30 +187,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
           </Row>
         </Section>
 
-        <Section>
-          <SectionTitle>RNG controls</SectionTitle>
-          <Field>
-            <Label>Salt (optional):</Label>
-            <Input
-              type="text"
-              value={saltInput}
-              onChange={(e) => setSaltInput(e.target.value)}
-              placeholder="(blank = generate)"
-            />
-          </Field>
-          <ButtonRow>
-            <Button type="button" onClick={handleLock} disabled={actionPending}>
-              Lock RNG
-            </Button>
-            <Button type="button" onClick={handleClear} disabled={actionPending}>
-              Clear RNG
-            </Button>
-          </ButtonRow>
-          <MutedText>
-            Locking RNG makes the run reproducible. It does not force encounter outcomes.
-          </MutedText>
-          {error && <ErrorText>{error}</ErrorText>}
-        </Section>
+        {error && <ErrorText>{error}</ErrorText>}
       </RightColumn>
     </Container>
   );
@@ -310,46 +245,6 @@ const Field = styled.div`
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-`;
-
-const Input = styled.input`
-  flex: 1;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border-strong);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 0.82rem;
-`;
-
-const ButtonRow = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-`;
-
-const Button = styled.button`
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  min-height: 32px;
-  transition-property: background-color, border-color;
-  transition-duration: 120ms;
-  transition-timing-function: ease-out;
-
-  &:hover:not(:disabled) {
-    background: var(--bg-hover);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 `;
 
 const MutedText = styled.p`

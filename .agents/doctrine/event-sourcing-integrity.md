@@ -11,41 +11,19 @@ which failure modes are prohibited. Relevant durable changes follow the
 
 ## Design Principles
 
-1. **Events are the source of history.** Event-backed session state must be
-   reconstructable from the event stream alone. The zero-event `StartPrepped`
-   state has no history to replay and uses its current snapshot load path.
+1. **Events are the source of history.** Event-backed session state must be reconstructable from the event stream alone. Player setup records its settled facts at Go; no zero-event `StartPrepped` state exists.
 
-2. **Snapshots do not replace event replay.** For event-backed state, a snapshot
-   is a performance optimization and a missing or stale snapshot falls back to
-   events. Snapshot components remain required to load the current zero-event
-   `StartPrepped` state until setup itself is event-backed.
+2. **Snapshots do not replace event replay.** For event-backed state, a snapshot is a performance optimization; a missing or stale snapshot falls back to events.
 
-3. **Projections are derived state.** Projections (components, diary days) are
-   rebuildable from the event stream. When a projection's stored version does not
-   match the current code version, the projection is dropped and rebuilt from
-   events — not upcasted. Upcasters are for events only (immutable history that
-   cannot be rebuilt).
+3. **Projections are derived state.** Projections (components, diary days) are rebuildable from the event stream. When a projection's stored version does not match the current code version, the projection is dropped and rebuilt from events, not upcasted. Upcasters are for events only (immutable history that cannot be rebuilt).
 
-4. **Upcasters are the version declarations.** There is no hand-edited version
-   registry for events. The current version for each event type is derived from
-   the count of registered upcasters. To bump a version, you write and register
-   an upcaster. The act of bumping IS the act of writing the upcaster.
+4. **Upcasters are the version declarations.** There is no hand-edited version registry for events. The current version for each event type is derived from the count of registered upcasters. To bump a version, write and register an upcaster. The act of bumping is the act of writing the upcaster.
 
-5. **The load path is a funnel.** There is no code path from persisted rows to
-   domain objects that bypasses version checking and upcasting. The serializer's
-   deserialize methods are internal; the only public load surface is
-   `PersistedPayloadLoader`, which always runs the version check.
+5. **The load path is a funnel.** There is no code path from persisted rows to domain objects that bypasses version checking and upcasting. The serializer's deserialize methods are internal; the only public load surface is `PersistedPayloadLoader`, which always runs the version check.
 
-6. **Fail closed.** If a version transition is missing an upcaster, the load
-   fails rather than returning stale-shape data. If a row is at a future version
-   the code doesn't understand, the load fails rather than silently treating it
-   as current.
+6. **Fail closed.** If a version transition is missing an upcaster, the load fails rather than returning stale-shape data. If a row is at a future version the code doesn't understand, the load fails rather than silently treating it as current.
 
-7. **Writeback on next save.** When a session is loaded with an old-version
-   projection and then saved (the normal play cycle), the projection is written
-   back at current version. Active playthroughs converge to current schema
-   naturally. Abandoned playthroughs stay at their old version on disk — no
-   global migration sweep.
+7. **Writeback on next save.** When a session is loaded with an old-version projection and then saved (the normal play cycle), the projection is written back at current version. Active playthroughs converge to current schema naturally. Abandoned playthroughs stay at their old version on disk; no global migration sweep.
 
 ## Event payload history
 
@@ -60,34 +38,17 @@ writers continue to include the populated case file in both events.
 
 ## Repository rules
 
-1. **All event-backed persisted state must be reconstructable from the event
-   stream alone.** If event-backed state cannot be rebuilt through `Apply` or a
-   projector, it is a violation. New event-backed state must either be set by an
-   `Apply` method from event fields or be derivable by a projector.
+1. **All event-backed persisted state must be reconstructable from the event stream alone.** If event-backed state cannot be rebuilt through `Apply` or a projector, it is a violation. New event-backed state must either be set by an `Apply` method from event fields or be derivable by a projector.
 
-2. **Snapshots are shortcut caches for event-backed state.** A missing or
-   corrupted event-backed snapshot must not prevent full replay. The zero-event
-   `StartPrepped` snapshot exception is current state, not event history, and
-   must remain loadable.
+2. **Snapshots are shortcut caches for event-backed state.** A missing or corrupted event-backed snapshot must not prevent full replay. There is no zero-event `StartPrepped` snapshot exception; do not add a snapshot-only authority path.
 
-3. **Projections are derived state.** Projection tables (components, diary days)
-   must have a projector that rebuilds them from the event stream. If a
-   projection table exists but no projector can rebuild it, that is a violation.
+3. **Projections are derived state.** Projection tables (components, diary days) must have a projector that rebuilds them from the event stream. If a projection table exists but no projector can rebuild it, that is a violation.
 
-4. **`Apply` methods must not create projections.** `Apply` sets aggregate state
-   from event fields. Projection creation (diary days, log entries, etc.) is a
-   read-path concern handled by projectors, not a write-path side effect of
-   `Apply`. The command path may create projections as a side effect for
-   performance, but the projector must be able to produce the same result from
-   events alone.
+4. **`Apply` methods must not create projections.** `Apply` sets aggregate state from event fields. Projection creation (diary days, log entries, etc.) is a read-path concern handled by projectors, not a write-path side effect of `Apply`. The command path may create projections as a side effect for performance, but the projector must be able to produce the same result from events alone.
 
-5. **Command-path state and replay-path state must converge.** Projection state
-   must also converge. A projector's output must match what the command path
-   produced.
+5. **Command-path state and replay-path state must converge.** Projection state must also converge. A projector's output must match what the command path produced.
 
-6. **No new persisted state without a replay path.** When adding a new field to a
-   projection or a new projection table, the projector that rebuilds it from
-   events must be written in the same change. No "we'll add the projector later."
+6. **No new persisted state without a replay path.** When adding a new field to a projection or a new projection table, the projector that rebuilds it from events must be written in the same change. No "we'll add the projector later."
 
 ## Canonical Flow Diagram
 
@@ -118,10 +79,6 @@ flowchart TD
     Rehydrate --> RebuildProj[Rebuild projections via projectors]
     RebuildProj --> ReturnAgg
 
-    %% Zero-event setup state has no event history to replay
-    Prep[Zero-event StartPrepped state] --> PrepSnap[Load current setup snapshot]
-    PrepSnap --> ReturnAgg
-
     %% Projection rebuild path
     LoadProj[Load projection] --> CheckProjVer{Projection version current?}
     CheckProjVer -->|Yes| UseStored[Use stored projection JSON]
@@ -149,10 +106,7 @@ flowchart TD
 The following are violations of this doctrine. Each describes a pattern that an
 agent might introduce and why it is wrong.
 
-1. **Snapshot dependency for event-backed state.** If event-backed state
-   cannot load when its snapshot is missing, corrupted, or version-stale, that
-   is a violation; full replay must work. This does not apply to the current
-   zero-event `StartPrepped` state.
+1. **Snapshot dependency for event-backed state.** If event-backed state cannot load when its snapshot is missing, corrupted, or version-stale, that is a violation; full replay must work. There is no current zero-event `StartPrepped` exception.
 
 2. **Direct mutation outside `Apply`.** State changes that don't flow through
    `ProduceEvent` → `Apply` are not event-sourced. They won't be reconstructed by

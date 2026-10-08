@@ -64,6 +64,8 @@ The test named `preserves player name draft through the full start flow` only ch
 
 The session RNG-lock assertion uses `objectContaining({})`, which proves no salt payload semantics despite source explicitly distinguishing blank from supplied salts. Add blank/nonblank behavior at the payload boundary instead of another superficial call-count test. Developer diagnostics remain a valid separate capability; this finding does not propose exposing them in production.
 
+**Dated disposition, 2026-10-08:** The Town Layout dev panel and its unsupported prep/set flow were retired for 0.1.0, so the panel's call-only and failure-recovery recommendations no longer apply. Session RNG lock/clear was also removed; deterministic gameplay tests use the fixed-salt genesis seam. Remaining dev controls still need observed backend readback and rejection recovery where those behaviors are part of their live contract.
+
 ### W-10: Transport and travel failures are unexercised
 
 `wildBunchApi.test.ts` tests successful preview URLs but provides no HTTP failure proof. `api/httpClient.ts` has known error extraction for title, error, validation errors, detail, plain text and fallback status, including unreadable-body handling. Add a focused transport scenario table for meaningful error propagation and fetch rejection. Decide the desired successful malformed-body behavior separately; the current cast is not runtime schema validation.
@@ -160,11 +162,13 @@ The duplicated `TravelDiaryDayState_HasNoBeatSlotsField` reflection checks in do
 
 ### N-09: Salt and map tests overclaim count/non-null assertions
 
-Application `Integration/DevEnabledActionPatternOrchestrationTests` claims injected/default layout salts are used but checks only Active and nonnull World. Prove the actual effective salt bundles and layout output after prep/inject/start. The handler spy's null-salt case is useful but does not prove a populated bundle is forwarded.
+Application `Integration/DevEnabledActionPatternOrchestrationTests` claimed injected/default layout salts were used but checked only Active and nonnull World. Prove the actual effective salt bundles and layout output after prep/inject/start. The handler spy's null-salt case did not prove a populated bundle was forwarded.
 
 `GetStartingTownMapHandlerTests` claims selectability from a count of eight, complete trail coverage from nonempty output and correct distances from positive values. Replace with a rich explicit world-to-map mapping scenario covering identities, endpoints, coordinates and actual distances. `GetWorldMapHandlerTests` actually exercises the starting-map handler; consolidate its useful missing-session negative into the proper owner. `GetStartingTownsHandlerTests` can consolidate count/ID subsets into complete ID/name/service mapping. Catalog-based adapter comparison is meaningful where the catalog independently owns those facts.
 
 Domain `ClueSurfacingResolverTests.SaltMode_DifferentSaltCanSelectDifferentClue` checks variation within either salt, so ignoring salt while varying town/visit still passes. Compare salts at identical input pairs and require an actual changed result. Keep determinism and exhausted/known-clue behavior.
+
+**Dated disposition, 2026-10-08:** The prep/inject/start capability is retired from the 0.1.0 candidate, so its feature-specific orchestration and override tests were removed rather than strengthened. The retained independent proof is ordinary generated layout persistence/replay in `EventSourcingEndToEndTests.GeneratedTownLayoutFacts_SurvivePersistenceAndEventReplay`; its target is normal `WorldGenerated` facts, not a developer override.
 
 ### N-10: Nonmutation and order claims need independent values
 
@@ -195,9 +199,11 @@ Integration `Versioning/ProjectionVersionCompletenessTests` freezes diary versio
 
 Integration `TestInfrastructure/ScenarioSeedCatalog` writes literal role/service labels into its purported observed signature and compares a current codec with descriptors initialized from the same current codec. Those subchecks cannot detect role/service/codec drift. Preserve real readiness checks for resources, graph and routes; centralize the needed behavioral prerequisites instead of repeatedly validating the whole fixture in unrelated endpoint tests. `BoringScenarioBuilderTests` also tests wallet/horse/saddle under a service-readiness title and mounted travel under a foot-travel label. Align fixtures, titles and observed behavior.
 
-Six RNG endpoint tests are permanently skipped because `DevEndpoints` actually comments out the routes. Active poster acceptance/API tests nevertheless POST lock-rng and ignore its response. That request cannot establish its claimed preparation; determinism currently comes from the test factory's fixed-salt seam. Remove dead preparation, require success for genuine required setup, and track unimplemented RNG routing explicitly. Do not simply enable dormant tests against absent endpoints.
+Six RNG endpoint tests were permanently skipped because `DevEndpoints` commented out the routes. Active poster acceptance/API tests nevertheless POSTed lock-rng and ignored its response. That request could not establish its claimed preparation; determinism came from the test factory's fixed-salt seam. Remove dead preparation, require success for genuine required setup, and track unimplemented RNG routing explicitly. Do not simply enable dormant tests against absent endpoints.
 
-All three `TownLayoutDevIntegrationTests` are permanently skipped, use wrong prep command field names and do not establish effective layouts. Their expected 400 for non-Prepped mutation is not mapped by the current exception handler. The expected Active status after dev start is correct; the handler's setup-complete comment is stale. Replace their promised proof with the live prep/inject/start lifecycle and observed effective layouts when that slice is authorized; supplying PostgreSQL cannot enable a permanent attribute skip.
+All three `TownLayoutDevIntegrationTests` were permanently skipped, used wrong prep command field names and did not establish effective layouts. Their expected 400 for non-Prepped mutation was not mapped by the current exception handler. The expected Active status after dev start was correct; the handler's setup-complete comment was stale.
+
+**Dated disposition, 2026-10-08:** Session RNG lock/clear routes, commands, events, skipped route tests and ignored requests are removed from the 0.1.0 candidate. Deterministic scenarios continue to set their fixed `SaltSource` at genesis. This resolves the identified shell by retirement, not by enabling dormant routes.
 
 ### N-13: Secrecy and post-commit tests can pass without observing useful data
 
@@ -298,7 +304,7 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/TownHubScene.test.ts` | Retain scene data/selection/availability behavior; remove ineffective key smoke and property-absence detectors (W-04). |
 | `tests/TownHubScene.tiles.test.ts` | Retain tile placement, overlap and transform behavior; deterministic visual construction has an independently meaningful renderer contract. |
 | `tests/TownHubSurface.test.tsx` | Retain accessible alternate navigation and action dispatch; retire historic copy-absence checks and narrow visual-focus claims (W-11). |
-| `tests/TownLayoutDevPanel.test.tsx` | Consolidate generate/payload/refreshed salt proof; cover rejected mutation and restored controls (W-09). |
+| `tests/TownLayoutDevPanel.test.tsx` | Retired 2026-10-08 with the unsupported town-layout override; no new failure-recovery panel test. |
 | `tests/TrailFlowSurfaceCompleted.test.tsx` | Consolidate heading, affordance and invocation into completed-arrival behavior; add acknowledgment failure at its owner. |
 | `tests/TravelDevPanel.test.tsx` | Retain force/clear behavior; add rejected mutation/recovery and consolidate successful scenario fragments (W-09). |
 | `tests/TravelPanel.test.tsx` | Retain journey-state, pending, hydration and request payload proof; add known command/refresh failure scenarios (W-10). |

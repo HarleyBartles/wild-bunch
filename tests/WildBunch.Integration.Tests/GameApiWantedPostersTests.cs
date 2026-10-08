@@ -19,19 +19,11 @@ public sealed class GameApiWantedPostersTests
 
         var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
         scenario.AssertReady();
+        // The API test factory supplies a fixed SaltSource at player genesis, and this scenario selects Boring entropy.
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
-
-        // BUNCH-107: Force a fixed salt so the wanted-poster resolver uses
-        // boring-mode selection (deterministic). With Classic entropy, the salt
-        // is Runtime (random), making warrant selection non-deterministic.
-        // In boring mode: (townSlotIndex + visitCount) % eligibleCount = (0 + 1) % 27 = 1
-        // → warrant at index 1 = "Sundance Kid" (a gang member warrant).
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/session/lock-rng",
-            new LockRngRequestDto(Salt: "test-salt-fixed"));
 
         var actionResponse = await client.PostAsync($"/api/games/{createdSession!.Id}/wanted-posters/read", content: null);
 
@@ -145,11 +137,6 @@ public sealed class GameApiWantedPostersTests
 
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
-
-        // Force a fixed salt for deterministic warrant selection.
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/session/lock-rng",
-            new LockRngRequestDto(Salt: "test-salt-fixed"));
 
         // Discover a connected town dynamically — no hardcoded town names.
         var destinationTownId = createdSession.World.Trails
