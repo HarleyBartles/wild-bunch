@@ -39,12 +39,12 @@
 
 **Files:** Create this plan; update `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; update `Directory.Build.props`; delete `.agents/plans/2026-10-08-retire-trail-npc-encounters.md`.
 
-- [ ] Record PR #197 as merged to `develop` at `cfea9fb2f064f76257e86c8c1ebf19607ab54b8e`, source head `673a746ee36ef6f466e1499ce518da3a55651025`, hosted canonical gate run 37832754428, and the documented self-review fallback.
-- [ ] Classify the completed generated friendly trail-NPC retirement as shipped and retire its plan in this successor slice.
-- [ ] Update roadmap row 05 to link this plan, record `0.1.0-dev.13` as the checkpoint, and keep row 05 executing for later exclusions.
-- [ ] Advance `Directory.Build.props` exactly once from `0.1.0-dev.12` to `0.1.0-dev.13`.
-- [ ] Stage only the new plan, roadmap, version and predecessor retirement; inspect the staged diff and commit through the check-only hook before implementation.
-- [ ] After the bootstrap commit creates its SHA, record that exact plan-commit SHA in roadmap row 05 and commit the one-row correction before touching implementation code; do not bump the development version again.
+- [x] Record PR #197 as merged to `develop` at `cfea9fb2f064f76257e86c8c1ebf19607ab54b8e`, source head `673a746ee36ef6f466e1499ce518da3a55651025`, hosted canonical gate run 37832754428, and the documented self-review fallback.
+- [x] Classify the completed generated friendly trail-NPC retirement as shipped and retire its plan in this successor slice.
+- [x] Update roadmap row 05 to link this plan, record `0.1.0-dev.13` as the checkpoint, and keep row 05 executing for later exclusions.
+- [x] Advance `Directory.Build.props` exactly once from `0.1.0-dev.12` to `0.1.0-dev.13`.
+- [x] Stage only the new plan, roadmap, version and predecessor retirement; inspect the staged diff and commit through the check-only hook before implementation (`5567e19`).
+- [x] After the bootstrap commit creates its SHA, record that exact plan-commit SHA in roadmap row 05 and commit the one-row correction before touching implementation code; do not bump the development version again.
 
 ### Task 2: Prove and implement the one-catalog prosperity contract
 
