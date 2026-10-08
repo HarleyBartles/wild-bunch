@@ -11,7 +11,7 @@ Wild Bunch uses the shared Windows PostgreSQL cluster at
 - Connection string:
   `Host=localhost;Port=5435;Database=wildbunch_dev;Username=postgres`
 - Ownership: the service is shared across Wild Bunch worktrees and other local
-  repositories; normal worker cleanup must not stop it.
+  repositories, so stopping it affects every local user of that cluster.
 
 ## Service commands
 
@@ -21,9 +21,10 @@ Wild Bunch uses the shared Windows PostgreSQL cluster at
 ```
 
 `ensure` initializes or starts the shared cluster when needed and creates
-`wildbunch_dev` if it is absent. It is safe to rerun. `stop` and `reset` change
-shared state and require explicit lifecycle intent; they are not normal worker
-cleanup commands.
+`wildbunch_dev` if it is absent. It is safe to rerun. `stop` stops the shared
+cluster, while `reset` drops and recreates only the `wildbunch_dev` database;
+use `reset` only when you intend to discard local game data. Stopping the
+cluster affects other local users of the service.
 
 ## Validation
 
@@ -53,4 +54,4 @@ the persistent `wildbunch_dev` app database.
 dotnet run --project src\WildBunch.Api --launch-profile http
 ```
 
-Leave the shared PostgreSQL service running when the worktree task ends.
+Leave the shared PostgreSQL service running during ordinary local development.
