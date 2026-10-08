@@ -27,6 +27,7 @@
 - Order the gate from cheap checks to expensive checks, and finish all available formatting, lint, and static checks before starting any behavioral test suite. In particular, a lint failure must stop the gate before pytest, Vitest, or `dotnet test` begins. The gate stops at the first failure and prints the exact focused repair/recheck command.
 - Do not implement the editor integration or agent lifecycle hook in this plan. A later JIT plan in row 04 may consume the target path API after this foundation merges; do not write that successor plan ahead of time.
 - Before merge, reconcile the version with latest `develop`; if another PR merged first, advance to the next unused dev number and rerun affected review and validation.
+- This style plan records the Gitflow and SemVer adoption decision for the epic; it does not change the operating-standard subscription, certification, or durable runbook routes. Row 18 owns that JIT implementation. Preserve the already-settled branch routes and per-merged-PR `0.1.0-dev.N` cadence here.
 
 ## Review Focus
 
@@ -96,13 +97,14 @@
 
 ## Task 6: Verify and prepare the PR
 
-**Files:** All Task 1-5 changes.
+**Files:** All Task 1-5 changes; modify the cloud release specification and cleanup roadmap to record the intended Gitflow/SemVer adoption. Subscription, certification, and durable runbook routing remain for the row 18 JIT plan.
 
 - [x] Run pinned Ruff format/lint, Prettier check, ESLint, and `dotnet format --verify-no-changes` independently in cheapest-first order; stop at the first failure and review each diagnostic without broad auto-fix or suppressions.
 - [x] Run focused tool behavior tests and the staged-candidate hook behavior tests; verify check mode never changes tracked files and apply mode modifies only its explicit path set.
 - [x] Run `py -3 tools/run.py ci --check` against the committed candidate prerequisites and inspect the fail-fast ordering evidence; hosted CI must use the same gate.
 - [x] Search the final diff and live documentation for stale claims about absent lint/format targets, direct tool commands presented as the agent-facing route, accidental Markdown reflow, and the row 03 plan after retirement.
 - [x] Independently reconcile the ADR catalogue and decision-record obligations against the diff; include any required dated correction in the same PR and do not create an ADR merely to record package versions or implementation details.
+- [x] Record the epic's intended Gitflow/SemVer adoption and preserve existing `develop`/`main`, per-merged-PR `dev.N`, `rc.N`, single-version-source, and immutable-release decisions. PR #349's merged definition at `7a20ef191bb6be3b67fbbb9e86bd7b0050f96fc5` was assessed; row 18 will pin the accepted immutable standard version available when that JIT plan is written. Do not set a 1.0.0 compatibility contract as part of the 0.1.0 epic.
 - [ ] Stage the integrated source, tests, configuration, version, roadmap and guidance changes, then make one implementation commit through the normal check-only hook; do not bypass the hook.
 - [ ] Complete a fresh whole-branch review, fix all actionable findings and re-review the fixed diff, then publish a Draft PR to `develop`, advance it to Ready only after local review and validation pass, and verify the exact remote head and hosted gate before merge.
 - [ ] Keep this plan and the governing specification through the completing PR; the next substantive successor slice will classify them for retirement.
