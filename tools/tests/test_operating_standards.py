@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_operating_standards
 
 
-def _repository(tmp_path, certification: str = ".agents/contracts/standards-certification.md#runbook-composition"):
+def _repository(
+    tmp_path,
+    certification: str = ".agents/contracts/standards-certification.md#runbook-composition",
+):
     (tmp_path / "AGENTS.md").write_text(
-        "Read [.agents/contracts/operating-standards.json](.agents/contracts/operating-standards.json) "
+        "Read [.agents/contracts/operating-standards.json]"
+        "(.agents/contracts/operating-standards.json) "
         "and [standards certification](.agents/contracts/standards-certification.md).\n",
         encoding="utf-8",
     )
@@ -56,7 +60,9 @@ def test_malformed_immutable_pin_fails(tmp_path):
     record = json.loads(path.read_text(encoding="utf-8"))
     record["standards"][0]["source"]["commit"] = "main"
     path.write_text(json.dumps(record), encoding="utf-8")
-    assert any("full lowercase" in finding for finding in check_operating_standards.check_repository(root))
+    assert any(
+        "full lowercase" in finding for finding in check_operating_standards.check_repository(root)
+    )
 
 
 def test_legacy_record_is_rejected_as_explicit_migration_work(tmp_path):

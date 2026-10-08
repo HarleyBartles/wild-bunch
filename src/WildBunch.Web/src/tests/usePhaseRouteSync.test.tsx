@@ -119,9 +119,21 @@ function TestSyncHost() {
 function renderWithRouter(initialUrl: string) {
   window.history.replaceState({}, "", initialUrl);
   const rootRoute = createRootRoute({ component: TestSyncHost });
-  const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => <div>start</div> });
-  const townRoute = createRoute({ getParentRoute: () => rootRoute, path: "/town", component: () => <div>town</div> });
-  const trailRoute = createRoute({ getParentRoute: () => rootRoute, path: "/trail", component: () => <div>trail</div> });
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    component: () => <div>start</div>,
+  });
+  const townRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town",
+    component: () => <div>town</div>,
+  });
+  const trailRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/trail",
+    component: () => <div>trail</div>,
+  });
   const router = createRouter({
     routeTree: rootRoute.addChildren([indexRoute, townRoute, trailRoute]),
   });

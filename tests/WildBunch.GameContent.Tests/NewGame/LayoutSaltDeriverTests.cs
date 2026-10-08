@@ -14,10 +14,10 @@ public sealed class LayoutSaltDeriverTests
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
         var entropyPolicy = EntropyPolicy.For(GameEntropy.Classic);
         var townId = new TownId("town-1");
-        
+
         var salts1 = LayoutSaltDeriver.DeriveLayoutSalts(seedWorld, entropyPolicy, townId, 0, null);
         var salts2 = LayoutSaltDeriver.DeriveLayoutSalts(seedWorld, entropyPolicy, townId, 0, null);
-        
+
         Assert.Equal(salts1, salts2);
     }
 
@@ -28,9 +28,9 @@ public sealed class LayoutSaltDeriverTests
         var entropyPolicy = EntropyPolicy.For(GameEntropy.Classic);
         var townId = new TownId("town-1");
         var devSalts = new LayoutSalts("dev-buildings", "dev-roads", "dev-dirt", "dev-props");
-        
+
         var salts = LayoutSaltDeriver.DeriveLayoutSalts(seedWorld, entropyPolicy, townId, 0, devSalts);
-        
+
         Assert.Equal(devSalts, salts);
     }
 
@@ -41,10 +41,10 @@ public sealed class LayoutSaltDeriverTests
         var entropyRuntime = EntropyPolicy.For(GameEntropy.Classic);
         var entropyFixed = EntropyPolicy.For(GameEntropy.Boring);
         var townId = new TownId("town-1");
-        
+
         var saltsRuntime = LayoutSaltDeriver.DeriveLayoutSalts(seedWorld, entropyRuntime, townId, 0, null);
         var saltsFixed = LayoutSaltDeriver.DeriveLayoutSalts(seedWorld, entropyFixed, townId, 0, null);
-        
+
         Assert.NotEqual(saltsRuntime, saltsFixed);
     }
 }

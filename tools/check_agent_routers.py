@@ -10,7 +10,6 @@ import sys
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote, urlsplit
 
-
 ROOT_ROUTES = (
     ".agents/contracts/operating-standards.json",
     ".agents/contracts/standards-certification.md",
@@ -53,7 +52,9 @@ def check_routers(root: Path, routers: dict[str, str]) -> list[str]:
         if len(lines) > budget:
             findings.append(f"{relative}: {len(lines)} lines exceeds {budget}-line budget")
         if not is_root:
-            statements = [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
+            statements = [
+                line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")
+            ]
             scope = PurePosixPath(relative).parent.as_posix()
             if (
                 len(statements) != 1
@@ -62,7 +63,9 @@ def check_routers(root: Path, routers: dict[str, str]) -> list[str]:
                 or not re.search(r"\b(read|follow|consult)\b", statements[0], re.IGNORECASE)
                 or not statements[0].endswith((".", "!", "?"))
             ):
-                findings.append(f"{relative}: scoped router must be one scoped sentence with a read condition")
+                findings.append(
+                    f"{relative}: scoped router must be one scoped sentence with a read condition"
+                )
         for route in ROOT_ROUTES if is_root else ():
             if route not in text:
                 findings.append(f"AGENTS.md must route to {route}")
@@ -71,9 +74,7 @@ def check_routers(root: Path, routers: dict[str, str]) -> list[str]:
 
 
 def _tracked_routers(root: Path) -> dict[str, str]:
-    result = subprocess.run(
-        ["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True
-    )
+    result = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True)
     paths = [item.decode("utf-8") for item in result.stdout.split(b"\0") if item]
     routers: dict[str, str] = {}
     for relative in paths:
@@ -96,7 +97,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {finding}", file=sys.stderr)
     if findings:
         return 1
-    print(f"OK router structure and links ({len(_tracked_routers(args.repo_root))} tracked router(s))")
+    print(
+        f"OK router structure and links ({len(_tracked_routers(args.repo_root))} tracked router(s))"
+    )
     return 0
 
 

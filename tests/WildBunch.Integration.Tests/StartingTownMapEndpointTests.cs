@@ -114,7 +114,7 @@ public sealed class StartingTownMapEndpointTests
         // Build a specific seed world descriptor for this test instead of relying on canonical seed
         var seedCode = SeedWorldResolver.CreateCanonicalSeedCode();
         var seedWorld = SeedWorldResolver.Resolve(seedCode);
-        
+
         var request = new SetupGameRequest(
             "Test Player",
             GameDifficulty.Standard,

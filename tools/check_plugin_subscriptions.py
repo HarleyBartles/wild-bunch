@@ -16,7 +16,6 @@ import tomllib
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import urlsplit
 
-
 CATALOG = Path(".agents/plugins/marketplace.json")
 CONFIG = Path(".codex/config.toml")
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -94,7 +93,9 @@ def _load_catalog(path: Path) -> tuple[str | None, set[str], list[str]]:
         if not _git_url(source.get("url")):
             errors.append(f"{label}.source.url must be a Git URL")
         if kind == "git-subdir" and not _contained_codex_path(source.get("path")):
-            errors.append(f"{label}.source.path must be a contained './' repository-relative plugin path")
+            errors.append(
+                f"{label}.source.path must be a contained './' repository-relative plugin path"
+            )
         if kind == "url" and "path" in source:
             errors.append(f"{label}.source.path is only valid with 'git-subdir'")
         if not _selector_valid(source):
@@ -114,7 +115,9 @@ def check_codex(root: Path) -> list[str]:
         return [*errors, f"{CONFIG.as_posix()}: marketplaces and plugins must be TOML tables"]
     registration = marketplaces.get(catalog_name) if catalog_name else None
     if not isinstance(registration, dict) or registration.get("source_type") != "git":
-        errors.append("Codex marketplace registration must match the catalog name and use source_type = 'git'")
+        errors.append(
+            "Codex marketplace registration must match the catalog name and use source_type = 'git'"
+        )
     elif not _git_url(registration.get("source")):
         errors.append("Codex marketplace registration source must be a Git URL")
     elif "ref" in registration and (
@@ -147,7 +150,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {finding}", file=sys.stderr)
     if findings:
         return 1
-    print("OK Codex declarations; fetching, access, installation, and runtime loading are not assessed")
+    print(
+        "OK Codex declarations; fetching, access, installation, and runtime loading "
+        "are not assessed"
+    )
     return 0
 
 

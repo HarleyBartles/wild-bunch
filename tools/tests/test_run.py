@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
-import sys
 import subprocess
+import sys
+from pathlib import Path
 
 import pytest
-
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -65,7 +64,10 @@ def test_selected_target_without_mode_fails_before_target_work(monkeypatch, caps
     monkeypatch.setitem(
         run.TARGETS,
         "ci",
-        {"apply": lambda _ctx: invoked.append("apply"), "check": lambda _ctx: invoked.append("check")},
+        {
+            "apply": lambda _ctx: invoked.append("apply"),
+            "check": lambda _ctx: invoked.append("check"),
+        },
     )
 
     status = run.main(["ci"])
@@ -80,7 +82,10 @@ def test_bare_bus_invocation_lists_targets_without_running_work(monkeypatch, cap
     monkeypatch.setitem(
         run.TARGETS,
         "ci",
-        {"apply": lambda _ctx: invoked.append("apply"), "check": lambda _ctx: invoked.append("check")},
+        {
+            "apply": lambda _ctx: invoked.append("apply"),
+            "check": lambda _ctx: invoked.append("check"),
+        },
     )
 
     status = run.main([])
@@ -95,7 +100,10 @@ def test_ci_help_describes_its_work_without_running_it(monkeypatch, capsys) -> N
     monkeypatch.setitem(
         run.TARGETS,
         "ci",
-        {"apply": lambda _ctx: invoked.append("apply"), "check": lambda _ctx: invoked.append("check")},
+        {
+            "apply": lambda _ctx: invoked.append("apply"),
+            "check": lambda _ctx: invoked.append("check"),
+        },
     )
 
     with pytest.raises(SystemExit) as exit_info:
@@ -108,12 +116,15 @@ def test_ci_help_describes_its_work_without_running_it(monkeypatch, capsys) -> N
     assert invoked == []
 
 
-def test_dotnet_build_forwards_arguments_and_child_exit_status(tmp_path, monkeypatch, capfd) -> None:
+def test_dotnet_build_forwards_arguments_and_child_exit_status(
+    tmp_path, monkeypatch, capfd
+) -> None:
     result_file = tmp_path / "arguments.txt"
     child = tmp_path / "child.py"
     child.write_text(
         "import pathlib, sys\n"
-        f"pathlib.Path({str(result_file)!r}).write_text('\\n'.join(sys.argv[1:]), encoding='utf-8')\n"
+        f"pathlib.Path({str(result_file)!r}).write_text("
+        "'\\n'.join(sys.argv[1:]), encoding='utf-8')\n"
         "print('build child output')\n"
         "raise SystemExit(29)\n",
         encoding="utf-8",
@@ -124,11 +135,16 @@ def test_dotnet_build_forwards_arguments_and_child_exit_status(tmp_path, monkeyp
         lambda arguments=(): [sys.executable, str(child), *arguments],
     )
 
-    status = run.main(["dotnet-build", "--check", "--", "--no-restore", "-p:BuildProjectReferences=false"])
+    status = run.main(
+        ["dotnet-build", "--check", "--", "--no-restore", "-p:BuildProjectReferences=false"]
+    )
 
     captured = capfd.readouterr()
     assert status == 29
-    assert result_file.read_text(encoding="utf-8").splitlines() == ["--no-restore", "-p:BuildProjectReferences=false"]
+    assert result_file.read_text(encoding="utf-8").splitlines() == [
+        "--no-restore",
+        "-p:BuildProjectReferences=false",
+    ]
     assert "build child output" in captured.out
 
 
@@ -143,7 +159,9 @@ def test_setup_hooks_apply_changes_only_local_git_configuration(tmp_path, monkey
     assert _git(tmp_path, "status", "--porcelain") == ""
 
 
-def test_setup_hooks_check_rejects_a_different_local_hook_path(tmp_path, monkeypatch, capsys) -> None:
+def test_setup_hooks_check_rejects_a_different_local_hook_path(
+    tmp_path, monkeypatch, capsys
+) -> None:
     _git_repo(tmp_path)
     _git(tmp_path, "config", "--local", "core.hooksPath", "other-hooks")
     monkeypatch.setattr(run, "ROOT", tmp_path)
@@ -160,7 +178,14 @@ def test_ci_preserves_failing_child_output_and_exit_status(monkeypatch, capfd) -
     monkeypatch.setattr(
         run,
         "CI_CHECKS",
-        (("child-check", lambda ctx: run._run(child, ctx), "fix the child", "py -3 tools/run.py ci --check"),),
+        (
+            (
+                "child-check",
+                lambda ctx: run._run(child, ctx),
+                "fix the child",
+                "py -3 tools/run.py ci --check",
+            ),
+        ),
     )
 
     status = run.main(["ci", "--check"])
@@ -185,8 +210,18 @@ def test_ci_failure_names_the_failed_check_and_recheck_command(monkeypatch, caps
         run,
         "CI_CHECKS",
         (
-            ("first-check", fail, "repair the subscription", "py -3 tools/check_operating_standards.py --check"),
-            ("second-check", should_not_run, "run the second check again", "py -3 tools/run.py ci --check"),
+            (
+                "first-check",
+                fail,
+                "repair the subscription",
+                "py -3 tools/check_operating_standards.py --check",
+            ),
+            (
+                "second-check",
+                should_not_run,
+                "run the second check again",
+                "py -3 tools/run.py ci --check",
+            ),
         ),
     )
 
@@ -199,6 +234,29 @@ def test_ci_failure_names_the_failed_check_and_recheck_command(monkeypatch, caps
     assert "repair the subscription" in error
     assert "focused recheck: py -3 tools/check_operating_standards.py --check" in error
     assert "full recheck: py -3 tools/run.py ci --check" in error
+
+
+def test_ci_lint_failure_stops_before_behavioral_tests(monkeypatch, capfd) -> None:
+    commands: list[list[str]] = []
+
+    def run_command(command: list[str], _ctx) -> None:
+        commands.append(command)
+        if "ruff" in command and "check" in command:
+            raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(run, "_run", run_command)
+
+    status = run.main(["ci", "--check"])
+
+    captured = capfd.readouterr()
+    assert status != 0
+    assert any("ruff" in command and "check" in command for command in commands)
+    assert not any("dotnet" in command and "build" in command for command in commands)
+    assert not any("typecheck" in command for command in commands)
+    assert not any("pytest" in command for command in commands)
+    assert not any("dotnet" in command and "test" in command for command in commands)
+    assert not any("npm" in command and "test" in command for command in commands)
+    assert "target 'ci' failed" in captured.err
 
 
 def _git(root: Path, *args: str) -> str:

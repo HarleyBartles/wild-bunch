@@ -3,14 +3,7 @@ import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
 import { previewTravel } from "../api/wildBunchApi";
 import { formatRisk, formatTrailTerrain, formatWaterFeature } from "../ui/formatters";
-import {
-  Panel,
-  PanelHead,
-  PanelSubtitle,
-  Stack,
-  ItemCard,
-  Muted,
-} from "./ui/sharedStyled";
+import { Panel, PanelHead, PanelSubtitle, Stack, ItemCard, Muted } from "./ui/sharedStyled";
 
 const DestinationCard = styled(ItemCard).attrs({ as: "button" })`
   width: 100%;
@@ -93,7 +86,8 @@ function connectedDestinations(session: GameSessionDto) {
       continue;
     }
 
-    const destinationTownId = trail.fromTownId === currentTownId ? trail.toTownId : trail.fromTownId;
+    const destinationTownId =
+      trail.fromTownId === currentTownId ? trail.toTownId : trail.fromTownId;
     const town = townMap.get(destinationTownId);
     if (!town) {
       continue;
@@ -108,7 +102,9 @@ function connectedDestinations(session: GameSessionDto) {
     destinations.set(destinationTownId, { town, trailCount: 1 });
   }
 
-  return Array.from(destinations.values()).sort((left, right) => left.town.name.localeCompare(right.town.name));
+  return Array.from(destinations.values()).sort((left, right) =>
+    left.town.name.localeCompare(right.town.name),
+  );
 }
 
 function formatPreviewSummary(preview: TravelPreviewDto) {

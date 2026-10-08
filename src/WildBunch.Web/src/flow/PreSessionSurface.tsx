@@ -10,7 +10,9 @@ import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
 import { CreatingStep } from "../components/start-flow/CreatingStep";
 
 const StartingTownStep = lazy(() =>
-  import("../components/start-flow/StartingTownStep").then((m) => ({ default: m.StartingTownStep })),
+  import("../components/start-flow/StartingTownStep").then((m) => ({
+    default: m.StartingTownStep,
+  })),
 );
 
 const FlowHero = styled.div`

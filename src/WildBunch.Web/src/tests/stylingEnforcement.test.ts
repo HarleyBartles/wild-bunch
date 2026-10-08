@@ -21,27 +21,26 @@ function findMatchesInTsxFiles(directory: string, matcher: RegExp): string {
 }
 
 function findMatchingLines(directory: string, matcher: RegExp): string[] {
-  return fs.readdirSync(directory, { withFileTypes: true })
-    .flatMap((entry) => {
-      const entryPath = path.join(directory, entry.name);
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name);
 
-      if (entry.isDirectory()) {
-        return entry.name === "tests" ? [] : findMatchingLines(entryPath, matcher);
-      }
+    if (entry.isDirectory()) {
+      return entry.name === "tests" ? [] : findMatchingLines(entryPath, matcher);
+    }
 
-      if (!entry.isFile() || !entry.name.endsWith(".tsx")) {
-        return [];
-      }
+    if (!entry.isFile() || !entry.name.endsWith(".tsx")) {
+      return [];
+    }
 
-      return fs.readFileSync(entryPath, "utf8")
-        .split("\n")
-        .flatMap((line, index) => matcher.test(line) ? [`${entryPath}:${index + 1}:${line}`] : []);
-    });
+    return fs
+      .readFileSync(entryPath, "utf8")
+      .split("\n")
+      .flatMap((line, index) => (matcher.test(line) ? [`${entryPath}:${index + 1}:${line}`] : []));
+  });
 }
 
 describe("Styling Enforcement", () => {
   const srcDir = path.resolve(__dirname, "..");
-  const webRoot = path.resolve(srcDir, "..");
 
   it("builds one literal className matcher for every forbidden class", () => {
     const matcher = new RegExp(buildLegacyClassPattern(["panel", "action-row"]));
@@ -74,8 +73,14 @@ describe("Styling Enforcement", () => {
     try {
       fs.mkdirSync(nestedDirectory, { recursive: true });
       fs.mkdirSync(siblingDirectory);
-      fs.writeFileSync(path.join(nestedDirectory, "Example.tsx"), "export const Example = () => null;\n");
-      fs.writeFileSync(path.join(siblingDirectory, "useExample.tsx"), "export const useExample = () => null;\n");
+      fs.writeFileSync(
+        path.join(nestedDirectory, "Example.tsx"),
+        "export const Example = () => null;\n",
+      );
+      fs.writeFileSync(
+        path.join(siblingDirectory, "useExample.tsx"),
+        "export const useExample = () => null;\n",
+      );
 
       expect(findMatchesInTsxFiles(fixtureDirectory, /className="panel"/)).toBe("");
     } finally {
@@ -91,7 +96,9 @@ describe("Styling Enforcement", () => {
   it("ensures src/styles/index.scss does not reference styles.css", () => {
     const indexScssPath = path.resolve(srcDir, "styles", "index.scss");
     const content = fs.readFileSync(indexScssPath, "utf8");
-    expect(content, "src/styles/index.scss should not reference styles.css").not.toContain("styles.css");
+    expect(content, "src/styles/index.scss should not reference styles.css").not.toContain(
+      "styles.css",
+    );
   });
 
   it("ensures no .css imports remain in TSX files", () => {

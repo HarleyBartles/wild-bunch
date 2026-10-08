@@ -13,8 +13,6 @@ import json
 import re
 import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Any
-
 
 RECORD = ".agents/contracts/operating-standards.json"
 ID = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
@@ -81,11 +79,16 @@ def validate_record(value: object) -> list[str]:
             if not isinstance(repository, str) or not repository.strip():
                 findings.append(f"{label}.source.repository must be a non-empty string")
             if not isinstance(source.get("commit"), str) or not COMMIT.fullmatch(source["commit"]):
-                findings.append(f"{label}.source.commit must be a full lowercase immutable Git object ID")
+                findings.append(
+                    f"{label}.source.commit must be a full lowercase immutable Git object ID"
+                )
             if not _relative_path(source.get("definition")):
                 findings.append(f"{label}.source.definition must be a normalized relative path")
         if not _relative_path(entry.get("certification"), fragment=True):
-            findings.append(f"{label}.certification must be a relative file path with an optional section fragment")
+            findings.append(
+                f"{label}.certification must be a relative file path with an optional "
+                "section fragment"
+            )
     return findings
 
 
@@ -112,7 +115,9 @@ def check_repository(root: Path) -> list[str]:
         return []
     router = root / "AGENTS.md"
     if not router.is_file():
-        findings.append("selected standards require root AGENTS.md to route subscription and certification")
+        findings.append(
+            "selected standards require root AGENTS.md to route subscription and certification"
+        )
     else:
         text = router.read_text(encoding="utf-8")
         for route in (RECORD, ".agents/contracts/standards-certification.md"):
@@ -158,7 +163,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {finding}", file=sys.stderr)
     if findings:
         return 1
-    print("OK subscription structure and certification references; semantic compliance is not assessed")
+    print(
+        "OK subscription structure and certification references; semantic compliance "
+        "is not assessed"
+    )
     return 0
 
 

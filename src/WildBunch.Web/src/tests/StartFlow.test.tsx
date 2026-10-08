@@ -5,10 +5,24 @@ import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { PreSessionSurface } from "../flow/PreSessionSurface";
 import type { GameSessionDto } from "../api/types";
-import { getGame, getAvailableActions, getJournal, getPrologue, getStartingTowns, getStartingTownMap, setupGame, markPrologueViewed, startGameWithTown } from "../api/wildBunchApi";
+import {
+  getGame,
+  getAvailableActions,
+  getJournal,
+  getPrologue,
+  getStartingTowns,
+  getStartingTownMap,
+  setupGame,
+  markPrologueViewed,
+  startGameWithTown,
+} from "../api/wildBunchApi";
 
 const phaserMockState = vi.hoisted(() => ({
-  games: [] as Array<{ config: { scene: { selectTown: (townId: string) => void; onTownSelected?: (townId: string) => void } } }>,
+  games: [] as Array<{
+    config: {
+      scene: { selectTown: (townId: string) => void; onTownSelected?: (townId: string) => void };
+    };
+  }>,
 }));
 
 vi.mock("phaser", () => {
@@ -190,9 +204,7 @@ function primeMocks() {
       { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
       { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
     ],
-    trails: [
-      { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
-    ],
+    trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
   });
 }
 

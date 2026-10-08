@@ -1,11 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAvailableActions, getGame, getJournal } from "../api/wildBunchApi";
-import type {
-  AvailableActionDto,
-  GameSessionDto,
-  JournalDto,
-} from "../api/types";
 
 type CockpitMode = "home" | "travel";
 

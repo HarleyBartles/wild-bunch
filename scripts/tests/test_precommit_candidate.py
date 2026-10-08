@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
+import shlex
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOK = REPO_ROOT / "githooks" / "pre-commit"
+GIT_BASH = Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git" / "bin" / "bash.exe"
+BASH = str(GIT_BASH) if GIT_BASH.is_file() else shutil.which("bash")
 
 
 def _git(root: Path, *args: str) -> str:
@@ -19,7 +21,7 @@ def _git(root: Path, *args: str) -> str:
 
 
 def _fixture(root: Path) -> None:
-    if shutil.which("bash") is None:
+    if BASH is None:
         pytest.skip("Bash is required to exercise the tracked hook")
     _git(root, "init", "-b", "main")
     _git(root, "config", "user.name", "Test")
@@ -62,12 +64,20 @@ def _fixture(root: Path) -> None:
     _git(root, "config", "core.hooksPath", "githooks")
 
 
-def _run_hook(root: Path) -> subprocess.CompletedProcess[str]:
+def _run_hook(root: Path, *, path_prefix: Path | None = None) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment.pop("REPO_STANDARDS_HOSTED_COMMIT", None)
-    return subprocess.run(
-        ["bash", "githooks/pre-commit"], cwd=root, text=True, capture_output=True, env=environment
-    )
+    command = [BASH or "bash", "githooks/pre-commit"]
+    if path_prefix is not None:
+        prefix = path_prefix.as_posix()
+        if len(prefix) > 1 and prefix[1] == ":":
+            prefix = f"/{prefix[0].lower()}{prefix[2:]}"
+        command = [
+            BASH or "bash",
+            "-c",
+            f"export PATH={shlex.quote(prefix)}:$PATH; exec bash githooks/pre-commit",
+        ]
+    return subprocess.run(command, cwd=root, text=True, capture_output=True, env=environment)
 
 
 def test_hook_checks_staged_candidate_and_restores_unstaged_repair(tmp_path):
@@ -193,7 +203,11 @@ def test_hosted_validation_keeps_detached_head_and_index_unchanged(tmp_path):
     environment["REPO_STANDARDS_HOSTED_COMMIT"] = "HEAD"
 
     result = subprocess.run(
-        ["bash", "githooks/pre-commit"], cwd=tmp_path, text=True, capture_output=True, env=environment
+        [BASH or "bash", "githooks/pre-commit"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        env=environment,
     )
 
     assert result.returncode == 0, result.stderr
@@ -211,10 +225,73 @@ def test_hosted_validation_failure_keeps_detached_head_and_index_unchanged(tmp_p
     environment["REPO_STANDARDS_HOSTED_COMMIT"] = "HEAD"
 
     result = subprocess.run(
-        ["bash", "githooks/pre-commit"], cwd=tmp_path, text=True, capture_output=True, env=environment
+        [BASH or "bash", "githooks/pre-commit"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        env=environment,
     )
 
     assert result.returncode == 18
     assert _git(tmp_path, "rev-parse", "HEAD") == head
     assert _git(tmp_path, "write-tree") == staged_tree
     assert _git(tmp_path, "status", "--porcelain") == ""
+
+
+def test_hook_rejects_unformatted_staged_source_without_mutating_candidate(tmp_path):
+    if BASH is None:
+        pytest.skip("Bash is required to exercise the tracked hook")
+    _git(tmp_path, "init", "-b", "main")
+    _git(tmp_path, "config", "user.name", "Test")
+    _git(tmp_path, "config", "user.email", "test@example.invalid")
+    (tmp_path / "githooks").mkdir()
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "githooks/pre-commit").write_bytes(HOOK.read_bytes())
+    for name in ("run.py", "style.py", "shared_checkout.py", "versioning.py"):
+        shutil.copy2(REPO_ROOT / "tools" / name, tmp_path / "tools" / name)
+    shutil.copy2(REPO_ROOT / ".gitignore", tmp_path / ".gitignore")
+    (tmp_path / ".agents/contracts").mkdir(parents=True)
+    (tmp_path / ".agents/contracts/repo-standards-commands.json").write_text(
+        json.dumps(
+            {
+                "apply": ["@python", "tools/run.py", "format", "--apply", "candidate.py"],
+                "check": ["@python", "tools/run.py", "format", "--check", "candidate.py"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_bytes((REPO_ROOT / "pyproject.toml").read_bytes())
+    source = tmp_path / "candidate.py"
+    source.write_text("value = 1\n", encoding="utf-8")
+    notes = tmp_path / "notes.md"
+    notes.write_text("baseline\n", encoding="utf-8")
+    _git(
+        tmp_path,
+        "add",
+        "githooks",
+        "tools",
+        ".agents",
+        ".gitignore",
+        "pyproject.toml",
+        "candidate.py",
+        "notes.md",
+    )
+    _git(tmp_path, "commit", "-m", "style hook fixture")
+    _git(tmp_path, "config", "core.hooksPath", "githooks")
+
+    source.write_text("value=1\n", encoding="utf-8")
+    _git(tmp_path, "add", "candidate.py")
+    source.write_text("value = 1\n", encoding="utf-8")
+    notes.write_text("preserve this unstaged edit\n", encoding="utf-8")
+    staged_tree = _git(tmp_path, "write-tree")
+
+    python_launcher = shutil.which("py") or shutil.which("python3") or shutil.which("python")
+    assert python_launcher is not None
+    result = _run_hook(tmp_path, path_prefix=Path(python_launcher).parent)
+
+    assert result.returncode != 0
+    assert "would be reformatted" in result.stdout.lower(), result.stdout + result.stderr
+    assert _git(tmp_path, "write-tree") == staged_tree
+    assert _git(tmp_path, "show", ":candidate.py") == "value=1"
+    assert source.read_text(encoding="utf-8") == "value = 1\n"
+    assert notes.read_text(encoding="utf-8") == "preserve this unstaged edit\n"

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_plugin_subscriptions
@@ -25,10 +25,12 @@ def _files(tmp_path, plugin_path="./plugins/sample", activation=True, selector="
             }
         ],
     }
-    (tmp_path / ".agents/plugins/marketplace.json").write_text(json.dumps(catalog), encoding="utf-8")
+    (tmp_path / ".agents/plugins/marketplace.json").write_text(
+        json.dumps(catalog), encoding="utf-8"
+    )
     enabled = "true" if activation else "false"
     (tmp_path / ".codex/config.toml").write_text(
-        "[plugins.\"sample@wild-bunch\"]\n"
+        '[plugins."sample@wild-bunch"]\n'
         f"enabled = {enabled}\n\n"
         "[marketplaces.wild-bunch]\n"
         'source_type = "git"\nsource = "https://example.com/repo.git"\nref = "main"\n',
@@ -62,15 +64,21 @@ def test_missing_and_malformed_selectors_fail(tmp_path):
     source.pop("ref")
     source["sha"] = "short"
     path.write_text(json.dumps(catalog), encoding="utf-8")
-    assert any("exactly one valid ref or full sha" in finding for finding in check_plugin_subscriptions.check_codex(root))
+    assert any(
+        "exactly one valid ref or full sha" in finding
+        for finding in check_plugin_subscriptions.check_codex(root)
+    )
 
 
 def test_dangling_activation_fails(tmp_path):
     root = _files(tmp_path)
     (root / ".codex/config.toml").write_text(
-        "[plugins.\"missing@wild-bunch\"]\nenabled = true\n\n"
-        "[marketplaces.wild-bunch]\nsource_type = \"git\"\n"
-        "source = \"https://example.com/repo.git\"\n",
+        '[plugins."missing@wild-bunch"]\nenabled = true\n\n'
+        '[marketplaces.wild-bunch]\nsource_type = "git"\n'
+        'source = "https://example.com/repo.git"\n',
         encoding="utf-8",
     )
-    assert any("no matching catalog entry" in finding for finding in check_plugin_subscriptions.check_codex(root))
+    assert any(
+        "no matching catalog entry" in finding
+        for finding in check_plugin_subscriptions.check_codex(root)
+    )

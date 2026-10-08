@@ -46,24 +46,65 @@ afterEach(() => {
 
 function createInTownSession(): GameSessionDto {
   return {
-    id: "game-1", status: 0, gameDifficulty: 0, gameEntropy: 1,
+    id: "game-1",
+    status: 0,
+    gameDifficulty: 0,
+    gameEntropy: 1,
     startFlowPhase: StartFlowPhase.GameStarted,
     player: { name: "Ruth", currentTownId: "t-town", health: 9 },
     world: { towns: [{ id: "t-town", name: "Tumbleweed", services: 0 }], trails: [] },
-    caseFile: { accusationId: null, openingLead: "", caseState: { statusText: "" }, discoveredSuspects: [], caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] }, knownClues: [] },
-    inventory: { wallet: { cash: 14 }, items: [], horseState: null, canteenState: null, capabilities: { mountedTravelAvailable: false, horseUpkeepRequired: false, normalRouteWaterSecure: false, trailUtility: false, closeThreatAvailable: false, firearmThreatAvailable: false, gunfightCapable: false, revolverUsable: false, rifleUsable: false } },
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: { statusText: "" },
+      discoveredSuspects: [],
+      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      knownClues: [],
+    },
+    inventory: {
+      wallet: { cash: 14 },
+      items: [],
+      horseState: null,
+      canteenState: null,
+      capabilities: {
+        mountedTravelAvailable: false,
+        horseUpkeepRequired: false,
+        normalRouteWaterSecure: false,
+        trailUtility: false,
+        closeThreatAvailable: false,
+        firearmThreatAvailable: false,
+        gunfightCapable: false,
+        revolverUsable: false,
+        rifleUsable: false,
+      },
+    },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },
     pursuitState: { heat: 1 },
-    journey: null, travelDiary: null, logEntries: [],
-    activeSaloonPersonOfInterest: null, wantedPosters: [],
+    journey: null,
+    travelDiary: null,
+    logEntries: [],
+    activeSaloonPersonOfInterest: null,
+    wantedPosters: [],
   };
 }
 
 function createJournal(): JournalDto {
   return {
-    id: "game-1", status: 0, clock: { day: 5, turn: 2, timeOfDay: "Morning" },
+    id: "game-1",
+    status: 0,
+    clock: { day: 5, turn: 2, timeOfDay: "Morning" },
     currentTown: { id: "t-town", name: "Tumbleweed" },
-    caseFile: { accusationId: null, openingLead: "", caseState: { statusText: "" }, caseSummary: "", discoveredSuspects: [], caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] }, knownClues: [], knownWarrants: [], wantedPosters: [] },
+    caseFile: {
+      accusationId: null,
+      openingLead: "",
+      caseState: { statusText: "" },
+      caseSummary: "",
+      discoveredSuspects: [],
+      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      knownClues: [],
+      knownWarrants: [],
+      wantedPosters: [],
+    },
     logEntries: [],
   };
 }
@@ -81,10 +122,26 @@ function TestHost() {
 function renderWithRouter(initialUrl: string) {
   window.history.replaceState({}, "", initialUrl);
   const rootRoute = createRootRoute({ component: TestHost });
-  const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => <div>start</div> });
-  const townRoute = createRoute({ getParentRoute: () => rootRoute, path: "/town", component: () => <div>town</div> });
-  const storeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/town/store", component: () => <div>store</div> });
-  const trailRoute = createRoute({ getParentRoute: () => rootRoute, path: "/trail", component: () => <div>trail</div> });
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    component: () => <div>start</div>,
+  });
+  const townRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town",
+    component: () => <div>town</div>,
+  });
+  const storeRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town/store",
+    component: () => <div>store</div>,
+  });
+  const trailRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/trail",
+    component: () => <div>trail</div>,
+  });
   const router = createRouter({
     routeTree: rootRoute.addChildren([indexRoute, townRoute, storeRoute, trailRoute]),
   });

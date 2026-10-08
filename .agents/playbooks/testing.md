@@ -44,6 +44,11 @@ py -3 tools\run.py ci --check
 For hook setup, run `py -3 tools/run.py setup-hooks --apply` explicitly. Use
 `py -3 tools/run.py ci --check --diagnostics` only for manual troubleshooting; the pre-commit hook invokes fail-fast `ci --check`, ordered from cheaper to more expensive checks, and never applies repairs or stages corrections. Hook custody is defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
 
+The canonical gate is fail-fast and ordered from cheaper checks to more
+expensive work: repository contracts and whitespace, format and lint for each
+language, builds and typechecking, then behavioral test suites and the web
+build. Resolve the first failure before starting downstream checks; do not
+make an agent wait for tests when an earlier formatter or linter has failed.
 Use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence
 --startup-project src\WildBunch.Api`. Direct PostgreSQL checks use the shared

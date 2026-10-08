@@ -138,7 +138,10 @@ const HudButton = styled.button`
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  transition: transform 150ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out;
+  transition:
+    transform 150ms ease-out,
+    border-color 150ms ease-out,
+    background-color 150ms ease-out;
 
   &:hover:not(:disabled),
   &:focus-visible:not(:disabled) {

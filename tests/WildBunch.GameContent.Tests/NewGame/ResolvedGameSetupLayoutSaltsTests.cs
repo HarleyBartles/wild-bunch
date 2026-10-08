@@ -20,7 +20,7 @@ public sealed class ResolvedGameSetupLayoutSaltsTests
         var inventory = Inventory.Empty();
         var travelRules = TravelRulesProfile.For(GameDifficulty.Standard);
         var saltSource = SaltSource.CreateRuntime();
-        
+
         var setup = new ResolvedGameSetup(
             null!,
             GameDifficulty.Standard,

@@ -325,7 +325,7 @@ describe("SaloonDevPanel", () => {
       expect(screen.getByText("Force next saloon look-around POI")).toBeInTheDocument();
     });
 
-    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    const kindSelect = screen.getByTestId<HTMLSelectElement>("force-kind-select");
     const options = Array.from(kindSelect.options).map((o) => o.value);
     expect(options).toContain("Suspect");
     expect(options).toContain("Citizen");
@@ -353,7 +353,7 @@ describe("SaloonDevPanel", () => {
     renderPanel();
 
     await waitFor(() => {
-      const suspectSelect = screen.getByTestId("force-suspect-select") as HTMLSelectElement;
+      const suspectSelect = screen.getByTestId<HTMLSelectElement>("force-suspect-select");
       expect(suspectSelect).toBeInTheDocument();
       // The candidate label should include the name and useful context
       const candidateOption = Array.from(suspectSelect.options).find(
@@ -380,7 +380,7 @@ describe("SaloonDevPanel", () => {
     });
 
     const user = userEvent.setup();
-    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    const kindSelect = screen.getByTestId<HTMLSelectElement>("force-kind-select");
     await user.selectOptions(kindSelect, "Citizen");
 
     expect(screen.getByTestId("force-citizen-role-select")).toBeInTheDocument();
@@ -408,7 +408,7 @@ describe("SaloonDevPanel", () => {
     });
 
     const user = userEvent.setup();
-    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    const kindSelect = screen.getByTestId<HTMLSelectElement>("force-kind-select");
     await user.selectOptions(kindSelect, "Citizen");
 
     expect(screen.getByText(/Generic citizen POI/)).toBeInTheDocument();
@@ -417,7 +417,9 @@ describe("SaloonDevPanel", () => {
 
   it("calls forceSaloonOverride when Force next POI button is clicked", async () => {
     seedGameId("test-game-3");
-    mockedGetContext.mockResolvedValue(makeContext({ sessionId: "test-game-3", hiddenTruth: null }));
+    mockedGetContext.mockResolvedValue(
+      makeContext({ sessionId: "test-game-3", hiddenTruth: null }),
+    );
     mockedForce.mockResolvedValue(undefined);
 
     renderPanel();
@@ -439,7 +441,9 @@ describe("SaloonDevPanel", () => {
 
   it("sends forcedCitizenRoleKey when a citizen role is selected and Force is clicked", async () => {
     seedGameId("test-game-citizen-role-force");
-    mockedGetContext.mockResolvedValue(makeContext({ sessionId: "test-game-citizen-role-force", hiddenTruth: null }));
+    mockedGetContext.mockResolvedValue(
+      makeContext({ sessionId: "test-game-citizen-role-force", hiddenTruth: null }),
+    );
     mockedForce.mockResolvedValue(undefined);
 
     renderPanel();
@@ -449,10 +453,10 @@ describe("SaloonDevPanel", () => {
     });
 
     const user = userEvent.setup();
-    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    const kindSelect = screen.getByTestId<HTMLSelectElement>("force-kind-select");
     await user.selectOptions(kindSelect, "Citizen");
 
-    const roleSelect = screen.getByTestId("force-citizen-role-select") as HTMLSelectElement;
+    const roleSelect = screen.getByTestId<HTMLSelectElement>("force-citizen-role-select");
     await user.selectOptions(roleSelect, "butcher");
 
     await user.click(screen.getByRole("button", { name: /force next poi/i }));
@@ -470,7 +474,9 @@ describe("SaloonDevPanel", () => {
 
   it("sends forcedKind None with no suspect or citizen role when None is selected and Force is clicked", async () => {
     seedGameId("test-game-none-force");
-    mockedGetContext.mockResolvedValue(makeContext({ sessionId: "test-game-none-force", hiddenTruth: null }));
+    mockedGetContext.mockResolvedValue(
+      makeContext({ sessionId: "test-game-none-force", hiddenTruth: null }),
+    );
     mockedForce.mockResolvedValue(undefined);
 
     renderPanel();
@@ -480,7 +486,7 @@ describe("SaloonDevPanel", () => {
     });
 
     const user = userEvent.setup();
-    const kindSelect = screen.getByTestId("force-kind-select") as HTMLSelectElement;
+    const kindSelect = screen.getByTestId<HTMLSelectElement>("force-kind-select");
     await user.selectOptions(kindSelect, "None");
 
     await user.click(screen.getByRole("button", { name: /force next poi/i }));

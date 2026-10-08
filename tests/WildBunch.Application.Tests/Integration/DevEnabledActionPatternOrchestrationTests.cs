@@ -63,7 +63,7 @@ public sealed class DevEnabledActionPatternIntegrationTests
         // The dev salts were used in world generation via INewGameFactory
         Assert.NotNull(result.World);
     }
-    
+
     [Fact]
     public async Task ThreePhaseFlow_PrepStartWithoutInject_UsesDefaultSalts()
     {

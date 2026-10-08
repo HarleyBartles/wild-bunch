@@ -183,21 +183,6 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 
 const capturedCaseIdentityStatus = 3;
 
-function formatClueRecency(recency: number) {
-  switch (recency) {
-    case 1:
-      return "recent";
-    case 2:
-      return "yesterday";
-    case 3:
-      return "today";
-    case 4:
-      return "old";
-    default:
-      return "unknown";
-  }
-}
-
 type AnchorRow = {
   label: string;
   value: string;
@@ -210,7 +195,10 @@ type DiscoveredSuspectCard = {
 };
 
 function cleanText(text: string) {
-  return text.trim().replace(/\s+/g, " ").replace(/[.?!]+$/u, "");
+  return text
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[.?!]+$/u, "");
 }
 
 function addUniqueRow(rows: AnchorRow[], seenValues: Set<string>, label: string, value: string) {
@@ -544,9 +532,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         title="Overview"
         subtitle={`${formatClockContext(caseJournal)} - ${formatGameStatus(caseJournal.status)}`}
       >
-        <CaseSummary>
-          {caseJournal.caseFile.caseSummary}
-        </CaseSummary>
+        <CaseSummary>{caseJournal.caseFile.caseSummary}</CaseSummary>
         <OpeningLead>
           <strong>Opening lead:</strong> {caseJournal.caseFile.openingLead}
         </OpeningLead>
@@ -561,9 +547,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           </div>
           <div>
             <dt>Time</dt>
-            <dd>
-              {formatClockBeat(caseJournal.clock)}
-            </dd>
+            <dd>{formatClockBeat(caseJournal.clock)}</dd>
           </div>
           <div>
             <dt>Status</dt>
@@ -585,9 +569,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
             trailClues.map((clue, index) => (
               <ItemCard key={`${clue.description}-${index}`}>
                 <strong>{clue.description}</strong>
-                <ClueMeta $spaced>
-                  {formatClueKind(clue.kind)}
-                </ClueMeta>
+                <ClueMeta $spaced>{formatClueKind(clue.kind)}</ClueMeta>
                 {clue.sourceLabel ? (
                   <SpacedMinor>
                     <strong>Source:</strong> {clue.sourceLabel}
@@ -602,7 +584,11 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         </Stack>
       </Section>
 
-      <Section title="Identity board" subtitle="Player-known identity threads, loose leads, and earned links." wide>
+      <Section
+        title="Identity board"
+        subtitle="Player-known identity threads, loose leads, and earned links."
+        wide
+      >
         <Grid $cols={3} $tabletCols={2} $mobileCols={1}>
           <Stack>
             <SectionHead>
@@ -629,9 +615,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                       ))}
                     </LeadList>
                   ) : null}
-                  <WarrantFactsBox>
-                    {renderWarrantFacts(record)}
-                  </WarrantFactsBox>
+                  <WarrantFactsBox>{renderWarrantFacts(record)}</WarrantFactsBox>
                 </ItemCard>
               ))
             ) : (
@@ -674,7 +658,9 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
           <Stack>
             <SectionHead>
               <h3>Evidence items</h3>
-              <PanelSubtitle>Material evidence collected and linked to the case board.</PanelSubtitle>
+              <PanelSubtitle>
+                Material evidence collected and linked to the case board.
+              </PanelSubtitle>
             </SectionHead>
             {caseJournal.caseFile.caseBoard.evidenceItems.length > 0 ? (
               caseJournal.caseFile.caseBoard.evidenceItems.map((evidence) => (
@@ -713,9 +699,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
                           ))}
                         </LeadList>
                       ) : null}
-                      <WarrantFactsBox>
-                        {renderWarrantFacts(record)}
-                      </WarrantFactsBox>
+                      <WarrantFactsBox>{renderWarrantFacts(record)}</WarrantFactsBox>
                     </>
                   ) : null}
                 </ItemCard>
@@ -731,7 +715,10 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         <Stack>
           {activeKnownWarrants.length > 0 ? (
             activeKnownWarrants.map((warrant) => (
-              <Card key={`${warrant.targetName}-${warrant.issuingSource}`} title={warrant.targetName}>
+              <Card
+                key={`${warrant.targetName}-${warrant.issuingSource}`}
+                title={warrant.targetName}
+              >
                 <WarrantText>
                   <strong>Bounty:</strong> {formatBounty(warrant.bountyAmount)}
                 </WarrantText>
@@ -752,7 +739,11 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
         </Stack>
       </Section>
 
-      <Section title="Evidence stack" subtitle="All player-known clues with their safe anchors." wide>
+      <Section
+        title="Evidence stack"
+        subtitle="All player-known clues with their safe anchors."
+        wide
+      >
         <Stack>
           {caseJournal.caseFile.caseBoard.evidenceItems.length > 0 ? (
             caseJournal.caseFile.caseBoard.evidenceItems.map((evidence) => (
@@ -812,9 +803,7 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
               {contradictionClues.map((clue, index) => (
                 <ItemCard key={`${clue.description}-${index}`}>
                   <strong>{clue.description}</strong>
-                  <ClueMeta>
-                    {clue.sourceLabel ? clue.sourceLabel : "Contradiction note"}
-                  </ClueMeta>
+                  <ClueMeta>{clue.sourceLabel ? clue.sourceLabel : "Contradiction note"}</ClueMeta>
                 </ItemCard>
               ))}
             </Stack>

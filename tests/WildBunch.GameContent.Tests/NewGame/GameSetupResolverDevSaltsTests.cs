@@ -15,13 +15,13 @@ public sealed class GameSetupResolverDevSaltsTests
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var entropy = EntropyPolicy.For(GameEntropy.Classic);
         var devSalts = new LayoutSalts("buildings", "roads", "dirt", "props");
-        
+
         var resolved = new GameSetupResolver().Resolve(
             seedWorld,
             difficulty,
             entropy,
             devLayoutSalts: devSalts);
-        
+
         Assert.Equal(devSalts, resolved.DevLayoutSalts);
     }
 }

@@ -277,7 +277,11 @@ export function formatHorseTravelState(state: HorseTravelStateDto | null) {
     return "None";
   }
 
-  const summary = [`Hunger ${state.hunger}`, `Thirst ${state.thirst}`, `Exhaustion ${state.exhaustion}`];
+  const summary = [
+    `Hunger ${state.hunger}`,
+    `Thirst ${state.thirst}`,
+    `Exhaustion ${state.exhaustion}`,
+  ];
 
   if (state.isDead) {
     summary.push("Dead");

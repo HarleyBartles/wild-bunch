@@ -30,7 +30,7 @@ public sealed class GetTownLayoutSaltsHandler
         }
 
         var devSalts = session.DevLayoutSalts;
-        
+
         // Return null values when no dev salts are set, to distinguish from actual dev salts
         return new TownLayoutSaltsDto(
             ResolverVersion,

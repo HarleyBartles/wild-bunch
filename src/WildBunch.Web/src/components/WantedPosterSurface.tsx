@@ -6,12 +6,7 @@ import type {
   WantedPosterFeatureSalience,
 } from "../api/types";
 import { formatWarrantDisposition } from "../ui/formatters";
-import {
-  StatusCard,
-  PanelSubtitle,
-  Eyebrow,
-  Muted,
-} from "./ui/sharedStyled";
+import { StatusCard, PanelSubtitle, Eyebrow, Muted } from "./ui/sharedStyled";
 
 const PosterCard = styled.article`
   padding: 16px;
@@ -41,8 +36,7 @@ const PosterPortrait = styled.div`
   border-radius: 16px;
   border: 1px solid rgba(223, 159, 79, 0.26);
   background:
-    radial-gradient(circle at top, rgba(223, 159, 79, 0.2), transparent 55%),
-    rgba(10, 9, 8, 0.45);
+    radial-gradient(circle at top, rgba(223, 159, 79, 0.2), transparent 55%), rgba(10, 9, 8, 0.45);
 
   strong {
     font-size: 1.15rem;
@@ -220,9 +214,7 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
     <PosterCard>
       <PosterFrame>
         <PosterPortrait aria-hidden="true">
-          <WantedNoticeEyebrow>
-            Wanted notice
-          </WantedNoticeEyebrow>
+          <WantedNoticeEyebrow>Wanted notice</WantedNoticeEyebrow>
           <strong>{poster.targetDisplayName}</strong>
           <p>
             {portraitFeatures.length > 0
@@ -237,7 +229,8 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
               <Eyebrow>Public notice</Eyebrow>
               <h4>{poster.targetDisplayName}</h4>
               <PosterHeadline>
-                {poster.quickView.headlineNameOrAlias} - {poster.quickView.headlineFeatureOrDescriptor}
+                {poster.quickView.headlineNameOrAlias} -{" "}
+                {poster.quickView.headlineFeatureOrDescriptor}
               </PosterHeadline>
             </div>
             {poster.publicSafeClassification ? <Tag>{poster.publicSafeClassification}</Tag> : null}

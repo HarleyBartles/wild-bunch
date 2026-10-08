@@ -6,7 +6,6 @@ import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
 import type { DevSurface } from "../dev/DevSurfaceContext";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { getSessionAudit } from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
   getSessionAudit: vi.fn(),
@@ -37,8 +36,6 @@ vi.mock("../api/wildBunchApi", () => ({
   resolveTravelEncounter: vi.fn(),
   previewTravel: vi.fn(),
 }));
-
-const mockedGetSessionAudit = vi.mocked(getSessionAudit);
 
 afterEach(() => {
   cleanup();

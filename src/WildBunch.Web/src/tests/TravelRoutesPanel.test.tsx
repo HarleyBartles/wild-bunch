@@ -183,19 +183,17 @@ describe("TravelRoutesPanel", () => {
             rideDayDistance: 2,
             mountedRideDayProgress: 1.5,
             footRideDayProgress: 0.75,
-            warnings: ["Rough trail conditions may stress the horse.", "Water is sparse along this trail."],
+            warnings: [
+              "Rough trail conditions may stress the horse.",
+              "Water is sparse along this trail.",
+            ],
           },
         },
       };
     });
 
     render(
-      <TravelRoutesPanel
-        gameId={session.id}
-        session={session}
-        busy={false}
-        onTravel={onTravel}
-      />,
+      <TravelRoutesPanel gameId={session.id} session={session} busy={false} onTravel={onTravel} />,
     );
 
     await waitFor(() => {

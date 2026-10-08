@@ -1,26 +1,26 @@
 from __future__ import annotations
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_agent_routers
 
-
-ROOT_ROUTER = """# Project
-
-Read [the subscription](.agents/contracts/operating-standards.json) and [certification](.agents/contracts/standards-certification.md).
-
-## Guidance
-
-Read [testing](.agents/playbooks/testing.md) when changing behavior.
-"""
+ROOT_ROUTER = (
+    "# Project\n\n"
+    "Read [the subscription](.agents/contracts/operating-standards.json) and "
+    "[certification](.agents/contracts/standards-certification.md).\n\n"
+    "## Guidance\n\n"
+    "Read [testing](.agents/playbooks/testing.md) when changing behavior.\n"
+)
 
 
 def _root_fixture(tmp_path):
     (tmp_path / ".agents/contracts").mkdir(parents=True, exist_ok=True)
     (tmp_path / ".agents/contracts/operating-standards.json").write_text("{}", encoding="utf-8")
-    (tmp_path / ".agents/contracts/standards-certification.md").write_text("# Certifications", encoding="utf-8")
+    (tmp_path / ".agents/contracts/standards-certification.md").write_text(
+        "# Certifications", encoding="utf-8"
+    )
     (tmp_path / ".agents/playbooks").mkdir(exist_ok=True)
     (tmp_path / ".agents/playbooks/testing.md").write_text("# Testing", encoding="utf-8")
     return {"AGENTS.md": ROOT_ROUTER}
@@ -36,7 +36,10 @@ def test_missing_subscription_route_fails(tmp_path):
         "[the subscription](.agents/contracts/operating-standards.json) and ", ""
     )
     findings = check_agent_routers.check_routers(tmp_path, routers)
-    assert any("must route to .agents/contracts/operating-standards.json" in finding for finding in findings)
+    assert any(
+        "must route to .agents/contracts/operating-standards.json" in finding
+        for finding in findings
+    )
 
 
 def test_broken_local_router_link_fails(tmp_path):
@@ -59,6 +62,10 @@ def test_scoped_router_requires_one_scoped_read_condition(tmp_path):
     routers["src/Widget/AGENTS.md"] = good
     assert check_agent_routers.check_routers(tmp_path, routers) == []
     findings = check_agent_routers.check_routers(
-        tmp_path, {**_root_fixture(tmp_path), "src/Widget/AGENTS.md": "Read the rules.\nThey apply everywhere.\n"}
+        tmp_path,
+        {
+            **_root_fixture(tmp_path),
+            "src/Widget/AGENTS.md": "Read the rules.\nThey apply everywhere.\n",
+        },
     )
     assert any("one scoped sentence" in finding for finding in findings)

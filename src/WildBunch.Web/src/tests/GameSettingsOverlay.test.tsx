@@ -5,7 +5,12 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
+import {
+  AvailableActionKind,
+  type GameSessionDto,
+  type JournalDto,
+  type TownStoreOffersDto,
+} from "../api/types";
 import {
   getAvailableActions,
   getGame,
@@ -194,11 +199,31 @@ function primeMocks() {
     currentJournal: createJournal(),
     wantedPosters: [],
   });
-  mockedInspectNoticeBoard.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedCheckLocalRecords.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedFollowTelegraphLeads.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedGatherLocalGossip.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedLookAroundSaloon.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
+  mockedInspectNoticeBoard.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedCheckLocalRecords.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedFollowTelegraphLeads.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedGatherLocalGossip.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedLookAroundSaloon.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
   mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
     success: true,
     message: "ok",
@@ -267,7 +292,9 @@ describe("Game Settings overlay", () => {
     const scope = within(overlay);
     expect(scope.getByRole("heading", { level: 3, name: /playthrough/i })).toBeInTheDocument();
     expect(scope.getByRole("button", { name: /start over/i })).toBeInTheDocument();
-    expect(scope.getByText("Archive this playthrough and begin again from the start.")).toBeInTheDocument();
+    expect(
+      scope.getByText("Archive this playthrough and begin again from the start."),
+    ).toBeInTheDocument();
   });
 
   it("opens the confirmation dialog with the correct copy when Start Over is clicked", async () => {
@@ -296,7 +323,9 @@ describe("Game Settings overlay", () => {
         "This will archive your current playthrough. You will not be able to return to it. A new hunt will begin from the start.",
       ),
     ).toBeInTheDocument();
-    expect(confirmScope.getByRole("button", { name: /archive and start over/i })).toBeInTheDocument();
+    expect(
+      confirmScope.getByRole("button", { name: /archive and start over/i }),
+    ).toBeInTheDocument();
     expect(confirmScope.getByRole("button", { name: /keep riding/i })).toBeInTheDocument();
   });
 

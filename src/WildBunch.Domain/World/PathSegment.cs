@@ -20,7 +20,7 @@ public sealed record PathSegment(int StartX, int StartY, int EndX, int EndY)
             throw new ArgumentOutOfRangeException(nameof(endX), $"EndX must be between {MinCoordinate} and {MaxCoordinate}");
         if (endY < MinCoordinate || endY > MaxCoordinate)
             throw new ArgumentOutOfRangeException(nameof(endY), $"EndY must be between {MinCoordinate} and {MaxCoordinate}");
-        
+
         return new PathSegment(startX, startY, endX, endY);
     }
 }

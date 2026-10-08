@@ -57,7 +57,9 @@ def test_version_identity_accepts_one_authored_version_and_matching_production_a
     ],
     ids=["missing", "duplicate", "release-version", "zero-dev-number", "malformed"],
 )
-def test_version_identity_rejects_missing_duplicate_or_unsupported_authored_versions(tmp_path, props):
+def test_version_identity_rejects_missing_duplicate_or_unsupported_authored_versions(
+    tmp_path, props
+):
     _write_valid_repo(tmp_path)
     (tmp_path / "Directory.Build.props").write_text(props, encoding="utf-8")
 
@@ -98,7 +100,9 @@ def test_version_identity_rejects_duplicate_npm_root_version_metadata(tmp_path, 
     ],
     ids=["missing", "malformed-json", "missing-version", "stale", "invalid-version-type"],
 )
-def test_version_identity_rejects_missing_malformed_or_stale_build_identity(tmp_path, artifact, remove_artifact):
+def test_version_identity_rejects_missing_malformed_or_stale_build_identity(
+    tmp_path, artifact, remove_artifact
+):
     _write_valid_repo(tmp_path)
     path = tmp_path / "src" / "WildBunch.Web" / "dist" / "version.json"
     if remove_artifact:

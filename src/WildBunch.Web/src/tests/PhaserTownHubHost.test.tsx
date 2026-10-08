@@ -2,8 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { PhaserTownHubHost } from "../components/town-hub/PhaserTownHubHost";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
-import { AvailableActionKind, BuildingKind, BuildingView, TownProsperity, type PathSegmentDto, type TownLayoutDto } from "../api/types";
-import Phaser from "phaser";
+import {
+  AvailableActionKind,
+  BuildingKind,
+  BuildingView,
+  TownProsperity,
+  type TownLayoutDto,
+} from "../api/types";
 
 const mockState = vi.hoisted(() => ({
   games: [] as Array<{ config: { scene: TownHubScene }; destroyed: boolean; destroy: () => void }>,
@@ -38,7 +43,14 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   return {
     buildings: [
       { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 46, y: 15, width: 8, height: 10 },
+      {
+        kind: BuildingKind.Sheriff,
+        view: BuildingView.Profile,
+        x: 46,
+        y: 15,
+        width: 8,
+        height: 10,
+      },
       { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 80, y: 15, width: 8, height: 10 },
       { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
     ],
@@ -54,15 +66,19 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   };
 }
 
-function renderHost(overrides: {
-  layout?: TownLayoutDto | null;
-  availableActions?: AvailableActionKind[];
-  onBuildingSelected?: (kind: BuildingKind) => void;
-} = {}) {
+function renderHost(
+  overrides: {
+    layout?: TownLayoutDto | null;
+    availableActions?: AvailableActionKind[];
+    onBuildingSelected?: (kind: BuildingKind) => void;
+  } = {},
+) {
   const onBuildingSelected = overrides.onBuildingSelected ?? vi.fn();
   const layout = "layout" in overrides ? overrides.layout : createLayout();
-  const availableActions =
-    overrides.availableActions ?? [AvailableActionKind.BuySupplies, AvailableActionKind.Travel];
+  const availableActions = overrides.availableActions ?? [
+    AvailableActionKind.BuySupplies,
+    AvailableActionKind.Travel,
+  ];
 
   render(
     <PhaserTownHubHost
@@ -85,7 +101,14 @@ describe("PhaserTownHubHost", () => {
   it("passes the current town's layout data to the TownHubScene constructor", () => {
     const layout = createLayout({
       buildings: [
-        { kind: BuildingKind.Saloon, x: 100, y: 100, width: 70, height: 50, view: BuildingView.Front },
+        {
+          kind: BuildingKind.Saloon,
+          x: 100,
+          y: 100,
+          width: 70,
+          height: 50,
+          view: BuildingView.Front,
+        },
       ],
       playerSpawnX: 120,
       playerSpawnY: 130,

@@ -3,7 +3,7 @@ import { useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useGameSession } from "../state/useGameSession";
-import { AvailableActionKind, BuildingKind } from "../api/types";
+import { BuildingKind } from "../api/types";
 import { FlowSurface } from "../components/ui/sharedStyled";
 import { PhaserTownHubHost } from "../components/town-hub/PhaserTownHubHost";
 import { isBuildingAvailable } from "../components/town-hub/TownHubScene";
@@ -72,7 +72,9 @@ const KeyboardFallbackNav = styled.nav`
     color: var(--text);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
 
     &:hover {
       background: rgba(255, 255, 255, 0.08);
@@ -112,15 +114,12 @@ const NAVIGABLE_BUILDINGS = [
 export function TownHubSurface() {
   const { session, currentTown, actions } = useGameSession();
   const navigate = useNavigate();
-  const { arrived } = useSearch({ strict: false }) as { arrived?: string };
+  const { arrived } = useSearch({ from: "/town" });
 
   // Map AvailableActionDto[] → AvailableActionKind[] and memoize so the
   // Phaser game is not recreated on every parent render (the actions array
   // reference from react-query is stable across renders unless data changes).
-  const availableActions = useMemo(
-    () => actions.map((a) => a.kind),
-    [actions],
-  );
+  const availableActions = useMemo(() => actions.map((a) => a.kind), [actions]);
 
   const onBuildingSelected = useCallback(
     (kind: BuildingKind) => {
@@ -162,17 +161,13 @@ export function TownHubSurface() {
         onBuildingSelected={onBuildingSelected}
       />
       <KeyboardFallbackNav aria-label="Town buildings">
-        {NAVIGABLE_BUILDINGS.filter((kind) =>
-          isBuildingAvailable(kind, availableActions),
-        ).map((kind) => (
-          <button
-            key={kind}
-            type="button"
-            onClick={() => onBuildingSelected(kind)}
-          >
-            {BUILDING_LABELS[kind]}
-          </button>
-        ))}
+        {NAVIGABLE_BUILDINGS.filter((kind) => isBuildingAvailable(kind, availableActions)).map(
+          (kind) => (
+            <button key={kind} type="button" onClick={() => onBuildingSelected(kind)}>
+              {BUILDING_LABELS[kind]}
+            </button>
+          ),
+        )}
       </KeyboardFallbackNav>
     </FlowSurface>
   );

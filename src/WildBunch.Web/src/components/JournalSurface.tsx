@@ -1,13 +1,7 @@
 import { useMemo } from "react";
 import styled from "styled-components";
 import type { GameLogEntryDto, JournalDto } from "../api/types";
-import {
-  StatusCard,
-  Eyebrow,
-  Muted,
-  Stack,
-  ItemCard,
-} from "./ui/sharedStyled";
+import { StatusCard, Eyebrow, Muted, Stack } from "./ui/sharedStyled";
 import { formatClockBeat } from "../ui/beatFormatters";
 
 const ModalState = styled.div`

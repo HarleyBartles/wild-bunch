@@ -32,7 +32,14 @@ function createBuildings(): BuildingPlacementDto[] {
     { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 30, y: 15, width: 8, height: 10 },
     { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 50, y: 15, width: 8, height: 10 },
     { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
-    { kind: BuildingKind.Telegraph, view: BuildingView.FrontOblique, x: 46, y: 70, width: 8, height: 10 },
+    {
+      kind: BuildingKind.Telegraph,
+      view: BuildingView.FrontOblique,
+      x: 46,
+      y: 70,
+      width: 8,
+      height: 10,
+    },
   ];
 }
 
@@ -166,7 +173,6 @@ describe("TownHubScene visual feedback", () => {
     const onBuildingSelected = vi.fn();
 
     const scene = new TownHubScene(layout, availableActions, onBuildingSelected) as TownHubScene & {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       add: any;
     };
 
@@ -244,7 +250,6 @@ describe("TownHubScene visual feedback", () => {
 
     // Mock textures to always return false (no sprites loaded in unit tests)
     // This forces the code to use the rectangle fallback path
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (scene as any).textures = {
       exists: () => false,
     };
