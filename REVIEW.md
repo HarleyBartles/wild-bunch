@@ -7,6 +7,7 @@ This file is the repo's review entry point. Code-review agents discover it autom
 - Read root [`AGENTS.md`](./AGENTS.md) for source-of-truth and publication routing.
 - Read [`.agents/doctrine/repo-runbook-policy.md`](./.agents/doctrine/repo-runbook-policy.md) for the local runbook mapping.
 - Read [`.agents/runbooks/code-review.md`](./.agents/runbooks/code-review.md) for the Wild Bunch review delta.
+- For changes to durable decisions, compare the diff with the [decision catalogue](./docs/decisions/README.md) and follow the [decision-record playbook](./.agents/playbooks/decision-records.md).
 
 ## Workflow routing
 

@@ -38,3 +38,4 @@ Before changing subscriptions, profiles or agent routes, read [routing](../unslo
 ## Runbook routing
 
 - [Implementing](../runbooks/implementing.md)
+- [Decision records](decision-records.md) - when standards adoption or agent-surface ownership changes a durable repository decision.

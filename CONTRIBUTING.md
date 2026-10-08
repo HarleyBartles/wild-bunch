@@ -10,6 +10,7 @@ This file is the repo's contributor entry point.
   [their certification](./.agents/contracts/standards-certification.md) when
   changing an adopted surface; maintain the affected assessment in that change.
 - Read [`.agents/doctrine/repo-runbook-policy.md`](./.agents/doctrine/repo-runbook-policy.md) for this repo's mapping to the cross-repo runbook standard.
+- Read the [decision-record playbook](./.agents/playbooks/decision-records.md) when planning, implementing, reviewing, or publishing work that changes a durable decision or its implementation.
 - Read [`.agents/playbooks/code-style.md`](./.agents/playbooks/code-style.md) for
   source conventions and [the writing profile](./.agents/unslop/writing.md)
   for authored prose.
@@ -29,4 +30,4 @@ owners; those owners read the matching local runbook.
   canonical staged-snapshot hook and pull-request checks for delivery proof.
 - Keep the repository-owned checks passing through
   `py -3 tools/run.py ci --check`. The normal hook checks the staged candidate
-  and refreshes decision freshness output.
+  without mutating tracked files. Update the authored ADR catalogue deliberately when the relevant decision changes.

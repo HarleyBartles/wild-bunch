@@ -24,6 +24,7 @@ The root budget remains 40 lines and each scoped router's ceiling remains 15 lin
 
 ## Cross-stage concerns
 
+- [Decision records](../playbooks/decision-records.md) - when a change makes, changes, corrects, or materially removes a durable decision.
 - [Code style](../playbooks/code-style.md)
 - [Testing](../playbooks/testing.md)
 - [Security](../playbooks/security.md)

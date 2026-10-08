@@ -64,3 +64,4 @@ leave shared PostgreSQL running.
 
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
+- [Decision records](decision-records.md) - when player-visible interaction or browser evidence policy changes durably.

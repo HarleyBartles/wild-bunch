@@ -59,3 +59,4 @@ canonical gate in [testing](testing.md).
 
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
+- [Decision records](decision-records.md) - when a style or architecture change establishes or revises a durable convention.

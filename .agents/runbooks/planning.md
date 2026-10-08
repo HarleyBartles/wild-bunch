@@ -31,8 +31,9 @@ Before planning, read [writing guards](../unslop/writing.md) in full and the [ba
    multi-plan roadmap design for multiple consecutive plans.
 2. Read the accepted specification and bind the applicable doctrine, contracts,
    repository paths, and validation commands below.
-3. Save and commit the active artifact in its declared home before execution.
-4. Hand execution exact seams, exclusions, task exits, and evidence without
+3. Select governing ADRs through the [decision-record playbook](../playbooks/decision-records.md) and include required record creation, correction, or supersession in the plan.
+4. Save and commit the active artifact in its declared home before execution.
+5. Hand execution exact seams, exclusions, task exits, and evidence without
    copying the planning skill's method into the artifact.
 
 ## Doctrine and contracts

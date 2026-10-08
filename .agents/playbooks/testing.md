@@ -33,9 +33,11 @@ Before test design or assessment, read [backend guards](../unslop/backend-archit
    PostgreSQL or browser evidence only when the boundary requires it.
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
-4. When maintained metadata needs refreshing, run the explicit apply command
-   before staging and review the changes it produces. Stage the intended tree,
-   then let the normal check-only hook validate it.
+4. When a maintained artifact needs updating, run its named owning maintenance
+   command and review the changes it produces. `ci --apply` configures the
+   repository hook and runs selected checks; it does not refresh generated
+   metadata. Stage the intended tree, then let the normal check-only hook
+   validate it.
 5. Use evidence-based result verification to report focused and canonical proof
    for the same tested state.
 
@@ -53,8 +55,8 @@ Before test design or assessment, read [backend guards](../unslop/backend-archit
 py -3 tools\run.py ci --check
 ```
 
-For hook setup or repository-owned metadata refresh, run `ci --apply` explicitly
-and review its changes before staging. The pre-commit hook invokes only
+For hook setup, run `ci --apply` explicitly. Run the named owning command when
+refreshing a particular maintained artifact. The pre-commit hook invokes only
 `ci --check`; it does not apply changes or stage corrections. Hook custody is
 defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
 
@@ -82,3 +84,4 @@ service at `localhost:5435`.
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
 - [Pull request](../runbooks/pr.md)
+- [Decision records](decision-records.md) - when an invariant, test boundary, or validation lane becomes a durable repository rule.
