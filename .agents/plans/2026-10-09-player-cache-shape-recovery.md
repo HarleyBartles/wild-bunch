@@ -35,12 +35,12 @@
 
 **Files:** this plan; `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; `.agents/plans/2026-10-08-coherent-query-reconstruction.md`; `Directory.Build.props`.
 
-- [ ] Verify PR #201 merged to `develop` at `3fdc0d058eb72ed0ad7c04dd3906550e6cce274d`, reviewed source `e78c97c8d4591d209a5955bd310e1a85bcf3e472` has the same tree as the squash merge, and hosted canonical gate run 37857634884 passed on that exact source.
-- [ ] Classify the prior row 07 plan's full scope from its committed code, PostgreSQL behavior tests, feature evidence and hosted delivery; preserve its distinct stale-snapshot, phase-parity, query-no-writeback and coherent-read results before retiring it.
-- [ ] In this successor's first substantive implementation commit, replace the row 07 current-plan link, record PR #201 source/merge/version/gate facts, keep row 07 executing with its remaining obligations, and delete the completed prior plan.
-- [ ] Advance `Directory.Build.props` exactly once from `0.1.0-dev.16` to `0.1.0-dev.17` in that same substantive commit; do not hand-edit generated version outputs.
-- [ ] Keep the plan-only commit separate and first; inspect the staged roadmap, plan retirement and version diff before the normal check-only commit hook.
-- [ ] Verify the production web build reports `0.1.0-dev.17` before the completing PR is published.
+- [x] Verify PR #201 merged to `develop` at `3fdc0d058eb72ed0ad7c04dd3906550e6cce274d`, reviewed source `e78c97c8d4591d209a5955bd310e1a85bcf3e472` has the same tree as the squash merge, and hosted canonical gate run 37857634884 passed on that exact source.
+- [x] Classify the prior row 07 plan's full scope from its committed code, PostgreSQL behavior tests, feature evidence and hosted delivery; preserve its distinct stale-snapshot, phase-parity, query-no-writeback and coherent-read results before retiring it.
+- [x] In this successor's first substantive implementation commit, replace the row 07 current-plan link, record PR #201 source/merge/version/gate facts, keep row 07 executing with its remaining obligations, and delete the completed prior plan.
+- [x] Advance `Directory.Build.props` exactly once from `0.1.0-dev.16` to `0.1.0-dev.17` in that same substantive commit; do not hand-edit generated version outputs.
+- [x] Keep the plan-only commit separate and first; inspect the staged roadmap, plan retirement and version diff before the normal check-only commit hook.
+- [x] Verify the production web build reports `0.1.0-dev.17` before the completing PR is published.
 
 ### Task 2: Prove current-version Player cache shape loss at PostgreSQL boundaries
 
