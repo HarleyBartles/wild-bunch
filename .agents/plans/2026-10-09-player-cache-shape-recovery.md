@@ -24,7 +24,7 @@
 
 ## Review Focus
 
-- Current-version Player JSON with `wallet: null` currently throws, while `inventory: null` currently becomes an empty inventory; both must recover the event-established values through aggregate, player-read and journal-read repositories.
+- Current-version Player JSON with `wallet: null` currently throws, while `inventory: null` or `inventory.items: null` currently becomes or risks becoming an empty/invalid inventory; all three malformed shapes must recover the event-established values through aggregate, player-read and journal-read repositories.
 - A read must not repair the stored malformed cache; a later normal command save must persist the reconstructed state and advance through the existing write path.
 - Recovery must not hide unsupported or corrupt event history; if authoritative history cannot rebuild the session, the existing fail-closed event-load error must escape.
 - PLAT-001 remains partial because this plan does not validate every component, recover partially missing diary rows, or make command-load reads coherent with concurrent commits.
@@ -73,5 +73,5 @@
 - [x] Add a dated row 07 disposition to the persistence test follow-up; preserve earlier static findings as history and do not claim general cache recovery from one Player shape.
 - [x] Compare the branch with ADR-0028, the event-sourcing integrity doctrine, architecture guardrails, feature matrix and backend unslop profile; leave the ADR unchanged if no durable boundary changes and state the reason.
 - [x] Verify no migration, event payload or upcaster changed; run focused PostgreSQL behavior tests and confirm generated version `0.1.0-dev.17`.
-- [ ] Review the whole branch against this plan, the baseline spec, PLAT-001, backend architecture and code-review unslop profiles, and the code-review runbook; disclose the self-review fallback if the active runtime still forbids an independent reviewer.
+- [x] Review the whole branch against this plan, the baseline spec, PLAT-001, backend architecture and code-review unslop profiles, and the code-review runbook. The active runtime forbids independent reviewer dispatch, so this is a disclosed self-review fallback; the review confirmed narrow cache-specific catches, full event replay, no query writeback, and no migration/event/upcaster changes.
 - [ ] Open and attach a Draft PR targeting `develop`, verify its exact source head and hosted canonical gate, mark it ready according to the PR runbook, merge using the repository's established squash route under the active epic authorization, fast-forward `Z:\wild-bunch`, and clean only this verified merged worktree and branch while retaining this plan until the next row 07 successor classifies it.
