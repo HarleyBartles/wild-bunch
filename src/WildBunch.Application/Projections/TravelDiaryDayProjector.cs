@@ -58,10 +58,6 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                     wallet += sts.BountyAmount;
                     break;
 
-                case UnrelatedCriminalTurnInSettled ucts:
-                    wallet += ucts.BountyAmount;
-                    break;
-
                 case SaloonPersonOfInterestConfronted spoc:
                     if (spoc.WalletAfter is { } walletAfter)
                         wallet = walletAfter;

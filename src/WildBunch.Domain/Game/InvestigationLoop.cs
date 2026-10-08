@@ -43,8 +43,7 @@ internal sealed class InvestigationLoop
             context.CaseFile,
             context.CurrentTownSlotIndex,
             context.CurrentTownVisitCount,
-            context.SaltSource,
-            context.RetiredWarrantIds is { Count: > 0 } ? context.RetiredWarrantIds : null);
+            context.SaltSource);
         var clue = _clueSurfacingResolver.Resolve(
             context.CaseFile,
             InvestigationSourceKind.SheriffWarrants,
@@ -350,7 +349,6 @@ internal sealed record InvestigationContext(
     int CurrentTownSlotIndex,
     int CurrentTownVisitCount,
     SaltSource? SaltSource,  // null = boring mode (SaltSourceMode.Fixed)
-    IReadOnlySet<WarrantId>? RetiredWarrantIds,  // from BountyLoop.UnrelatedCriminalLedger
     TownId CurrentTownId,
     string CurrentTownName,
     string? BeatNarration,  // null for ReadWantedPosters (no beat narration in result)

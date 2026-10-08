@@ -104,11 +104,11 @@ public sealed class BountySettlementPolicyTests
                         300m,
                         new[] { "The Magpie" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
-                        Array.Empty<OutlawGangId>(),
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
+                        [OutlawGangIds.WildBunch],
                         null),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);

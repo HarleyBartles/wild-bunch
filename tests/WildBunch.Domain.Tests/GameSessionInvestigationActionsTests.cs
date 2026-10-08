@@ -396,12 +396,12 @@ public sealed class GameSessionInvestigationActionsTests
                     300m,
                     new[] { "The Magpie", "R. Pike" },
                     new[] { "Mismatched spurs" },
-                    "Silver Creek Sheriff",
-                    InvestigationTargetKind.UnrelatedWantedCriminal,
+                    "Dodge City Marshal",
+                    InvestigationTargetKind.GangMember,
                     Array.Empty<OutlawGangId>(),
                     null,
                     InvestigationSourceKind.SheriffWarrants),
-                "Wanted for cattle theft.")
+                "Wanted as a member of the Wild Bunch.")
         };
 
         var caseFile = new CaseFile(

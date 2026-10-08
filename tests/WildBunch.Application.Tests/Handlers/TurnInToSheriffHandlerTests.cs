@@ -91,11 +91,11 @@ public sealed class TurnInToSheriffHandlerTests
                         300m,
                         new[] { "The Magpie" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
                         Array.Empty<OutlawGangId>(),
                         null),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));

@@ -65,14 +65,6 @@ internal sealed record SheriffTurnInContext(
     int ClockDay,
     int ClockTurn);
 
-/// <summary>Read-only inputs for an unrelated-criminal turn-in decision.</summary>
-internal sealed record UnrelatedCriminalTurnInContext(
-    WarrantId WarrantId,
-    bool IsAlive,
-    IReadOnlyList<Warrant> KnownWarrants,
-    int ClockDay,
-    int ClockTurn);
-
 /// <summary>Read-only inputs for a dev saloon override force decision.</summary>
 internal sealed record DevSaloonOverrideContext(
     DevSaloonOverride Override,
