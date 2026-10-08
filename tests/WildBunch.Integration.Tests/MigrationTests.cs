@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
@@ -16,6 +18,96 @@ namespace WildBunch.Integration.Tests;
 
 public sealed class MigrationTests
 {
+    [Fact]
+    public async Task PreAlphaPlaythroughsAreDiscardedByMigrationAndNewSessionCanBeStored()
+    {
+        const string priorMigration = "20260719061600_AddDiaryDaySchemaVersion";
+        const string discardMigration = "20261008180000_InvalidatePreAlphaPlaythroughs";
+        using var database = new PostgreSqlTestDatabase();
+
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .Options;
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync(priorMigration);
+        }
+
+        var preAlphaSession = CreateSession();
+        await using (var context = new WildBunchDbContext(options))
+        {
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(preAlphaSession);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+
+            context.GameSessionDiaryDays.Add(new GameSessionDiaryDayEntity
+            {
+                SessionId = preAlphaSession.Id.Value,
+                Sequence = 1,
+                PayloadJson = "{}",
+                RecordedAtUtc = DateTime.UtcNow,
+                SchemaVersion = 1
+            });
+            await context.SaveChangesAsync();
+
+            Assert.Equal(1, await context.GameSessions.CountAsync());
+            Assert.NotEmpty(await context.GameSessionComponents.ToListAsync());
+            Assert.NotEmpty(await context.StoredEvents.ToListAsync());
+            Assert.Equal(1, await context.GameSessionDiaryDays.CountAsync());
+        }
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var newSession = CreateSession();
+        await using (var context = new WildBunchDbContext(options))
+        {
+            Assert.Equal(0, await context.GameSessions.CountAsync());
+            Assert.Equal(0, await context.GameSessionComponents.CountAsync());
+            Assert.Equal(0, await context.StoredEvents.CountAsync());
+            Assert.Equal(0, await context.GameSessionDiaryDays.CountAsync());
+
+            var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+            Assert.Contains(priorMigration, appliedMigrations);
+            Assert.Contains(discardMigration, appliedMigrations);
+
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(newSession);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+            var reloaded = await repository.GetByIdAsync(newSession.Id);
+
+            Assert.NotNull(reloaded);
+            Assert.Equal(newSession.Player.Name, reloaded!.Player.Name);
+            Assert.Equal(1, await context.GameSessions.CountAsync());
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => context.GetService<IMigrator>().MigrateAsync(priorMigration));
+            Assert.Equal(1, await context.GameSessions.CountAsync());
+            Assert.Contains(discardMigration, await context.Database.GetAppliedMigrationsAsync());
+        }
+    }
+
     [Fact]
     public async Task MigrationsCreateGameSessionsTableAndRoundTripSession()
     {
