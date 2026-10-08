@@ -124,24 +124,19 @@ public sealed class GameSessionReadStoreLoader
         var logEntries = new JournalLogProjector().Project(store.AllEvents);
         if (store.Envelope.SnapshotVersion != store.Envelope.StreamVersion)
         {
-            var session = SessionRebuilder.RebuildFromEvents(new GameSessionId(store.Envelope.Id), store.AllEvents, _serializer);
-            return new GameSessionReadState(
-                session.Status,
-                session.GameDifficulty,
-                session.GameEntropy,
-                session.StartFlowPhase,
-                session.Player,
-                session.World,
-                session.CaseFile,
-                session.Clock,
-                session.PursuitState,
-                session.TownVisitStateOrNull,
-                session.Journey?.ToSnapshot(session.TravelRules),
-                store.TravelDiaryDays,
-                logEntries);
+            return CreateReadStateFromEvents(store, logEntries);
         }
 
-        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
+        Player player;
+        try
+        {
+            player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
+        }
+        catch (InvalidPlayerCacheShapeException)
+        {
+            return CreateReadStateFromEvents(store, logEntries);
+        }
+
         var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
         var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
@@ -165,6 +160,25 @@ public sealed class GameSessionReadStoreLoader
             _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents)),
             townVisitState,
             journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson),
+            store.TravelDiaryDays,
+            logEntries);
+    }
+
+    private GameSessionReadState CreateReadStateFromEvents(GameSessionStore store, IReadOnlyList<GameLogEntry> logEntries)
+    {
+        var session = SessionRebuilder.RebuildFromEvents(new GameSessionId(store.Envelope.Id), store.AllEvents, _serializer);
+        return new GameSessionReadState(
+            session.Status,
+            session.GameDifficulty,
+            session.GameEntropy,
+            session.StartFlowPhase,
+            session.Player,
+            session.World,
+            session.CaseFile,
+            session.Clock,
+            session.PursuitState,
+            session.TownVisitStateOrNull,
+            session.Journey?.ToSnapshot(session.TravelRules),
             store.TravelDiaryDays,
             logEntries);
     }

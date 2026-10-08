@@ -110,7 +110,19 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         // Fast path: snapshot is current. Load from snapshot + replay post-snapshot events.
         var store = await LoadStoreAsync(id, cancellationToken).ConfigureAwait(false);
-        return store is null ? null : ToAggregate(store);
+        if (store is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return ToAggregate(store);
+        }
+        catch (InvalidPlayerCacheShapeException)
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public async Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken cancellationToken = default)
