@@ -49,7 +49,7 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 
 ## Local commands and paths
 
-- Base branch: `main`
+- Default base branch: `main`
 - Default PR state: Draft
 - Apply: `py -3 tools/run.py ci --apply`
 - Check: `py -3 tools/run.py ci --check`
