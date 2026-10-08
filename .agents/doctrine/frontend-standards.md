@@ -9,10 +9,9 @@ These are the binding standards for the Wild Bunch web app under
 - Use SASS (`src/styles/`) for global concerns: design tokens (`_variables.scss`), reset (`_reset.scss`), and base element defaults (`_base.scss`).
 - Do NOT use plain CSS classes in `className`. All component styling must be handled via styled components.
 - Reference design tokens via `var(--token-name)` to stay on-palette.
+- Each component owns its display contract. Parents compose components through supported props and surrounding layout; they do not reach through to child internals with ancestor selectors or equivalent styling coupling.
 - Re-use shared primitives from `src/components/ui/sharedStyled.tsx` for genuine cross-surface patterns (Panel, StatusCard, Button, Grid, ItemCard, etc.).
 - Feature-specific styled components should stay local in the component file that uses them.
-- Durable guidance: `docs/frontend-styling.md`.
-- Enforced by `src/tests/stylingEnforcement.test.ts`.
 
 ## Play-Surface UI
 

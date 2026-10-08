@@ -23,6 +23,7 @@
 - In `.agents/doctrine/frontend-standards.md`, remove the retired document route and the inaccurate claim that one test enforces all styling standards; retain the tested boundaries accurately if mentioned, and state that components own their display contracts while parents compose them through supported layout/props rather than styling reach-through.
 - Do not modify application code, tests, ADRs, Linear, hosted services, or unrelated guidance; do not add heading-presence, empty-section, file-inventory, or link-existence tests.
 - The check-only pre-commit hook validates the staged candidate and does not mutate or stage corrections; use explicit commands for any generated or formatting changes.
+- Keep the documentation-custody investigation and its parent investigation entry as historical evidence, but update their status and disposition wording so neither claims the assessed files remain unchanged or links retired documents as live sources.
 
 ## Review Focus
 
@@ -36,22 +37,23 @@
 
 **Files:** Create `.agents/plans/2026-10-08-docs-custody.md`; modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` and `Directory.Build.props`; delete `.agents/plans/2026-10-08-adr-dispositions.md`.
 
-- [ ] Confirm PR #189 is merged to `develop` at `17b3a8a72c71fb86e6643767758712b88bc8b50c` and classify the predecessor's whole scope: ADR disposition work and its PR/review/hosted validation are complete in merged history; the six non-ADR document outcome is explicitly successor scope in roadmap row 02.
-- [ ] Update roadmap row 02 to record PR #188 and PR #189 as merged, include PR #189's merge commit and delivered ADR/guidance outcome, and point to this plan as the active document-custody successor; leave row 02 executing.
-- [ ] Set `Directory.Build.props` to `0.1.0-dev.5` and confirm it remains the only authored application version.
-- [ ] Remove the completed ADR-dispositions plan and its stale roadmap path after the full-scope classification above; preserve the baseline spec, roadmap, investigation evidence, and this plan.
-- [ ] Run `git diff --check`, inspect the staged candidate, and make a normal hooked commit before editing the six documents.
+- [x] Confirm PR #189 is merged to `develop` at `17b3a8a72c71fb86e6643767758712b88bc8b50c` and classify the predecessor's whole scope: ADR disposition work and its PR/review/hosted validation are complete in merged history; the six non-ADR document outcome is explicitly successor scope in roadmap row 02.
+- [x] Update roadmap row 02 to record PR #188 and PR #189 as merged, include PR #189's merge commit and delivered ADR/guidance outcome, and point to this plan as the active document-custody successor; leave row 02 executing.
+- [x] Set `Directory.Build.props` to `0.1.0-dev.5` and confirm it remains the only authored application version.
+- [x] Remove the completed ADR-dispositions plan and its stale roadmap path after the full-scope classification above; preserve the baseline spec, roadmap, investigation evidence, and this plan.
+- [x] Run `git diff --check`, inspect the staged candidate, and make a normal hooked commit before editing the six documents.
 
 ## Task 2: Reconcile document owners and repo routes
 
-**Files:** Modify `.agents/doctrine/frontend-standards.md` and `docs/local-postgresql.md`; delete `docs/frontend-styling.md`, `docs/testing-posture.md`, `docs/testing-lanes.md`, `docs/product-roadmap.md`, and `docs/unslop-style-guide.md`.
+**Files:** Modify `.agents/doctrine/frontend-standards.md`, `docs/local-postgresql.md`, `.agents/investigations/stable-0.1.0/2026-10-06-docs-custody-investigation.md`, and `.agents/investigations/stable-0.1.0/2026-10-06-stable-0.1.0-investigation.md`; delete `docs/frontend-styling.md`, `docs/testing-posture.md`, `docs/testing-lanes.md`, `docs/product-roadmap.md`, and `docs/unslop-style-guide.md`.
 
-- [ ] Search the repository for every inbound reference to all six documents, including Markdown links and plain-text routes; resolve each reference before deleting its target. Preserve README and `scripts/README.md` links to `docs/local-postgresql.md`.
-- [ ] In frontend standards, remove the stale `docs/frontend-styling.md` route and remove any whole-doctrine enforcement claim. If describing existing enforcement, state only the specific legacy stylesheet/class/inline-style conditions the test actually checks; do not claim it proves token discipline or component ownership.
-- [ ] Add the settled styling ownership boundary: each component owns its display contract; parents arrange composition using supported props and layout, not selectors that reach through into child internals.
-- [ ] Compare local PostgreSQL guide commands and database claims with `tools/postgres-dev.ps1`, `scripts/README.md`, and the testing playbook; retain the helpful human setup and safety explanation, removing or rewriting worker-only policy that duplicates the agent owner.
-- [ ] Retire the five documents only after their useful guidance is represented at existing current owners: testing policy/execution in validation doctrine and testing/browser playbooks; player copy/visual guidance in routed unslop profiles; proposed issue taxonomy retired as an unaccepted, unreferenced repo proposal without making claims about external Linear configuration.
-- [ ] Review the full diff for unsupported claims, duplicate current authority, stale links, and empty sections; run `git diff --check` and commit this documentation outcome normally.
+- [x] Search the repository for every inbound reference to all six documents, including Markdown links and plain-text routes; resolve each reference before deleting its target. Preserve README and `scripts/README.md` links to `docs/local-postgresql.md`.
+- [x] Update the investigation's status and disposition table to distinguish its original assessment from the delivered outcome; preserve its evidence and explain that no external Linear taxonomy was verified.
+- [x] In frontend standards, remove the stale `docs/frontend-styling.md` route and remove any whole-doctrine enforcement claim. If describing existing enforcement, state only the specific legacy stylesheet/class/inline-style conditions the test actually checks; do not claim it proves token discipline or component ownership.
+- [x] Add the settled styling ownership boundary: each component owns its display contract; parents arrange composition using supported props and layout, not selectors that reach through into child internals.
+- [x] Compare local PostgreSQL guide commands and database claims with `tools/postgres-dev.ps1`, `scripts/README.md`, and the testing playbook; retain the helpful human setup and safety explanation, removing or rewriting worker-only policy that duplicates the agent owner.
+- [x] Retire the five documents only after their useful guidance is represented at existing current owners: testing policy/execution in validation doctrine and testing/browser playbooks; player copy/visual guidance in routed unslop profiles; proposed issue taxonomy retired as an unaccepted, unreferenced repo proposal without making claims about external Linear configuration.
+- [x] Review the full diff for unsupported claims, duplicate current authority, stale links, and empty sections; run `git diff --check` and commit this documentation outcome normally.
 
 ## Task 3: Validate and publish the row-02 documentation outcome
 
