@@ -60,12 +60,12 @@
 
 **Files:** `tests/WildBunch.Integration.Tests/TestInfrastructure/PostgreSqlApiFactory.cs`; `tests/WildBunch.Integration.Tests/Acceptance/PlayerSetupReplayAcceptanceTests.cs` (new); `src/WildBunch.Api/Games/GameSessionEndpoints.cs`; `src/WildBunch.Application/Games/Commands/CompletePlayerSetupHandler.cs`; `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Events.cs`; `src/WildBunch.Persistence/GameSessions/SessionRebuilder.cs`.
 
-- [ ] Add an acceptance test through `POST /api/games/setup` using a known seed and a counting fixed `ISaltSourceFactory`. Use the real Application handler, EF store, registered event codec and production event loader.
-- [ ] Read the persisted event stream through a fresh service scope and assert independently expected player name, seed, difficulty, entropy, recorded salt, generated town/layout facts, and case/culprit facts from `WorldGenerated` and `CaseFileGenerated`.
-- [ ] Rehydrate from the deserialized stored events, assert the setup phase and those same facts, then apply the legal prologue acknowledgement to both command and replayed sessions and compare the resulting phase/history. Assert replay did not increment the generation salt-factory count.
-- [ ] Force the repository full event-replay path for this generated setup and verify it yields the same recorded salt and next legal phase. Do not broaden this into row 07's general cache-damage matrix.
-- [ ] Witness the acceptance test fail if event codec registration or one produced setup event is missing, rather than testing the serializer type map by enumeration.
-- [ ] Run focused Application, GameContent and Integration tests. Start the non-destructive local PostgreSQL helper with `.\tools\postgres-dev.ps1 ensure` before database tests; never drop/reset the developer database.
+- [x] Add an acceptance test through `POST /api/games/setup` using a known seed and a counting fixed `ISaltSourceFactory`. Use the real Application handler, EF store, registered event codec and production event loader.
+- [x] Read the persisted event stream through a fresh service scope and assert independently expected player name, seed, difficulty, entropy, recorded salt, generated town/layout facts, and case/culprit facts from `WorldGenerated` and `CaseFileGenerated`.
+- [x] Rehydrate from the deserialized stored events, assert the setup phase and those same facts, then apply the legal prologue acknowledgement to both command and replayed sessions and compare the resulting phase/history. Assert replay did not increment the generation salt-factory count.
+- [x] Force the repository full event-replay path for this generated setup and verify it yields the same recorded salt and next legal phase. Do not broaden this into row 07's general cache-damage matrix.
+- [x] Witness the acceptance test fail if event codec registration or one produced setup event is missing, rather than testing the serializer type map by enumeration.
+- [x] Run focused Application, GameContent and Integration tests. Start the non-destructive local PostgreSQL helper with `.\tools\postgres-dev.ps1 ensure` before database tests; never drop/reset the developer database.
 
 ### Task 4: Reconcile evidence and deliver
 
