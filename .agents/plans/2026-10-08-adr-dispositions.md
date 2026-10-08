@@ -153,13 +153,13 @@ Every ADR from 0001 through 0037 is assessed below. `Retain` means no edit unles
 
 **Files:** Modify `docs/decisions/README.md`; retain `docs/decisions/TEMPLATE.md` unless evidence shows an actual uncovered authoring rule.
 
-- [ ] Add ADR-0038 through ADR-0042 exactly once in numeric order with one-sentence summaries that name decisions, not implementation state.
-- [ ] Update every status and successor summary changed by Tasks 3-4; verify all 42 records appear exactly once and every catalogue link resolves.
-- [ ] Verify every `superseded by`, `supersedes`, and `partially superseded` relationship is reciprocal and scope-specific; old superseded records remain in the catalogue.
-- [ ] Search edited records for stale implementation/future-work headings, `Last reviewed`, unlinked successor references, removed source paths presented as current, and any unsupported reason or date; manually classify each result rather than blanket-replacing terms.
-- [ ] Confirm no code, tests, migrations, six non-ADR docs, or generated artifacts changed. Do not add tautological documentation tests.
-- [ ] Confirm `tools/run.py` exposes no ADR-specific validation target; manually verify each local ADR/catalogue/successor link and the catalogue's one-entry-per-record coverage, then stage the complete candidate and make a normal commit; the check-only hook runs the canonical gate, including the web build and generated-version identity check.
-- [ ] Read the hook result, review the committed diff against this plan, the baseline/cloud specs and all 37 matrix rows, and correct any failure with a focused edit followed by another normal hooked commit; do not run a duplicate canonical check on an unchanged committed tree.
+- [x] Add ADR-0038 through ADR-0042 exactly once in numeric order with one-sentence summaries that name decisions, not implementation state.
+- [x] Update every status and successor summary changed by Tasks 3-4; verify all 42 records appear exactly once and every catalogue link resolves.
+- [x] Verify every `superseded by`, `supersedes`, and `partially superseded` relationship is reciprocal and scope-specific; old superseded records remain in the catalogue.
+- [x] Search edited records for stale implementation/future-work headings, `Last reviewed`, unlinked successor references, removed source paths presented as current, and any unsupported reason or date; manually classify each result rather than blanket-replacing terms.
+- [x] Confirm no code, tests, migrations, six non-ADR docs, or generated artifacts changed. Do not add tautological documentation tests.
+- [x] Confirm `tools/run.py` exposes no ADR-specific validation target; manually verify each local ADR/catalogue/successor link and the catalogue's one-entry-per-record coverage, then stage the complete candidate and make a normal commit; the check-only hook runs the canonical gate, including the web build and generated-version identity check.
+- [x] Read the hook result, review the committed diff against this plan, the baseline/cloud specs and all 37 matrix rows, and correct any failure with a focused edit followed by another normal hooked commit; do not run a duplicate canonical check on an unchanged committed tree.
 
 ## Task 6: Establish central ADR and unslop routes with PR/review gates
 
