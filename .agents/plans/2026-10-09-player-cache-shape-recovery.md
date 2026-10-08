@@ -69,9 +69,9 @@
 
 **Files:** `docs/features.md`; `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`; this plan; changed persistence and test files.
 
-- [ ] Update PLAT-001 with the exact Player cache recovery evidence while keeping the assessment partial and distinguishing untouched component/diary/command-load/retry gaps.
-- [ ] Add a dated row 07 disposition to the persistence test follow-up; preserve earlier static findings as history and do not claim general cache recovery from one Player shape.
-- [ ] Compare the branch with ADR-0028, the event-sourcing integrity doctrine, architecture guardrails, feature matrix and backend unslop profile; leave the ADR unchanged if no durable boundary changes and state the reason.
-- [ ] Verify no migration, event payload or upcaster changed; run focused PostgreSQL behavior tests and confirm generated version `0.1.0-dev.17`.
+- [x] Update PLAT-001 with the exact Player cache recovery evidence while keeping the assessment partial and distinguishing untouched component/diary/command-load/retry gaps.
+- [x] Add a dated row 07 disposition to the persistence test follow-up; preserve earlier static findings as history and do not claim general cache recovery from one Player shape.
+- [x] Compare the branch with ADR-0028, the event-sourcing integrity doctrine, architecture guardrails, feature matrix and backend unslop profile; leave the ADR unchanged if no durable boundary changes and state the reason.
+- [x] Verify no migration, event payload or upcaster changed; run focused PostgreSQL behavior tests and confirm generated version `0.1.0-dev.17`.
 - [ ] Review the whole branch against this plan, the baseline spec, PLAT-001, backend architecture and code-review unslop profiles, and the code-review runbook; disclose the self-review fallback if the active runtime still forbids an independent reviewer.
 - [ ] Open and attach a Draft PR targeting `develop`, verify its exact source head and hosted canonical gate, mark it ready according to the PR runbook, merge using the repository's established squash route under the active epic authorization, fast-forward `Z:\wild-bunch`, and clean only this verified merged worktree and branch while retaining this plan until the next row 07 successor classifies it.
