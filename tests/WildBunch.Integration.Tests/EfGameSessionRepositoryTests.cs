@@ -572,6 +572,96 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(loaded.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync(day => day.SessionId == session.Id.Value));
     }
 
+    [Fact]
+    public async Task ReadModel_StaleSnapshotRebuildsPlayerAndJournalFromEvents()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var commandRepository = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateSession();
+        await PersistAsync(commandRepository, unitOfWork, session);
+
+        string oldPlayerPayload;
+        await using (var context = fixture.CreateContext())
+        {
+            oldPlayerPayload = await context.GameSessionComponents.AsNoTracking()
+                .Where(component => component.SessionId == session.Id.Value && component.ComponentName == "player")
+                .Select(component => component.PayloadJson)
+                .SingleAsync();
+        }
+
+        var loaded = await commandRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(loaded);
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(loaded.Purchase(offer, 2).Success);
+        await PersistAsync(commandRepository, unitOfWork, loaded);
+
+        long staleSnapshotVersion;
+        long streamVersion;
+        await using (var context = fixture.CreateContext())
+        {
+            var playerComponent = await context.GameSessionComponents.SingleAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "player");
+            var envelope = await context.GameSessions.SingleAsync(entity => entity.Id == session.Id.Value);
+            playerComponent.PayloadJson = oldPlayerPayload;
+            envelope.SnapshotVersion = envelope.StreamVersion - 1;
+            staleSnapshotVersion = envelope.SnapshotVersion.Value;
+            streamVersion = envelope.StreamVersion;
+            await context.SaveChangesAsync();
+        }
+
+        Assert.True(staleSnapshotVersion < streamVersion);
+
+        var readStoreLoader = CreateReadStoreLoader();
+        var readRepository = new EfGameSessionReadRepository(fixture.CreateContext(), readStoreLoader);
+        var journalRepository = new EfGameJournalReadRepository(fixture.CreateContext(), readStoreLoader);
+        var sessionRead = await readRepository.GetByIdAsync(session.Id);
+        var journalRead = await journalRepository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(sessionRead);
+        Assert.Equal(loaded.Player.Wallet.Cash, sessionRead!.Player.Wallet.Cash);
+        Assert.Equal(loaded.Player.Inventory.GetQuantity(DomainItemKind.Food), sessionRead.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.NotNull(journalRead);
+        Assert.Contains(journalRead!.LogEntries, entry =>
+            entry.Kind == GameLogEntryKind.Purchase && entry.Message.Contains("Purchased 2 Food", StringComparison.Ordinal));
+
+        await using var verificationContext = fixture.CreateContext();
+        var persistedPlayerPayload = await verificationContext.GameSessionComponents.AsNoTracking()
+            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == "player")
+            .Select(component => component.PayloadJson)
+            .SingleAsync();
+        var persistedVersions = await verificationContext.GameSessions.AsNoTracking()
+            .Where(entity => entity.Id == session.Id.Value)
+            .Select(entity => new { entity.SnapshotVersion, entity.StreamVersion })
+            .SingleAsync();
+        Assert.Equal(oldPlayerPayload, persistedPlayerPayload);
+        Assert.Equal(staleSnapshotVersion, persistedVersions.SnapshotVersion);
+        Assert.Equal(streamVersion, persistedVersions.StreamVersion);
+    }
+
+    [Fact]
+    public async Task ReadModel_StartingTownSelectedRestoresPhase()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var town = new Town(new TownId("dustvale"), "Dustvale");
+        var world = new WildBunch.Domain.World.World(new[] { town }, Array.Empty<Trail>());
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, CreateCaseFile(),
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(town.Id);
+
+        await PersistAsync(repository, unitOfWork, session);
+
+        var readRepository = new EfGameSessionReadRepository(fixture.CreateContext(), CreateReadStoreLoader());
+        var readModel = await readRepository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(readModel);
+        Assert.Equal(StartFlowPhase.StartingTownSelected, readModel!.StartFlowPhase);
+    }
+
     private static EfGameSessionRepository CreateRepository(PostgreSqlPersistenceFixture fixture, out EfGameSessionUnitOfWork unitOfWork)
     {
         var context = fixture.CreateContext();
@@ -584,6 +674,18 @@ public sealed class EfGameSessionRepositoryTests
             new TravelDiaryDayProjector(),
             rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
         return new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), registry, payloadLoader);
+    }
+
+    private static GameSessionReadStoreLoader CreateReadStoreLoader()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var registry = new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters());
+        var payloadLoader = new PersistedPayloadLoader(
+            registry,
+            serializer,
+            new TravelDiaryDayProjector(),
+            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+        return new GameSessionReadStoreLoader(payloadLoader, serializer);
     }
 
     private static async Task PersistAsync(

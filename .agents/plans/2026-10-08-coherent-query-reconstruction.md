@@ -45,12 +45,12 @@
 
 **Files:** `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; `src/WildBunch.Persistence/GameSessions/SessionRebuilder.cs`; `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`.
 
-- [ ] Add a PostgreSQL behavior test that saves a valid playthrough, captures its Player cache, purchases food through `GameSession.Purchase`, commits the resulting event, then restores only the old Player JSON and marks `SnapshotVersion` behind `StreamVersion`.
-- [ ] Through fresh `EfGameSessionReadRepository` and `EfGameJournalReadRepository` instances, assert the player cash/inventory reflect the committed purchase, the journal reflects the purchase event, and the stale component/version remain unchanged in PostgreSQL after both reads.
-- [ ] Witness the new test fail against the existing loader because it trusts the old current-schema Player cache; record the observed stale value as the intended RED.
-- [ ] Add the intermediate-phase assertion to the read contract: a persisted history ending in `StartingTownSelected` and lacking `GameStarted` returns `StartFlowPhase.StartingTownSelected`, matching `EfGameSessionRepository`.
-- [ ] On `SnapshotVersion != StreamVersion`, rebuild one aggregate from the already-loaded production-decoded events and construct both read contracts from that aggregate plus event-derived diary projection; keep the current cache path for a current snapshot and include the `StartingTownSelected` event in its phase derivation.
-- [ ] Run `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_StaleSnapshotRebuildsPlayerAndJournalFromEvents|FullyQualifiedName~ReadModel_StartingTownSelectedRestoresPhase"` and verify the stale test fails if the event-rebuild branch is removed.
+- [x] Add a PostgreSQL behavior test that saves a valid playthrough, captures its Player cache, purchases food through `GameSession.Purchase`, commits the resulting event, then restores only the old Player JSON and marks `SnapshotVersion` behind `StreamVersion`.
+- [x] Through fresh `EfGameSessionReadRepository` and `EfGameJournalReadRepository` instances, assert the player cash/inventory reflect the committed purchase, the journal reflects the purchase event, and the stale component/version remain unchanged in PostgreSQL after both reads.
+- [x] Witness the new test fail against the existing loader because it trusts the old current-schema Player cache; record the observed stale value as the intended RED.
+- [x] Add the intermediate-phase assertion to the read contract: a persisted history ending in `StartingTownSelected` and lacking `GameStarted` returns `StartFlowPhase.StartingTownSelected`, matching `EfGameSessionRepository`.
+- [x] On `SnapshotVersion != StreamVersion`, rebuild one aggregate from the already-loaded production-decoded events and construct both read contracts from that aggregate plus event-derived diary projection; keep the current cache path for a current snapshot and include the `StartingTownSelected` event in its phase derivation.
+- [x] Run `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_StaleSnapshotRebuildsPlayerAndJournalFromEvents|FullyQualifiedName~ReadModel_StartingTownSelectedRestoresPhase"` and verify the stale test fails if the event-rebuild branch is removed.
 
 ### Task 3: Keep query reads on one PostgreSQL snapshot
 
