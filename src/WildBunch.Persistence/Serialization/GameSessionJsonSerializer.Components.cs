@@ -13,6 +13,14 @@ using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 
 namespace WildBunch.Persistence.Serialization;
 
+internal sealed class InvalidPlayerCacheShapeException : InvalidOperationException
+{
+    public InvalidPlayerCacheShapeException(string message)
+        : base(message)
+    {
+    }
+}
+
 public sealed partial class GameSessionJsonSerializer
 {
     public string SerializePlayer(Player player)
@@ -25,6 +33,13 @@ public sealed partial class GameSessionJsonSerializer
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         var snapshot = Deserialize<PlayerSnapshot>(json);
+
+        if (snapshot.Wallet is null || snapshot.Inventory is null || snapshot.Inventory.Items is null)
+        {
+            throw new InvalidPlayerCacheShapeException(
+                "Player cache is missing required wallet, inventory, or inventory items.");
+        }
+
         return PlayerSnapshot.ToDomain(snapshot);
     }
 
@@ -162,7 +177,7 @@ public sealed partial class GameSessionJsonSerializer
 
         public static Wallet ToDomain(WalletSnapshot? snapshot)
             => snapshot is null
-                ? throw new InvalidOperationException("Unable to deserialize player wallet.")
+                ? throw new InvalidPlayerCacheShapeException("Player cache is missing a required wallet.")
                 : new Wallet(snapshot.Cash);
     }
 
@@ -173,7 +188,9 @@ public sealed partial class GameSessionJsonSerializer
 
         public static DomainInventory ToDomain(InventorySnapshot? snapshot)
             => snapshot is null
-                ? DomainInventory.Empty()
+                ? throw new InvalidPlayerCacheShapeException("Player cache is missing required inventory.")
+                : snapshot.Items is null
+                    ? throw new InvalidPlayerCacheShapeException("Player cache is missing required inventory items.")
                 : new DomainInventory(snapshot.Items.Select(InventoryItemSnapshot.ToDomain));
     }
 

@@ -46,24 +46,24 @@
 
 **Files:** `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`.
 
-- [ ] Add a PostgreSQL behavior scenario that saves a valid session and purchases food so the event-established inventory and wallet differ from their initial values.
-- [ ] Keep the envelope `SnapshotVersion == StreamVersion` and Player `ComponentVersion` current, then damage only the Player JSON by setting required `wallet` or `inventory` state to null; retain the original semantic assertions independently of the corrupted cache.
-- [ ] Through fresh `EfGameSessionRepository`, `EfGameSessionReadRepository` and `EfGameJournalReadRepository` instances, assert the player name, cash, food quantity and purchase journal entry match the event-established state for both cache-shape cases.
-- [ ] Assert all reads leave the malformed JSON and version fields unchanged; no query-side repair may satisfy the behavioral assertions.
-- [ ] Add a negative case where the Player cache is invalid and persisted event history has an unsupported version; assert the load fails through the existing fail-closed history path rather than returning a plausible default.
-- [ ] Run the focused PostgreSQL tests and witness the new cache-shape cases fail against the current behavior for the intended reasons: empty inventory or load exception.
+- [x] Add a PostgreSQL behavior scenario that saves a valid session and purchases food so the event-established inventory and wallet differ from their initial values.
+- [x] Keep the envelope `SnapshotVersion == StreamVersion` and Player `ComponentVersion` current, then damage only the Player JSON by setting required `wallet` or `inventory` state to null; retain the original semantic assertions independently of the corrupted cache.
+- [x] Through fresh `EfGameSessionRepository`, `EfGameSessionReadRepository` and `EfGameJournalReadRepository` instances, assert the player name, cash, food quantity and purchase journal entry match the event-established state for both cache-shape cases.
+- [x] Assert all reads leave the malformed JSON and version fields unchanged; no query-side repair may satisfy the behavioral assertions.
+- [x] Add a negative case where the Player cache is invalid and persisted event history has an unsupported version; assert the load fails through the existing fail-closed history path rather than returning a plausible default.
+- [x] Run the focused PostgreSQL tests and witness the new cache-shape cases fail against the current behavior for the intended reasons: empty inventory or load exception.
 
 ### Task 3: Rebuild invalid Player cache state from loaded history
 
 **Files:** `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; focused integration tests from Task 2.
 
-- [ ] Define the current Player cache's required shape explicitly: wallet, inventory and inventory items must be present; absence is invalid cache state, not a legitimate empty value.
-- [ ] Make Player deserialization distinguish invalid persisted cache shape from unrelated programming or authoritative-history failures; callers must catch only that cache-specific failure.
-- [ ] On aggregate load, route the invalid Player cache through the production full event-replay path; do not save from `GetByIdAsync` or rewrite events.
-- [ ] On player and journal reads, rebuild one aggregate from the already-loaded production-decoded events and build both contracts from that state while preserving event-derived journal output.
-- [ ] Preserve the malformed database row through query reads, then use one legal command and the existing repository/unit-of-work commit to prove the Player component is restored and a fresh load returns the same facts.
-- [ ] Keep the negative unsupported-history test failing closed; do not catch event decoder, upcaster or reconstruction failures as cache damage.
-- [ ] Run `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_CurrentPlayerCacheShapeRebuildsFromEvents|FullyQualifiedName~ReadModel_InvalidPlayerCacheDoesNotHideUnreplayableHistory"` and prove the recovery assertions fail if the Player fallback is removed.
+- [x] Define the current Player cache's required shape explicitly: wallet, inventory and inventory items must be present; absence is invalid cache state, not a legitimate empty value.
+- [x] Make Player deserialization distinguish invalid persisted cache shape from unrelated programming or authoritative-history failures; callers must catch only that cache-specific failure.
+- [x] On aggregate load, route the invalid Player cache through the production full event-replay path; do not save from `GetByIdAsync` or rewrite events.
+- [x] On player and journal reads, rebuild one aggregate from the already-loaded production-decoded events and build both contracts from that state while preserving event-derived journal output.
+- [x] Preserve the malformed database row through query reads, then use one legal command and the existing repository/unit-of-work commit to prove the Player component is restored and a fresh load returns the same facts.
+- [x] Keep the negative unsupported-history test failing closed; do not catch event decoder, upcaster or reconstruction failures as cache damage.
+- [x] Run `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_CurrentPlayerCacheShapeRebuildsFromEvents|FullyQualifiedName~ReadModel_InvalidPlayerCacheDoesNotHideUnreplayableHistory"` and prove the recovery assertions fail if the Player fallback is removed.
 
 ### Task 4: Reconcile evidence and deliver
 
