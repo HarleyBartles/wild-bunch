@@ -37,11 +37,11 @@
 
 **Files:** Create this plan; modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` and `Directory.Build.props`; delete `.agents/plans/2026-10-08-unrelated-criminal-retirement.md`.
 
-- [ ] Verify PR #195 is merged to `develop` at `ed59233ad84b4302ee1bb0588c09a8a7cf54bba8`, the hosted canonical gate passed on the exact reviewed head, and the delivered PG-009-R scope is represented in current source and matrix.
-- [ ] Classify the full unrelated-criminal plan as shipped by PR #195, preserve its durable history/migration decisions at their current owners, and remove the completed plan from this successor slice.
-- [ ] Update roadmap row 05 with PR #195, source/merge evidence, hosted run `37811281072`, and `0.1.0-dev.10`; keep row 05 executing and replace its current plan link with this plan. State that this is the next bounded exclusion, not completion of row 05.
-- [ ] Advance `Directory.Build.props` exactly once from `0.1.0-dev.10` to `0.1.0-dev.11`. Preserve the current pre-1.0 policy: no API/gameplay compatibility promise is made and no future `1.0.0` contract is required or decided in this epic. The later SemVer adoption plan will pin the updated AOM definition current at authoring time.
-- [ ] Stage the roadmap, version and predecessor-plan retirement; inspect the exact staged diff and commit through the check-only hook. Do not run the complete CI gate immediately before or after this ordinary hooked commit.
+- [x] Verify PR #195 is merged to `develop` at `ed59233ad84b4302ee1bb0588c09a8a7cf54bba8`, the hosted canonical gate passed on the exact reviewed head, and the delivered PG-009-R scope is represented in current source and matrix.
+- [x] Classify the full unrelated-criminal plan as shipped by PR #195, preserve its durable history/migration decisions at their current owners, and remove the completed plan from this successor slice.
+- [x] Update roadmap row 05 with PR #195, source/merge evidence, hosted run `37811281072`, and `0.1.0-dev.10`; keep row 05 executing and replace its current plan link with this plan. State that this is the next bounded exclusion, not completion of row 05.
+- [x] Advance `Directory.Build.props` exactly once from `0.1.0-dev.10` to `0.1.0-dev.11`. Preserve the current pre-1.0 policy: no API/gameplay compatibility promise is made and no future `1.0.0` contract is required or decided in this epic. The later SemVer adoption plan will pin the updated AOM definition current at authoring time.
+- [x] Stage the roadmap, version and predecessor-plan retirement; inspect the exact staged diff and commit through the check-only hook. Do not run the complete CI gate immediately before or after this ordinary hooked commit.
 
 ### Task 2: Remove town-layout override and its exclusive prepped-start backend
 
