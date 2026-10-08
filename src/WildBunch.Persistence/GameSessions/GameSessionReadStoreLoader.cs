@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Projections;
+using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Journal;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -33,50 +35,42 @@ public sealed class GameSessionReadStoreLoader
             return null;
         }
 
-        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
-        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
-        var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
-        var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
-        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
-        var townVisitState = player.CurrentTownId is not null
-            ? (townVisitStateJson is null
-                ? new TownVisitState(player.CurrentTownId.Value)
-                : _serializer.DeserializeTownVisitState(townVisitStateJson))
-            : null;
+        var state = CreateReadState(store);
 
         return new GameSessionReadModel(
             store.Envelope.Id,
-            Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
-            (GameDifficulty)store.Envelope.GameDifficulty,
-            entropy,
-            DeriveStartFlowPhase(store.AllEvents),
-            player,
-            world,
-            _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile, _payloadLoader, store.AllEvents)),
-            _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents)),
-            _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents)),
-            townVisitState,
-            GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey, _payloadLoader, store.AllEvents) is { } journeyJson
-                ? _serializer.DeserializeJourneySnapshot(journeyJson)
-                : null,
-            store.TravelDiaryDays,
-            new JournalLogProjector().Project(store.AllEvents));
+            state.Status,
+            state.GameDifficulty,
+            state.GameEntropy,
+            state.StartFlowPhase,
+            state.Player,
+            state.World,
+            state.CaseFile,
+            state.Clock,
+            state.PursuitState,
+            state.TownVisitState,
+            state.Journey,
+            state.TravelDiaryDays,
+            state.LogEntries);
     }
 
     private static StartFlowPhase DeriveStartFlowPhase(IReadOnlyList<IDomainEvent> events)
     {
         var hasGameStarted = false;
+        var hasStartingTownSelected = false;
         var hasPrologueViewed = false;
         var hasSetupCompleted = false;
 
         foreach (var e in events)
         {
             if (e is GameStarted) hasGameStarted = true;
+            else if (e is StartingTownSelected) hasStartingTownSelected = true;
             else if (e is PrologueViewed) hasPrologueViewed = true;
             else if (e is PlayerSetupCompleted) hasSetupCompleted = true;
         }
 
         if (hasGameStarted) return StartFlowPhase.GameStarted;
+        if (hasStartingTownSelected) return StartFlowPhase.StartingTownSelected;
         if (hasPrologueViewed) return StartFlowPhase.PrologueViewed;
         if (hasSetupCompleted) return StartFlowPhase.SetupComplete;
         return StartFlowPhase.NotStarted;
@@ -95,32 +89,27 @@ public sealed class GameSessionReadStoreLoader
             return null;
         }
 
-        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
-        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
-        var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
-        var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
-        var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile, _payloadLoader, store.AllEvents));
-        var currentTown = player.CurrentTownId is not null
-            ? world.GetTown(player.CurrentTownId.Value)
+        var state = CreateReadState(store);
+        var currentTown = state.Player.CurrentTownId is not null
+            ? state.World.GetTown(state.Player.CurrentTownId.Value)
             : null;
-        var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents));
-        var logEntries = ApplySlice(new JournalLogProjector().Project(store.AllEvents), skip, take);
+        var logEntries = ApplySlice(state.LogEntries, skip, take);
 
         return new JournalSnapshot(
             store.Envelope.Id,
-            Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
-            clock.Day,
-            clock.Turn,
+            state.Status,
+            state.Clock.Day,
+            state.Clock.Turn,
             currentTown?.Id,
             currentTown?.Name,
-            caseFile.Accusation is null ? null : caseFile.Accusation.Value.Value,
-            caseFile.OpeningLead.Description,
-            caseFile.KillerReleaseState,
+            state.CaseFile.Accusation is null ? null : state.CaseFile.Accusation.Value.Value,
+            state.CaseFile.OpeningLead.Description,
+            state.CaseFile.KillerReleaseState,
             "Find the culprit before the law closes in.",
-            caseFile.GetDiscoveredSuspects(),
-            caseFile.KnownClues.ToArray(),
-            caseFile.KnownWarrants.ToArray(),
-            caseFile.SheriffTurnInSettlements.ToArray(),
+            state.CaseFile.GetDiscoveredSuspects(),
+            state.CaseFile.KnownClues.ToArray(),
+            state.CaseFile.KnownWarrants.ToArray(),
+            state.CaseFile.SheriffTurnInSettlements.ToArray(),
             logEntries);
     }
 
@@ -130,11 +119,65 @@ public sealed class GameSessionReadStoreLoader
         return take.HasValue ? query.Take(Math.Max(0, take.Value)).ToArray() : query.ToArray();
     }
 
+    private GameSessionReadState CreateReadState(GameSessionStore store)
+    {
+        var logEntries = new JournalLogProjector().Project(store.AllEvents);
+        if (store.Envelope.SnapshotVersion != store.Envelope.StreamVersion)
+        {
+            var session = SessionRebuilder.RebuildFromEvents(new GameSessionId(store.Envelope.Id), store.AllEvents, _serializer);
+            return new GameSessionReadState(
+                session.Status,
+                session.GameDifficulty,
+                session.GameEntropy,
+                session.StartFlowPhase,
+                session.Player,
+                session.World,
+                session.CaseFile,
+                session.Clock,
+                session.PursuitState,
+                session.TownVisitStateOrNull,
+                session.Journey?.ToSnapshot(session.TravelRules),
+                store.TravelDiaryDays,
+                logEntries);
+        }
+
+        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
+        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
+        var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
+        var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
+        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
+        var townVisitState = player.CurrentTownId is not null
+            ? (townVisitStateJson is null
+                ? new TownVisitState(player.CurrentTownId.Value)
+                : _serializer.DeserializeTownVisitState(townVisitStateJson))
+            : null;
+        var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey, _payloadLoader, store.AllEvents);
+
+        return new GameSessionReadState(
+            Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
+            (GameDifficulty)store.Envelope.GameDifficulty,
+            entropy,
+            DeriveStartFlowPhase(store.AllEvents),
+            player,
+            world,
+            _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile, _payloadLoader, store.AllEvents)),
+            _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents)),
+            _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents)),
+            townVisitState,
+            journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson),
+            store.TravelDiaryDays,
+            logEntries);
+    }
+
     private async Task<GameSessionStore?> LoadStoreAsync(
         WildBunchDbContext dbContext,
         GameSessionId id,
         CancellationToken cancellationToken)
     {
+        await using var transaction = await dbContext.Database
+            .BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead, cancellationToken)
+            .ConfigureAwait(false);
+
         var envelope = await dbContext.GameSessions.AsNoTracking().SingleOrDefaultAsync(session => session.Id == id.Value, cancellationToken).ConfigureAwait(false);
         if (envelope is null)
         {
@@ -155,15 +198,15 @@ public sealed class GameSessionReadStoreLoader
             .OrderBy(e => e.Sequence)
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
-
-        var domainEvents = _payloadLoader.LoadEvents(storedEvents);
-
         var diaryDayEntities = await dbContext.GameSessionDiaryDays.AsNoTracking()
             .Where(day => day.SessionId == id.Value)
             .OrderBy(day => day.Sequence)
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        var domainEvents = _payloadLoader.LoadEvents(storedEvents);
         var diaryDays = _payloadLoader.LoadDiaryDays(diaryDayEntities, domainEvents);
 
         return new GameSessionStore(
@@ -178,4 +221,19 @@ public sealed class GameSessionReadStoreLoader
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         IReadOnlyList<IDomainEvent> AllEvents);
+
+    private sealed record GameSessionReadState(
+        GameStatus Status,
+        GameDifficulty GameDifficulty,
+        GameEntropy GameEntropy,
+        StartFlowPhase StartFlowPhase,
+        Player Player,
+        World World,
+        CaseFile CaseFile,
+        GameClock Clock,
+        PursuitState PursuitState,
+        TownVisitState? TownVisitState,
+        TravelJourneySnapshot? Journey,
+        IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
+        IReadOnlyList<GameLogEntry> LogEntries);
 }
