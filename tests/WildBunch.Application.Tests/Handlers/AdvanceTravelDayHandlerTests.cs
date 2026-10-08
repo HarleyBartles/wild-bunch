@@ -28,11 +28,9 @@ public sealed class AdvanceTravelDayHandlerTests
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
         Assert.True(result.Success || result.JourneyStatus == JourneyStatus.Interrupted);
-        if (result.TrailEvent is not null)
-        {
-            Assert.Contains("cache", result.TrailEvent.Title, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("I ", result.TrailEvent.Message, StringComparison.OrdinalIgnoreCase);
-        }
+        Assert.NotNull(result.TrailEvent);
+        Assert.False(string.IsNullOrWhiteSpace(result.TrailEvent!.Title));
+        Assert.Contains("I ", result.TrailEvent.Message, StringComparison.OrdinalIgnoreCase);
 
         Assert.True(result.CurrentSession.Inventory.Items.First(item => item.Kind == ItemKind.Food).Quantity >= 2);
     }

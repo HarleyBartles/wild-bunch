@@ -282,6 +282,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
         loaded.AdvanceJourneyDay();
 
         var pendingEncounter = loaded.Journey!.PendingEncounter!;

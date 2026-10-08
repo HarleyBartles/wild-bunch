@@ -6,7 +6,6 @@ import { clearTravelOverride, forceTravelOverride, getTravelDevContext } from ".
 
 const ENCOUNTER_CATEGORIES = [
   "Foe",
-  "Npc",
   "Lucky",
   "Unlucky",
   "Environmental",

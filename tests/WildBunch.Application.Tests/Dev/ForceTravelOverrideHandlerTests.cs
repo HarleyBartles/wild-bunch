@@ -22,7 +22,7 @@ public sealed class ForceTravelOverrideHandlerTests
 
         await handler.HandleAsync(new ForceTravelOverrideCommand(
             session.Id.Value,
-            ForcedCategory: "Foe",
+            ForcedCategory: TravelDayEncounterCategory.Foe,
             FoeSpeed: 5,
             FoeFightStrength: 4,
             FoeMinimumBribe: 8m,
@@ -47,7 +47,7 @@ public sealed class ForceTravelOverrideHandlerTests
 
         await handler.HandleAsync(new ForceTravelOverrideCommand(
             session.Id.Value,
-            ForcedCategory: "Lucky",
+            ForcedCategory: TravelDayEncounterCategory.Lucky,
             FoeSpeed: null,
             FoeFightStrength: null,
             FoeMinimumBribe: null,

@@ -435,11 +435,10 @@ public sealed class GameApiTests
         Assert.Null(secondDestinationTravel.Journey!.PendingEncounter);
         Assert.Equal(0, secondDestinationTravel.CurrentSession.Journey!.DaysTravelled);
 
-        // Force an NPC encounter so the test gets the expected encounter kind
-        // regardless of the deterministic seed hash (BUNCH-104 enum rename shifted rolls).
+        // Force a hostile encounter so interruption behavior is independent of generated rolls.
         await client.PostAsJsonAsync(
             $"/api/dev/sessions/{createdSession.Id}/travel/force-override",
-            new ForceTravelOverrideRequestDto("Npc", null, null, null, null));
+            new ForceTravelOverrideRequestDto("Foe", null, null, null, null));
 
         var firstAdvanceResponse = await client.PostAsync($"/api/games/{createdSession.Id}/travel/advance", content: null);
 
@@ -452,7 +451,7 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Interrupted, blockedAdvance.JourneyStatus);
         Assert.NotNull(blockedAdvance.Journey);
         Assert.NotNull(blockedAdvance.Journey!.PendingEncounter);
-        Assert.Equal("npc", blockedAdvance.Journey.PendingEncounter!.Kind);
+        Assert.Equal("foe", blockedAdvance.Journey.PendingEncounter!.Kind);
         Assert.Equal(3, blockedAdvance.Journey.PendingEncounter.Choices.Count);
         Assert.Equal(new[] { "run", "fight", "bribe" }, blockedAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id));
         Assert.Equal(10, blockedAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);

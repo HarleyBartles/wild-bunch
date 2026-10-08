@@ -70,8 +70,8 @@ internal static class TravelTestSeedCatalog
         GameEntropy.Classic);
 
     /// <summary>
-    /// Canonical world, Hard difficulty, Standard entropy, mounted.
-    /// Used for bad-luck trail-event tests (BadLuckSpookedHorse) and NPC encounters.
+    /// Canonical world, challenging difficulty, Classic entropy, mounted.
+    /// Used for bad-luck trail-event tests (BadLuckSpookedHorse).
     /// Routes from Pinecross: redmesa (Low/OpenRange/Creek), hardpan (Low/Badlands/None), openpass (Low/OpenRange/None).
     /// </summary>
     internal static readonly SeedWorldEntry CanonicalMountedHardStandard = new(
@@ -89,16 +89,6 @@ internal static class TravelTestSeedCatalog
     internal static readonly SeedWorldEntry FrontierFootNormalFoe = new(
         CreateFullTownSeedWorld(SeedWorldVariant.Frontier, 0, 3, 0),
         GameDifficulty.Standard,
-        GameEntropy.Classic);
-
-    /// <summary>
-    /// Frontier world, Hard difficulty, Standard entropy, mounted.
-    /// Frontier variant makes holloway->sagewell Low/Hills/River.
-    /// Used for NPC-encounter tests.
-    /// </summary>
-    internal static readonly SeedWorldEntry FrontierMountedHardNpc = new(
-        CreateFullTownSeedWorld(SeedWorldVariant.Frontier, 0, 3, 0),
-        GameDifficulty.Challenging,
         GameEntropy.Classic);
 
     /// <summary>

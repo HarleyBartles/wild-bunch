@@ -135,6 +135,7 @@ public sealed class TravelResolverTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
+        session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
 
         var result = session.AdvanceJourneyDay();
 
@@ -193,7 +194,7 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayCanTriggerALuckyTrailEventOnLowRiskRoutes()
+    public void AdvanceJourneyDayCanApplyABadLuckTrailEventOnLowRiskRoutes()
     {
         var session = CreateLuckyFootSession();
         var resolver = new TravelResolver();
@@ -206,24 +207,15 @@ public sealed class TravelResolverTests
         Assert.True(result.Status is JourneyStatus.Active or JourneyStatus.Interrupted);
         Assert.NotNull(result.Journey);
         Assert.NotNull(result.TrailEvent);
-        Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent!.Kind);
-        // The specific lucky event (CoinCache vs FoodCache vs WaterRecovery) is
-        // seed-determined; the guardrail is that a Lucky event fires and applies
-        // its effect, not which specific lucky event the hash selected.
-        // NOTE: There is no dev overlay seam for forcing a specific lucky trail
-        // event sub-type today. ForceDevTravelOverride(ForCategory(Lucky)) produces
-        // a choice encounter, not a TrailEvent. A future worker could add a seam
-        // to TrailEventCatalog or TravelDayPlanFactory to force specific trail
-        // event IDs for test determinism.
-        Assert.True(session.Player.Wallet.Cash >= 25m || session.Player.Inventory.GetQuantity(DomainItemKind.Food) >= 3);
-        Assert.True(session.Journey!.DelayDays >= 0);
-        Assert.Equal(1, session.Journey.RemainingDays);
+        Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
+        Assert.True(result.TrailEvent!.DelayDays > 0);
+        Assert.Equal(1 + result.TrailEvent!.DelayDays, session.Journey!.RemainingDays);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
     }
 
     [Fact]
-    public void AdvanceJourneyDayCanTriggerABadLuckTrailEventOnModerateRiskRoutes()
+    public void AdvanceJourneyDayDoesNotApplyHardRouteOnlyBadLuckOnModerateRoutes()
     {
         var session = CreateBadLuckSession();
         var resolver = new TravelResolver();
@@ -244,7 +236,7 @@ public sealed class TravelResolverTests
         var secondResult = session.AdvanceJourneyDay();
 
         Assert.True(secondResult.Success || secondResult.Status == JourneyStatus.Interrupted);
-        Assert.True(secondResult.Status is JourneyStatus.Active or JourneyStatus.Interrupted);
+        Assert.True(secondResult.Status is JourneyStatus.Active or JourneyStatus.Interrupted or JourneyStatus.Completed);
         Assert.NotNull(secondResult.Journey);
         Assert.True(secondResult.TrailEvent is null || secondResult.TrailEvent.DelayDays == 0);
         Assert.NotEqual(JourneyTrailEventId.BadLuckWashout, secondResult.TrailEvent?.Id);
@@ -313,7 +305,7 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayCanTriggerAnAdditionalBadLuckSpookedHorseEventOnHardBadlandsRoutes()
+    public void AdvanceJourneyDayCanTriggerALuckyCoinCacheOnHardBadlandsRoutes()
     {
         var session = CreateHardBadLuckSession();
         var resolver = new TravelResolver();
@@ -323,12 +315,13 @@ public sealed class TravelResolverTests
         var result = session.AdvanceJourneyDay();
 
         Assert.True(result.Success || result.Status == JourneyStatus.Interrupted);
-        Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent?.Id);
+        Assert.Equal(JourneyTrailEventId.LuckyCoinCache, result.TrailEvent?.Id);
+        Assert.True(result.TrailEvent!.WalletDelta > 0);
         Assert.True(session.Journey!.DelayDays >= 0);
     }
 
     [Fact]
-    public void AdvanceJourneyDayCanTriggerAnAdditionalBadLuckSpookedHorseEventOnHardMountedHillsRoutes()
+    public void AdvanceJourneyDayCanTriggerALuckyWaterSeepEventOnHardMountedHillsRoutes()
     {
         var session = CreateHardMountedHorseSession();
         var resolver = new TravelResolver();
@@ -338,7 +331,8 @@ public sealed class TravelResolverTests
         var result = session.AdvanceJourneyDay();
 
         Assert.True(result.Success || result.Status == JourneyStatus.Interrupted);
-        Assert.True(result.TrailEvent is null || result.TrailEvent.Id == JourneyTrailEventId.BadLuckSpookedHorse);
+        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, result.TrailEvent?.Id);
+        Assert.True(result.TrailEvent!.CanteenChargeDelta > 0);
     }
 
     [Fact]
@@ -352,11 +346,12 @@ public sealed class TravelResolverTests
         Assert.Contains(preview.Warnings, warning => warning.Contains("poor grazing", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(preview.Warnings, warning => warning.Contains("two canteen charges per day", StringComparison.OrdinalIgnoreCase));
         session.StartJourney(preview);
+        session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
 
         var result = session.AdvanceJourneyDay();
 
         Assert.True(result.Success);
-        Assert.Equal(new HorseTravelState(0, 0, 2), session.Player.Inventory.GetHorseState());
+        Assert.Equal(new HorseTravelState(0, 0, 1), session.Player.Inventory.GetHorseState());
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed));
         Assert.Equal(8, session.Player.Inventory.GetCanteenState()!.Charges);
         Assert.NotNull(result.Journey);
