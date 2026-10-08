@@ -8,7 +8,6 @@ using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -114,9 +113,8 @@ public sealed class ClockTurnCorrectionTests
     /// </summary>
     private static GameSession CreateDefaultSessionWithUncommittedGameStarted(out IReadOnlyList<IDomainEvent> setupEvents)
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -192,14 +190,6 @@ public sealed class ClockTurnCorrectionTests
         session.CheckSheriffRecords();
         Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
         Assert.Equal(turnBefore + 1, session.Clock.Turn);
-    }
-
-    [Fact]
-    public void FollowTelegraphLeads_EntersTelegraphOfficeContext()
-    {
-        var session = TestSessionFactory.CreateDefault();
-        session.FollowTelegraphLeads();
-        Assert.Equal(TownActionContext.TelegraphOffice, session.CurrentActionContext);
     }
 
     [Fact]

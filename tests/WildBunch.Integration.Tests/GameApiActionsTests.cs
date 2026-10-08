@@ -15,13 +15,13 @@ public sealed class GameApiActionsTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         var response = await client.GetAsync($"/api/games/{createdSession!.Id}/actions");
 
@@ -30,6 +30,7 @@ public sealed class GameApiActionsTests
         var actions = await response.Content.ReadFromJsonAsync<AvailableActionDto[]>();
 
         Assert.NotNull(actions);
+        Assert.Equal(9, actions!.Length);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.Travel);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.ViewMap);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.ViewJournal);
@@ -38,8 +39,6 @@ public sealed class GameApiActionsTests
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.GatherLocalGossip);
-        Assert.Contains(actions!, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
-        Assert.Contains(actions!, action => action.Kind == AvailableActionKind.SendTelegram);
     }
 
     [Fact]

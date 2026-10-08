@@ -155,8 +155,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
     private static GameSession CreateEasyLuckyFoodSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var openpass = new Town(new TownId("openpass"), "Open Pass");
         var world = new DomainWorld(
             new[] { pinecross, openpass },
             new[]
@@ -186,8 +186,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
     private static GameSession CreateHighRiskSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -223,8 +223,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
     private static GameSession CreateSixDayQuietSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var sixmile = new Town(new TownId("sixmile"), "Six Mile", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var sixmile = new Town(new TownId("sixmile"), "Six Mile");
         var world = new DomainWorld(
             new[] { pinecross, sixmile },
             new[]
@@ -259,8 +259,8 @@ public sealed class AdvanceTravelDayHandlerTests
         TrailRisk trailRisk = TrailRisk.Low,
         GameDifficulty GameDifficulty = GameDifficulty.Standard)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var midway = new Town(new TownId("midway"), "Midway");
         var world = new DomainWorld(
             new[] { pinecross, midway },
             new[]

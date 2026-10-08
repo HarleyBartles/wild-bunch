@@ -15,13 +15,13 @@ public sealed class GameApiInvestigationActionsTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         var noticeBoardResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/notice-board/inspect", content: null);
 
@@ -67,18 +67,13 @@ public sealed class GameApiInvestigationActionsTests
         // clue at this point has that kind (opening lead = CulpritTrail, records = Record).
         Assert.Contains(gossipResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Whereabouts);
 
+        var journalBeforeTelegraphRequest = await client.GetStringAsync($"/api/games/{createdSession.Id}/journal");
         var telegraphResponse = await client.PostAsync($"/api/games/{createdSession.Id}/investigations/telegraph-leads/follow", content: null);
 
-        Assert.Equal(HttpStatusCode.OK, telegraphResponse.StatusCode);
-
-        var telegraphResult = await telegraphResponse.Content.ReadFromJsonAsync<InvestigationActionResultDto>();
-
-        Assert.NotNull(telegraphResult);
-        // BUNCH-107: The starting town has Telegraph service
-        // (HubTelegraph palette, slot 0). Following telegraph leads should
-        // succeed and surface a new clue.
-        Assert.True(telegraphResult!.Success);
-        Assert.NotEqual("There is no telegraph office here.", telegraphResult.Message);
+        Assert.Equal(HttpStatusCode.NotFound, telegraphResponse.StatusCode);
+        Assert.Equal(
+            journalBeforeTelegraphRequest,
+            await client.GetStringAsync($"/api/games/{createdSession.Id}/journal"));
 
         var payload = await localRecordsResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);

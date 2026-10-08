@@ -30,7 +30,7 @@ internal static class MapGenerator
             seedWorld.DefaultCulpritIndex,
             seedWorld.CashBonus,
             seedWorld.ProsperityPalette,
-            seedWorld.ServicesPalette);
+            seedWorld.ReservedTownNameDerivationBits);
 
         // Place base towns only — the outlier is added later as a purely additive step.
         var (towns, clusterAssignments) = ClusterPlacementGenerator.Place(seedWorld, source, entropy, saltSource);
@@ -62,7 +62,7 @@ internal static class MapGenerator
                 defaultCulpritIndex: 0,
                 cashBonus: 0,
                 prosperityPalette: seedWorld.ProsperityPalette,
-                servicesPalette: seedWorld.ServicesPalette);
+                reservedTownNameDerivationBits: seedWorld.ReservedTownNameDerivationBits);
             var outlierName = outlierPool.First(entry => !existingIds.Contains(entry.Id));
             var townNamesList = townNames.ToList();
             townNamesList.Add(outlierName);
@@ -90,7 +90,7 @@ internal static class MapGenerator
         var world = SeedWorldFactory.CreateWorld(
             seedWorld.WorldVariant,
             townNames,
-            seedWorld.ServicesPalette,
+            seedWorld.ReservedTownNameDerivationBits,
             seedWorld.ProsperityPalette,
             trails,
             townCoordinates: towns,
@@ -122,8 +122,7 @@ internal static class MapGenerator
                 return town with
                 {
                     Layout = TownLayoutGenerator.GenerateLayout(
-                    town.Services,
-                    town.Prosperity,
+                        town.Prosperity,
                     town.Id,
                     index,
                     layoutSource,

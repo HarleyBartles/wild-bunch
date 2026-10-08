@@ -7,7 +7,6 @@ using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -64,9 +63,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateDefault()
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -109,8 +107,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithConfrontableSaloonSuspect(string salt = "")
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -151,8 +149,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithKillerReleaseGateOpen()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -194,8 +192,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithNoConfrontableSaloonSuspect()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -216,60 +214,14 @@ public static class TestSessionFactory
     }
 
     /// <summary>
-    /// Creates a session with a sabotaged saloon source catalog (Conditional + Telegraph required)
-    /// in a town with TownServices.None. This was used by BUNCH-80 tests to simulate no-saloon
-    /// scenarios. After BUNCH-90, every town has a saloon and the dead IsAvailable check in
-    /// LookAroundSaloon is removed, so this factory no longer causes LookAroundSaloon to fail.
-    /// Kept for backward compatibility with existing tests that may still reference it.
-    /// </summary>
-    public static GameSession CreateWithNoSaloon()
-    {
-        // SaloonLookAround is Baseline availability (always available). To make it unavailable,
-        // we replace it with a Conditional definition requiring Telegraph service, then use a
-        // town without Telegraph. This makes IsAvailable return false without removing the
-        // source from the catalog (which would cause GetRequiredDefinition to throw).
-        var noSaloonCatalog = new TownSourceCatalog(
-            TownSourceCatalog.Default.Definitions
-                .Select(d => d.Kind == InvestigationSourceKind.SaloonLookAround
-                    ? d with { Availability = TownSourceAvailability.Conditional, RequiredServices = TownServices.Telegraph }
-                    : d)
-                .ToArray());
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None, TownProsperity.Prosperous, noSaloonCatalog);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
-        var world = new DomainWorld(
-            new[] { town, connected },
-            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
-
-        var suspects = new[]
-        {
-            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
-                SuspectTraits.Empty, SuspectStatus.AtLarge)
-        };
-
-        var caseFile = new CaseFile(
-            accusation: null,
-            suspects,
-            trueCulpritId: new SuspectId("suspect-1"),
-            openingLead: CaseOpeningLead.Create("Follow the public leads."),
-            knownClues: Array.Empty<Clue>(),
-            knownWarrants: Array.Empty<Warrant>());
-
-        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
-        session.MarkEventsCommitted();
-        return session;
-    }
-
-    /// <summary>
     /// Creates a session with a suspect that has a known warrant (DeadOrAlive, $2500 bounty).
     /// The suspect is at large and not yet confronted. Used by BUNCH-80 confrontation
     /// event-sourcing tests.
     /// </summary>
     public static GameSession CreateWithWarrantedSuspect()
     {
-        var town = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        var town = new Town(new TownId("pinecross"), "Pinecross");
+        var connected = new Town(new TownId("connected"), "Connected");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -317,9 +269,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithIneligibleWarrantedSuspect()
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -403,8 +354,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithArmedCorrectDeclarationSetup()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -470,9 +421,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithPublicClue(InvestigationSourceKind sourceKind, string description)
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -548,9 +498,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithPublicWarrantAndClue(InvestigationSourceKind sourceKind)
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });

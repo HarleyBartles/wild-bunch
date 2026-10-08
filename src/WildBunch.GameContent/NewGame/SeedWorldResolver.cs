@@ -6,7 +6,8 @@ namespace WildBunch.GameContent.NewGame;
 /// Resolves the seed-owned <see cref="SeedWorld"/> from a UUID seed code,
 /// and encodes a SeedWorld back to a UUID by direct bit packing.
 ///
-/// The codec does NOT reference GameDifficulty or GameEntropy — those are
+/// Bits 21-23 retain their historical input to the town-name shuffle, but no longer
+/// represent town service availability. The codec does NOT reference GameDifficulty or GameEntropy — those are
 /// pressure-owned and applied downstream by DifficultyEnvelope and EntropyPolicy.
 /// The codec does NOT select the starting town — that is a player/setup choice
 /// validated by <see cref="StartingTownPolicy"/>.
@@ -20,7 +21,7 @@ namespace WildBunch.GameContent.NewGame;
 ///   bits 10-13:  cashBonus (4)
 ///   bits 14-17:  townCount (4, offset-encoded: 0-15 → 5-20 towns)
 ///   bits 18-20:  prosperityPaletteIndex (3, indexes 8 palettes)
-///   bits 21-23:  servicesPaletteIndex (3, indexes 8 palettes)
+///   bits 21-23:  reserved legacy town-name derivation input (3)
 ///   bits 24-25:  clusterCount (2, 0-3 → 1-4 clusters)
 ///   bit  26:     graphDensity (1, 0=Sparse, 1=Dense)
 ///   bits 27-28:  outlierSlotType (2, 0=no outlier, 1=simple outlier, 2-3 reserved)
@@ -120,7 +121,7 @@ public static class SeedWorldResolver
 
     /// <summary>
     /// Decodes a UUID into a SeedWorld by extracting fields from specific
-    /// bit positions, then deriving town names, services, and trails.
+    /// bit positions, then deriving town names, prosperity, and trails.
     /// This is the inverse of <see cref="CreateRepresentativeSeedCode"/>.
     /// </summary>
     public static SeedWorld Resolve(Guid seedCode)
@@ -134,7 +135,7 @@ public static class SeedWorldResolver
         var cashBonus = (int)((low >> 10) & 0xFUL);
         var townCountEncoded = (int)((low >> 14) & 0xFUL);
         var prosperityPalette = (ProsperityPalette)((low >> 18) & 0x7UL);
-        var servicesPalette = (ServicesPalette)((low >> 21) & 0x7UL);
+        var reservedTownNameDerivationBits = (int)((low >> 21) & 0x7UL);
         var clusterCountEncoded = (int)((low >> 24) & 0x3UL); // 2 bits for cluster count
         var graphDensity = (GraphDensity)((low >> 26) & 0x1UL); // 1 bit for graph density
         var outlierSlotType = (int)((low >> 27) & 0x3UL); // 2 bits for outlier type
@@ -157,10 +158,6 @@ public static class SeedWorldResolver
         // Wrap within the current legal range using modulo.
         prosperityPalette = (ProsperityPalette)((int)prosperityPalette % 8);
 
-        // 3-bit servicesPalette produces 0-7, which maps to 8 palettes.
-        // Wrap within the current legal range using modulo.
-        servicesPalette = (ServicesPalette)((int)servicesPalette % 8);
-
         // 4-bit buildingLayoutPalette produces 0-15, which maps to 16 palettes (12 functional, 4 reserved).
         // Wrap within the current legal range using modulo (16 palettes).
         buildingLayoutPalette = (BuildingLayoutPalette)((int)buildingLayoutPalette % 16);
@@ -173,7 +170,7 @@ public static class SeedWorldResolver
             seedCode,
             variant,
             townCount,
-            servicesPalette,
+            reservedTownNameDerivationBits,
             prosperityPalette,
             clusterCount,
             graphDensity,
@@ -204,9 +201,9 @@ public static class SeedWorldResolver
             return SeedWorldValidationResult.Failed("Prosperity palette is invalid.");
         }
 
-        if (!Enum.IsDefined(typeof(ServicesPalette), seedWorld.ServicesPalette))
+        if (seedWorld.ReservedTownNameDerivationBits is < 0 or > 7)
         {
-            return SeedWorldValidationResult.Failed("Services palette is invalid.");
+            return SeedWorldValidationResult.Failed("Reserved town-name derivation bits must be between 0 and 7.");
         }
 
         if (seedWorld.ClusterCount is < 1 or > 4)
@@ -272,7 +269,7 @@ public static class SeedWorldResolver
 
     /// <summary>
     /// Encodes a SeedWorld into a UUID by packing the encoded fields into
-    /// specific bit positions. Derived fields (town names, services dict,
+    /// specific bit positions. Derived fields (town names, town layout,
     /// trails) are ignored — they are re-derived on decode. This is the
     /// inverse of <see cref="Resolve(Guid)"/> and is O(1).
     /// </summary>
@@ -293,7 +290,7 @@ public static class SeedWorldResolver
         low |= (ulong)(seedWorld.CashBonus & 0xF) << 10;
         low |= (ulong)((seedWorld.TownCount - TownCountOffset) & 0xF) << 14;
         low |= (ulong)((int)seedWorld.ProsperityPalette & 0x7) << 18;
-        low |= (ulong)((int)seedWorld.ServicesPalette & 0x7) << 21;
+        low |= (ulong)(seedWorld.ReservedTownNameDerivationBits & 0x7) << 21;
         low |= (ulong)((seedWorld.ClusterCount - 1) & 0x3) << 24; // 2 bits for cluster count (1-4 → 0-3)
         low |= (ulong)((int)seedWorld.GraphDensity & 0x1) << 26; // 1 bit for graph density
         low |= (ulong)(seedWorld.OutlierSlotType & 0x3) << 27; // 2 bits for outlier type
@@ -315,7 +312,7 @@ public static class SeedWorldResolver
         var defaultCulpritIndex = 3;
         var cashBonus = 0;
         var prosperityPalette = ProsperityPalette.UniformProsperous;
-        var servicesPalette = ServicesPalette.HubTelegraph;
+        const int reservedTownNameDerivationBits = 1;
         var clusterCount = 1;
         var graphDensity = GraphDensity.Sparse;
 
@@ -323,7 +320,7 @@ public static class SeedWorldResolver
             Guid.Empty,
             variant,
             townCount,
-            servicesPalette,
+            reservedTownNameDerivationBits,
             prosperityPalette,
             clusterCount,
             graphDensity,

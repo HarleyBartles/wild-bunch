@@ -44,14 +44,12 @@ export function AvailableActionsPanel() {
     canReadWantedPosters,
     canInspectNoticeBoard,
     canCheckLocalRecords,
-    canFollowTelegraphLeads,
     canGatherLocalGossip,
     canLookAroundSaloon,
     canConfrontSaloonPersonOfInterest,
     handleReadWantedPosters,
     handleInspectNoticeBoard,
     handleCheckLocalRecords,
-    handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
     handleConfrontSaloonPersonOfInterest,
@@ -131,14 +129,6 @@ export function AvailableActionsPanel() {
                   disabled={!gameId || loading || !canCheckLocalRecords}
                 >
                   {busyMode === "investigating" ? "Checking..." : "Check local records"}
-                </Button>
-              ) : action.kind === AvailableActionKind.FollowTelegraphLeads ? (
-                <Button
-                  type="button"
-                  onClick={handleFollowTelegraphLeads}
-                  disabled={!gameId || loading || !canFollowTelegraphLeads}
-                >
-                  {busyMode === "investigating" ? "Following..." : "Follow telegraph leads"}
                 </Button>
               ) : action.kind === AvailableActionKind.GatherLocalGossip ? (
                 <Button

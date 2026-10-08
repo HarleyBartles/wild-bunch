@@ -381,8 +381,8 @@ public class GameSessionEventSourcingTests
         var placeholderWorld = new DomainWorld(
             new[]
             {
-                new Town(new TownId("current"), "PLACEHOLDER Town", TownServices.None),
-                new Town(new TownId("connected"), "PLACEHOLDER Connected", TownServices.None)
+                new Town(new TownId("current"), "PLACEHOLDER Town"),
+                new Town(new TownId("connected"), "PLACEHOLDER Connected")
             },
             new[] { new Trail(new TrailId("trail-1"), new TownId("current"), new TownId("connected"), TrailRisk.Low) });
         var rehydrated = GameSession.RehydrateFromEvents(
@@ -537,8 +537,8 @@ public class GameSessionEventSourcingTests
     /// </summary>
     private static GameSession CreateSessionWithFullCaseFile()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -671,8 +671,8 @@ public class GameSessionEventSourcingTests
 
     private static DomainWorld CreateWorld()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         return new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

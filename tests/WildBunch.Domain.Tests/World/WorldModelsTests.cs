@@ -8,7 +8,7 @@ public sealed class WorldModelsTests
     [Fact]
     public void TownDefaultsLayoutToNullWhenNotProvided()
     {
-        var town = new Town(new TownId("t1"), "Dodge", TownServices.Telegraph);
+        var town = new Town(new TownId("t1"), "Dodge");
 
         Assert.Null(town.Layout);
     }
@@ -26,7 +26,6 @@ public sealed class WorldModelsTests
         var town = new Town(
             new TownId("t1"),
             "Dodge",
-            TownServices.Telegraph,
             Layout: layout);
 
         Assert.NotNull(town.Layout);
@@ -43,7 +42,7 @@ public sealed class WorldModelsTests
             new(BuildingKind.Store, 10, 20, BuildingView.FrontOblique)
         };
         var layout = new TownLayout(buildings, PlayerSpawnX: 50, PlayerSpawnY: 35, TownProsperity.Prosperous, Array.Empty<PathSegment>(), null);
-        var town = new Town(new TownId("t1"), "Dodge", TownServices.Telegraph, Layout: layout);
+        var town = new Town(new TownId("t1"), "Dodge", Layout: layout);
 
         var renamed = town with { Name = "Tombstone" };
 

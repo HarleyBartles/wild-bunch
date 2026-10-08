@@ -29,7 +29,6 @@ public sealed class GameSessionMapperTests
         var townWithLayout = new Town(
             new TownId("town-with-layout"),
             "Dodge City",
-            TownServices.Telegraph,
             MapX: 100,
             MapY: 200,
             Layout: layout);
@@ -37,7 +36,6 @@ public sealed class GameSessionMapperTests
         var townWithoutLayout = new Town(
             new TownId("town-no-layout"),
             "Tombstone",
-            TownServices.None,
             MapX: 50,
             MapY: 75);
 
@@ -72,7 +70,7 @@ public sealed class GameSessionMapperTests
     [Fact]
     public void TownDto_Layout_IsOptionalAndDefaultsToNull()
     {
-        var townDto = new TownDto("town-1", "Dodge City", TownServices.None, 0, 0);
+        var townDto = new TownDto("town-1", "Dodge City", 0, 0);
 
         Assert.Null(townDto.Layout);
     }

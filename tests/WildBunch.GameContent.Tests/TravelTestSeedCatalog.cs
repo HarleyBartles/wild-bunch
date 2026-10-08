@@ -110,7 +110,7 @@ internal static class TravelTestSeedCatalog
     {
         var townCount = 8;
         var prosperityPalette = ProsperityPalette.UniformProsperous;
-        var servicesPalette = ServicesPalette.HubTelegraph;
+        const int reservedTownNameDerivationBits = 1;
         var clusterCount = 1;
         var graphDensity = GraphDensity.Sparse;
 
@@ -118,7 +118,7 @@ internal static class TravelTestSeedCatalog
             Guid.Empty,
             variant,
             townCount,
-            servicesPalette,
+            reservedTownNameDerivationBits,
             prosperityPalette,
             clusterCount,
             graphDensity,

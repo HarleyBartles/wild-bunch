@@ -14,13 +14,13 @@ public sealed class GameApiStoreOffersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         var response = await client.GetAsync($"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store-offers");
 
@@ -45,7 +45,7 @@ public sealed class GameApiStoreOffersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
@@ -63,13 +63,13 @@ public sealed class GameApiStoreOffersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         // Catalog reads are available for towns other than the player's current town.
         var nonCurrentTownId = createdSession.World.Towns

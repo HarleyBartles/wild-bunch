@@ -1022,8 +1022,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateDryMountedSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -1047,8 +1047,8 @@ public sealed class TravelResolverTests
 
     private static DomainWorld CreateParityWorld(TrailRisk trailRisk = TrailRisk.Low)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
 
         return new DomainWorld(
             new[] { pinecross, dryfork },
@@ -1060,8 +1060,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateDryFootSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -1081,8 +1081,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateLuckyFootSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
         var world = new DomainWorld(
             new[] { pinecross, silvercreek },
             new[]
@@ -1102,8 +1102,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateBadLuckSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var holloway = new Town(new TownId("holloway"), "Holloway");
         var world = new DomainWorld(
             new[] { pinecross, holloway },
             new[]
@@ -1128,8 +1128,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateNoHorseBadLuckSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var holloway = new Town(new TownId("holloway"), "Holloway");
         var world = new DomainWorld(
             new[] { pinecross, holloway },
             new[]
@@ -1152,8 +1152,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateEasyLuckyFoodSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var openpass = new Town(new TownId("openpass"), "Open Pass");
         var world = new DomainWorld(
             new[] { pinecross, openpass },
             new[]
@@ -1176,8 +1176,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateEasyLuckyWaterSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryspring = new Town(new TownId("dryspring"), "Dry Spring", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryspring = new Town(new TownId("dryspring"), "Dry Spring");
         var world = new DomainWorld(
             new[] { pinecross, dryspring },
             new[]
@@ -1200,8 +1200,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateHardBadLuckSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var hardpan = new Town(new TownId("hardpan"), "Hardpan", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var hardpan = new Town(new TownId("hardpan"), "Hardpan");
         var world = new DomainWorld(
             new[] { pinecross, hardpan },
             new[]
@@ -1224,8 +1224,8 @@ public sealed class TravelResolverTests
 
     private static GameSession CreateHardMountedHorseSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var ridgeway = new Town(new TownId("ridgeway"), "Ridgeway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var ridgeway = new Town(new TownId("ridgeway"), "Ridgeway");
         var world = new DomainWorld(
             new[] { pinecross, ridgeway },
             new[]
@@ -1252,8 +1252,8 @@ public sealed class TravelResolverTests
         bool withHorse = true,
         GameDifficulty GameDifficulty = GameDifficulty.Standard)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -1291,8 +1291,8 @@ public sealed class TravelResolverTests
         TrailRisk trailRisk = TrailRisk.Low,
         GameDifficulty GameDifficulty = GameDifficulty.Standard)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var midway = new Town(new TownId("midway"), "Midway");
         var world = new DomainWorld(
             new[] { pinecross, midway },
             new[]
@@ -1319,9 +1319,9 @@ public sealed class TravelResolverTests
 
     private static DomainWorld CreateWorld()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
-        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var holloway = new Town(new TownId("holloway"), "Holloway");
+        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge");
 
         return new DomainWorld(
             new[] { pinecross, holloway, dryridge },

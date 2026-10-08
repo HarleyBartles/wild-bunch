@@ -146,18 +146,6 @@ public sealed class GameSessionArchiveTests
     }
 
     [Fact]
-    public void Archived_Session_FollowTelegraphLeads_Returns_Failed()
-    {
-        var session = CreateSession();
-        session.ArchivePlaythrough("start-over");
-
-        var result = session.FollowTelegraphLeads();
-
-        Assert.False(result.Success);
-        Assert.Contains("archived", result.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
     public void Archived_Session_AdvanceJourneyDay_Returns_Failed()
     {
         var session = CreateSession();
@@ -209,8 +197,8 @@ public sealed class GameSessionArchiveTests
 
     private static DomainWorld CreateWorld()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         return new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

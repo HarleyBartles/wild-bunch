@@ -8,7 +8,6 @@ using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -52,23 +51,6 @@ public sealed class GameSessionInvestigationActionsTests
     }
 
     [Fact]
-    public void FollowTelegraphLeadsRevealsTelegraphTaggedClueAndIsIdempotent()
-    {
-        var session = CreateExpandedSession();
-
-        var first = session.FollowTelegraphLeads();
-        var second = session.FollowTelegraphLeads();
-
-        Assert.True(first.Success);
-        Assert.True(second.Success);
-        Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
-        Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
-        Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
-        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
-        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
-    }
-
-    [Fact]
     public void GatherLocalGossipRevealsGossipTaggedClueAndIsIdempotent()
     {
         var session = CreateExpandedSession();
@@ -81,7 +63,7 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Equal(1, session.Clock.Turn); // BUNCH-80: only first call advances turn (same context)
         Assert.Equal(3, GameSessionLogProjection.Project(session).Count);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
-        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
@@ -116,44 +98,6 @@ public sealed class GameSessionInvestigationActionsTests
         Assert.Empty(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
-    }
-
-    [Fact]
-    public void TelegraphLeadsResetAfterLeavingAndReturningToTown()
-    {
-        var session = CreateRefreshableSession();
-
-        var first = session.FollowTelegraphLeads();
-        var repeatSameVisit = session.FollowTelegraphLeads();
-
-        Assert.True(first.Success);
-        Assert.True(repeatSameVisit.Success);
-        Assert.Equal("You ask after telegraph leads again, but no new wire has come in.", repeatSameVisit.Message);
-        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
-        // BUNCH-107: the ClueSurfacingResolver picks which telegraph clue surfaces based on
-        // town slot + visit count, so either clue may be revealed first. Assert exactly one
-        // is known and the other remains public rather than hardcoding the order.
-        Assert.Equal(1, session.CaseFile.KnownClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
-        Assert.Equal(1, session.CaseFile.PublicClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
-        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
-
-        session.Player.TravelTo(new TownId("connected"));
-        session.CurrentTownVisit.Reset(new TownId("connected"));
-        session.ResetActionContextForTownChange();
-        session.Player.TravelTo(new TownId("current"));
-        session.CurrentTownVisit.Reset(new TownId("current"));
-        session.ResetActionContextForTownChange();
-
-        Assert.Equal(new TownId("current"), session.CurrentTownVisit.TownId);
-        Assert.False(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
-
-        var afterReturn = session.FollowTelegraphLeads();
-
-        Assert.True(afterReturn.Success);
-        Assert.Equal("You follow the telegraph leads and uncover a public lead.", afterReturn.Message);
-        Assert.Equal(2, session.CaseFile.KnownClues.Count(clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead));
-        Assert.DoesNotContain(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
-        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -285,8 +229,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -357,8 +301,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateTownSourceRefreshableSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -448,8 +392,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateExpandedSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -477,7 +421,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A telegraph clerk filed Grey Jay in shorthand.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.TelegraphLead,
+                    InvestigationSourceKind.LocalGossip,
                     source: "telegraph clerk",
                     context: "Telegraph lead",
                     anchors: new ClueAnchors(
@@ -506,8 +450,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateRefreshableSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -543,7 +487,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A telegraph clerk filed Grey Jay in shorthand.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.TelegraphLead,
+                    InvestigationSourceKind.LocalGossip,
                     source: "telegraph clerk",
                     context: "Telegraph lead",
                     anchors: new ClueAnchors(
@@ -557,7 +501,7 @@ public sealed class GameSessionInvestigationActionsTests
                     "A rail clerk mentions a rider with a red hat cutting south at dusk.",
                     new[] { new SuspectId("suspect-2") },
                     InvestigationTargetKind.GangMember,
-                    InvestigationSourceKind.TelegraphLead,
+                    InvestigationSourceKind.LocalGossip,
                     source: "telegraph clerk",
                     context: "Telegraph lead",
                     anchors: new ClueAnchors(
@@ -580,8 +524,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateWantedPosterRefreshableSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -654,8 +598,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateSaloonLookAroundSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -712,8 +656,8 @@ public sealed class GameSessionInvestigationActionsTests
 
     private static GameSession CreateColorOnlyGossipSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]

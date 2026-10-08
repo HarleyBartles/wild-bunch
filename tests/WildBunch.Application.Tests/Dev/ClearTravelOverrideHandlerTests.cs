@@ -46,9 +46,8 @@ public sealed class ClearTravelOverrideHandlerTests
 
     private static GameSession CreateSessionWithActiveJourney()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross",
-            TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new World(
             new[] { pinecross, dryfork },
             new[]

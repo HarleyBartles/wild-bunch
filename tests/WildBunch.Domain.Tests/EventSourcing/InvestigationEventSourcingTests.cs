@@ -45,24 +45,6 @@ public sealed class InvestigationEventSourcingTests
     }
 
     [Fact]
-    public void FollowTelegraphLeadsProducesInvestigationPerformedEvent()
-    {
-        var session = TestSessionFactory.CreateWithPublicClue(
-            InvestigationSourceKind.TelegraphLead, "A telegraph clerk filed a wire.");
-
-        var result = session.FollowTelegraphLeads();
-
-        Assert.True(result.Success);
-        Assert.True(result.SessionChanged);
-        // TownActionContextEntered (TelegraphOffice) + InvestigationPerformed
-        Assert.Equal(2, session.UncommittedEvents.Count);
-        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
-        Assert.Equal(InvestigationSourceKind.TelegraphLead, e.SourceKind);
-        Assert.NotNull(e.ClueId);
-    }
-
-    [Fact]
     public void InspectNoticeBoardProducesInvestigationPerformedEvent()
     {
         var session = TestSessionFactory.CreateWithPublicClue(

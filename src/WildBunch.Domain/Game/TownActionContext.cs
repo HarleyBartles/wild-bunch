@@ -15,6 +15,5 @@ public enum TownActionContext
     Store = 3,
     Stable = 4,
     Jail = 5,
-    TelegraphOffice = 6,
     TownSquare = 7
 }

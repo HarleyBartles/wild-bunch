@@ -75,8 +75,8 @@ public sealed class GameSetupResolverTests
         Assert.Single(setup.CaseFile.Suspects, suspect => suspect.Id.Equals(setup.CaseFile.TrueCulpritId));
         Assert.Equal(5, setup.CaseFile.KillerReleaseThreshold);
         Assert.Equal("The culprit has a scar on the left cheek.", setup.CaseFile.OpeningLead.Description);
-        // Six base surface-tagged clues and one warrant for each generated gang member or culprit.
-        Assert.Equal(6, setup.CaseFile.PublicClues.Count);
+        // Four base surface-tagged clues and one warrant for each generated gang member or culprit.
+        Assert.Equal(4, setup.CaseFile.PublicClues.Count);
         Assert.Equal(7, setup.CaseFile.PublicWarrants.Count);
         Assert.All(setup.CaseFile.PublicWarrants, warrant => Assert.True(
             warrant.Terms.TargetKind is InvestigationTargetKind.GangMember or InvestigationTargetKind.TrueCulprit));
@@ -201,7 +201,7 @@ public sealed class GameSetupResolverTests
             setup.TravelRulesProfile,
             setup.StartingTownId.Value,
             setup.StartingWallet.Cash,
-            string.Join(",", setup.World.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase).Select(town => $"{town.Id.Value}:{town.Name}:{town.Services}")),
+            string.Join(",", setup.World.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase).Select(town => $"{town.Id.Value}:{town.Name}")),
             string.Join(",", setup.World.Trails.OrderBy(trail => trail.Id.Value, StringComparer.OrdinalIgnoreCase).Select(trail => $"{trail.Id.Value}:{trail.FromTownId.Value}:{trail.ToTownId.Value}:{trail.Risk}:{trail.Terrain}:{trail.WaterFeature}:{trail.RideDayDistance}")),
             string.Join(",", setup.StartingInventory.Items.Select(item => $"{item.Kind}:{item.Quantity}:{item.HorseState?.Hunger ?? -1}:{item.HorseState?.Thirst ?? -1}:{item.HorseState?.Exhaustion ?? -1}:{item.CanteenState?.Charges ?? -1}:{item.CanteenState?.Capacity ?? -1}")),
             string.Join(",", setup.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}:{suspect.Status}")),

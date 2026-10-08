@@ -215,7 +215,7 @@ public sealed class GameSessionWantedSuspectConfrontationTests
     public void ResolveWantedSuspectConfrontationRejectsAfterUnrelatedContext()
     {
         // BUNCH-80 review feedback: "any non-None context" is not enough. After an
-        // unrelated town-context action (e.g. SheriffOffice, TownSquare, TelegraphOffice),
+        // unrelated town-context action (e.g. SheriffOffice, TownSquare, Store),
         // the direct confrontation route must still be rejected because the player is
         // not in an active saloon POI context.
         var session = CreateSession();
@@ -275,8 +275,8 @@ public sealed class GameSessionWantedSuspectConfrontationTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var connected = new Town(new TownId("connected"), "Connected");
         var world = new DomainWorld(
             new[] { pinecross, connected },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, connected.Id, TrailRisk.Low) });

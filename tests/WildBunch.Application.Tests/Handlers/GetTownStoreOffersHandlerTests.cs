@@ -80,9 +80,9 @@ public sealed class GetTownStoreOffersHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None, TownProsperity.Destitute);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownProsperity.Destitute);
         var world = new DomainWorld(
             new[] { pinecross, redmesa, dryfork },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });

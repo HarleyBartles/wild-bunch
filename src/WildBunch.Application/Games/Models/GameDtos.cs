@@ -93,7 +93,6 @@ public sealed record WorldDto(
 public sealed record TownDto(
     string Id,
     string Name,
-    TownServices Services,
     int MapX = 0,
     int MapY = 0,
     TownLayoutDto? Layout = null);

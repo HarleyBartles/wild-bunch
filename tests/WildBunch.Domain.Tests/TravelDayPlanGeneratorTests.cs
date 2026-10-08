@@ -464,8 +464,8 @@ public sealed class TravelDayPlanGeneratorTests
 
     private static GameSession CreateNoHorseBadLuckSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var holloway = new Town(new TownId("holloway"), "Holloway");
         var world = new DomainWorld(
             new[] { pinecross, holloway },
             new[]
@@ -495,8 +495,8 @@ public sealed class TravelDayPlanGeneratorTests
         bool withHorse = true,
         bool withSaddle = true)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -536,8 +536,8 @@ public sealed class TravelDayPlanGeneratorTests
 
     private static GameSession CreateSeedSensitiveSession(bool withHorse = true, bool withSaddle = true)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -574,8 +574,8 @@ public sealed class TravelDayPlanGeneratorTests
 
     private static GameSession CreateLuckyCooldownSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var creekside = new Town(new TownId("creekside"), "Creekside", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var creekside = new Town(new TownId("creekside"), "Creekside");
         var world = new DomainWorld(
             new[] { pinecross, creekside },
             new[]
@@ -602,8 +602,8 @@ public sealed class TravelDayPlanGeneratorTests
 
     private static GameSession CreateHighRiskEncounterSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -630,8 +630,8 @@ public sealed class TravelDayPlanGeneratorTests
 
     private static GameSession CreateLowRiskEncounterSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var creekside = new Town(new TownId("creekside"), "Creekside", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var creekside = new Town(new TownId("creekside"), "Creekside");
         var world = new DomainWorld(
             new[] { pinecross, creekside },
             new[]

@@ -8,7 +8,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -17,54 +16,10 @@ namespace WildBunch.Application.Tests.Handlers;
 public sealed class InvestigationSourceHandlerTests
 {
     [Fact]
-    public async Task FollowTelegraphLeadsLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.Telegraph);
-        repository.Seed(session);
-        var handler = new FollowTelegraphLeadsHandler(repository, repository, new JournalResolver());
-
-        var result = await handler.HandleAsync(new FollowTelegraphLeadsCommand(session.Id.Value));
-
-        Assert.True(result.Success);
-        Assert.Equal(1, repository.StoreCalls);
-        Assert.Equal(1, repository.CommitCalls);
-        Assert.Equal(1, result.CurrentJournal.Clock.Turn);
-        Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
-        Assert.Single(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Description.Contains("telegraph clerk", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
-        var payload = JsonSerializer.Serialize(result);
-        Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task FollowTelegraphLeadsReturnsFailureWithoutSavingWhenActionUnavailable()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
-        session.MarkEventsCommitted();
-        repository.Seed(session);
-        var handler = new FollowTelegraphLeadsHandler(repository, repository, new JournalResolver());
-
-        var result = await handler.HandleAsync(new FollowTelegraphLeadsCommand(session.Id.Value));
-
-        Assert.False(result.Success);
-        Assert.Equal(0, repository.StoreCalls);
-        Assert.Equal(0, repository.CommitCalls);
-        Assert.Empty(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Empty(result.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
-    }
-
-    [Fact]
     public async Task GatherLocalGossipLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new GatherLocalGossipHandler(repository, repository, new JournalResolver());
 
@@ -89,7 +44,7 @@ public sealed class InvestigationSourceHandlerTests
     public async Task GatherLocalGossipLoadsSessionSavesSuccessfulMutationEvenWithoutNoticeBoardService()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.Telegraph);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new GatherLocalGossipHandler(repository, repository, new JournalResolver());
 
@@ -104,10 +59,10 @@ public sealed class InvestigationSourceHandlerTests
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices)
+    private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -135,7 +90,7 @@ public sealed class InvestigationSourceHandlerTests
                     "A telegraph clerk filed Grey Jay in shorthand.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.TelegraphLead,
+                    InvestigationSourceKind.LocalGossip,
                     source: "telegraph clerk",
                     context: "Telegraph lead",
                     anchors: new ClueAnchors(

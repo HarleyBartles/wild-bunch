@@ -15,7 +15,6 @@ public sealed class TownLayoutGeneratorLayoutSaltsTests
         var layoutSource = new LayoutDeterministicSource("test-seed", townId, 0, "1.0.0", salts);
 
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph,
             TownProsperity.Prosperous,
             townId,
             0,

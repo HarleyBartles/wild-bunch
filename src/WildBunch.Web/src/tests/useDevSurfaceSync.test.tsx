@@ -26,7 +26,6 @@ vi.mock("../api/wildBunchApi", () => ({
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   getPrologue: vi.fn(),
   getStartingTowns: vi.fn(),
@@ -52,7 +51,7 @@ function createInTownSession(): GameSessionDto {
     gameEntropy: 1,
     startFlowPhase: StartFlowPhase.GameStarted,
     player: { name: "Ruth", currentTownId: "t-town", health: 9 },
-    world: { towns: [{ id: "t-town", name: "Tumbleweed", services: 0 }], trails: [] },
+    world: { towns: [{ id: "t-town", name: "Tumbleweed" }], trails: [] },
     caseFile: {
       accusationId: null,
       openingLead: "",

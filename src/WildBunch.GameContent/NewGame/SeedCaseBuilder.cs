@@ -125,9 +125,9 @@ internal static class SeedCaseBuilder
                 CaseSuspectFeaturePool.BuildOpeningLead(culpritFeature),
                 trueCulpritId,
                 InvestigationTargetKind.TrueCulprit,
-                "trail witness",
+                "prologue",
                 "Opening lead",
-                InvestigationSourceKind.TelegraphLead,
+                InvestigationSourceKind.Prologue,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
@@ -185,22 +185,6 @@ internal static class SeedCaseBuilder
             CreateClue(
                 source,
                 GameSetupDeterministicLabels.CasePublicClues,
-                3,
-                ClueKind.IdentityFact,
-                $"A telegraph clerk filed the alias {DescribePrimaryAlias(suspects[2])} alongside a note about {DescribePersonWithFeature(features[2].PrimaryFeature, "a rider")}.",
-                suspects[2].Id,
-                InvestigationTargetKind.Suspected,
-                "telegraph clerk",
-                "Telegraph lead",
-                InvestigationSourceKind.TelegraphLead,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[2]), Alias: DescribePrimaryAlias(suspects[2]), Fact: features[2].PrimaryFeature.Language.HasForm)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CasePublicClues,
                 4,
                 ClueKind.Whereabouts,
                 $"Local gossip out of {world.GetTown(suspectTurfAssignments[4].TurfTownId).Name} says {DescribePersonWithFeature(features[4].PrimaryFeature, "a rider")} kept to the rail spur after dark.",
@@ -225,26 +209,6 @@ internal static class SeedCaseBuilder
                     directions: new[]
                     {
                         new ClueDirectionAnchor("kept to the rail spur after dark", Movement: "kept to the rail spur after dark", Route: "rail spur", DestinationTownId: suspectTurfAssignments[4].TurfTownId)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CasePublicClues,
-                5,
-                ClueKind.IdentityFact,
-                $"A witness tied the rider to {DescribePersonWithFeature(culpritFeature, "a man")}.",
-                trueCulpritId,
-                InvestigationTargetKind.TrueCulprit,
-                "telegraph ledger",
-                "Identity match",
-                InvestigationSourceKind.TelegraphLead,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor(culpritFeature.Language.HasForm, Feature: culpritFeature.Language.HasForm, Fact: "identity match")
-                    },
-                    times: new[]
-                    {
-                        new ClueTimeAnchor(ClueRecency.Recent)
                     })),
             CreateClue(
                 source,

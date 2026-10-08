@@ -9,7 +9,7 @@ public sealed class GetStartingTownsHandler
     {
         ArgumentNullException.ThrowIfNull(query);
         var towns = StartingTownCatalog.GetStartingTownCandidates();
-        var dtos = towns.Select(town => new StartingTownDto(town.Id.Value, town.Name, town.Services)).ToArray();
+        var dtos = towns.Select(town => new StartingTownDto(town.Id.Value, town.Name)).ToArray();
         return Task.FromResult<IReadOnlyList<StartingTownDto>>(dtos);
     }
 }

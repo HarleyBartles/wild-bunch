@@ -50,23 +50,16 @@ public sealed class TownVisitState
     public void Reset(TownId townId)
         => EnterTown(townId);
 
-    public void EnterTown(TownId townId, TownSourceCatalog? sourceCatalog = null)
+    public void EnterTown(TownId townId)
     {
         CurrentTownId = townId;
         var townState = GetOrCreateTownState(townId);
         townState.AdvanceVisit();
-
-        if (sourceCatalog is not null)
-        {
-            townState.RefreshSources(sourceCatalog);
-        }
+        townState.RefreshSources(TownSourceCatalog.Default);
     }
 
-    public void PrimeCurrentTown(TownSourceCatalog sourceCatalog)
-    {
-        ArgumentNullException.ThrowIfNull(sourceCatalog);
-        CurrentTownState.RefreshSources(sourceCatalog);
-    }
+    public void PrimeCurrentTown()
+        => CurrentTownState.RefreshSources(TownSourceCatalog.Default);
 
     public bool TryGetTownState(TownId townId, out TownVisitTownState? townState)
         => _townStates.TryGetValue(townId, out townState);

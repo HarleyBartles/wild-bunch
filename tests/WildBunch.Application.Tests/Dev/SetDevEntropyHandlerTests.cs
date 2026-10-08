@@ -7,7 +7,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using Town = WildBunch.Domain.World.Town;
 using TownId = WildBunch.Domain.World.TownId;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 using World = WildBunch.Domain.World.World;
@@ -52,8 +51,8 @@ public sealed class SetDevEntropyHandlerTests
 
     private static GameSession CreateSeededSession(GameEntropy entropy)
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new World(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });

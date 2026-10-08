@@ -4,16 +4,15 @@ namespace WildBunch.GameContent.NewGame;
 
 /// <summary>
 /// Seed-owned deterministic world/map layer decoded from the UUID seed code.
-/// Owns generated world facts: world variant, town count, services palette,
+/// Owns generated world facts: world variant, town count, reserved town-name derivation bits,
 /// prosperity palette, cluster count, graph density, building layout palette,
 /// accusation/default culprit candidates, and seed-derived cash bonus.
 ///
-/// The seed encodes only: variant, townCount, servicesPalette,
+/// The seed encodes only: variant, townCount, reserved town-name derivation bits,
 /// prosperityPalette, clusterCount, graphDensity, buildingLayoutPalette,
 /// accusationIndex, defaultCulpritIndex, cashBonus.
-/// Town names, selected town IDs, and per-town services are derived from the
-/// encoded fields via a deterministic shuffle of the name pool — they are
-/// flavor, not encoded state. This means the catalog can grow to any size
+/// Town names and selected town IDs are derived from the encoded fields via
+/// a deterministic shuffle of the name pool. This means the catalog can grow to any size
 /// without increasing UUID bandwidth.
 ///
 /// Trails are NOT seed-owned. MapGenerator generates the trail graph at game
@@ -27,8 +26,7 @@ namespace WildBunch.GameContent.NewGame;
 /// - Starting town is NOT seed-owned. StartingTownPolicy validates the
 ///   player's start choice against the generated world.
 /// - SeedWorld owns the candidate/generated map shape: how many towns, what
-///   services each slot has (via palette), what prosperity each slot has
-///   (via palette), the cluster structure (via ClusterCount), the graph
+///   prosperity each slot has (via palette), the cluster structure (via ClusterCount), the graph
 ///   density (via GraphDensity), and the building layout pattern (via BuildingLayoutPalette).
 /// - Same seed + same difficulty should produce the same resolved map.
 /// - Difficulty may later influence map pressure/layout realization
@@ -38,7 +36,7 @@ public sealed record SeedWorld(
     Guid SeedCode,
     SeedWorldVariant WorldVariant,
     int TownCount,
-    ServicesPalette ServicesPalette,
+    int ReservedTownNameDerivationBits,
     ProsperityPalette ProsperityPalette,
     int ClusterCount,
     GraphDensity GraphDensity,
@@ -52,7 +50,7 @@ public sealed record SeedWorld(
 
     /// <summary>
     /// Whether this seed world is the canonical shape (8 towns,
-    /// Canonical variant, HubTelegraph services, UniformProsperous prosperity,
+    /// Canonical variant, UniformProsperous prosperity,
     /// single cluster, Sparse graph density, NoSpurs_SpreadEvenly building layout,
     /// accusation index 1, default culprit index 3, zero cash bonus). Used by GameSetupResolver
     /// to select the canonical case file path.
@@ -60,7 +58,6 @@ public sealed record SeedWorld(
     public bool IsCanonical =>
         WorldVariant == SeedWorldVariant.Canonical
             && TownCount == 8
-            && ServicesPalette == ServicesPalette.HubTelegraph
             && ProsperityPalette == ProsperityPalette.UniformProsperous
             && ClusterCount == 1
             && GraphDensity == GraphDensity.Sparse
@@ -76,7 +73,7 @@ public sealed record SeedWorld(
     public IReadOnlyList<string> GetSelectedTownIds()
         => SeedWorldFactory.DeriveTownNames(
             WorldVariant, TownCount, AccusationIndex, DefaultCulpritIndex,
-            CashBonus, ProsperityPalette, ServicesPalette)
+            CashBonus, ProsperityPalette, ReservedTownNameDerivationBits)
             .Select(t => t.Id)
             .ToArray();
 }

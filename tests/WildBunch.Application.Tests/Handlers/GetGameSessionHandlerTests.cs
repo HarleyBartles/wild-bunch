@@ -134,8 +134,8 @@ public sealed class GetGameSessionHandlerTests
 
     private static GameSession CreateSessionWithAnchoredClue()
     {
-        var pinecross = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("pinecross"), "Pinecross", WildBunch.Domain.World.TownServices.None | WildBunch.Domain.World.TownServices.None);
-        var redmesa = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("redmesa"), "Red Mesa", WildBunch.Domain.World.TownServices.None | WildBunch.Domain.World.TownServices.Telegraph);
+        var pinecross = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("pinecross"), "Pinecross");
+        var redmesa = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("redmesa"), "Red Mesa");
         var world = new WildBunch.Domain.World.World(
             new[] { pinecross, redmesa },
             new[]

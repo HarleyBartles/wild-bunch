@@ -38,8 +38,6 @@ export function formatActionKind(kind: number) {
       return "View journal";
     case 3:
       return "Buy supplies";
-    case 4:
-      return "Send telegram";
     case 5:
       return "Read wanted posters";
     case 6:
@@ -50,8 +48,6 @@ export function formatActionKind(kind: number) {
       return "Inspect notice board";
     case 9:
       return "Check local records";
-    case 10:
-      return "Follow telegraph leads";
     case 11:
       return "Gather local gossip";
     case 12:
@@ -128,12 +124,6 @@ export function formatWaterFeature(feature: number) {
     default:
       return `Water ${feature}`;
   }
-}
-
-export function formatServices(services: number) {
-  const labels: string[] = [];
-  if (services & 1) labels.push("Telegraph");
-  return labels.length > 0 ? labels.join(", ") : "None";
 }
 
 export function formatClueKind(kind: number) {

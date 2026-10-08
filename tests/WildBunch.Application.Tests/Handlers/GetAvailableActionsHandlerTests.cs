@@ -8,7 +8,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -20,7 +19,7 @@ public sealed class GetAvailableActionsHandlerTests
     public async Task GetAvailableActionsLoadsSessionAndReturnsExpectedActions()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
 
@@ -33,10 +32,10 @@ public sealed class GetAvailableActionsHandlerTests
     }
 
     [Fact]
-    public async Task GetAvailableActionsExposesBaselineInvestigationSourcesEvenWithoutTownServices()
+    public async Task GetAvailableActionsExposesEveryCoreTownAction()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
 
@@ -48,7 +47,6 @@ public sealed class GetAvailableActionsHandlerTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         // ReadWantedPosters is always available - every town has a sheriff's office.
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
     }
 
     [Fact]
@@ -62,10 +60,10 @@ public sealed class GetAvailableActionsHandlerTests
         Assert.Contains("was not found", exception.Message);
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices)
+    private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]

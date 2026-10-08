@@ -17,13 +17,13 @@ public sealed class GameApiWantedPostersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
         // The API test factory supplies a fixed SaltSource at player genesis, and this scenario selects Boring entropy.
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         var actionResponse = await client.PostAsync($"/api/games/{createdSession!.Id}/wanted-posters/read", content: null);
 
@@ -131,12 +131,12 @@ public sealed class GameApiWantedPostersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         // Discover a connected town dynamically — no hardcoded town names.
         var destinationTownId = createdSession.World.Trails

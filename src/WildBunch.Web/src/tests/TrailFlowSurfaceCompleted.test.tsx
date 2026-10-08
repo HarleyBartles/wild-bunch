@@ -47,7 +47,6 @@ vi.mock("../api/wildBunchApi", () => ({
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   getPrologue: vi.fn(),
   getStartingTowns: vi.fn(),
@@ -73,8 +72,8 @@ function createCompletedJourneySession(): GameSessionDto {
     player: { name: "Ruth", currentTownId: "dust-fork", health: 9 },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [
         {

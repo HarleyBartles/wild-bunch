@@ -157,8 +157,8 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
     /// </summary>
     private static GameSession CreateActiveSession(string playerName)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         var world = new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

@@ -170,8 +170,8 @@ public sealed class PurchaseStoreItemHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None, TownProsperity.Destitute);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownProsperity.Destitute);
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         var world = new World(
             new[] { pinecross, redmesa },
             new[]

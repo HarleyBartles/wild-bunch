@@ -1,11 +1,9 @@
 namespace WildBunch.Domain.World;
 
 /// <summary>
-/// Kind of building placed on a town hub surface. Baseline members
-/// (Store, Sheriff, Saloon, Trailhead) drive click-to-navigate routing for
-/// every town; Telegraph is service-driven and only present when the town
-/// has the <see cref="TownServices.Telegraph"/> service. The domain is the
-/// source of truth — the frontend consumes this for routing, not the reverse.
+/// Kind of building placed on a town hub surface. Core service buildings
+/// (Store, Sheriff, Saloon, Telegraph) and navigation Trailheads are present
+/// in every town. The available-action contract determines which are usable.
 /// Values are explicitly numbered to leave room for future building types.
 /// </summary>
 public enum BuildingKind

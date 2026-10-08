@@ -46,7 +46,7 @@ public sealed class SeedWorldResolverCodecTests
         Assert.Equal(original.DefaultCulpritIndex, resolved.DefaultCulpritIndex);
         Assert.Equal(original.CashBonus, resolved.CashBonus);
         Assert.Equal(original.ProsperityPalette, resolved.ProsperityPalette);
-        Assert.Equal(original.ServicesPalette, resolved.ServicesPalette);
+        Assert.Equal(original.ReservedTownNameDerivationBits, resolved.ReservedTownNameDerivationBits);
         Assert.Equal(original.ClusterCount, resolved.ClusterCount);
         Assert.Equal(original.GraphDensity, resolved.GraphDensity);
         Assert.Equal(original.OutlierSlotType, resolved.OutlierSlotType);
@@ -91,22 +91,18 @@ public sealed class SeedWorldResolverCodecTests
     }
 
     [Fact]
-    public void ServicesPalette_ModuloWrapping_ClampsToDefinedRange()
+    public void ReservedTownNameDerivationBits_RoundTripAcrossEncodedRange()
     {
-        // Create a seed with servicesPalette value 7 (within range 0-7)
-        var bytes = new byte[16];
-        var seedCode = new Guid(bytes);
+        for (var bits = 0; bits < 8; bits++)
+        {
+            var original = SeedWorldResolver.CreateCanonicalSeedWorld() with
+            {
+                ReservedTownNameDerivationBits = bits,
+            };
+            var resolved = SeedWorldResolver.Resolve(SeedWorldResolver.CreateRepresentativeSeedCode(original));
 
-        // Set bits 21-23 to 7
-        var low = BitConverter.ToUInt64(bytes, 0);
-        low |= 0x7UL << 21;
-        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
-        seedCode = new Guid(bytes);
-
-        var resolved = SeedWorldResolver.Resolve(seedCode);
-
-        // Should wrap to 7 % 8 = 7 (within range)
-        Assert.Equal((ServicesPalette)7, resolved.ServicesPalette);
+            Assert.Equal(bits, resolved.ReservedTownNameDerivationBits);
+        }
     }
 
     [Fact]

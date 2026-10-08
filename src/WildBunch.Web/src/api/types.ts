@@ -28,25 +28,22 @@ export const TravelMode = {
   Foot: 1,
 } as const;
 
-export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+export type AvailableActionKind = 0 | 1 | 2 | 3 | 5 | 6 | 7 | 8 | 9 | 11 | 12;
 export const AvailableActionKind = {
   Travel: 0,
   ViewMap: 1,
   ViewJournal: 2,
   BuySupplies: 3,
-  SendTelegram: 4,
   ReadWantedPosters: 5,
   AdvanceTravelDay: 6,
   ResolveTravelEncounter: 7,
   InspectNoticeBoard: 8,
   CheckSheriffRecords: 9,
-  FollowTelegraphLeads: 10,
   GatherLocalGossip: 11,
   LookAroundSaloon: 12,
 } as const;
 
 export type TrailRisk = 1 | 2 | 3;
-export type TownServices = number;
 export type AliasKind = 0 | 1 | 2 | 3 | 4;
 export type ClueKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type SuspectStatus = 0 | 1 | 2;
@@ -369,7 +366,6 @@ export interface TownLayoutDto {
 export interface TownDto {
   id: string;
   name: string;
-  services: TownServices;
   layout?: TownLayoutDto | null;
 }
 
@@ -405,15 +401,15 @@ export interface WorldDto {
   trails: TrailDto[];
 }
 
-export type InvestigationSourceKind = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type InvestigationSourceKind = 0 | 1 | 3 | 4 | 5 | 6 | 7;
 export const InvestigationSourceKind = {
   NoticeBoard: 0,
   LocalRecords: 1,
-  TelegraphLead: 2,
   LocalGossip: 3,
   StableLedger: 4,
   SheriffWarrants: 5,
   SaloonLookAround: 6,
+  Prologue: 7,
 } as const;
 
 export interface ClueDto {
@@ -740,13 +736,11 @@ export interface PrologueDto {
 export interface StartingTownDto {
   id: string;
   name: string;
-  services: number;
 }
 
 export interface StartingTownMapTownDto {
   id: string;
   name: string;
-  services: number;
   x: number;
   y: number;
 }

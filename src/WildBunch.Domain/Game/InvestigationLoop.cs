@@ -110,62 +110,6 @@ internal sealed class InvestigationLoop
     }
 
     /// <summary>
-    /// Follow telegraph leads decision logic. Resolves a clue from the clue surfacing
-    /// resolver for the TelegraphLead source kind. Returns the InvestigationPerformed event
-    /// and display message.
-    /// </summary>
-    internal InvestigationOutcome FollowTelegraphLeads(InvestigationContext context)
-    {
-        if (context.IsSourceSpent)
-        {
-            var msg = "You ask after telegraph leads again, but no new wire has come in.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.TelegraphLead,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var clue = _clueSurfacingResolver.Resolve(
-            context.CaseFile,
-            InvestigationSourceKind.TelegraphLead,
-            context.CurrentTownSlotIndex,
-            context.CurrentTownVisitCount,
-            context.SaltSource);
-        if (clue is not null && !IsPlayerKnownClue(clue))
-        {
-            clue = null;
-        }
-
-        if (clue is null)
-        {
-            var msg = "You follow the telegraph leads, but find nothing new.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.TelegraphLead,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var foundMsg = $"You follow the telegraph leads and uncover a public lead: {DescribeClueLead(clue.Description)}.";
-        return new InvestigationOutcome(
-            new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.TelegraphLead,
-                TownId = context.CurrentTownId,
-                Message = foundMsg,
-                ClueId = clue?.Id
-            },
-            "You follow the telegraph leads and uncover a public lead.");
-    }
-
-    /// <summary>
     /// Gather local gossip decision logic. Resolves a clue from the clue surfacing
     /// resolver for the LocalGossip source kind. Returns the InvestigationPerformed event
     /// and display message.

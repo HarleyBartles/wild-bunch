@@ -13,7 +13,7 @@ public sealed class SeedWorldTests
             Guid.NewGuid(),
             SeedWorldVariant.Canonical,
             5,
-            ServicesPalette.HubTelegraph,
+            1,
             ProsperityPalette.UniformProsperous,
             1,
             GraphDensity.Sparse,

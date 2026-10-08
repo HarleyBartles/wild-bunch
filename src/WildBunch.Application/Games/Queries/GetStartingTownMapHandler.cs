@@ -33,7 +33,6 @@ public sealed class GetStartingTownMapHandler
             .Select(town => new StartingTownMapTownDto(
                 town.Id,
                 town.Name,
-                town.Services,
                 town.X,
                 town.Y))
             .ToArray();

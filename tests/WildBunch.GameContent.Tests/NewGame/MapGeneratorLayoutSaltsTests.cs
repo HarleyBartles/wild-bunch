@@ -66,6 +66,57 @@ public sealed class MapGeneratorLayoutSaltsTests
     }
 
     [Fact]
+    public void Generate_AllLegacyServiceBitPatternsKeepCoreBuildingsAndDeterministicWorld()
+    {
+        for (var legacyBits = 0; legacyBits < 8; legacyBits++)
+        {
+            var seedCode = SeedCodeWithLegacyServiceBits(legacyBits);
+            var seedWorld = SeedWorldResolver.Resolve(seedCode);
+
+            var first = MapGenerator.Generate(
+                seedWorld,
+                new GameSetupDeterministicSource(seedCode.ToString()),
+                GameEntropy.Boring,
+                null);
+            var repeated = MapGenerator.Generate(
+                seedWorld,
+                new GameSetupDeterministicSource(seedCode.ToString()),
+                GameEntropy.Boring,
+                null);
+            var firstTowns = first.Towns.ToArray();
+            var repeatedTowns = repeated.Towns.ToArray();
+
+            Assert.Equal(firstTowns.Length, repeatedTowns.Length);
+            for (var i = 0; i < firstTowns.Length; i++)
+            {
+                var town = firstTowns[i];
+                var sameTown = repeatedTowns[i];
+
+                Assert.Equal(town.Id, sameTown.Id);
+                Assert.Equal(town.Name, sameTown.Name);
+                Assert.Equal((town.MapX, town.MapY), (sameTown.MapX, sameTown.MapY));
+                Assert.Equal(town.Prosperity, sameTown.Prosperity);
+                Assert.Equal(town.Layout!.Buildings, sameTown.Layout!.Buildings);
+
+                foreach (var requiredKind in new[]
+                    { BuildingKind.Saloon, BuildingKind.Sheriff, BuildingKind.Store, BuildingKind.Telegraph })
+                {
+                    Assert.Equal(1, town.Layout.Buildings.Count(building => building.Kind == requiredKind));
+                }
+            }
+        }
+    }
+
+    private static Guid SeedCodeWithLegacyServiceBits(int legacyBits)
+    {
+        var bytes = SeedWorldResolver.CreateCanonicalSeedCode().ToByteArray();
+        var low = BitConverter.ToUInt64(bytes, 0);
+        low = (low & ~(0x7UL << 21)) | ((ulong)legacyBits << 21);
+        BitConverter.GetBytes(low).CopyTo(bytes, 0);
+        return new Guid(bytes);
+    }
+
+    [Fact]
     public void Generate_DerivedPath_ExposesActualBundleUsed()
     {
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());

@@ -8,5 +8,6 @@ public enum InvestigationSourceKind
     LocalGossip = 3,
     StableLedger = 4,
     SheriffWarrants = 5,
-    SaloonLookAround = 6
+    SaloonLookAround = 6,
+    Prologue = 7
 }
