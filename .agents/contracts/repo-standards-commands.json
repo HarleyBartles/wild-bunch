@@ -2,7 +2,7 @@
   "apply": [
     "@python",
     "tools/run.py",
-    "ci",
+    "setup-hooks",
     "--apply",
     "--allow-shared-checkout"
   ],
@@ -10,7 +10,6 @@
     "@python",
     "tools/run.py",
     "ci",
-    "--check",
-    "--diagnostics"
+    "--check"
   ]
 }

@@ -10,7 +10,7 @@ Before entering a stage or concern below, read the [unslop playbook](../playbook
 
 Root `AGENTS.md` is the always-on router. Thin scoped `AGENTS.md` files are placed at the established scripts, web, game-content and asset boundaries, including asset bibles, asset helpers and source families, plus the agent-guidance tree. Each contains one sentence naming its directory-tree scope, the condition for reading linked guidance, and an explicit outside-scope disqualifier. It carries pointers rather than doctrine so retained context cannot make its local instructions apply to unrelated work. Use these conditional pointers across harnesses; no separate Devin rule layer is maintained.
 
-The root budget remains 40 lines and each scoped router's ceiling remains 15 lines; the one-sentence policy is stricter than that ceiling. `scripts/check_agent_routers.py` checks scope/read shape, budgets and links through the existing canonical hook and CI. Semantic review checks the disqualifier, useful placement and harness-independent pointers. Do not add routers per source file or arbitrary directory. Update the scoped pointers when their authority moves.
+The root budget remains 40 lines and each scoped router's ceiling remains 15 lines; the one-sentence policy is stricter than that ceiling. `tools/check_agent_routers.py` checks scope/read shape, budgets and links through the existing canonical hook and CI. Semantic review checks the disqualifier, useful placement and harness-independent pointers. Do not add routers per source file or arbitrary directory. Update the scoped pointers when their authority moves.
 
 ## Lifecycle stages
 

@@ -47,6 +47,15 @@
       "certification": ".agents/contracts/standards-certification.md#tracked-validation-hook"
     },
     {
+      "id": "command-bus",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "a9d9f280316a87ac66cb2653384bc30a683603f0",
+        "definition": "skills/command-bus/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#command-bus"
+    },
+    {
       "id": "completed-artifact-custody",
       "source": {
         "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",

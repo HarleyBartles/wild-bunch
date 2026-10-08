@@ -1,0 +1,1 @@
+When working in `tools/`, read the [command bus guide](README.md), follow the [unslop playbook](../.agents/playbooks/unslop.md), and consult the [decision-record playbook](../.agents/playbooks/decision-records.md) for durable changes; this pointer applies to repository tooling and not to `scripts/` or application code.

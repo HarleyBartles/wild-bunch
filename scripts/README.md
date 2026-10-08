@@ -1,100 +1,23 @@
-# Scripts
+# Repository scripts
 
-This folder contains deterministic workflow scripts for the Wild Bunch repo.
-All scripts are idempotent and safe to re-run. Inspect this folder before
-running ad-hoc commands for dev server management, database setup, or image
-processing.
+Use the [command bus guide](../tools/README.md) for supported build, test, and repository-validation work. This folder contains standalone repository operations that have a concrete reason to remain outside the bus: native process lifecycle management and tests for tracked hooks or standalone scripts.
 
-Repository maintenance uses the Wild Bunch checks under `scripts/`, orchestrated
-by `tools/run.py`. This directory contains repository-owned operational scripts
-and thin wrappers over canonical commands.
+## Development servers
 
-## Shared requirements
+Use `bash scripts/dev-servers.sh <ensure|start|stop|status>` on Linux or `.\scripts\dev-servers.ps1 <ensure|start|stop|status>` on Windows to manage this worktree's API and Vite processes. These are separate implementations because Bash and PowerShell use different process discovery, launch, health-check, and termination mechanisms.
 
-- PostgreSQL lifecycle is owned by `tools/postgres-dev.ps1` and the shared
-  `Z:\_postgres-cluster` service.
-- `image_asset_pipeline.py` is a wrapper around the asset-local implementation
-  under `src/WildBunch.Assets/scripts/` and requires Python 3.11+ with Pillow
-  installed in the active environment.
+The API uses port 5275 and Vite uses port 5173 when available. Each script resolves the current worktree, chooses fallback ports when another worktree owns the canonical ports, and records process state under `.local/dev-servers/`. `ensure` rebuilds before launch and reuses only healthy processes recorded for the worktree.
 
-## Scripts
+Use `stop` only for this worktree's servers. Stop them before a clean .NET build if locked assemblies prevent it.
 
-### ci-preflight.sh / ci-preflight.ps1
+## Shared PostgreSQL
 
-These wrappers call the canonical
-`py -3 tools/run.py ci --check` lane. Pass `--diagnostics` in Bash or
-`-Diagnostics` in PowerShell to collect independent failures.
+The Windows shared service is managed by [`tools/postgres-dev.ps1`](../tools/postgres-dev.ps1). Run `.\tools\postgres-dev.ps1 ensure` before PostgreSQL-backed validation and `.\tools\postgres-dev.ps1 status` for a read-only service check. The cluster listens on `localhost:5435`; leave it running during normal worker cleanup. See [local PostgreSQL](../docs/local-postgresql.md) for the human setup guide.
 
-### dev-servers.sh / dev-servers.ps1
-**Use when** you need to start, stop, check, or ensure the API + Vite dev
-servers are running for local development or integration testing.
+## Test ownership
 
-- `bash scripts/dev-servers.sh ensure` - start servers if not running, no-op if already up (default)
-- `.\scripts\dev-servers.ps1 ensure` - start servers if not running, no-op if already up (default)
-- `bash scripts/dev-servers.sh start` - start servers (fails if already running on the same ports)
-- `bash scripts/dev-servers.sh stop` - stop servers for this worktree
-- `bash scripts/dev-servers.sh status` - print server status without changing state
-- `.\scripts\dev-servers.ps1 start` - start servers (fails if already running on the same ports)
-- `.\scripts\dev-servers.ps1 stop` - stop servers for this worktree
-- `.\scripts\dev-servers.ps1 status` - print server status without changing state
-
-The API runs on port 5275, Vite on port 5173. The script resolves the
-worktree root via `git rev-parse` so it works correctly from git worktrees.
-The PostgreSQL connection string is pinned to the shared dev instance at
-`localhost:5435`.
-Startup probes use the dedicated API health endpoint and exponential backoff so
-the script retries quickly at first, then backs off to avoid flakey waits.
-Each `ensure` run rebuilds the API and web bundle before launch, and the script
-will recycle stale or unhealthy recorded state instead of trusting it blindly.
-
-**Use before** running integration tests that need a live API, or before
-playtesting the browser game locally. **Use `stop`** when you need to free
-locked DLLs for a clean `dotnet build`.
-
-### Shared PostgreSQL
-
-Use `.\tools\postgres-dev.ps1 ensure` before PostgreSQL-backed work and
-`.\tools\postgres-dev.ps1 status` for a read-only check. The shared cluster
-runs on `localhost:5435`; leave it running during normal worker cleanup. See
-[`docs/local-postgresql.md`](../docs/local-postgresql.md).
-
-### image_asset_pipeline.sh / image_asset_pipeline.ps1
-**Use when** you need to cut a generated image away from a flat background,
-slice a turnaround sheet into individual views, normalize a building sprite
-onto a fixed canvas, scale tile art into the staging canvas, or move tile art
-through the tile-safe staging/promotion path.
-
-- `bash scripts/image_asset_pipeline.sh cut-background --input <source.png> --out <cut.png>` - cut one image away from a flat background without resizing it; add `--remove-islands` for a second pass that clears enclosed chroma islands
-- `bash scripts/image_asset_pipeline.sh cut-background-tree --input-root <source-root> --out-root <out-root>` - cut every PNG in a tree away from a flat background without resizing it; add `--remove-islands` for the second island pass
-- `bash scripts/image_asset_pipeline.sh normalize --input <source.png> --out <normalized.png>`
-- `bash scripts/image_asset_pipeline.sh slice-sheet --input <sheet.png> --out-dir <out-dir> --names front,profile,rear,front-oblique,rear-oblique`
-- `bash scripts/image_asset_pipeline.sh stage-tiles --input-root <source-root> --out-root <staging-root>` - cut tile art to transparent cutouts while preserving the full tile canvas; add `--remove-islands` for the second island pass
-- `bash scripts/image_asset_pipeline.sh promote-tiles --input-root <staging-root> --out-root <sprites-root>` - copy staged tile PNGs into the matching sprites tree without resizing
-- `bash scripts/image_asset_pipeline.sh promote-sprites --input-root <pipeline-root> --out-root <sprites-root>` - cut the staged building tree to transparent cutouts in place, then normalize it into the matching final sprites tree, skipping `normalized/` scratch files; add `--remove-islands` for the second island pass
-- `.\scripts\image_asset_pipeline.ps1` - PowerShell wrapper that passes all arguments through to the Python script
-
-Both wrappers are thin convenience layers that call the Python script.
-
-The primary backend is Pillow in Python 3.11+ with the package installed in
-the active environment. The selection and promotion note lives in
-`.agents/playbooks/asset-selection-cut-normalization.md`.
-
-## Skill ownership
-
-- Repository-authored skills live under `.agents/skills/` and identify
-  themselves in frontmatter. Codex plugin dependencies live in
-  `.agents/plugins/marketplace.json` and are installed in Codex's cache.
-- Executable skill scripts are tested with repository behavior tests; no
-  external validator or projection refresh is required.
+`scripts/tests/` holds behavior tests for tracked hooks and standalone scripts. `tools/tests/` holds command-bus and repository-checker behavior tests. Both are run by `py -3 tools/run.py python-tests --check`; application tests stay in their .NET projects and the web project.
 
 ## Conventions
 
-- All PowerShell scripts use `Set-StrictMode -Version Latest` and
-  `$ErrorActionPreference = 'Stop'` - they fail fast on errors.
-- Scripts that need the repo root resolve it via `git rev-parse` so they
-  work from git worktrees, not just the main checkout.
-- The PostgreSQL tooling and data directory are shared across worktrees via
-  the persistent main checkout root - do not stop the PostgreSQL cluster
-  during normal worker cleanup.
-- Dev servers are worktree-scoped (each worktree gets its own ports if the
-  canonical ports are taken) but the PostgreSQL cluster is shared.
+Keep native PowerShell and Bash implementations only when platform behavior requires them; do not add thin language wrappers around portable Python implementations. All PowerShell scripts use strict mode and stop on errors. Scripts that need the repository root resolve it through Git so linked worktrees work correctly.

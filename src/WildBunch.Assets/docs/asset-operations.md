@@ -37,7 +37,7 @@ Before editing or promoting assets in this project, read:
 ## Pipeline custody
 
 - Keep asset-pipeline code specific to this project in `src/WildBunch.Assets/scripts/`.
-- `src/WildBunch.Assets/scripts/image_asset_pipeline.py` is the canonical asset staging and promotion implementation; `scripts/image_asset_pipeline.py` at repo root is its compatibility wrapper.
+- `src/WildBunch.Assets/scripts/image_asset_pipeline.py` is the asset staging and promotion command; invoke it directly with Python 3.11+ and Pillow.
 
 ## Rules
 

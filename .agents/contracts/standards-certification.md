@@ -8,7 +8,7 @@ assessment here.
 
 ## root-agent-router
 
-**Assessment:** Self-certified. The root router remains within Wild Bunch's 40-line budget and points to authoritative contribution, workflow, review, publication, testing, security, subscription and unslop guidance. Thin scoped routers cover established scripts, web, game-content, asset and agent-guidance boundaries; [placement policy](../doctrine/repo-runbook-policy.md#scoped-agent-entrypoints) records their one-sentence scope, read condition and outside-scope disqualifier. They are the scoped pointers for both Codex and Devin; the separate Devin rules were replaced. `scripts/check_agent_routers.py` checks tracked router size, required root routes, local links and the 15-line, single scoped sentence policy through the canonical hook and CI. Semantic review remains responsible for usefulness, safe scope, disqualifiers, harness-independent pointers and whether a new router is needed.
+**Assessment:** Self-certified. The root router remains within Wild Bunch's 40-line budget and points to authoritative contribution, workflow, review, publication, testing, security, subscription and unslop guidance. Thin scoped routers cover established scripts, web, game-content, asset and agent-guidance boundaries; [placement policy](../doctrine/repo-runbook-policy.md#scoped-agent-entrypoints) records their one-sentence scope, read condition and outside-scope disqualifier. They are the scoped pointers for both Codex and Devin; the separate Devin rules were replaced. `tools/check_agent_routers.py` checks tracked router size, required root routes, local links and the 15-line, single scoped sentence policy through the canonical hook and CI. Semantic review remains responsible for usefulness, safe scope, disqualifiers, harness-independent pointers and whether a new router is needed.
 
 ## unslop
 
@@ -39,6 +39,10 @@ described by capability and are not promised to every clone. Stage runbooks
 route contributors to relevant testing and implementation concerns. Useful
 scope, reachability, category, and upkeep are assessed by maintainers; the
 router checker checks links and does not score content.
+
+## command-bus
+
+**Assessment:** Self-certified against the pinned definition at `a9d9f280316a87ac66cb2653384bc30a683603f0`. `tools/run.py` is the repository command bus; `tools/README.md` lists targets, modes, prerequisites, side effects, arguments, and ownership. Targets provide top-level discovery, target help, explicit meaningful modes, reject unsupported or conflicting requests before work, forward supported arguments, and preserve child output and exit status. `ci --check` is the fail-fast complete check gate and orders implemented checks from cheapest to most expensive. It currently runs the available whitespace and repository-contract checks before test suites; dedicated lint and formatting lanes are planned in row 04 and must be added before behavioral tests, so a failed cheap check never leaves an agent waiting for an expensive test run. `ci --check --diagnostics` is manual troubleshooting only and is not called by pre-commit or hosted CI. `setup-hooks --apply` owns the local Git configuration change instead of hiding it in CI. Focused build/test targets delegate to the existing .NET, npm, and pytest tools. `tools/tests/` owns bus and checker behavior tests; `scripts/tests/` owns hook/standalone script behavior tests. The target table and behavior tests prove CLI dispatch and error boundaries; review assesses target inventory, help truth, argument ownership, and whether new operations belong in the bus. This standard does not require adopting the optional starter or prescribing a module ABI.
 
 ## tracked-validation-hook
 
@@ -78,7 +82,7 @@ Architecture Pack, and Frontend Pack as Git-subdirectory dependencies;
 `.codex/config.toml` registers the repository catalog and enables these four
 identities. Payload refs intentionally follow upstream `main`. Codex and Devin use the same scoped AGENTS pointers; Devin has no separate rule layer or declared plugin dependency. The six
 `.agents/skills/*/SKILL.md` files are repository-authored, and each frontmatter
-name matches its directory. `scripts/check_plugin_subscriptions.py` checks
+name matches its directory. `tools/check_plugin_subscriptions.py` checks
 local Codex syntax, paths, selectors, catalog registration, and activation
 targets; behavior tests cover invalid paths, dangling activation, and inactive
 catalog entries. The checker does not fetch or prove access, trust,

@@ -21,10 +21,9 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
 4. When a maintained artifact needs updating, run its named owning maintenance
-   command and review the changes it produces. `ci --apply` configures the
-   repository hook and runs selected checks; it does not refresh generated
-   metadata. Stage the intended tree, then let the normal check-only hook
-   validate it.
+   command and review the changes it produces. `setup-hooks --apply` configures
+   this checkout's Git hook; it is separate from validation. Stage the intended
+   tree, then let the normal check-only hook validate it.
 5. Use evidence-based result verification to report focused and canonical proof
    for the same tested state.
 
@@ -42,10 +41,8 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
 py -3 tools\run.py ci --check
 ```
 
-For hook setup, run `ci --apply` explicitly. Run the named owning command when
-refreshing a particular maintained artifact. The pre-commit hook invokes only
-`ci --check`; it does not apply changes or stage corrections. Hook custody is
-defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
+For hook setup, run `py -3 tools/run.py setup-hooks --apply` explicitly. Use
+`py -3 tools/run.py ci --check --diagnostics` only for manual troubleshooting; the pre-commit hook invokes fail-fast `ci --check`, ordered from cheaper to more expensive checks, and never applies repairs or stages corrections. Hook custody is defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
 
 Use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence
@@ -63,7 +60,7 @@ service at `localhost:5435`.
 ## Prohibited combinations
 
 - Do not treat a broad green suite as proof of an unexercised behavior.
-- Do not treat `ci --apply` as validation proof; use `ci --check` and the
+- Do not treat `setup-hooks --apply` as validation proof; use `ci --check` and the
   check-only commit hook.
 
 ## Runbook routing

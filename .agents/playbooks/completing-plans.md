@@ -40,7 +40,7 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
 - Verify: `py -3 tools\run.py ci --check`; the normal hook checks the staged
   candidate without applying changes or staging corrections. Run the named
   owning maintenance command when a particular maintained artifact needs
-  updating; `ci --apply` configures the repository hook and runs selected checks.
+  updating; `setup-hooks --apply` configures this checkout's hook path.
 
 Plan creation is committed before execution. Retain the current plan and spec
 through their completing pull request. The next substantive slice assesses

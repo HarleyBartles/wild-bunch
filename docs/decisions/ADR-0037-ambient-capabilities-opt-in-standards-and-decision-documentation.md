@@ -9,6 +9,7 @@
 - 2026-09-29 - live: Wild Bunch adopts seven Marketplace operating standards explicitly, treats ambient plugin skills as capabilities rather than subscriptions, retires generated index mesh navigation, and moves the ADR home to `docs/decisions/`.
 - 2026-10-02 - superseded in part: `.agents/contracts/operating-standards.json` and `.agents/contracts/standards-certification.md` replace the seven-item deployment model with six immutable self-certification references. Repository-owned checks replace the Marketplace deployment runtime. The native Codex plugin catalog remains separate. The ADR location and retirement of generated index navigation remain live.
 - 2026-10-07 - clarified: the decision catalogue is authored, and the generated freshness table was retired because the latest history date does not establish semantic review.
+- 2026-10-08 - superseded in part: ADR-0043 establishes the command bus as the sole agent-facing home for supported repository validation and makes the canonical CI gate check-only, fail-fast, and ordered from cheapest to most expensive. The historical deployment and routing decisions above remain as recorded.
 
 ## Decision Type
 
@@ -17,6 +18,7 @@ process, documentation
 ## Related ADRs
 
 - `supersedes`: ADR-0033 (repository documentation mesh posture)
+- `partially superseded by`: ADR-0043 (repository command bus ownership and gate order)
 - `related to`: ADR-0001 (Markdown ADR log)
 
 ## Context

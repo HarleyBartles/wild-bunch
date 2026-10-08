@@ -48,9 +48,9 @@ Use `develop` as the repository's default base for ordinary development PRs. `ma
 
 - Default base branch: `develop`
 - Default PR state: Draft
-- Apply: `py -3 tools/run.py ci --apply`
+- Hook setup: `py -3 tools/run.py setup-hooks --apply`
 - Check: `py -3 tools/run.py ci --check`
-- Diagnostics: `py -3 tools/run.py ci --check --diagnostics`
+- Manual diagnostics: `py -3 tools/run.py ci --check --diagnostics` (not the commit/CI gate; may continue after failures)
 - Run the named owning maintenance command before staging when a particular
   maintained artifact needs updating; review and stage those changes deliberately.
 - The commit hook validates the staged candidate without mutating or staging it.

@@ -67,7 +67,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Python script requirements
-        run: python -m pip install -r scripts/requirements.txt
+        run: python -m pip install -r tools/requirements.txt
 
       - name: Validate tracked commit gate
         env:
