@@ -1,0 +1,33 @@
+{
+  "description": "Format supported source files changed by Codex tool calls.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write|mcp__.*)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/format_after_edit.py\"",
+            "commandWindows": "py -3 \"$(git rev-parse --show-toplevel)/.codex/hooks/format_after_edit.py\"",
+            "timeout": 120,
+            "statusMessage": "Snapshotting supported files before tool edits"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write|mcp__.*)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/format_after_edit.py\"",
+            "commandWindows": "py -3 \"$(git rev-parse --show-toplevel)/.codex/hooks/format_after_edit.py\"",
+            "timeout": 120,
+            "statusMessage": "Formatting supported files changed by the tool"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -27,13 +27,18 @@ work also binds [frontend standards](../doctrine/frontend-standards.md).
 
 ## Local commands and paths
 
-Use the command bus for formatting and linting. Apply mechanical formatting
-explicitly with `py -3 tools/run.py format --apply <paths>`, review the diff,
-then use `py -3 tools/run.py format --check <paths>` and
+Use the command bus for formatting and linting. VS Code format-on-save is
+configured for supported source languages, and Codex Desktop/CLI project hooks
+format only supported files changed by a tool call when the exact hook
+definition has been reviewed and trusted. These adapters call the same command
+bus; they do not define formatter policy. If an editor or agent runtime does
+not provide these adapters, apply mechanical formatting explicitly with
+`py -3 tools/run.py format --apply <paths>`, review the diff, then use
+`py -3 tools/run.py format --check <paths>` and
 `py -3 tools/run.py lint --check <paths>`. The check targets never modify
-maintained files; do not rely on a commit hook to apply repairs. For delivery,
-use the canonical fail-fast gate in [testing](testing.md), which runs cheap
-format and lint checks before builds and behavioral tests.
+maintained files; pre-commit and hosted CI remain check-only. For delivery, use
+the canonical fail-fast gate in [testing](testing.md), which runs cheap format
+and lint checks before builds and behavioral tests.
 
 ## Evidence contract
 
