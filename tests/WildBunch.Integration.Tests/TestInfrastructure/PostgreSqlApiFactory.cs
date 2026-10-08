@@ -14,11 +14,17 @@ namespace WildBunch.Integration.Tests.TestInfrastructure;
 public sealed class PostgreSqlApiFactory : WebApplicationFactory<Program>, IDisposable
 {
     private readonly PostgreSqlTestDatabase _database;
+    private readonly ISaltSourceFactory _saltSourceFactory;
     private bool _disposed;
 
-    public PostgreSqlApiFactory()
+    public PostgreSqlApiFactory() : this(new DeterministicSaltSourceFactory())
+    {
+    }
+
+    private PostgreSqlApiFactory(ISaltSourceFactory saltSourceFactory)
     {
         _database = new PostgreSqlTestDatabase();
+        _saltSourceFactory = saltSourceFactory;
 
         using var context = new WildBunchDbContext(new DbContextOptionsBuilder<WildBunchDbContext>()
             .UseNpgsql(_database.ConnectionString)
@@ -26,6 +32,8 @@ public sealed class PostgreSqlApiFactory : WebApplicationFactory<Program>, IDisp
 
         context.Database.Migrate();
     }
+
+    public static PostgreSqlApiFactory WithSaltSourceFactory(ISaltSourceFactory saltSourceFactory) => new(saltSourceFactory);
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -39,7 +47,7 @@ public sealed class PostgreSqlApiFactory : WebApplicationFactory<Program>, IDisp
             services.AddSingleton(_database);
             services.AddDbContext<WildBunchDbContext>((_, options) => options.UseNpgsql(_database.ConnectionString));
             services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
-            services.AddSingleton<ISaltSourceFactory, DeterministicSaltSourceFactory>();
+            services.AddSingleton(_saltSourceFactory);
         });
     }
 

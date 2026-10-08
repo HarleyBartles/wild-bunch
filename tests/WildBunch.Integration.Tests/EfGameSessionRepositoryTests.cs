@@ -4,6 +4,7 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Economy;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
@@ -149,6 +150,36 @@ public sealed class EfGameSessionRepositoryTests
         // Salt is runtime (not seed-derived) for Classic entropy
         Assert.Equal(WildBunch.Domain.Game.SaltSourceMode.Runtime, reloaded.SaltSource.Mode);
         Assert.NotEqual(seedCode, reloaded.SaltSource.Salt);
+    }
+
+    [Fact]
+    public async Task MissingSaltSourceComponent_RehydratesRecordedSaltFromWorldGeneratedEvent()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writeRepository = CreateRepository(fixture, out var unitOfWork);
+        var expectedSalt = SaltSource.CreateFixed("recorded-classic-salt");
+        var session = CreateSessionWithSeedCode(
+            "recorded-seed",
+            GameEntropy.Classic,
+            expectedSalt);
+
+        await PersistAsync(writeRepository, unitOfWork, session);
+        var recordedEvents = await writeRepository.GetEventStreamAsync(session.Id);
+        Assert.Equal(expectedSalt, Assert.IsType<WorldGenerated>(recordedEvents.OfType<WorldGenerated>().Single()).SaltSource);
+
+        await using (var damageContext = fixture.CreateContext())
+        {
+            await damageContext.GameSessionComponents
+                .Where(component => component.SessionId == session.Id.Value
+                    && component.ComponentName == GameSessionComponentNames.SaltSource)
+                .ExecuteDeleteAsync();
+        }
+
+        var freshRepository = CreateRepository(fixture, out _);
+        var reloaded = await freshRepository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(expectedSalt, reloaded!.SaltSource);
     }
 
     [Fact]

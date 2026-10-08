@@ -84,12 +84,12 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
-        // Missing-snapshot guard: the snapshot version matches the stream version, but the
-        // component rows may be missing or corrupted. In that case the fast path
-        // (LoadStoreAsync + ToAggregate) would throw on GetRequiredPayload for a
-        // missing component. Fall back to the full replay path so the snapshot is
-        // never a hard requirement. Check that all required components are present,
-        // not just any row — partial corruption must also fall back.
+        // Missing-snapshot guard: the snapshot version matches the stream version, but a
+        // required component is missing or corrupted. In that case the fast path
+        // (LoadStoreAsync + ToAggregate) cannot establish aggregate state. Fall back to
+        // the full replay path so the snapshot is never a hard requirement. Check that
+        // all required components are present, not just any row — partial corruption
+        // must also fall back.
         // See ADR-0028 and the event sourcing integrity policy.
         var requiredComponents = new[]
         {
@@ -97,7 +97,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             GameSessionComponentNames.World,
             GameSessionComponentNames.CaseFile,
             GameSessionComponentNames.Clock,
-            GameSessionComponentNames.PursuitState
+            GameSessionComponentNames.PursuitState,
+            GameSessionComponentNames.SaltSource
         };
         var presentComponentCount = await _dbContext.GameSessionComponents.AsNoTracking()
             .CountAsync(c => c.SessionId == id.Value && requiredComponents.Contains(c.ComponentName), cancellationToken)
@@ -358,8 +359,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents));
         var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
         var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
-        var saltSourceJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.SaltSource, _payloadLoader, store.AllEvents);
-        var saltSource = saltSourceJson is null ? SaltSource.CreateRuntime() : _serializer.DeserializeSaltSource(saltSourceJson);
+        var saltSourceJson = GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.SaltSource, _payloadLoader, store.AllEvents);
+        var saltSource = _serializer.DeserializeSaltSource(saltSourceJson);
         var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
         var townVisitState = townVisitStateJson is null ? null : _serializer.DeserializeTownVisitState(townVisitStateJson);
         var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey, _payloadLoader, store.AllEvents);

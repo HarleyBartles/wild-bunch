@@ -280,7 +280,7 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
     /// <summary>
     /// Proves that partial component corruption (some required components missing)
     /// triggers the full replay fallback. The missing-snapshot guard checks for all
-    /// 5 required components (Player, World, CaseFile, Clock, PursuitState) — if any
+    /// 6 required components (Player, World, CaseFile, Clock, PursuitState, SaltSource) — if any
     /// are missing, the snapshot is considered incomplete and full replay is used.
     /// </summary>
     [Fact]

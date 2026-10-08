@@ -269,16 +269,13 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
-    public void MissingSaltSourceInLegacySessionJsonFallsBackToRuntimeSalted()
+    public void MissingSaltSourceInSessionSnapshotFailsClosed()
     {
         var serializer = new GameSessionJsonSerializer();
         var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(GameDifficulty.Easy, GameEntropy.Boring)))!.AsObject();
         legacySnapshot.Remove("saltSource");
 
-        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
-
-        Assert.Equal(SaltSourceMode.Runtime, reloaded.SaltSource.Mode);
-        Assert.False(string.IsNullOrWhiteSpace(reloaded.SaltSource.Salt));
+        Assert.Throws<InvalidOperationException>(() => serializer.Deserialize(legacySnapshot.ToJsonString()));
     }
 
     [Fact]

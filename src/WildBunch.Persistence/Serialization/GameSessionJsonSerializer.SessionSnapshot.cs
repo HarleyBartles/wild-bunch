@@ -73,7 +73,8 @@ public sealed partial class GameSessionJsonSerializer
                 Status,
                 journey,
                 GameDifficulty,
-                SaltSource?.ToDomain() ?? WildBunch.Domain.Game.SaltSource.CreateRuntime(),
+                SaltSource?.ToDomain() ?? throw new InvalidOperationException(
+                    "A session snapshot must include its recorded salt source."),
                 GameEntropy ?? WildBunch.Domain.Travel.GameEntropy.Classic,
                 townVisit,
                 (CompletedJourneyHistory ?? Array.Empty<JourneySnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray(),
