@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Apply the approved 37-record ADR disposition table, preserve the repository's real decision history, and make each current or planned decision accurately discoverable without turning ADRs into implementation reports.
+**Goal:** Apply the approved 37-record ADR disposition table, preserve the repository's real decision history, and make each current or planned decision accurately discoverable without turning ADRs into implementation reports. Make ADR and unslop guidance effective at lifecycle entrypoints, with PR authors and reviewers as the final stale-decision safeguards.
 
-**Architecture:** Preserve each original decision and its date, add a successor only where an accepted choice changed, and use dated editorial notes for factual corrections or material removals. Keep implementation status, code inventories, test receipts, and feature backlogs in their existing owners; this plan changes decision records and their authored catalogue only.
+**Architecture:** Preserve each original decision and its date, add a successor only where an accepted choice changed, and use dated editorial notes for factual corrections or material removals. Keep implementation status, code inventories, test receipts, and feature backlogs in their existing owners. Route lifecycle and topical guidance through central unslop and decision-record playbooks, and require authors and reviewers to check the actual diff against relevant ADRs.
 
 **Tech Stack:** Markdown ADRs, Git history for provenance, repository command bus validation, `Directory.Build.props` as the sole authored application version.
 
@@ -19,8 +19,10 @@
 - Preserve material removals, including accidental or unexplained ones; state only what Git or another authoritative source proves and leave unsupported intent unknown.
 - ADR status describes decision authority, not implementation completion; use `planned` only for accepted decisions not yet in force as implemented behavior.
 - The baseline specification governs settled choices; source inspection verifies implementation facts but cannot override those choices or silently bless drift.
+- A change may not silently remove or contradict behavior protected by an ADR; a durable changed choice requires an explicit ADR amendment or successor. New durable architecture requires consulting relevant ADRs and recording the decision.
+- PR authors resolve the decision-record check before requesting review. Reviewers independently perform the same semantic check against the actual diff; neither gate treats the presence of an ADR edit as sufficient by itself.
 - Do not re-open settled choices for the UUID seed, difficulty/randomness vocabulary, GameSession root/child protocol, setup-to-arrival flow, excluded developer layout preparation, archive behavior, or cloud boundary.
-- Do not change game code, tests, migrations, feature inventory, doctrine outside ADR ownership, or the six non-ADR documents assigned to the third row-02 slice.
+- Do not change game code, tests, migrations, or feature inventory. Agent-guidance changes are limited to the central ADR/unslop routing and PR/review gates in Task 6; leave the six non-ADR documents for their separate row-02 slice.
 - Do not add source inventories, test totals, proof receipts, future-work lists, or route diagrams to ADRs.
 - Keep this plan, the baseline spec, and the roadmap through this PR; retire the prior completed plan in this PR's first substantive commit.
 
@@ -31,10 +33,11 @@
 3. Git archaeology establishes material removal commits and dates where possible; absent evidence is recorded as unknown rather than inferred intent.
 4. ADRs state durable choices and rationale, not implementation shape; catalogue summaries and status/successor links match the records without treating status as a code-completion claim.
 5. Cloud decisions remain `planned` and distinguish accepted future boundaries from current 0.1.0 behavior.
+6. Central playbooks own profile and decision-record selection, while each applicable work surface supplies an effective route; PR and review gates independently check that the ADR log remains true after the change.
 
 ## Scope and File Ownership
 
-The first substantive commit creates this plan, updates row 02 with PR #188's actual merge evidence and this successor plan, removes the completed predecessor plan, and advances the authored version to `0.1.0-dev.4`. The decision-history work then creates the successors listed below, edits only records whose accepted disposition requires an edit, and updates `docs/decisions/README.md` as the authored catalogue.
+The first substantive commit creates this plan, updates row 02 with PR #188's actual merge evidence and this successor plan, removes the completed predecessor plan, and advances the authored version to `0.1.0-dev.4`. The decision-history work then creates the successors listed below, edits only records whose accepted disposition requires an edit, and updates `docs/decisions/README.md` as the authored catalogue. Before publication, a bounded guidance task makes the ADR and unslop playbooks the central routers and gives both PR authors and reviewers explicit independent decision-log gates.
 
 Create the following records, using the titles and decision scopes below. Preserve the predecessor records and add reciprocal relationship links.
 
@@ -106,32 +109,32 @@ Every ADR from 0001 through 0037 is assessed below. `Retain` means no edit unles
 
 **Files:** Create `.agents/plans/2026-10-08-adr-dispositions.md`; modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` and `Directory.Build.props`; delete `.agents/plans/2026-10-07-adr-governance-and-discovery.md`.
 
-- [ ] Confirm PR #188 is merged to `develop` at merge commit `67646cb53a8604c85972f0697daafb96c55249ef`, and classify the predecessor's entire scope from that PR, its final branch and validation evidence; its remaining row-02 ADR and six-document work is expressly successor scope, not predecessor scope.
-- [ ] Update roadmap row 02 to record row 01 as complete with PR #187, PR #188 as merged with range `c34d688..67646cb`, and this plan as the active ADR-disposition successor; preserve row 02 as executing and keep the separate six-document slice pending.
-- [ ] Set `Directory.Build.props` to `0.1.0-dev.4`; verify it remains the only authored application version and do not modify package or lockfile versions.
-- [ ] Remove the predecessor plan and its stale roadmap link only after the merged PR and the full-scope classification above are verified.
-- [ ] Run `git diff --check`, inspect the staged candidate, and make a normal hooked commit before beginning ADR edits.
+- [x] Confirm PR #188 is merged to `develop` at merge commit `67646cb53a8604c85972f0697daafb96c55249ef`, and classify the predecessor's entire scope from that PR, its final branch and validation evidence; its remaining row-02 ADR and six-document work is expressly successor scope, not predecessor scope.
+- [x] Update roadmap row 02 to record row 01 as complete with PR #187, PR #188 as merged with range `c34d688..67646cb`, and this plan as the active ADR-disposition successor; preserve row 02 as executing and keep the separate six-document slice pending.
+- [x] Set `Directory.Build.props` to `0.1.0-dev.4`; verify it remains the only authored application version and do not modify package or lockfile versions.
+- [x] Remove the predecessor plan and its stale roadmap link only after the merged PR and the full-scope classification above are verified.
+- [x] Run `git diff --check`, inspect the staged candidate, and make a normal hooked commit before beginning ADR edits.
 
 ## Task 2: Reconcile current source and provenance before editing ADR history
 
 **Files:** Read all `docs/decisions/ADR-0001` through `ADR-0037`, `docs/decisions/README.md`, the approved baseline/cloud specifications, and the relevant implementation/doctrine sources named by each finding; use Git history for material removals.
 
-- [ ] Refresh `origin/develop` and confirm the worktree still starts at merge `67646cb`; if another develop PR merged, rebase/refresh safely, advance the planned version to the next unused value, and revalidate the changed base.
-- [ ] For each matrix row, classify the live record as retain, editorial rewrite, partial/full supersession, dated correction, implementation gap, or planned decision; compare its status and successor links with the catalogue.
-- [ ] Trace source contradictions and material removals through their owning code, tests, doctrine and Git history, including the log-row removal, seed codec/setup ownership, missing starting-town behavior, difficulty labels, event/replay migration, turn-in/payout, prep/start flow, archive concurrency and map accessibility.
-- [ ] Record the exact commit/date and known reason where evidence exists; distinguish missing intent from evidence that a removal was deliberate. Keep any unsupported provenance explicitly unknown.
-- [ ] Confirm each proposed successor's accepted scope against the stable baseline or cloud specification. If a settled decision does not support a proposed clause, omit that clause and record the evidence-backed plan ruling; do not invent a sixth decision.
+- [x] Refresh `origin/develop` and confirm the worktree still starts at merge `67646cb`; if another develop PR merged, rebase/refresh safely, advance the planned version to the next unused value, and revalidate the changed base.
+- [x] For each matrix row, classify the live record as retain, editorial rewrite, partial/full supersession, dated correction, implementation gap, or planned decision; compare its status and successor links with the catalogue.
+- [x] Trace source contradictions and material removals through their owning code, tests, doctrine and Git history, including the log-row removal, seed codec/setup ownership, missing starting-town behavior, difficulty labels, event/replay migration, turn-in/payout, prep/start flow, archive concurrency and map accessibility.
+- [x] Record the exact commit/date and known reason where evidence exists; distinguish missing intent from evidence that a removal was deliberate. Keep any unsupported provenance explicitly unknown.
+- [x] Confirm each proposed successor's accepted scope against the stable baseline or cloud specification. If a settled decision does not support a proposed clause, omit that clause and record the evidence-backed plan ruling; do not invent a sixth decision.
 
 ## Task 3: Create the accepted successor decisions
 
 **Files:** Create `docs/decisions/ADR-0038-gamesession-consistency-boundary-and-internal-child-protocol.md`, `ADR-0039-seeded-game-setup-and-free-first-arrival.md`, `ADR-0040-difficulty-and-randomness-vocabulary.md`, `ADR-0041-public-and-preprod-developer-capability-boundary.md`, and `ADR-0042-user-owned-playthrough-lifecycle.md`.
 
-- [ ] Write ADR-0038 from the approved root/child decision, preserving domain-owned cohesive rules while assigning external command consistency and event authority to GameSession; link only the affected predecessors and state exactly which old scopes survive.
-- [ ] Write ADR-0039 from the approved seed and flow decisions: Go settles world/case truth; prologue follows; one selected first town performs a one-shot free arrival; the same world map supports setup and travel; no exclusive snapshot-only prep route is retained. Preserve the UUID codec choice without bit-layout details.
-- [ ] Write ADR-0040 with the exact current difficulty/randomness names and defaults and the durable separation of pressure from volatility; state that recorded mystery facts are not re-rolled.
-- [ ] Write ADR-0041 from the approved cloud specification with public player-only capabilities and owner-only preprod access; set status to `planned` and state explicitly that this is not current 0.1.0 deployment behavior.
-- [ ] Write ADR-0042 from the approved cloud lifecycle with immutable user ownership, at most one active playthrough per user, and immediate durable archival on confirmed start-over; set status to `planned` and distinguish it from current unowned local playtests.
-- [ ] Use the current ADR template, preserve only rationale supported by the source record, add no implementation inventories or proof receipts, and link each successor to its predecessors with clear relationship labels.
+- [x] Write ADR-0038 from the approved root/child decision, preserving domain-owned cohesive rules while assigning external command consistency and event authority to GameSession; link only the affected predecessors and state exactly which old scopes survive.
+- [x] Write ADR-0039 from the approved seed and flow decisions: Go settles world/case truth; prologue follows; one selected first town performs a one-shot free arrival; the same world map supports setup and travel; no exclusive snapshot-only prep route is retained. Preserve the UUID codec choice without bit-layout details.
+- [x] Write ADR-0040 with the exact current difficulty/randomness names and defaults and the durable separation of pressure from volatility; state that recorded mystery facts are not re-rolled.
+- [x] Write ADR-0041 from the approved cloud specification with public player-only capabilities and owner-only preprod access; set status to `planned` and state explicitly that this is not current 0.1.0 deployment behavior.
+- [x] Write ADR-0042 from the approved cloud lifecycle with immutable user ownership, at most one active playthrough per user, and immediate durable archival on confirmed start-over; set status to `planned` and distinguish it from current unowned local playtests.
+- [x] Use the current ADR template, preserve only rationale supported by the source record, add no implementation inventories or proof receipts, and link each successor to its predecessors with clear relationship labels.
 
 ## Task 4: Apply every required predecessor disposition
 
@@ -158,9 +161,22 @@ Every ADR from 0001 through 0037 is assessed below. `Retain` means no edit unles
 - [ ] Confirm `tools/run.py` exposes no ADR-specific validation target; manually verify each local ADR/catalogue/successor link and the catalogue's one-entry-per-record coverage, then stage the complete candidate and make a normal commit; the check-only hook runs the canonical gate, including the web build and generated-version identity check.
 - [ ] Read the hook result, review the committed diff against this plan, the baseline/cloud specs and all 37 matrix rows, and correct any failure with a focused edit followed by another normal hooked commit; do not run a duplicate canonical check on an unchanged committed tree.
 
-## Task 6: Review, publish, merge, and retain successor artifacts
+## Task 6: Establish central ADR and unslop routes with PR/review gates
 
-- [ ] Complete one fresh whole-branch review against the plan, both governing specifications, the decision-record playbook, and the relevant backend/web/dev unslop profiles; fix Critical and Important findings with focused evidence and normal hooked commits.
+**Files:** Create or update the central unslop playbook; update `.agents/unslop/README.md`, `.agents/playbooks/decision-records.md`, applicable lifecycle runbooks and topical playbooks, root `AGENTS.md`, `CONTRIBUTING.md`, `REVIEW.md`, `.agents/runbooks/pr.md`, and `.agents/runbooks/code-review.md` as required by the live route audit.
+
+- [ ] Make one unslop playbook the authoritative selector for applicable profiles and their observation loop. Keep profile content in `.agents/unslop/`; remove duplicate selection rules from its README or other routers once the central playbook owns them.
+- [ ] Route root agent, contributor, reviewer, lifecycle-runbook, and topical-playbook entrypoints to both the central unslop playbook and the decision-record playbook, with each work surface naming when the guidance applies.
+- [ ] Keep selection scoped: agents consult relevant ADRs through the authored catalogue and follow successors; agents select applicable unslop profiles rather than loading every profile indiscriminately.
+- [ ] State in the decision-record playbook that removing or contradicting an ADR-protected behavior requires a deliberate decision and matching amendment/successor, and that introducing durable architecture requires consulting the log and recording the decision. State that routine implementation preserving existing decisions does not require a new ADR.
+- [ ] Make the PR runbook require authors to compare their proposed diff with relevant ADRs and include the required decision work, or explain why no durable decision changes.
+- [ ] Make the review runbook require reviewers to repeat that check independently against the actual diff; a PR-author assertion or an ADR file change alone is not proof that the decision log remains true.
+- [ ] Trace direct entry routes and remove duplicated or stale profile-selection guidance without weakening scoped profile selection, lifecycle stages, or topical ownership. Include `REVIEW.md` and `CONTRIBUTING.md` because reviewer and implementer harnesses may enter through them.
+- [ ] Validate the routes by following them from each declared entrypoint and checking their applicability language and links. Do not add source-string or link-existence tests as a proxy for effective routing.
+
+## Task 7: Review, publish, merge, and retain successor artifacts
+
+- [ ] Complete one fresh whole-branch review against the plan, both governing specifications, the decision-record and unslop playbooks, relevant profiles, and the protected-decision gates; fix Critical and Important findings with focused evidence and normal hooked commits.
 - [ ] Confirm the PR targets `develop`, advances the latest merged development version exactly once, leaves package versions unchanged, and contains no out-of-scope code or generated evidence; publish as Draft and attach it to the current task.
 - [ ] Promote to Ready only after local canonical validation and whole-branch review pass; read hosted checks on the exact PR head and merge only after they pass.
 - [ ] Verify merge ancestry and the merge commit on refreshed `origin/develop`; retain this plan and the parent spec/roadmap in the completing PR. Row 02 remains open for its six-document custody slice.
@@ -170,5 +186,6 @@ Every ADR from 0001 through 0037 is assessed below. `Retain` means no edit unles
 
 - All 37 predecessor ADRs receive the treatment in the matrix, including explicit unchanged/retained decisions; the five new successor ADRs are accurate to their approved source specifications and no implementation status is overstated.
 - Material removals and corrections are represented with known provenance or explicit uncertainty, and no past drift is made to look intentional.
+- Applicable runbooks and topical playbooks route through central ADR and unslop playbooks; PR authors and reviewers each have an explicit decision-log check, and the review is independent of the author's claim.
 - The authored catalogue contains ADR-0001 through ADR-0042 once each with accurate statuses and successor links.
 - The repository canonical gate and production web identity check pass on the exact PR head; the branch review is clean of Critical and Important findings; the PR is merged into `develop`.
