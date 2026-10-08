@@ -10,8 +10,7 @@ sheet slicing, background removal, normalization, staging, or promotion.
 - town-hub-asset-judgment (when selecting or promoting a generated Wild Bunch asset).
 
 ## Unslop before work
-
-Before authoring selection notes or assessing player presentation, read [writing](../unslop/writing.md) and the relevant [play-surface UI guards](../unslop/play-surface-ui.md) in full. Follow [selection and observations](../unslop/README.md); purely mechanical asset transforms do not acquire unrelated gameplay obligations.
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

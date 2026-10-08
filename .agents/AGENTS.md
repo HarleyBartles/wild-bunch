@@ -1,1 +1,1 @@
-When working in `.agents/`, read the [stage and concern routes](doctrine/repo-runbook-policy.md) and applicable [unslop profiles](unslop/README.md) before changing agent guidance; outside this tree these local pointers do not apply.
+When working in `.agents/`, read the [stage and concern routes](doctrine/repo-runbook-policy.md), follow the [unslop playbook](playbooks/unslop.md), and consult the [decision-record playbook](playbooks/decision-records.md) for durable guidance changes; outside this tree these local pointers do not apply.

@@ -12,6 +12,10 @@ Browser behavior, layout, interaction, or player-flow evidence is required.
 
 - wild-bunch-browser-game (when client state authority is in question).
 
+## Before work
+
+Follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when browser behavior or evidence makes, changes, corrects, or materially removes a durable decision.
+
 ## Composition
 
 1. Use `/wild-bunch-browser-game` when the test requires a decision about
@@ -26,7 +30,7 @@ Browser behavior, layout, interaction, or player-flow evidence is required.
 
 ## Doctrine and contracts
 
-[Frontend standards](../doctrine/frontend-standards.md) binds the observed surface. Before browser checks, read [play-surface UI guards](../unslop/play-surface-ui.md) in full; dev diagnostics also require [dev-overlay guards](../unslop/dev-overlay.md). Use [backend guards](../unslop/backend-architecture.md) when evaluating API truth and [the observation loop](../unslop/README.md#record-and-improve) for distinct failures and guard outcomes.
+[Frontend standards](../doctrine/frontend-standards.md) binds the observed surface.
 
 ## Local commands and paths
 

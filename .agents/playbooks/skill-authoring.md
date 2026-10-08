@@ -10,8 +10,7 @@ Creating or changing a repository-local Wild Bunch skill.
 - Validate authored skill custody and test executable script behavior.
 
 ## Unslop before work
-
-Before changing a skill, read [routing](../unslop/routing.md) and [writing guards](../unslop/writing.md) in full, plus the [backend](../unslop/backend-architecture.md), [web](../unslop/play-surface-ui.md) or [dev-overlay](../unslop/dev-overlay.md) profiles for its owned decision. Route the relevant guards directly from the skill and maintain [observations](../unslop/README.md#record-and-improve).
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

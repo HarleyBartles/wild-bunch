@@ -10,8 +10,7 @@ Writing or reviewing source whose language or framework conventions matter.
 - Design React component structure and browser styling.
 
 ## Unslop before work
-
-Before source work, read [backend guards](../unslop/backend-architecture.md) for .NET/backend concerns and [play-surface UI guards](../unslop/play-surface-ui.md) for browser concerns in full. Prose requires [writing](../unslop/writing.md); dev panels also require [dev overlay](../unslop/dev-overlay.md). Follow [selection and observations](../unslop/README.md).
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

@@ -10,8 +10,7 @@ Turning settled Wild Bunch requirements into an executable plan or roadmap.
 - Design a roadmap when delivery requires multiple consecutive plans.
 
 ## Unslop before work
-
-Before planning, read [writing guards](../unslop/writing.md) in full and the [backend](../unslop/backend-architecture.md), [web](../unslop/play-surface-ui.md) or [dev-overlay](../unslop/dev-overlay.md) profiles for the behavior being planned. Read [routing guards](../unslop/routing.md) when planning agent guidance. Name those same profiles at the relevant execution tasks; follow [selection and observations](../unslop/README.md).
+Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

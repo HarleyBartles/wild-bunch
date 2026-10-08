@@ -1,6 +1,6 @@
 # Event-sourcing integrity doctrine
 
-Before work governed by this doctrine, read [backend-architecture guards](../unslop/backend-architecture.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 This doctrine is the primary repository surface for event-sourcing integrity in
 the Wild Bunch repo. The [decision catalogue](../../docs/decisions/README.md)

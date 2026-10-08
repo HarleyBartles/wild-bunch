@@ -24,7 +24,7 @@ Records below describe concrete incidents and guard outcomes. They are durable i
 
 **Recognition and correction:** Durable runbooks and playbooks state reusable operating procedure. Put temporary epic sequence, worktree, and version requirements in the active roadmap or plan, and leave stable repository policy in the runbook. The [writing profile](writing.md#keep-durable-guidance-scope-stable) now guards this boundary.
 
-**Reach and effect:** The campaign-specific sentence was removed from the PR runbook while its general `develop` and release-line guidance remains. This is one corrected incident, not proof of recurrence or future effectiveness.
+**Reach and effect:** The campaign-specific sentence was removed from the PR runbook, a duplicate was removed from `CONTRIBUTING.md`, and an active-epic reference was removed from the unslop playbook. General `develop` and release-line guidance remains. This is one corrected incident, not proof of recurrence or future effectiveness.
 
 ## U-001: Existing profiles with weak work-point routes
 

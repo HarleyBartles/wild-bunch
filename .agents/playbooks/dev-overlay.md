@@ -16,6 +16,10 @@ Adding or changing a Wild Bunch developer control or panel.
 - wild-bunch-dotnet-architecture
 - wild-bunch-browser-game
 
+## Before work
+
+Follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 ## Composition
 
 1. Use `/dev-control-boundary` to classify the control as lawful state
@@ -31,7 +35,6 @@ Adding or changing a Wild Bunch developer control or panel.
 ## Doctrine and contracts
 
 - [Dev-overlay doctrine](../doctrine/dev-overlay.md)
-- Before dev-overlay work, read [dev-overlay guards](../unslop/dev-overlay.md) in full, plus [backend](../unslop/backend-architecture.md) for commands/events and [play-surface UI](../unslop/play-surface-ui.md) for browser/state concerns. Maintain encountered patterns through the [unslop loop](../unslop/README.md#record-and-improve).
 - [Dev-overlay proof contract](../contracts/dev-overlay-proof.md)
 
 ## Local commands and paths

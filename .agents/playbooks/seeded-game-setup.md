@@ -16,8 +16,7 @@ town, or setup-owned player facts.
 - wild-bunch-dotnet-architecture (when application or persistence boundaries change)
 
 ## Unslop before work
-
-Before setup/seed work, read [backend guards](../unslop/backend-architecture.md) in full. Browser setup also requires [play-surface UI](../unslop/play-surface-ui.md); developer preparation requires [dev overlay](../unslop/dev-overlay.md). Maintain [distinct observations](../unslop/README.md#record-and-improve).
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

@@ -9,9 +9,18 @@ Opening, updating, or publishing a Wild Bunch pull request.
 - Verify repository state, validation evidence, and publication prerequisites.
 - Publish a branch and open or update a Draft PR, then verify its head and checks.
 
-## Unslop before work
+## Before publication
 
-Before authoring the PR, read [writing](../unslop/writing.md) and [code-review guards](../unslop/code-review.md) in full; follow their direct links for changed concerns. Confirm the current diff has been reviewed against those guards and update [distinct observations](../unslop/README.md#record-and-improve) when there is new evidence, without adding read or test receipts.
+Follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection for the actual diff. Consult the [decision-record playbook](../playbooks/decision-records.md) when the diff makes, changes, corrects, or materially removes a durable decision.
+
+## Decision-record check
+
+Before requesting review, compare the actual proposed diff with applicable
+records through the [decision-record playbook](../playbooks/decision-records.md).
+Include required ADR creation, correction, or supersession, or state why no
+durable decision changes. The reviewer must independently repeat this check
+against the diff; the author's statement or the presence of an ADR edit is not
+proof that the log remains true.
 
 ## Composition
 
@@ -19,7 +28,7 @@ Use `develop` as the repository's default base for ordinary development PRs. `ma
 
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.
-2. Confirm required decision-record changes are included, or record why the PR does not change a durable decision using the [decision-record playbook](../playbooks/decision-records.md).
+2. Resolve the author decision-record check above before requesting review.
 3. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
 4. Use GitHub branch and Draft PR publication to push the task branch and create or update the

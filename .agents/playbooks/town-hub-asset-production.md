@@ -13,8 +13,7 @@ Producing or revising a town-hub building, road, ground, or prop asset.
 - town-hub-asset-judgment
 
 ## Unslop before work
-
-Before authoring asset briefs or reviewing browser integration, read [writing](../unslop/writing.md) and the relevant [play-surface UI guards](../unslop/play-surface-ui.md) in full. Use [selection and observations](../unslop/README.md) when work crosses into backend or developer concerns.
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

@@ -9,8 +9,7 @@ Designing a Wild Bunch feature or behavior before implementation planning.
 - Facilitate structured feature discovery, clarify behavior, and produce an accepted design specification.
 
 ## Unslop before work
-
-Before design, read [writing guards](../unslop/writing.md) in full. Backend design also requires [backend architecture](../unslop/backend-architecture.md); browser design requires [play-surface UI](../unslop/play-surface-ui.md); developer controls require [dev overlay](../unslop/dev-overlay.md). Use [selection and observations](../unslop/README.md) when scope changes or an encountered pattern needs recording.
+Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

@@ -1,1 +1,1 @@
-When working in `scripts/`, read the [script guidance](README.md) and applicable [unslop profiles](../.agents/unslop/README.md) before changing or running repository helpers; outside this tree these local pointers do not apply.
+When working in `scripts/`, read the [script guidance](README.md), follow the [unslop playbook](../.agents/playbooks/unslop.md) for profile selection and the [decision-record playbook](../.agents/playbooks/decision-records.md) for durable changes; outside this tree these local pointers do not apply.

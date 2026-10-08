@@ -1,6 +1,6 @@
 # Writing Anti-Slop Profile
 
-Read this profile in full before authored prose and maintain encountered patterns through the [observation loop](README.md#record-and-improve). Concision must preserve meaning; domain terminology is appropriate when it helps its intended reader. Active plans, specifications and durable slop observations are governed artifacts, not scratch merely because they describe an investigation.
+Read this profile in full when selected through the [unslop playbook](../playbooks/unslop.md) and maintain encountered patterns through its [observation loop](../playbooks/unslop.md#record-and-improve). Concision must preserve meaning; domain terminology is appropriate when it helps its intended reader. Active plans, specifications and durable slop observations are governed artifacts, not scratch merely because they describe an investigation.
 
 Use this profile when writing documents, plans, specs, or any other text artifacts. This profile enforces standards for artifact placement and writing quality.
 

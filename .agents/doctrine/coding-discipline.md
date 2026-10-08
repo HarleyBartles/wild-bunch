@@ -1,6 +1,6 @@
 # Coding Discipline
 
-Before work governed by this doctrine, read [writing guards](../unslop/writing.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Code style guidelines
 

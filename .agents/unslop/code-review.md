@@ -1,6 +1,6 @@
 # Code Review Anti-Slop Profile
 
-Read this profile in full before reviewing and maintain encountered patterns through the [observation loop](README.md#record-and-improve). Review the changed behavior against applicable [backend](backend-architecture.md), [web](play-surface-ui.md) and [dev-overlay](dev-overlay.md) guards. Documentation-only changes do not require invented runtime tests, and existing test count is not evidence of a newly covered behavior.
+Read this profile in full when selected through the [unslop playbook](../playbooks/unslop.md) and maintain encountered patterns through its [observation loop](../playbooks/unslop.md#record-and-improve). Review the changed behavior against applicable [backend](backend-architecture.md), [web](play-surface-ui.md) and [dev-overlay](dev-overlay.md) guards. Documentation-only changes do not require invented runtime tests, and existing test count is not evidence of a newly covered behavior.
 
 Use this profile when performing code reviews. This profile enforces standards for reviewing code changes, PRs, and worker returns.
 
