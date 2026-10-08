@@ -165,6 +165,35 @@ def test_post_tool_does_not_format_index_only_transition_with_unchanged_worktree
     assert _hook_output(capsys) is None
 
 
+def test_post_tool_formats_tracked_file_edited_and_staged_in_one_tool_call(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    root, _ = _repository(tmp_path)
+    bus_log = tmp_path / "bus args.json"
+    monkeypatch.setenv("FAKE_BUS_LOG", str(bus_log))
+    monkeypatch.setattr(hook, "TEMP_ROOT", tmp_path / "hook-state")
+    source = root / "src" / "staged during call.py"
+    source.parent.mkdir()
+    source.write_text("value = 0\n", encoding="utf-8")
+    _git(root, "add", "src")
+    _git(root, "commit", "-m", "baseline")
+
+    assert hook.handle_event(_event(root, "PreToolUse", "Bash", "staged-edit")) == 0
+    source.write_text("value=1\n", encoding="utf-8")
+    _git(root, "add", "src/staged during call.py")
+    index_before = _git(root, "write-tree")
+    assert hook.handle_event(_event(root, "PostToolUse", "Bash", "staged-edit")) == 0
+
+    assert source.read_text(encoding="utf-8") == "value = 1\n"
+    assert _git(root, "write-tree") == index_before
+    assert json.loads(bus_log.read_text(encoding="utf-8")) == [
+        "format",
+        "--apply",
+        "src/staged during call.py",
+    ]
+    assert _hook_output(capsys) is not None
+
+
 @pytest.mark.parametrize(
     ("tool_name", "tool_use_id"),
     [("Bash", "shell"), ("apply_patch", "patch"), ("mcp__filesystem__write_file", "mcp")],
@@ -299,7 +328,7 @@ def test_formatter_failure_returns_actual_diagnostic_and_keeps_completed_write(
     monkeypatch.setattr(hook, "TEMP_ROOT", tmp_path / "hook-state")
     monkeypatch.setenv("FAKE_BUS_LOG", str(tmp_path / "bus args.json"))
     monkeypatch.setenv("FAKE_BUS_FAIL", "1")
-    source = root / "src" / "changed.py"
+    source = root / "src" / "$HOME;`touch marker`.py"
     source.parent.mkdir()
     source.write_text("value=1\n", encoding="utf-8")
 
@@ -312,5 +341,7 @@ def test_formatter_failure_returns_actual_diagnostic_and_keeps_completed_write(
     assert output["decision"] == "block"
     assert "formatter actual diagnostic" in output["reason"]
     assert "write already happened" in output["reason"]
-    assert "py -3 tools/run.py format --apply" in output["reason"]
+    assert "py -3 tools/run.py format --apply <changed-paths>" in output["reason"]
+    assert 'Changed paths (JSON array): ["src/$HOME;`touch marker`.py"]' in output["reason"]
+    assert '`py -3 tools/run.py format --apply "src/$HOME;`' not in output["reason"]
     assert source.read_text(encoding="utf-8") == "value=2\n"

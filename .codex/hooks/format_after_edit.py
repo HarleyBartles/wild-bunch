@@ -49,7 +49,7 @@ def _style_module(root: Path) -> Any:
     return module
 
 
-def _worktree_paths(root: Path) -> set[str]:
+def _supported_changed_paths(root: Path, *, worktree_only: bool = False) -> set[str]:
     result = subprocess.run(
         ["git", "status", "--porcelain=v1", "--untracked-files=all", "-z"],
         cwd=root,
@@ -70,7 +70,7 @@ def _worktree_paths(root: Path) -> set[str]:
         # path for renames and copies. Only the destination can be formatted.
         if "R" in status or "C" in status:
             next(records, None)
-        if status[1] == " " and status != "??":
+        if worktree_only and status[1] == " " and status != "??":
             continue
         try:
             candidate = root / Path(os.fsdecode(raw_path))
@@ -155,7 +155,7 @@ def _write_snapshot(root: Path, session_id: str, tool_use_id: str) -> None:
     state_file = _snapshot_path(root, session_id, tool_use_id)
     state_file.parent.mkdir(parents=True, exist_ok=True)
     temporary = state_file.with_suffix(f".{os.getpid()}.tmp")
-    dirty_paths = _worktree_paths(root)
+    dirty_paths = _supported_changed_paths(root, worktree_only=True)
     temporary.write_text(
         json.dumps(
             {
@@ -201,8 +201,11 @@ def _pre_tool_deny(message: str) -> dict[str, Any]:
 
 
 def _format_recovery(paths: list[str]) -> str:
-    quoted_paths = " ".join(f'"{path}"' for path in paths)
-    return f"py -3 tools/run.py format --apply {quoted_paths}"
+    encoded_paths = json.dumps(paths, ensure_ascii=True)
+    return (
+        "run `py -3 tools/run.py format --apply <changed-paths>` with each listed path "
+        f"as a separate argument. Changed paths (JSON array): {encoded_paths}"
+    )
 
 
 def _format_changed_files(root: Path, paths: list[str]) -> tuple[int, str]:
@@ -280,7 +283,7 @@ def handle_event(event: dict[str, Any]) -> int:
             )
             _hook_output(_post_tool_block(message))
             return 0
-        after_paths = _worktree_paths(root)
+        after_paths = _supported_changed_paths(root)
         changed_paths = {
             path
             for path, digest in _supported_file_hashes(root, after_paths & before.keys()).items()
