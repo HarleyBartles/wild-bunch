@@ -14,20 +14,15 @@ namespace WildBunch.Domain.Game;
 internal sealed class BountyLoop
 {
     private readonly WantedSuspectPresenceLedger _presenceLedger;
-    private UnrelatedCriminalLedger _unrelatedCriminalLedger;
     private DevSaloonOverride? _pendingDevSaloonOverride;
 
     internal BountyLoop(
-        IReadOnlyList<WantedSuspectPresenceEntry>? presenceEntries,
-        UnrelatedCriminalLedger unrelatedCriminalLedger)
+        IReadOnlyList<WantedSuspectPresenceEntry>? presenceEntries)
     {
         _presenceLedger = new WantedSuspectPresenceLedger(presenceEntries);
-        _unrelatedCriminalLedger = unrelatedCriminalLedger
-            ?? throw new ArgumentNullException(nameof(unrelatedCriminalLedger));
     }
 
     internal IReadOnlyList<WantedSuspectPresenceEntry> PresenceEntries => _presenceLedger.Entries;
-    internal UnrelatedCriminalLedger UnrelatedCriminalLedger => _unrelatedCriminalLedger;
     internal DevSaloonOverride? PendingDevSaloonOverride => _pendingDevSaloonOverride;
 
     internal WantedSuspectPresenceState GetWantedSuspectPresenceState(SuspectId suspectId)
@@ -740,12 +735,6 @@ internal sealed class BountyLoop
             CitizenRole = citizenRole
         };
 
-    internal void RestoreUnrelatedCriminalLedger(UnrelatedCriminalLedger ledger)
-    {
-        ArgumentNullException.ThrowIfNull(ledger);
-        _unrelatedCriminalLedger = ledger;
-    }
-
     internal void RestorePendingDevSaloonOverride(DevSaloonOverride? overrideValue)
     {
         _pendingDevSaloonOverride = overrideValue;
@@ -759,17 +748,6 @@ internal sealed class BountyLoop
         {
             UpdateWantedSuspectPresence(e.TargetSuspectId, e.Choice);
         }
-    }
-
-    internal void Apply(SheriffTurnInSettled e)
-    {
-        _unrelatedCriminalLedger.RecordGangMemberTakenIn();
-    }
-
-    internal void Apply(UnrelatedCriminalTurnInSettled e)
-    {
-        _unrelatedCriminalLedger.MarkWarrantCollected(e.WarrantId);
-        _unrelatedCriminalLedger.RecordTakenIn(e.WarrantId);
     }
 
     internal void Apply(DevSaloonOverrideForced e)

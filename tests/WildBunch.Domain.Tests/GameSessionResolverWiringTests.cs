@@ -63,14 +63,14 @@ public sealed class GameSessionResolverWiringTests
     [Fact]
     public void ReadWantedPosters_ExcludesTrueCulpritWarrantUntilKillerReleased()
     {
-        var session = CreateSessionWithCulpritAndUnrelatedWarrants();
+        var session = CreateSessionWithCulpritAndGangWarrants();
 
         // The culprit warrant is gated behind the killer release gate.
-        // Reading posters should surface the unrelated warrant, not the culprit.
+        // Reading posters should surface the gang warrant, not the culprit.
         var result = session.ReadWantedPosters();
         Assert.True(result.Success);
         var warrant = Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal(InvestigationTargetKind.UnrelatedWantedCriminal, warrant.Terms.TargetKind);
+        Assert.Equal(InvestigationTargetKind.GangMember, warrant.Terms.TargetKind);
     }
 
     [Fact]
@@ -107,14 +107,16 @@ public sealed class GameSessionResolverWiringTests
         var suspects = new[]
         {
             new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
-            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-3"), "Cole Harmon", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-4"), "Dusty McCabe", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
 
         var publicWarrants = new[]
         {
-            CreateUnrelatedWarrant("warrant-unrelated-1", "Reno Pike"),
-            CreateUnrelatedWarrant("warrant-unrelated-2", "Cole Harmon"),
-            CreateUnrelatedWarrant("warrant-unrelated-3", "Dusty McCabe")
+            CreateGangWarrant("warrant-gang-1", "Ira Flint"),
+            CreateGangWarrant("warrant-gang-2", "Cole Harmon"),
+            CreateGangWarrant("warrant-gang-3", "Dusty McCabe")
         };
 
         GameSession CreateInTown(TownId startingTownId)
@@ -158,7 +160,9 @@ public sealed class GameSessionResolverWiringTests
         var suspects = new[]
         {
             new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
-            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-3"), "Cole Harmon", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-4"), "Dusty McCabe", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
 
         var inventory = new DomainInventory(new[]
@@ -171,9 +175,9 @@ public sealed class GameSessionResolverWiringTests
 
         var publicWarrants = new[]
         {
-            CreateUnrelatedWarrant("warrant-unrelated-1", "Reno Pike"),
-            CreateUnrelatedWarrant("warrant-unrelated-2", "Cole Harmon"),
-            CreateUnrelatedWarrant("warrant-unrelated-3", "Dusty McCabe")
+            CreateGangWarrant("warrant-gang-1", "Ira Flint"),
+            CreateGangWarrant("warrant-gang-2", "Cole Harmon"),
+            CreateGangWarrant("warrant-gang-3", "Dusty McCabe")
         };
 
         var caseFile = new CaseFile(
@@ -196,7 +200,7 @@ public sealed class GameSessionResolverWiringTests
             SaltSource.CreateFixed("test-salt"));
     }
 
-    private static GameSession CreateSessionWithCulpritAndUnrelatedWarrants()
+    private static GameSession CreateSessionWithCulpritAndGangWarrants()
     {
         var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
         var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
@@ -229,7 +233,7 @@ public sealed class GameSessionResolverWiringTests
                     OutlawGangIds.WildBunch,
                     InvestigationSourceKind.SheriffWarrants),
                 "Wanted for a Wild Bunch robbery."),
-            CreateUnrelatedWarrant("warrant-unrelated-1", "Reno Pike")
+            CreateGangWarrant("warrant-gang-1", "Ira Flint")
         };
 
         var caseFile = new CaseFile(
@@ -312,7 +316,7 @@ public sealed class GameSessionResolverWiringTests
             SaltSource.CreateFixed("test-salt"));
     }
 
-    private static Warrant CreateUnrelatedWarrant(string id, string targetName)
+    private static Warrant CreateGangWarrant(string id, string targetName)
         => new(
             new WarrantId(id),
             targetName,
@@ -321,10 +325,10 @@ public sealed class GameSessionResolverWiringTests
                 300m,
                 new[] { "The Magpie" },
                 new[] { "Mismatched spurs" },
-                "Silver Creek Sheriff",
-                InvestigationTargetKind.UnrelatedWantedCriminal,
-                Array.Empty<OutlawGangId>(),
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                [OutlawGangIds.WildBunch],
                 null,
                 InvestigationSourceKind.SheriffWarrants),
-            "Wanted for cattle theft.");
+            "Wanted for Wild Bunch crimes.");
 }

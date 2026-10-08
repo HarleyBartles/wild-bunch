@@ -26,13 +26,6 @@ internal static class GameSessionComponentNames
     internal const string PendingDevTravelOverride = "pendingDevTravelOverride";
     internal const string PendingDevSaloonOverride = "pendingDevSaloonOverride";
     internal const string DevLayoutSalts = "devLayoutSalts";
-    /// <summary>
-    /// UnrelatedCriminalLedger component (BUNCH-107). Uses the existing
-    /// GameSessionComponents table without schema migration — the table
-    /// is generic and can accommodate new components. The ledger's ToSnapshot()
-    /// and FromSnapshot() methods handle serialization via JSONB.
-    /// </summary>
-    internal const string UnrelatedCriminalLedger = "unrelatedCriminalLedger";
 }
 
 internal static class GameSessionComponentPayloads

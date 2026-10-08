@@ -131,7 +131,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Equal(new[] { OutlawGangIds.WildBunch }, reloaded.PublicWarrants[0].Terms.GangAffiliations);
         Assert.Equal(OutlawGangIds.WildBunch, reloaded.PublicWarrants[0].Terms.AdvancesGangPressureFor);
         Assert.Equal(InvestigationSourceKind.SheriffWarrants, reloaded.PublicWarrants[0].Terms.SourceKind);
-        Assert.Empty(reloaded.PublicWarrants[1].Terms.GangAffiliations);
+        Assert.Equal(new[] { OutlawGangIds.WildBunch }, reloaded.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
         Assert.Equal(InvestigationSourceKind.LocalRecords, reloaded.PublicWarrants[1].Terms.SourceKind);
     }
@@ -527,7 +527,8 @@ public sealed class GameSessionDifficultyPersistenceTests
     {
         var suspects = new[]
         {
-            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+            new Suspect(new SuspectId("suspect-1"), "Tessa Wren", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Desperate), SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Jonah Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
         };
 
         var publicWarrants = new[]
@@ -547,19 +548,19 @@ public sealed class GameSessionDifficultyPersistenceTests
                     InvestigationSourceKind.SheriffWarrants),
                 "Wanted for a Wild Bunch robbery and related killings."),
             new Warrant(
-                new WarrantId("warrant-unrelated"),
-                "Reno Pike",
+                new WarrantId("warrant-gang-member"),
+                "Jonah Pike",
                 new WarrantTerms(
                     WarrantDisposition.AliveOnly,
                     300m,
                     new[] { "The Magpie", "R. Pike" },
                     new[] { "Mismatched spurs", "Black felt hat" },
-                    "Silver Creek Sheriff",
-                    InvestigationTargetKind.UnrelatedWantedCriminal,
-                    Array.Empty<OutlawGangId>(),
+                    "Dodge City Marshal",
+                    InvestigationTargetKind.GangMember,
+                    [OutlawGangIds.WildBunch],
                     null,
                     InvestigationSourceKind.LocalRecords),
-                "Wanted for cattle theft.")
+                "Wanted as a member of the Wild Bunch.")
         };
 
         return new CaseFile(

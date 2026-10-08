@@ -254,13 +254,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             UpsertComponent(entity.Id, GameSessionComponentNames.WantedSuspectPresenceLedger, _serializer.SerializeWantedSuspectPresenceLedger(session.WantedSuspectPresenceEntries), now);
         }
 
-        // Persist the UnrelatedCriminalLedger so active/taken-in/collected/retired
-        // sets, gang parity, and next spawn index survive reload. Without this,
-        // the ledger is reconstructed from a shrinking PublicWarrants pool (warrants
-        // are removed by RevealWarrant on collection), which degrades the roster
-        // below the 3x invariant. See BUNCH-107.
-        UpsertComponent(entity.Id, GameSessionComponentNames.UnrelatedCriminalLedger, _serializer.SerializeUnrelatedCriminalLedger(session.UnrelatedCriminalLedger), now);
-
         await SyncDiaryDaysAsync(entity.Id, session.TravelDiaryDays, cancellationToken).ConfigureAwait(false);
 
         // NO SaveChangesAsync here — the UoW commits.
@@ -474,22 +467,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             session.RestorePendingDevTravelOverride(pendingDevOverride);
         }
 
-        // Restore BountyLoop-owned state from snapshot (dev saloon override + unrelated
-        // criminal ledger). The constructor builds a fresh BountyLoop; this overwrites
-        // the owned state with persisted values. See BUNCH-90, BUNCH-107, BUNCH-112.
+        // Restore the pending dev saloon override from the snapshot. See BUNCH-90, BUNCH-112.
         var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevSaloonOverride, _payloadLoader, store.AllEvents);
         var pendingDevSaloonOverride = _serializer.DeserializePendingDevSaloonOverride(devSaloonOverrideJson);
 
-        var unrelatedCriminalLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.UnrelatedCriminalLedger, _payloadLoader, store.AllEvents);
-        WildBunch.Domain.Cases.UnrelatedCriminalLedger? unrelatedCriminalLedger = null;
-        if (unrelatedCriminalLedgerJson is not null)
+        if (pendingDevSaloonOverride is not null)
         {
-            unrelatedCriminalLedger = _serializer.DeserializeUnrelatedCriminalLedger(unrelatedCriminalLedgerJson);
-        }
-
-        if (pendingDevSaloonOverride is not null || unrelatedCriminalLedger is not null)
-        {
-            session.RestoreBountyLoopState(unrelatedCriminalLedger, pendingDevSaloonOverride);
+            session.RestoreBountyLoopState(pendingDevSaloonOverride);
         }
 
         // Restore dev layout salts from snapshot. If there are post-snapshot events,

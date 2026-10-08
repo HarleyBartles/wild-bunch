@@ -48,19 +48,19 @@ public sealed class CaseInvestigationFoundationTests
                 OutlawGangIds.WildBunch),
             "Wanted for a Wild Bunch robbery and related killings.");
 
-        var unrelatedWarrant = new Warrant(
-            new WarrantId("warrant-unrelated"),
-            "Reno Pike",
+        var gangMemberWarrant = new Warrant(
+            new WarrantId("warrant-gang-member"),
+            "Jonah Pike",
             new WarrantTerms(
                 WarrantDisposition.AliveOnly,
                 300m,
                 new[] { "The Magpie", "R. Pike" },
                 new[] { "Mismatched spurs", "Black felt hat" },
-                "Silver Creek Sheriff",
-                InvestigationTargetKind.UnrelatedWantedCriminal,
-                Array.Empty<OutlawGangId>(),
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                [OutlawGangIds.WildBunch],
                 null),
-            "Wanted for cattle theft and forging livery tags.");
+            "Wanted as a member of the Wild Bunch.");
 
         var caseFile = new CaseFile(
             accusation: null,
@@ -73,7 +73,7 @@ public sealed class CaseInvestigationFoundationTests
             openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
             knownClues: new[] { culpritTrailClue },
             publicClues: new[] { whereaboutsClue },
-            publicWarrants: new[] { gangWarrant, unrelatedWarrant });
+            publicWarrants: new[] { gangWarrant, gangMemberWarrant });
 
         Assert.Equal(ClueKind.CulpritTrail, caseFile.KnownClues[0].Kind);
         Assert.Equal(InvestigationTargetKind.TrueCulprit, caseFile.KnownClues[0].TargetKind);
@@ -83,11 +83,11 @@ public sealed class CaseInvestigationFoundationTests
         Assert.Equal(ClueKind.Whereabouts, caseFile.PublicClues[0].Kind);
         Assert.Equal(InvestigationTargetKind.TrueCulprit, caseFile.PublicClues[0].TargetKind);
 
-        Assert.Single(caseFile.PublicWarrants, warrant => warrant.Terms.GangAffiliations.Contains(OutlawGangIds.WildBunch));
+        Assert.All(caseFile.PublicWarrants, warrant => Assert.Contains(OutlawGangIds.WildBunch, warrant.Terms.GangAffiliations));
         Assert.Equal(OutlawGangIds.WildBunch, caseFile.PublicWarrants[0].Terms.AdvancesGangPressureFor);
-        Assert.Empty(caseFile.PublicWarrants[1].Terms.GangAffiliations);
+        Assert.Contains(OutlawGangIds.WildBunch, caseFile.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(caseFile.PublicWarrants[1].Terms.AdvancesGangPressureFor);
-        Assert.Single(caseFile.PublicWarrants, warrant => warrant.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal);
+        Assert.Equal(InvestigationTargetKind.GangMember, caseFile.PublicWarrants[1].Terms.TargetKind);
         Assert.Equal(2500m, caseFile.PublicWarrants[0].Terms.BountyAmount);
         Assert.Equal(WarrantDisposition.DeadOrAlive, caseFile.PublicWarrants[0].Terms.Disposition);
         Assert.Equal(WarrantDisposition.AliveOnly, caseFile.PublicWarrants[1].Terms.Disposition);

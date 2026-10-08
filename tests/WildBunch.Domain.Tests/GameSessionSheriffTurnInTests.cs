@@ -237,11 +237,11 @@ public sealed class GameSessionSheriffTurnInTests
                         300m,
                         new[] { "The Magpie" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
                         Array.Empty<OutlawGangId>(),
                         null),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);

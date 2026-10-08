@@ -12,7 +12,6 @@ public sealed class CaseCharacterRosterTests
     {
         Assert.NotEmpty(CaseCharacterRoster.GangCandidatePool);
         Assert.NotEmpty(CaseCharacterRoster.AssociatedCharacterPool);
-        Assert.NotEmpty(CaseCharacterRoster.UnrelatedWantedCriminalPool);
         Assert.NotEmpty(CaseSuspectFeaturePool.FeaturePool);
 
         Assert.All(CaseCharacterRoster.GangCandidatePool, candidate => Assert.True(candidate.IsGangEligible));
@@ -28,10 +27,6 @@ public sealed class CaseCharacterRosterTests
         Assert.All(CaseCharacterRoster.AssociatedCharacterPool, candidate => Assert.Empty(candidate.GangAffiliations));
         Assert.Contains(CaseCharacterRoster.AssociatedCharacterPool, candidate => candidate.DisplayName == "Ann Bassett");
         Assert.Contains(CaseCharacterRoster.AssociatedCharacterPool, candidate => candidate.DisplayName == "Etta Place");
-
-        Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.Empty(warrant.GangAffiliations));
-        Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.Null(warrant.AdvancesGangPressureFor));
-        Assert.All(CaseCharacterRoster.UnrelatedWantedCriminalPool, warrant => Assert.Equal(InvestigationTargetKind.UnrelatedWantedCriminal, warrant.TargetKind));
 
         Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Key == "limp-left-leg");
         Assert.Contains(CaseSuspectFeaturePool.FeaturePool, feature => feature.Key == "limp-right-leg");
@@ -89,24 +84,19 @@ public sealed class CaseCharacterRosterTests
 
         Assert.Equal(RosterSignature(sameRoster), RosterSignature(sameRosterAgain));
 
-        var sameWarrant = CaseCharacterRoster.SelectUnrelatedWarrant(new GameSetupDeterministicSource(sameSeed));
-        var sameWarrantAgain = CaseCharacterRoster.SelectUnrelatedWarrant(new GameSetupDeterministicSource(anotherSameSeed));
         var sameFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(sameSeed));
         var sameFeaturesAgain = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(anotherSameSeed));
 
-        Assert.Equal(sameWarrant.TargetName, sameWarrantAgain.TargetName);
         Assert.Equal(FeatureSignature(sameFeatures), FeatureSignature(sameFeaturesAgain));
 
-        var varyingSeed = FindVaryingSeed(RosterSignature(sameRoster), WarrantSignature(sameWarrant), FeatureSignature(sameFeatures));
+        var varyingSeed = FindVaryingSeed(RosterSignature(sameRoster), FeatureSignature(sameFeatures));
         var varyingRoster = CaseCharacterRoster.SelectGangRoster(new GameSetupDeterministicSource(varyingSeed));
-        var varyingWarrant = CaseCharacterRoster.SelectUnrelatedWarrant(new GameSetupDeterministicSource(varyingSeed));
         var varyingFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(varyingSeed));
 
         Assert.True(
             RosterSignature(sameRoster) != RosterSignature(varyingRoster)
-            || WarrantSignature(sameWarrant) != WarrantSignature(varyingWarrant)
             || FeatureSignature(sameFeatures) != FeatureSignature(varyingFeatures),
-            "Different entropy should change at least one roster, feature, or unrelated warrant surface.");
+            "Different entropy should change at least one roster or feature surface.");
     }
 
     [Fact]
@@ -192,22 +182,21 @@ public sealed class CaseCharacterRosterTests
     private static string RosterSignature(IReadOnlyList<CaseCharacterProfile> roster)
         => string.Join("|", roster.Select(candidate => $"{candidate.Key}:{candidate.DisplayName}:{string.Join(",", candidate.SourceAliases)}"));
 
-    private static string FindVaryingSeed(string baselineRosterSignature, string baselineWarrantSignature, string baselineFeatureSignature)
+    private static string FindVaryingSeed(string baselineRosterSignature, string baselineFeatureSignature)
     {
         for (ulong entropy = 8; entropy < 200; entropy++)
         {
             var candidateSeed = CreateSeedCode(entropy);
             var candidateRoster = CaseCharacterRoster.SelectGangRoster(new GameSetupDeterministicSource(candidateSeed));
-            var candidateWarrant = CaseCharacterRoster.SelectUnrelatedWarrant(new GameSetupDeterministicSource(candidateSeed));
             var candidateFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(candidateSeed));
 
-            if (RosterSignature(candidateRoster) != baselineRosterSignature || WarrantSignature(candidateWarrant) != baselineWarrantSignature || FeatureSignature(candidateFeatures) != baselineFeatureSignature)
+            if (RosterSignature(candidateRoster) != baselineRosterSignature || FeatureSignature(candidateFeatures) != baselineFeatureSignature)
             {
                 return candidateSeed;
             }
         }
 
-        throw new InvalidOperationException("Could not find a deterministic seed that varied the roster or unrelated warrant selection.");
+        throw new InvalidOperationException("Could not find a deterministic seed that varied the roster or feature selection.");
     }
 
     private static string FindFeatureRichSeed()
@@ -229,23 +218,4 @@ public sealed class CaseCharacterRosterTests
     private static string FeatureSignature(IReadOnlyList<CaseSuspectFeatureAssignment> features)
         => string.Join("|", features.Select(feature => $"{feature.PrimaryFeature.Key}:{string.Join(",", feature.AdditionalFeatures.Select(additional => additional.Key))}"));
 
-    [Fact]
-    public void UnrelatedWantedCriminalPool_HasAtLeast21Entries()
-    {
-        Assert.True(CaseCharacterRoster.UnrelatedWantedCriminalPool.Count >= 21);
-    }
-
-    private static string WarrantSignature(OutlawWarrantProfile warrant)
-        => string.Join(
-            ":",
-            warrant.Key,
-            warrant.TargetName,
-            string.Join(",", warrant.KnownAliases),
-            string.Join(",", warrant.KnownFeatures),
-            warrant.IssuingSource,
-            warrant.Disposition,
-            warrant.BountyAmount,
-            warrant.TargetKind,
-            string.Join("/", warrant.GangAffiliations.Select(gang => gang.Value)),
-            warrant.AdvancesGangPressureFor?.Value ?? string.Empty);
 }

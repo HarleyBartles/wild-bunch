@@ -28,8 +28,7 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         DevTravelOverride? PendingDevTravelOverride,
         DevSaloonOverride? PendingDevSaloonOverride,
-        LayoutSaltsSnapshot? DevLayoutSalts,
-        UnrelatedCriminalLedgerSnapshot? UnrelatedCriminalLedger)
+        LayoutSaltsSnapshot? DevLayoutSalts)
     {
         public static GameSessionSnapshot FromDomain(GameSession session)
             => new(
@@ -55,8 +54,7 @@ public sealed partial class GameSessionJsonSerializer
                 session.TravelDiaryDays.ToArray(),
                 session.PendingDevTravelOverride,
                 session.PendingDevSaloonOverride,
-                session.DevLayoutSalts is not null ? LayoutSaltsSnapshot.FromDomain(session.DevLayoutSalts) : null,
-                session.UnrelatedCriminalLedger.ToSnapshot());
+                session.DevLayoutSalts is not null ? LayoutSaltsSnapshot.FromDomain(session.DevLayoutSalts) : null);
 
         public GameSession ToDomain()
         {
@@ -97,13 +95,9 @@ public sealed partial class GameSessionJsonSerializer
             {
                 session.RestorePendingDevTravelOverride(PendingDevTravelOverride);
             }
-            if (PendingDevSaloonOverride is not null || UnrelatedCriminalLedger is not null)
+            if (PendingDevSaloonOverride is not null)
             {
-                session.RestoreBountyLoopState(
-                    UnrelatedCriminalLedger is not null
-                        ? WildBunch.Domain.Cases.UnrelatedCriminalLedger.FromSnapshot(UnrelatedCriminalLedger)
-                        : null,
-                    PendingDevSaloonOverride);
+                session.RestoreBountyLoopState(PendingDevSaloonOverride);
             }
             if (DevLayoutSalts is not null)
             {

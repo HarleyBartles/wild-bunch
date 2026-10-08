@@ -25,10 +25,9 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
-        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant behind
-        // the killer-release gate, so the unrelated warrant surfaces first.
+        // The WantedPosterResolver gates the true-culprit warrant behind the killer-release gate.
         Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
+        Assert.Equal("Ira Flint", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Single(session.CaseFile.PublicWarrants);
@@ -92,10 +91,9 @@ public sealed class GameSessionWantedPostersTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant, so the
-        // unrelated warrant ("Reno Pike") surfaces first.
+        // The WantedPosterResolver gates the true-culprit warrant, so the gang-member warrant surfaces first.
         Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
+        Assert.Equal("Ira Flint", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Single(session.CaseFile.PublicWarrants);
@@ -199,18 +197,18 @@ public sealed class GameSessionWantedPostersTests
                     "Wanted for a Wild Bunch robbery."),
                 new Warrant(
                     new WarrantId("warrant-public-2"),
-                    "Reno Pike",
+                    "Ira Flint",
                     new WarrantTerms(
                         WarrantDisposition.AliveOnly,
                         300m,
                         new[] { "The Magpie", "R. Pike" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
-                        Array.Empty<OutlawGangId>(),
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
+                        [OutlawGangIds.WildBunch],
                         null,
                         InvestigationSourceKind.SheriffWarrants),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);

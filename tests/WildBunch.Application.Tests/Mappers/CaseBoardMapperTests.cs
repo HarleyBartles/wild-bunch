@@ -335,7 +335,7 @@ public sealed class CaseBoardMapperTests
                         new[] { "Red Wren" },
                         new[] { "Raven-feather pin" },
                         "Dodge City Marshal",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
+                        InvestigationTargetKind.GangMember,
                         Array.Empty<OutlawGangId>(),
                         null),
                     "Wanted for a stage robbery."),
@@ -347,11 +347,11 @@ public sealed class CaseBoardMapperTests
                         300m,
                         new[] { "The Magpie" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
+                        "Dodge City Marshal",
                         InvestigationTargetKind.TrueCulprit,
                         Array.Empty<OutlawGangId>(),
                         null),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         var inventory = new DomainInventory(

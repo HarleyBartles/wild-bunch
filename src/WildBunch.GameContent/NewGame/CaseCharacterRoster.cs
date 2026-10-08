@@ -5,8 +5,7 @@ namespace WildBunch.GameContent.NewGame;
 internal enum CaseRosterSourceCategory
 {
     ButchCassidyWildBunch = 0,
-    DoolinDaltonOklahombres = 1,
-    FictionalEconomyWarrant = 2
+    DoolinDaltonOklahombres = 1
 }
 
 internal sealed record CaseCharacterProfile(
@@ -287,288 +286,9 @@ internal static class CaseCharacterRoster
             SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Armed, SuspectTraitTags.Unbribeable, SuspectTraitTags.Cautious))
     ];
 
-    private static readonly OutlawWarrantProfile[] UnrelatedWantedCriminals =
-    [
-        Wanted(
-            "reno-pike",
-            "Reno Pike",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["The Magpie", "R. Pike"],
-            ["Mismatched spurs", "Black felt hat"],
-            "Silver Creek Sheriff",
-            WarrantDisposition.AliveOnly,
-            300m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "maddox-vale",
-            "Maddox Vale",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Dust Kite", "M. Vale"],
-            ["White dust coat", "Split spur strap"],
-            "Red Mesa Marshal",
-            WarrantDisposition.AliveOnly,
-            225m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "ivy-calder",
-            "Ivy Calder",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Calico Ivy", "I. Calder"],
-            ["Needle scar on right hand", "Blue scarf"],
-            "Pinecross Deputy",
-            WarrantDisposition.DeadOrAlive,
-            175m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "harlan-bowe",
-            "Harlan Bowe",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Copper Bowe", "H. Bowe"],
-            ["Bent-brim hat", "Copper ring"],
-            "Holloway Sheriff",
-            WarrantDisposition.AliveOnly,
-            260m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "nell-vera",
-            "Nell Vera",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Nell V.", "Sky Nell"],
-            ["Hickory braid", "Brown gloves"],
-            "Sagewell Clerk",
-            WarrantDisposition.AliveOnly,
-            190m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "oscar-holt",
-            "Oscar Holt",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["O. Holt", "The Sawtooth"],
-            ["Sawtooth scar", "Gray duster"],
-            "Emberfall Marshal",
-            WarrantDisposition.DeadOrAlive,
-            340m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "cole-rance",
-            "Cole Rance",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["The Drifter", "C. Rance"],
-            ["Tobacco-stained vest", "Notched left ear"],
-            "Dustwell Sheriff",
-            WarrantDisposition.DeadOrAlive,
-            280m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "mira-ash",
-            "Mira Ash",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Ash Mira", "M. Ash"],
-            ["Burn scar on left wrist", "Green bandana"],
-            "Cottonwood Marshal",
-            WarrantDisposition.AliveOnly,
-            210m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "tobias-rudd",
-            "Tobias Rudd",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["T. Rudd", "Ruddy Tob"],
-            ["Missing left thumb", "Canvas duster"],
-            "Iron Springs Deputy",
-            WarrantDisposition.DeadOrAlive,
-            245m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "cora-dell",
-            "Cora Dell",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Dell Cora", "C. Dell"],
-            ["Silver locket", "Frayged left cuff"],
-            "Pinecross Sheriff",
-            WarrantDisposition.AliveOnly,
-            195m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "silas-marsh",
-            "Silas Marsh",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["S. Marsh", "The Reed"],
-            ["Limp on right leg", "Oil-stained gloves"],
-            "Red Mesa Sheriff",
-            WarrantDisposition.DeadOrAlive,
-            320m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "delia-wren",
-            "Delia Wren",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Wren Delia", "D. Wren"],
-            ["Feather earring on right ear", "Calico blouse"],
-            "Sagewell Marshal",
-            WarrantDisposition.AliveOnly,
-            205m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "ezra-quill",
-            "Ezra Quill",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["E. Quill", "Quill Ez"],
-            ["Ink stain on right hand", "Wire-rim spectacles"],
-            "Holloway Deputy",
-            WarrantDisposition.DeadOrAlive,
-            270m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "rosa-vane",
-            "Rosa Vane",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Vane Rosa", "R. Vane"],
-            ["Red hair ribbon", "Scar across right brow"],
-            "Silver Creek Marshal",
-            WarrantDisposition.AliveOnly,
-            230m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "gideon-fay",
-            "Gideon Fay",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["G. Fay", "Fay Gid"],
-            ["Broken nose", "Brass belt buckle"],
-            "Emberfall Sheriff",
-            WarrantDisposition.DeadOrAlive,
-            255m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "lila-brent",
-            "Lila Brent",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Brent Lila", "L. Brent"],
-            ["Moth-eaten shawl", "Chipped front tooth"],
-            "Dustwell Deputy",
-            WarrantDisposition.AliveOnly,
-            185m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "amos-tye",
-            "Amos Tye",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["A. Tye", "Tye Am"],
-            ["Patch over left eye", "Carved wooden pipe"],
-            "Cottonwood Sheriff",
-            WarrantDisposition.DeadOrAlive,
-            295m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "pearl-hask",
-            "Pearl Hask",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["Hask Pearl", "P. Hask"],
-            ["Pearl-handled revolver", "Dusty blue bonnet"],
-            "Iron Springs Marshal",
-            WarrantDisposition.AliveOnly,
-            215m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "virgil-cole",
-            "Virgil Cole",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["V. Cole", "Cole Virg"],
-            ["Long gray beard", "Buckskin vest"],
-            "Pinecross Marshal",
-            WarrantDisposition.DeadOrAlive,
-            310m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "etta-quin",
-            "Etta Quin",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["E. Quin", "Quin Ett"],
-            ["Tattoo of a star on left hand", "Frayged hatband"],
-            "Sagewell Sheriff",
-            WarrantDisposition.AliveOnly,
-            200m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null),
-        Wanted(
-            "bart-low",
-            "Bart Low",
-            CaseRosterSourceCategory.FictionalEconomyWarrant,
-            "Fictional economy warrant pool entry; source notes are not historical claims.",
-            ["B. Low", "Low Bart"],
-            ["Stutter-step gait", "Tin star pinned to coat"],
-            "Holloway Marshal",
-            WarrantDisposition.DeadOrAlive,
-            250m,
-            InvestigationTargetKind.UnrelatedWantedCriminal,
-            [],
-            null)
-    ];
-
     public static IReadOnlyList<CaseCharacterProfile> GangCandidatePool => GangCandidates;
 
     public static IReadOnlyList<CaseCharacterProfile> AssociatedCharacterPool => AssociatedCharacters;
-
-    public static IReadOnlyList<OutlawWarrantProfile> UnrelatedWantedCriminalPool => UnrelatedWantedCriminals;
 
     public static IReadOnlyList<CaseCharacterProfile> SelectCanonicalGangRoster()
         => new[]
@@ -602,13 +322,6 @@ internal static class CaseCharacterRoster
             support[4],
             support[5]
         };
-    }
-
-    public static OutlawWarrantProfile SelectUnrelatedWarrant(GameSetupDeterministicSource source)
-    {
-        ArgumentNullException.ThrowIfNull(source);
-
-        return SelectByScore(source, "case.roster.unrelated-warrant", UnrelatedWantedCriminals, 1, warrant => warrant.Key).Single();
     }
 
     public static OutlawWarrantProfile CreateTrueCulpritWarrant(CaseCharacterProfile culprit, CaseSuspectFeatureProfile? openingLeadFeature = null)
@@ -656,16 +369,6 @@ internal static class CaseCharacterRoster
 
     public static OutlawWarrantProfile CreateCanonicalTrueCulpritWarrant()
         => CreateTrueCulpritWarrant(SelectCanonicalCulprit());
-
-    public static OutlawWarrantProfile CreateCanonicalUnrelatedWarrant()
-        => UnrelatedWantedCriminals[0];
-
-    public static IReadOnlyList<OutlawWarrantProfile> SelectUnrelatedWantedCriminals(GameSetupDeterministicSource source)
-    {
-        ArgumentNullException.ThrowIfNull(source);
-
-        return new[] { SelectUnrelatedWarrant(source) };
-    }
 
     private static CaseCharacterProfile GetGangCandidate(string key)
         => GangCandidates.Single(candidate => candidate.Key == key);
@@ -746,35 +449,6 @@ internal static class CaseCharacterRoster
             false,
             true,
             Array.Empty<OutlawGangId>());
-
-    private static OutlawWarrantProfile Wanted(
-        string key,
-        string targetName,
-        CaseRosterSourceCategory sourceCategory,
-        string sourceNote,
-        IReadOnlyList<string> sourceAliases,
-        IReadOnlyList<string> knownAliases,
-        string issuingSource,
-        WarrantDisposition disposition,
-        decimal bountyAmount,
-        InvestigationTargetKind targetKind,
-        IReadOnlyList<OutlawGangId> gangAffiliations,
-        OutlawGangId? advancesGangPressureFor,
-        IReadOnlyList<string>? knownFeatures = null)
-        => new(
-            key,
-            targetName,
-            sourceAliases,
-            knownAliases,
-            knownFeatures ?? ["Mismatched spurs", "Black felt hat"],
-            issuingSource,
-            sourceCategory,
-            sourceNote,
-            disposition,
-            bountyAmount,
-            targetKind,
-            gangAffiliations,
-            advancesGangPressureFor);
 
     private static IReadOnlyList<string> BuildTrueCulpritKnownFeatures(CaseSuspectFeatureProfile? openingLeadFeature)
     {

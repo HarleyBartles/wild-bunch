@@ -69,7 +69,7 @@ public sealed class JournalMapperTests
                 new[] { alias },
                 new[] { feature },
                 "County marshal",
-                InvestigationTargetKind.UnrelatedWantedCriminal,
+                InvestigationTargetKind.GangMember,
                 Array.Empty<OutlawGangId>(),
                 null),
             $"Wanted notice for {targetName}.");

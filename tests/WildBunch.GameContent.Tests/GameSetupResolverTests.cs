@@ -75,11 +75,11 @@ public sealed class GameSetupResolverTests
         Assert.Single(setup.CaseFile.Suspects, suspect => suspect.Id.Equals(setup.CaseFile.TrueCulpritId));
         Assert.Equal(5, setup.CaseFile.KillerReleaseThreshold);
         Assert.Equal("The culprit has a scar on the left cheek.", setup.CaseFile.OpeningLead.Description);
-        // 6 base surface-tagged clues; 7 gang + 21 unrelated = 28 warrants.
+        // Six base surface-tagged clues and one warrant for each generated gang member or culprit.
         Assert.Equal(6, setup.CaseFile.PublicClues.Count);
-        Assert.Equal(28, setup.CaseFile.PublicWarrants.Count);
-        Assert.Equal(7, setup.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
-        Assert.Equal(21, setup.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
+        Assert.Equal(7, setup.CaseFile.PublicWarrants.Count);
+        Assert.All(setup.CaseFile.PublicWarrants, warrant => Assert.True(
+            warrant.Terms.TargetKind is InvestigationTargetKind.GangMember or InvestigationTargetKind.TrueCulprit));
         Assert.Equal("Butch Cassidy", setup.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(InvestigationTargetKind.GangMember, setup.CaseFile.PublicWarrants[0].Terms.TargetKind);
         // The true culprit's warrant is in the pool (gated behind the killer release gate at runtime).

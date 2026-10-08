@@ -55,9 +55,6 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     walletCash += st.BountyAmount;
                     break;
 
-                case UnrelatedCriminalTurnInSettled ut:
-                    walletCash += ut.BountyAmount;
-                    break;
 
                 case SaloonPersonOfInterestConfronted sc:
                     if (sc.WalletAfter is { } walletAfter)

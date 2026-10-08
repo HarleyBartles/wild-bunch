@@ -80,19 +80,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             _currentTown.PrimeCurrentTown();
         }
 
-        // BUNCH-107: unrelated criminal parity ledger. Built from the case file's
-        // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
-        // The active pool starts at gang parity; gang take-ins (replayed via
-        // SheriffTurnInSettled) drop the parity target and despawn excess. The
-        // unrelated-criminal turn-in flow (SettleUnrelatedCriminalTurnIn /
-        // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
-        // the ledger itself is the parity source of truth.
-        // During prepped phase (StartPrepped), caseFile is null; use a no-op ledger.
-        var unrelatedCriminalLedger = caseFile is not null
-            ? BuildUnrelatedCriminalLedger(caseFile)
-            : new UnrelatedCriminalLedger(gangMemberCount: 0, poolSize: 0);
-
-        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, unrelatedCriminalLedger);
+        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries);
 
         _journeyLoop = new JourneyLoop(journey, completedJourneyHistory);
     }
@@ -100,20 +88,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public GameSessionId Id { get; }
 
     /// <summary>
-    /// Restores BountyLoop-owned state from a persisted snapshot. Called by the
-    /// rehydration path after the constructor builds a fresh BountyLoop. The
-    /// presence ledger is already constructed from constructor inputs; this
-    /// restores the unrelated-criminal ledger and pending dev saloon override.
-    /// See BUNCH-112.
+    /// Restores BountyLoop-owned state from a persisted snapshot.
     /// </summary>
-    internal void RestoreBountyLoopState(
-        WildBunch.Domain.Cases.UnrelatedCriminalLedger? unrelatedCriminalLedger,
-        DevSaloonOverride? pendingDevSaloonOverride)
+    internal void RestoreBountyLoopState(DevSaloonOverride? pendingDevSaloonOverride)
     {
-        if (unrelatedCriminalLedger is not null)
-        {
-            _bountyLoop.RestoreUnrelatedCriminalLedger(unrelatedCriminalLedger);
-        }
         if (pendingDevSaloonOverride is not null)
         {
             _bountyLoop.RestorePendingDevSaloonOverride(pendingDevSaloonOverride);
@@ -218,15 +196,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _journeyLoop.CompletedJourneyHistory;
 
     public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _bountyLoop.PresenceEntries;
-
-    /// <summary>
-    /// Unrelated criminal parity ledger (BUNCH-107). Tracks the active pool of
-    /// unrelated wanted criminals and keeps it at parity with the number of gang
-    /// members still available to surface. Read-only view; mutations flow through
-    /// <see cref="Apply(SheriffTurnInSettled)"/> (gang take-ins) and
-    /// <see cref="Apply(UnrelatedCriminalTurnInSettled)"/> (unrelated-criminal take-ins).
-    /// </summary>
-    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _bountyLoop.UnrelatedCriminalLedger;
 
     /// <summary>
     /// Events produced by command methods but not yet committed to the event stream.
@@ -396,9 +365,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             case SheriffTurnInSettled ts:
                 Apply(ts);
                 break;
-            case UnrelatedCriminalTurnInSettled ucts:
-                Apply(ucts);
-                break;
             case SaloonPersonOfInterestConfronted sc:
                 Apply(sc);
                 break;
@@ -542,26 +508,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             e.TargetSuspectId, e.TargetName, e.Disposition,
             e.IsAlive, e.BountyAmount, e.Day, e.Turn);
         CaseFile.RecordSheriffTurnInSettlementState(settlementState);
-
-        // BUNCH-107: a gang member taken in reduces the unrelated-criminal parity
-        // target. The ledger despawns excess unrelated criminals (preferring ones
-        // the player has not collected a warrant for) to maintain parity. The
-        // despawned warrants are retired from the surfacing pool.
-        _bountyLoop.Apply(e);
-
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies an <see cref="UnrelatedCriminalTurnInSettled"/> event to mutate session state.
-    /// Pays the bounty, records the take-in on the ledger (which may spawn a replacement),
-    /// and marks the warrant as collected. See BUNCH-107.
-    /// </summary>
-    private void Apply(UnrelatedCriminalTurnInSettled e)
-    {
-        Player.AdjustCash(e.BountyAmount);
-
-        _bountyLoop.Apply(e);
 
         _version++;
     }
@@ -1836,48 +1782,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return result.Result;
     }
 
-    /// <summary>
-    /// Builds the <see cref="UnrelatedCriminalLedger"/> from the case file's
-    /// unrelated-criminal warrants and gang roster size, then replays gang take-ins
-    /// already recorded on the case file (as <see cref="CaseFile.SheriffTurnInSettlements"/>)
-    /// so the ledger's gang-side parity matches the persisted state on snapshot load.
-    /// Returns a degenerate empty ledger (gang count 0) when the case file has no
-    /// unrelated warrants or when the roster does not satisfy the 3x redundancy
-    /// invariant, so the parity system is a safe no-op for test/seed case files
-    /// that omit the full unrelated pool. See BUNCH-107.
-    /// </summary>
-    private static UnrelatedCriminalLedger BuildUnrelatedCriminalLedger(CaseFile caseFile)
-    {
-        ArgumentNullException.ThrowIfNull(caseFile);
-
-        var unrelatedWarrantIds = caseFile.PublicWarrants
-            .Where(warrant => warrant.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal)
-            .Select(warrant => warrant.Id)
-            .ToArray();
-
-        var gangMemberCount = caseFile.Suspects.Count;
-
-        // The parity system only activates when the full unrelated roster is present
-        // (at least 3x gang size). Partial test fixtures fall back to a no-op ledger.
-        if (gangMemberCount == 0 || unrelatedWarrantIds.Length < gangMemberCount * 3)
-        {
-            return new UnrelatedCriminalLedger(gangMemberCount: 0, poolSize: 0);
-        }
-
-        var ledger = new UnrelatedCriminalLedger(gangMemberCount, unrelatedWarrantIds);
-
-        // Replay gang take-ins already persisted on the case file so the ledger's
-        // gang-side parity matches the snapshot. Post-snapshot SheriffTurnInSettled
-        // events are replayed separately via Apply(SheriffTurnInSettled).
-        var persistedGangTakeIns = Math.Min(caseFile.SheriffTurnInSettlements.Count, gangMemberCount);
-        for (var i = 0; i < persistedGangTakeIns; i++)
-        {
-            ledger.RecordGangMemberTakenIn();
-        }
-
-        return ledger;
-    }
-
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
     {
         if (IsArchived)
@@ -1931,7 +1835,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             boringSalt,
-            RetiredWarrantIds,
             CurrentTown.TownId,
             CurrentTown.TownName,
             BeatNarration: null,
@@ -2221,81 +2124,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return assessment with { SessionChanged = true };
     }
 
-    /// <summary>
-    /// Settles the turn-in of an unrelated wanted criminal to the sheriff. The player
-    /// declares the warrant (collected from a wanted poster). If the criminal is active
-    /// in the <see cref="UnrelatedCriminalLedger"/>, the sheriff pays the bounty, the
-    /// ledger records the take-in (spawning a replacement when parity allows), and the
-    /// warrant is marked as collected. No confrontation step is required — the player
-    /// brings the criminal in directly. See BUNCH-107.
-    /// </summary>
-    public SheriffTurnInResult SettleUnrelatedCriminalTurnIn(WarrantId warrantId, bool isAlive)
-    {
-        if (IsArchived)
-        {
-            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return SheriffTurnInResult.Rejected(JourneyModalBlockMessage);
-        }
-
-        var contextChanged = EnterActionContext(TownActionContext.SheriffOffice);
-
-        var warrant = CaseFile.KnownWarrants.FirstOrDefault(w => w.Id.Equals(warrantId));
-        if (warrant is null)
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"You don't have a wanted notice for that person.").WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"You don't have a wanted notice for that person.");
-        }
-
-        if (warrant.Terms.TargetKind != InvestigationTargetKind.UnrelatedWantedCriminal)
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.").WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.");
-        }
-
-        if (!_bountyLoop.UnrelatedCriminalLedger.IsSurfacingEligible(warrantId))
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.").WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.");
-        }
-
-        if (!isAlive && warrant.Terms.Disposition == WarrantDisposition.AliveOnly)
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"The warrant for {warrant.TargetName} requires an alive turn-in.", warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount).WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"The warrant for {warrant.TargetName} requires an alive turn-in.", warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount);
-        }
-
-        var message = isAlive
-            ? $"You bring in {warrant.TargetName} alive under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant."
-            : $"You turn in the body of {warrant.TargetName} under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant.";
-
-        var settledEvent = new UnrelatedCriminalTurnInSettled
-        {
-            WarrantId = warrantId,
-            TargetName = warrant.TargetName,
-            Disposition = warrant.Terms.Disposition,
-            IsAlive = isAlive,
-            BountyAmount = warrant.Terms.BountyAmount,
-            Message = message,
-            Day = Clock.Day,
-            Turn = Clock.Turn
-        };
-        ProduceEvent(settledEvent);
-
-        var result = isAlive
-            ? SheriffTurnInResult.AcceptedAlive(warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount, message)
-            : SheriffTurnInResult.AcceptedDead(warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount, message);
-
-        return result with { SessionChanged = true };
-    }
-
     public CaseInvestigationResult FollowTelegraphLeads()
     {
         if (IsArchived)
@@ -2323,7 +2151,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             boringSalt,
-            RetiredWarrantIds,
             CurrentTown.TownId,
             CurrentTown.TownName,
             beatNarration,
@@ -2356,7 +2183,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             boringSalt,
-            RetiredWarrantIds,
             CurrentTown.TownId,
             CurrentTown.TownName,
             beatNarration,
@@ -2388,7 +2214,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             SaltSource: null,
-            RetiredWarrantIds,
             CurrentTown.TownId,
             CurrentTown.TownName,
             beatNarration,
@@ -2420,7 +2245,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             SaltSource: null,
-            RetiredWarrantIds,
             CurrentTown.TownId,
             CurrentTown.TownName,
             beatNarration,
@@ -2544,16 +2368,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// resolvers to vary which warrant/clue surfaces per visit.
     /// </summary>
     private int CurrentTownVisitCount => CurrentTownVisit.CurrentTownState.VisitNumber;
-
-    /// <summary>
-    /// The set of retired and taken-in warrant IDs from the BountyLoop's unrelated-criminal
-    /// ledger. Passed to InvestigationLoop via the context record so the wanted-poster
-    /// resolver can skip already-resolved warrants. See BUNCH-120.
-    /// </summary>
-    private IReadOnlySet<WarrantId> RetiredWarrantIds
-        => _bountyLoop.UnrelatedCriminalLedger.RetiredWarrantIds
-            .Concat(_bountyLoop.UnrelatedCriminalLedger.TakenInCriminalIds)
-            .ToHashSet();
 
     /// <summary>
     /// A suspect is eligible as a saloon POI candidate if they are not the unreleased

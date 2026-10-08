@@ -7,8 +7,7 @@ public enum InvestigationTargetKind
     Unknown = 0,
     Suspected = 1,
     GangMember = 2,
-    TrueCulprit = 3,
-    UnrelatedWantedCriminal = 4
+    TrueCulprit = 3
 }
 
 public enum WarrantDisposition

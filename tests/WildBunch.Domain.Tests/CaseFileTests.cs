@@ -271,19 +271,20 @@ public sealed class CaseFileTests
                 300m,
                 new[] { "The Magpie" },
                 new[] { "Mismatched spurs" },
-                "Silver Creek Sheriff",
-                InvestigationTargetKind.UnrelatedWantedCriminal,
-                Array.Empty<OutlawGangId>(),
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                [OutlawGangIds.WildBunch],
                 null),
-            "Wanted for cattle theft.");
+            "Wanted as a member of the Wild Bunch.");
 
         var caseFile = new CaseFile(
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
             },
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             publicWarrants: new[] { warrant });
@@ -307,9 +308,9 @@ public sealed class CaseFileTests
                 300m,
                 new[] { "The Magpie" },
                 new[] { "Mismatched spurs" },
-                "Silver Creek Sheriff",
-                InvestigationTargetKind.UnrelatedWantedCriminal,
-                Array.Empty<OutlawGangId>(),
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                [OutlawGangIds.WildBunch],
                 null,
                 InvestigationSourceKind.NoticeBoard));
 
@@ -331,9 +332,10 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
             },
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             publicWarrants: new[] { noticeBoardWarrant, sheriffWarrant });
