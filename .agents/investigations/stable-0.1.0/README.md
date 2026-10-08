@@ -1,6 +1,6 @@
 # Stable 0.1.0 investigation
 
-These documents are source assessments, test dispositions and working product decisions from the interactive cleanup investigation. They are not execution plans. Earlier unresolved proposals are qualified by later user decisions; the approved [baseline specification](../../specs/2026-10-07-stable-0.1.0-baseline.md) owns the programme boundary and the [cleanup roadmap](../../roadmaps/2026-10-07-stable-0.1.0-cleanup.md) allocates delivery. Implementation requires a subsequently accepted bounded plan, refreshed against live source.
+These documents are source assessments and test dispositions from the interactive cleanup investigation, not execution plans or a second product feature authority. The [authoritative feature matrix](../../../docs/features.md), approved [baseline specification](../../specs/2026-10-07-stable-0.1.0-baseline.md) and [cleanup roadmap](../../roadmaps/2026-10-07-stable-0.1.0-cleanup.md) own current feature grouping, programme decisions and delivery order. Implementation requires a subsequently accepted bounded plan, refreshed against live source.
 
 ## Repository and testing assessment
 
@@ -16,9 +16,9 @@ These documents are source assessments, test dispositions and working product de
 - [Domain findings](2026-10-07-domain-layer-investigation.md) and [test follow-up](2026-10-07-domain-test-followup.md).
 - [Web research criteria](2026-10-07-web-architecture-spike.md), [source findings](2026-10-07-web-layer-investigation.md) and [test follow-up](2026-10-07-web-test-followup.md).
 
-## Feature discovery and working decisions
+## Feature matrix and decision records
 
-- [Working feature inventory and directed dependencies](2026-10-07-feature-inventory.md), awaiting reconciliation into the durable product matrix.
+- [Authoritative feature matrix](../../../docs/features.md) and its [maintenance playbook](../../playbooks/feature-matrix.md) own current feature promises, dispositions and directed dependencies.
 - [Hunt creation](2026-10-07-hunt-creation-contract.md) and [confirmed start-over lifecycle](2026-10-07-playthrough-lifecycle-contract.md).
 - [Store and inventory boundaries](2026-10-07-store-and-inventory-boundaries.md).
 - [Culprit identity and release](2026-10-07-culprit-identity-and-release-contract.md).

@@ -35,7 +35,7 @@ The current implementation separates setup, prologue acknowledgement, starting-t
 
 Behavioral coverage must prove that Go enters the prologue, continuing it offers town selection on the same world's travel map, and selecting a legal starting town establishes arrival without journey time. Resume must restore the appropriate phase and its recorded world/backstory. Negative coverage must protect phase order and reject invalid town choices; avoid tests that require particular component names, separate map implementations or incidental HTTP choreography.
 
-Known implementation gaps are tracked as WB-05/06/07 in the [Web investigation](2026-10-07-web-layer-investigation.md), with related coverage in the [Web test follow-up](2026-10-07-web-test-followup.md). The [feature inventory](2026-10-07-feature-inventory.md) owns the working capability grouping.
+Known implementation gaps are tracked as WB-05/06/07 in the [Web investigation](2026-10-07-web-layer-investigation.md), with related coverage in the [Web test follow-up](2026-10-07-web-test-followup.md). The [feature matrix](../../../docs/features.md) owns the current capability grouping and disposition.
 
 ## Proposed code changes against today's source
 

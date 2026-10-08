@@ -22,6 +22,10 @@ durable decision changes. The reviewer must independently repeat this check
 against the diff; the author's statement or the presence of an ADR edit is not
 proof that the log remains true.
 
+## Feature-matrix check
+
+Before requesting review, compare the proposed diff with [docs/features.md](../../docs/features.md) through the [feature-matrix playbook](../playbooks/feature-matrix.md). Include a truthful matrix update when a product promise, dependency, disposition or evidence assessment changes, or state why current feature truth did not change. The reviewer independently repeats this comparison against the diff.
+
 ## Composition
 
 Use `develop` as the repository's default base for ordinary development PRs. `main` is the release line; target it only when the approved release or hotfix flow requires it. Follow the active roadmap or execution plan for campaign-specific sequencing and version requirements; do not duplicate those temporary rules in this durable publication procedure.
@@ -29,13 +33,14 @@ Use `develop` as the repository's default base for ordinary development PRs. `ma
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.
 2. Resolve the author decision-record check above before requesting review.
-3. Use evidence-based result verification to bind the publication claim to the
+3. Resolve the author feature-matrix check above before requesting review.
+4. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
-4. The canonical local and hosted gate is fail-fast and cheapest-first; resolve
+5. The canonical local and hosted gate is fail-fast and cheapest-first; resolve
    any formatter or linter failure before it starts builds or tests.
-5. Use GitHub branch and Draft PR publication to push the task branch and create or update the
+6. Use GitHub branch and Draft PR publication to push the task branch and create or update the
    Draft PR against the selected base branch (`develop` by default).
-6. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
+7. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
    applicable hosted checks with the published tree.
 
 ## Doctrine and contracts

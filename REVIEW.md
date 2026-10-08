@@ -9,6 +9,7 @@ This file is the repo's review entry point. Code-review agents discover it autom
 - Read the [unslop playbook](./.agents/playbooks/unslop.md) and follow its scoped profile selection for the actual diff.
 - Read [`.agents/runbooks/code-review.md`](./.agents/runbooks/code-review.md) for the Wild Bunch review delta.
 - When the diff makes, changes, corrects, or materially removes a durable decision, independently compare it with relevant records from the [decision catalogue](./docs/decisions/README.md) using the [decision-record playbook](./.agents/playbooks/decision-records.md).
+- When the diff changes a product promise, disposition or dependency, independently compare it with the [feature matrix](./docs/features.md) through the [feature-matrix playbook](./.agents/playbooks/feature-matrix.md).
 
 ## Workflow routing
 

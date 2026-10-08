@@ -4,7 +4,7 @@
 
 ## Product boundaries
 
-PG-004 is an umbrella requiring decomposition. Buying goods, town prosperity, horse lifecycle, canteen lifecycle, equipment ownership and consumable quantities are connected contracts rather than one store feature. Preserve the umbrella ID for traceability while recording these candidate sub-boundaries in the feature inventory.
+PG-004 is an umbrella requiring decomposition. Buying goods, town prosperity, horse lifecycle, canteen lifecycle, equipment ownership and consumable quantities are connected contracts rather than one store feature. Preserve the umbrella ID for traceability; the [feature matrix](../../../docs/features.md) records the current grouping and the separate store-consolidation and future-vendor work boundaries.
 
 | Boundary | Supplied product contract | Dependencies |
 | --- | --- | --- |

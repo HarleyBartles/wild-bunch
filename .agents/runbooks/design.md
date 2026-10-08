@@ -19,6 +19,7 @@ Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) 
 3. Save the accepted specification under `.agents/specs/` for planning; keep
    transient exploration in branch-scoped scratch.
 4. Select governing ADRs through the [decision-record playbook](../playbooks/decision-records.md) and identify any durable decision the design makes or changes.
+5. When the design changes a product promise, capability boundary or dependency, read and update the [feature matrix](../../docs/features.md) through its [maintenance playbook](../playbooks/feature-matrix.md).
 
 ## Doctrine and contracts
 
