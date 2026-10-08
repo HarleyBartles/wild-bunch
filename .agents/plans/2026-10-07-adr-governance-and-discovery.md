@@ -65,12 +65,16 @@
 - Delete: `scripts/update_adr_freshness.py`
 - Delete: `scripts/tests/test_adr_freshness.py`
 - Modify: `CONTRIBUTING.md`
+- Modify: `.agents/runbooks/implementing.md`
+- Modify: `.agents/runbooks/pr.md`
+- Modify: `.agents/playbooks/testing.md`
+- Modify: `.agents/playbooks/completing-plans.md`
 
-**Interfaces:** `ci --apply` remains for explicit repository maintenance, and `ci --check` remains the canonical read-only validation command. Neither command generates a semantic review claim. Authored catalogue content is reviewed with its ADR changes.
+**Interfaces:** `ci --apply` configures the repository hook and runs selected checks; `ci --check` remains the canonical read-only validation command. Neither command generates a semantic review claim or refreshes generated metadata. Authored catalogue content is reviewed with its ADR changes.
 
 - [x] **Step 1: Remove freshness apply/check wiring.** Delete the freshness command helpers and `decision-freshness` CI lane from `tools/run.py`; remove the apply invocation from `_ci_apply`. Keep all unrelated check and apply behavior unchanged.
 - [x] **Step 2: Retire only the generator's own behavior test.** Delete the tests that exercise table sorting and rewriting because the generated table and its contract are removed. Do not replace them with source-string, filename, or catalogue-shape tests.
-- [x] **Step 3: Correct contributor guidance.** Remove the claim that the hook refreshes decision freshness output. State that the hook checks the staged candidate and leaves decision files unchanged; route semantic decision updates through the decision-record playbook.
+- [x] **Step 3: Correct maintenance guidance.** Remove the claim that the hook refreshes decision freshness output. State that the hook checks the staged candidate and leaves decision files unchanged; route semantic decision updates through the decision-record playbook. Correct generic `ci --apply` metadata-refresh instructions in implementing, testing, completing-plans, and PR guidance to name the owning maintenance command, while retaining `ci --apply` for hook setup and its actual selected checks.
 - [x] **Step 4: Run the affected Python lanes.** Run `py -3 -m pytest scripts/tests -q` and `py -3 -m pytest tools/tests -q`. Search tracked source/guidance for `update_adr_freshness`, `decision-freshness`, `Last reviewed`, and `Decision Status and Review Dates`; no obsolete generator, test, or claim may remain.
 
 ### Task 4: Establish one decision-record procedure and route lifecycle obligations

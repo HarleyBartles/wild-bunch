@@ -33,10 +33,11 @@ Before implementation, read the applicable [backend](../unslop/backend-architect
 3. Bind those decisions to the applicable doctrine and contracts below.
 4. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
-5. When maintained metadata needs refreshing, run the explicit apply command
-   and review its changes before staging. Then stage the intended tree and use
-   the normal hooked commit; the hook validates the staged candidate and never
-   applies or stages corrections.
+5. When a maintained artifact needs updating, run its named owning maintenance
+   command and review its changes before staging. `ci --apply` configures the
+   repository hook and runs selected checks; it does not refresh generated
+   metadata. Then stage the intended tree and use the normal hooked commit; the
+   hook validates the staged candidate and never applies or stages corrections.
 6. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 

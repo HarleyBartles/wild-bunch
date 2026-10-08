@@ -43,8 +43,9 @@ Before promoting or retiring authored artifacts, read [writing guards](../unslop
 - Optional convenience copy: the repo-segregated completed-artifact directory
   beneath the scratch root resolved by host or repository policy.
 - Verify: `py -3 tools\run.py ci --check`; the normal hook checks the staged
-  candidate without applying changes or staging corrections. Run `ci --apply`
-  explicitly before staging when repository-owned metadata needs refreshing.
+  candidate without applying changes or staging corrections. Run the named
+  owning maintenance command when a particular maintained artifact needs
+  updating; `ci --apply` configures the repository hook and runs selected checks.
 
 Plan creation is committed before execution. Retain the current plan and spec
 through their completing pull request. The next substantive slice assesses
