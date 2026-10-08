@@ -162,10 +162,12 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
 
         var factory = new SeededNewGameFactory(new DeterministicSaltSourceFactory());
+        var seedCode = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorldResolver.CreateCanonicalSeedWorld()));
         var (world, caseFile, seedCodeText, saltSource) = factory.ResolveWorld(
             "Ranger Vale",
             GameDifficulty.Standard,
-            "8e5fcbab-9d42-4d41-982d-bf177718a449",
+            seedCode,
             GameEntropy.Classic);
         var session = GameSession.StartSetup(
             "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, seedCodeText, saltSource);
