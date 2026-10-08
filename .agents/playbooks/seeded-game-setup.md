@@ -9,19 +9,11 @@ town, or setup-owned player facts.
 
 - Develop focused behavior tests and verify implementation evidence.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - seed-ownership
 - wild-bunch-domain-modeling (when gameplay invariants change)
 - wild-bunch-dotnet-architecture (when application or persistence boundaries change)
-
-## Optional repository-owned skills
-
-- None.
 
 ## Unslop before work
 

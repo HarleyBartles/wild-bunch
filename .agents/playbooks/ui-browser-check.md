@@ -8,17 +8,9 @@ Browser behavior, layout, interaction, or player-flow evidence is required.
 
 - Run browser playtests and automated browser checks when the task calls for them.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - wild-bunch-browser-game (when client state authority is in question).
-
-## Optional repository-owned skills
-
-- None.
 
 ## Composition
 

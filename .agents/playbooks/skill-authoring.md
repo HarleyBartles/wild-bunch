@@ -9,18 +9,6 @@ Creating or changing a repository-local Wild Bunch skill.
 - Design and author a focused repository capability and its behavior tests.
 - Validate authored skill custody and test executable script behavior.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
-
 ## Unslop before work
 
 Before changing a skill, read [routing](../unslop/routing.md) and [writing guards](../unslop/writing.md) in full, plus the [backend](../unslop/backend-architecture.md), [web](../unslop/play-surface-ui.md) or [dev-overlay](../unslop/dev-overlay.md) profiles for its owned decision. Route the relevant guards directly from the skill and maintain [observations](../unslop/README.md#record-and-improve).

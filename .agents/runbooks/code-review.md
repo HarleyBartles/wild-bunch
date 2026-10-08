@@ -9,18 +9,6 @@ Reviewing a Wild Bunch diff, branch, or pull request.
 - Provide independent review of a committed diff and select relevant domain and quality lenses.
 - Analyze review feedback, resolve findings with evidence, and verify the resulting head.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
-
 ## Composition
 
 1. Use independent code review to review the actual committed diff and select

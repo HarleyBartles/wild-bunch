@@ -9,18 +9,6 @@ Writing or reviewing source whose language or framework conventions matter.
 - Apply C# and .NET design and style guidance.
 - Design React component structure and browser styling.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
-
 ## Unslop before work
 
 Before source work, read [backend guards](../unslop/backend-architecture.md) for .NET/backend concerns and [play-surface UI guards](../unslop/play-surface-ui.md) for browser concerns in full. Prose requires [writing](../unslop/writing.md); dev panels also require [dev overlay](../unslop/dev-overlay.md). Follow [selection and observations](../unslop/README.md).

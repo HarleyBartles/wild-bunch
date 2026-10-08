@@ -9,20 +9,12 @@ Adding or changing a Wild Bunch developer control or panel.
 - Develop focused behavior tests, run browser playtests, and verify implementation evidence.
 - Apply frontend composition and styling guidance when browser surfaces change.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - dev-control-boundary
 - wild-bunch-domain-modeling
 - wild-bunch-dotnet-architecture
 - wild-bunch-browser-game
-
-## Optional repository-owned skills
-
-- None.
 
 ## Composition
 

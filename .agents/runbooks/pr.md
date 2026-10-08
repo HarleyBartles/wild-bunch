@@ -9,25 +9,13 @@ Opening, updating, or publishing a Wild Bunch pull request.
 - Verify repository state, validation evidence, and publication prerequisites.
 - Publish a branch and open or update a Draft PR, then verify its head and checks.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
-
 ## Unslop before work
 
 Before authoring the PR, read [writing](../unslop/writing.md) and [code-review guards](../unslop/code-review.md) in full; follow their direct links for changed concerns. Confirm the current diff has been reviewed against those guards and update [distinct observations](../unslop/README.md#record-and-improve) when there is new evidence, without adding read or test receipts.
 
 ## Composition
 
-Use `develop` as the repository's default base for ordinary development PRs. `main` is the release line; target it only when the approved release or hotfix flow requires it. For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan delivery contract](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md#develop-integration-and-per-plan-delivery) before publication and carry fresh per-plan worktrees, successor-artifact retirement and development-version advancement into the PR.
+Use `develop` as the repository's default base for ordinary development PRs. `main` is the release line; target it only when the approved release or hotfix flow requires it. Follow the active roadmap or execution plan for campaign-specific sequencing and version requirements; do not duplicate those temporary rules in this durable publication procedure.
 
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.

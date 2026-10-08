@@ -4,7 +4,7 @@
 
 **Goal:** Apply the approved 37-record ADR disposition table, preserve the repository's real decision history, and make each current or planned decision accurately discoverable without turning ADRs into implementation reports. Make ADR and unslop guidance effective at lifecycle entrypoints, with PR authors and reviewers as the final stale-decision safeguards.
 
-**Architecture:** Preserve each original decision and its date, add a successor only where an accepted choice changed, and use dated editorial notes for factual corrections or material removals. Keep implementation status, code inventories, test receipts, and feature backlogs in their existing owners. Route lifecycle and topical guidance through central unslop and decision-record playbooks, and require authors and reviewers to check the actual diff against relevant ADRs.
+**Architecture:** Preserve each original decision and its date, add a successor only where an accepted choice changed, and use dated editorial notes for factual corrections or material removals. Keep implementation status, code inventories, test receipts, and feature backlogs in their existing owners. Route lifecycle and topical guidance through central unslop and decision-record playbooks, and require authors and reviewers to check the actual diff against relevant ADRs. Keep durable runbooks and playbooks scope-stable: campaign-specific delivery rules belong in the active roadmap or plan, and empty placeholder sections are removed.
 
 **Tech Stack:** Markdown ADRs, Git history for provenance, repository command bus validation, `Directory.Build.props` as the sole authored application version.
 
@@ -163,7 +163,7 @@ Every ADR from 0001 through 0037 is assessed below. `Retain` means no edit unles
 
 ## Task 6: Establish central ADR and unslop routes with PR/review gates
 
-**Files:** Create or update the central unslop playbook; update `.agents/unslop/README.md`, `.agents/playbooks/decision-records.md`, applicable lifecycle runbooks and topical playbooks, root `AGENTS.md`, `CONTRIBUTING.md`, `REVIEW.md`, `.agents/runbooks/pr.md`, and `.agents/runbooks/code-review.md` as required by the live route audit.
+**Files:** Create or update the central unslop playbook; update `.agents/unslop/README.md`, `.agents/unslop/writing.md`, `.agents/unslop/observations.md`, `.agents/playbooks/decision-records.md`, applicable lifecycle runbooks and topical playbooks, root `AGENTS.md`, `CONTRIBUTING.md`, `REVIEW.md`, `.agents/runbooks/pr.md`, and `.agents/runbooks/code-review.md` as required by the live route audit.
 
 - [ ] Make one unslop playbook the authoritative selector for applicable profiles and their observation loop. Keep profile content in `.agents/unslop/`; remove duplicate selection rules from its README or other routers once the central playbook owns them.
 - [ ] Route root agent, contributor, reviewer, lifecycle-runbook, and topical-playbook entrypoints to both the central unslop playbook and the decision-record playbook, with each work surface naming when the guidance applies.
@@ -171,8 +171,12 @@ Every ADR from 0001 through 0037 is assessed below. `Retain` means no edit unles
 - [ ] State in the decision-record playbook that removing or contradicting an ADR-protected behavior requires a deliberate decision and matching amendment/successor, and that introducing durable architecture requires consulting the log and recording the decision. State that routine implementation preserving existing decisions does not require a new ADR.
 - [ ] Make the PR runbook require authors to compare their proposed diff with relevant ADRs and include the required decision work, or explain why no durable decision changes.
 - [ ] Make the review runbook require reviewers to repeat that check independently against the actual diff; a PR-author assertion or an ADR file change alone is not proof that the decision log remains true.
+- [ ] Remove campaign-specific instructions from durable runbooks and topical playbooks when they belong to an active roadmap or plan; keep only reusable operating procedure. In particular, remove the stable-0.1.0 per-plan worktree/version contract from the general PR runbook after verifying its durable `develop`/release guidance remains.
+- [ ] Remove empty or placeholder-only headings such as capability/skill sections containing only `None.` from runbooks and topical playbooks; add a concrete guard and distinct observation in the writing unslop profile so this boilerplate does not recur. Preserve empty fields only where a validator or external schema explicitly requires them.
+- [ ] Do not add a heading-existence or empty-heading checker; review document meaning manually because structural assertions would not protect reader behavior.
+- [ ] Audit durable guidance for other active-epic or temporary-plan references and classify each against its actual owner; move campaign requirements to the current roadmap/plan rather than leaving stale routes in permanent runbooks.
 - [ ] Trace direct entry routes and remove duplicated or stale profile-selection guidance without weakening scoped profile selection, lifecycle stages, or topical ownership. Include `REVIEW.md` and `CONTRIBUTING.md` because reviewer and implementer harnesses may enter through them.
-- [ ] Validate the routes by following them from each declared entrypoint and checking their applicability language and links. Do not add source-string or link-existence tests as a proxy for effective routing.
+- [ ] Validate the routes by following them from each declared entrypoint and checking their applicability language and links. Confirm changed durable guidance contains no active-epic instructions or empty placeholder sections. Do not add source-string or link-existence tests as a proxy for effective routing.
 
 ## Task 7: Review, publish, merge, and retain successor artifacts
 

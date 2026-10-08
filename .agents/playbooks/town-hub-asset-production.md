@@ -8,17 +8,9 @@ Producing or revising a town-hub building, road, ground, or prop asset.
 
 - Generate raster assets when the task requires new imagery.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - town-hub-asset-judgment
-
-## Optional repository-owned skills
-
-- None.
 
 ## Unslop before work
 

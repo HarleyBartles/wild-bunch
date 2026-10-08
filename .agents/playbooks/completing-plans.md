@@ -9,10 +9,6 @@ completion, explicit abandonment, or successor-slice retirement.
 
 - Decide when plans and specs are complete and ready for retirement or promotion.
 
-## Optional capabilities
-
-- None.
-
 ## Unslop before work
 
 Before promoting or retiring authored artifacts, read [writing guards](../unslop/writing.md) in full; changes to agent guidance also require [routing](../unslop/routing.md). Preserve useful [observations](../unslop/observations.md) when retiring a guard; artifact age or a completed checklist does not erase its evidence.

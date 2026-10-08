@@ -10,18 +10,6 @@ truth, or a sensitive mutation boundary.
 - Evaluate connector and tool mutations for authority and side effects.
 - Apply scope and safety gates when authority, source truth, or impact requires them.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
-
 ## Unslop before work
 
 Before assessing game-data or API boundaries, read [backend guards](../unslop/backend-architecture.md) in full; browser visibility also requires [play-surface UI](../unslop/play-surface-ui.md), and developer capabilities require [dev overlay](../unslop/dev-overlay.md). Follow [selection and observations](../unslop/README.md) for newly encountered patterns.

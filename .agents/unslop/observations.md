@@ -10,6 +10,22 @@ Records below describe concrete incidents and guard outcomes. They are durable i
 
 **Reach and effect:** The user's interventions established the failure and corrected the scope. This is one session incident, not evidence of independent recurrence. The specification and custody correction are present for review; future planning behavior, release delivery and prevention of renewed drift remain unproven.
 
+## U-010: Placeholder-only sections padded agent guidance
+
+**Work and evidence:** On 2026-10-08, the user noticed empty capabilities and repository-skill sections in the PR runbook. A read of the authored runbooks and topical playbooks found 39 sections whose only content was `- None.` across 15 files.
+
+**Recognition and correction:** A heading that only says nothing adds scanning cost without guiding the reader. Remove empty or placeholder-only sections unless a validator or external schema requires the field. The [writing profile](writing.md#remove-empty-sections) now records this guard; it does not add a structural checker.
+
+**Reach and effect:** The affected sections were removed from the current runbooks and playbooks. The user prompted the correction; independent recurrence and future effectiveness remain unknown.
+
+## U-011: Campaign instructions leaked into durable guidance
+
+**Work and evidence:** On 2026-10-08, the user identified stable-0.1.0 worktree and version rules embedded in the general PR runbook, with those same requirements already owned by the active roadmap and plan.
+
+**Recognition and correction:** Durable runbooks and playbooks state reusable operating procedure. Put temporary epic sequence, worktree, and version requirements in the active roadmap or plan, and leave stable repository policy in the runbook. The [writing profile](writing.md#keep-durable-guidance-scope-stable) now guards this boundary.
+
+**Reach and effect:** The campaign-specific sentence was removed from the PR runbook while its general `develop` and release-line guidance remains. This is one corrected incident, not proof of recurrence or future effectiveness.
+
 ## U-001: Existing profiles with weak work-point routes
 
 **Work:** Unslop adoption ahead of the interactive stable-0.1.0 audit, 2026-10-06. Treat the discovered gaps together as one incident, not multiple independent recurrence examples.
