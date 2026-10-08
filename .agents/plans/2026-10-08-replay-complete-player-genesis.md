@@ -38,12 +38,12 @@
 
 **Files:** This plan; `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; `Directory.Build.props`; delete `.agents/plans/2026-10-08-retire-town-service-variation.md`.
 
-- [ ] Record PR #199 as merged to `develop` at `9d97d667cfb5e3e8b8ec0ec604cf41cfc3e64577`, source head `68f761e2df3ca9e4e2385366c754b691adaeb84d`, and hosted canonical gate run 37846121806.
-- [ ] Classify all row 05 retirements as shipped; verify durable feature truth and relevant investigation outcomes are already present, then retire the completed row 05 plan and stale roadmap link.
-- [ ] Mark roadmap row 05 done and row 06 executing with this plan, version `0.1.0-dev.15`, and the row 05 delivery evidence above.
-- [ ] Advance `Directory.Build.props` exactly once from `0.1.0-dev.14` to `0.1.0-dev.15`.
-- [ ] Stage only the plan, roadmap, version and eligible predecessor retirement; inspect the staged diff and commit through the check-only hook before implementation.
-- [ ] Record the exact plan-commit SHA in roadmap row 06 in a follow-up docs-only commit before implementation; do not bump the version again.
+- [x] Record PR #199 as merged to `develop` at `9d97d667cfb5e3e8b8ec0ec604cf41cfc3e64577`, source head `68f761e2df3ca9e4e2385366c754b691adaeb84d`, and hosted canonical gate run 37846121806.
+- [x] Classify all row 05 retirements as shipped; verify durable feature truth and relevant investigation outcomes are already present, then retire the completed row 05 plan and stale roadmap link.
+- [x] Mark roadmap row 05 done and row 06 executing with this plan, version `0.1.0-dev.15`, and the row 05 delivery evidence above.
+- [x] Advance `Directory.Build.props` exactly once from `0.1.0-dev.14` to `0.1.0-dev.15`.
+- [x] Stage only the plan, roadmap, version and eligible predecessor retirement; inspect the staged diff and commit through the check-only hook before implementation.
+- [x] Record the exact plan-commit SHA in roadmap row 06 in a follow-up docs-only commit before implementation; do not bump the version again.
 
 ### Task 2: Reject incomplete genesis and remove salt invention from restoration
 
