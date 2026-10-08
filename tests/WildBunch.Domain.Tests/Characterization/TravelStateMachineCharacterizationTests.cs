@@ -66,15 +66,14 @@ public sealed class TravelStateMachineCharacterizationTests
         Assert.Contains("No active journey", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    // Heat no longer affects trail events or encounters, so the deterministic
-    // rolls now produce a different outcome for the same route profile: the
-    // EasyShortJourney is interrupted by an NPC encounter on day 1 instead of
-    // completing quietly. See ADR-0029.
+    // Use the event-backed developer override to prove pending hostile encounters
+    // block further travel advancement.
     [Fact]
     public void AdvanceJourneyDay_FirstDay_ExactState()
     {
         var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
         session.StartJourney(preview);
+        TravelTestFactory.ForceNextEncounterToFoe(session);
 
         var result = session.AdvanceJourneyDay();
 

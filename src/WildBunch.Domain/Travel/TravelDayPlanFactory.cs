@@ -79,7 +79,6 @@ internal static class TravelDayPlanFactory
     private static string BuildDefaultMessage(TravelDayEncounterCategory category) => category switch
     {
         TravelDayEncounterCategory.Foe => "A hard-eyed rider cuts across my path.",
-        TravelDayEncounterCategory.Npc => "A weathered stranger hails me from the trail.",
         TravelDayEncounterCategory.Lucky => "I spot something glinting by the trail.",
         TravelDayEncounterCategory.Unlucky => "The trail takes a bad turn.",
         TravelDayEncounterCategory.Environmental => "The weather turns rough on the trail.",
@@ -91,7 +90,6 @@ internal static class TravelDayPlanFactory
     private static string BuildDefaultTitle(TravelDayEncounterCategory category) => category switch
     {
         TravelDayEncounterCategory.Foe => "Hard-eyed rider",
-        TravelDayEncounterCategory.Npc => "Weathered stranger",
         TravelDayEncounterCategory.Lucky => "Lucky find",
         TravelDayEncounterCategory.Unlucky => "Bad turn",
         TravelDayEncounterCategory.Environmental => "Rough weather",

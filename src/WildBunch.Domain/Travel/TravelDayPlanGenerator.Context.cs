@@ -11,13 +11,6 @@ internal static partial class TravelDayPlanGenerator
 {
     public const int CurrentVersion = 1;
 
-    private static readonly JourneyEncounterChoiceState[] DefaultEncounterChoices =
-    {
-        new("run", "Run"),
-        new("fight", "Fight"),
-        new("bribe", "Bribe")
-    };
-
     public static TravelDayPlanState Generate(TravelDayGenerationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -207,7 +200,6 @@ internal static partial class TravelDayPlanGenerator
             (TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 2),
             (TravelDayEncounterCategory.Unlucky, 2),
             (TravelDayEncounterCategory.Foe, context.Risk == TrailRisk.High ? 5 : context.Risk == TrailRisk.Moderate ? 2 : 1),
-            (TravelDayEncounterCategory.Npc, 2),
             (TravelDayEncounterCategory.Environmental, context.WaterFeature == WaterFeature.None ? 2 : 3),
             (TravelDayEncounterCategory.Resource, 2),
             (TravelDayEncounterCategory.HorseTrouble, context.HasHorse && context.IsMounted ? context.HorseConditionBand switch
@@ -246,7 +238,6 @@ internal static partial class TravelDayPlanGenerator
             AddWeight(weights, TravelDayEncounterCategory.Unlucky, context.HasHorse ? -1 : 1);
             AddWeight(weights, TravelDayEncounterCategory.Resource, context.HasHorse ? -1 : 1);
             AddWeight(weights, TravelDayEncounterCategory.Environmental, context.HasHorse ? -1 : 2);
-            AddWeight(weights, TravelDayEncounterCategory.Npc, -1);
             AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse ? -1 : 0);
         }
 
@@ -258,7 +249,6 @@ internal static partial class TravelDayPlanGenerator
                 AddWeight(weights, TravelDayEncounterCategory.Quiet, 1);
                 break;
             case GameDifficulty.Standard:
-                AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
                 AddWeight(weights, TravelDayEncounterCategory.Resource, 1);
                 break;
             case GameDifficulty.Challenging:
@@ -295,7 +285,6 @@ internal static partial class TravelDayPlanGenerator
                 AddWeight(weights, TravelDayEncounterCategory.Lucky, 2);
                 AddWeight(weights, TravelDayEncounterCategory.Unlucky, 2);
                 AddWeight(weights, TravelDayEncounterCategory.Environmental, 1);
-                AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
                 break;
         }
 
@@ -307,7 +296,6 @@ internal static partial class TravelDayPlanGenerator
                 break;
             case TrailTerrain.Hills:
                 AddWeight(weights, TravelDayEncounterCategory.HorseTrouble, context.HasHorse && context.IsMounted ? 1 : 0);
-                AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
                 break;
             case TrailTerrain.Badlands:
                 AddWeight(weights, TravelDayEncounterCategory.Unlucky, 1);
@@ -366,11 +354,6 @@ internal static partial class TravelDayPlanGenerator
         {
             AddWeight(weights, TravelDayEncounterCategory.Lucky, luckyCooldownActive ? 0 : 1);
             AddWeight(weights, TravelDayEncounterCategory.Resource, 1);
-            AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
-        }
-        else if (context.WalletBand is WalletBand.Comfortable or WalletBand.Flush)
-        {
-            AddWeight(weights, TravelDayEncounterCategory.Npc, 1);
         }
 
         // Heat does NOT influence encounter category. Heat is lawman pressure (ADR-0029),
@@ -384,7 +367,6 @@ internal static partial class TravelDayPlanGenerator
                 : Math.Min(4, recentFoeCount * 2);
 
             AddWeight(weights, TravelDayEncounterCategory.Foe, -foeCooldown);
-            AddWeight(weights, TravelDayEncounterCategory.Npc, -Math.Min(1, recentFoeCount));
             AddWeight(weights, TravelDayEncounterCategory.Environmental, -Math.Min(1, recentFoeCount));
             AddWeight(weights, TravelDayEncounterCategory.Resource, -Math.Min(1, recentFoeCount));
         }
@@ -603,23 +585,12 @@ internal static partial class TravelDayPlanGenerator
             TravelDayEncounterCategory.Lucky => CreateLuckyEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
             TravelDayEncounterCategory.Unlucky => CreateUnluckyEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
             TravelDayEncounterCategory.Foe => CreateFoeEncounter(slotIndex, seed, context, travelRulesProfile),
-            TravelDayEncounterCategory.Npc => CreateChoiceEncounter(slotIndex, "npc", BuildNpcMessage(context, dayNumber, slotIndex, seed)),
             TravelDayEncounterCategory.Environmental => CreateEnvironmentalEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
             TravelDayEncounterCategory.Resource => CreateResourceEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
             TravelDayEncounterCategory.HorseTrouble => CreateHorseTroubleEncounter(context, travelRulesProfile, dayNumber, slotIndex, seed),
             _ => new TravelDayEncounterState(slotIndex, TravelDayEncounterCategory.Quiet, "Quiet trail", BuildQuietMessage(context, dayNumber, slotIndex, seed), null, null, null)
         };
     }
-
-    private static TravelDayEncounterState CreateChoiceEncounter(int slotIndex, string kind, string message)
-        => new(
-            slotIndex,
-            kind == "npc" ? TravelDayEncounterCategory.Npc : TravelDayEncounterCategory.Foe,
-            kind == "npc" ? "Weathered stranger" : "Hard-eyed rider",
-            message,
-            null,
-            JourneyEncounterState.CreateChoiceEncounter(kind, message, DefaultEncounterChoices),
-            null);
 
     private static TravelDayEncounterState CreateFoeEncounter(int slotIndex, string seed, TravelDayGenerationContext context, TravelRulesProfile travelRulesProfile)
     {
@@ -888,15 +859,6 @@ internal static partial class TravelDayPlanGenerator
             null,
             null);
     }
-
-    private static string BuildNpcMessage(TravelDayGenerationContext context, int dayNumber, int slotIndex, string seed)
-        => context.WaterFeature switch
-        {
-            WaterFeature.None => "A weathered stranger crossed the trail and asked how the road looked ahead.",
-            WaterFeature.Creek or WaterFeature.Spring => "A weathered stranger shared the water side of the trail and swapped a few words.",
-            WaterFeature.River => "A weathered stranger rested near the river and nodded me onward.",
-            _ => "A weathered stranger gave me a nod and kept moving."
-        };
 
     private static string BuildQuietMessage(TravelDayGenerationContext context, int dayNumber, int slotIndex, string seed)
         => context.Terrain switch

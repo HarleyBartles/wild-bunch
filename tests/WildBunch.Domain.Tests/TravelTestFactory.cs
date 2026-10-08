@@ -23,6 +23,13 @@ namespace WildBunch.Domain.Tests;
 /// </summary>
 internal static class TravelTestFactory
 {
+    internal static void ForceNextEncounterToFoe(GameSession session)
+    {
+        session.ForceDevTravelOverride(DevTravelOverride.ForFoe(
+            new JourneyFoeProfile(Speed: 3, FightStrength: 3, MinimumBribe: 5m),
+            "A hard-eyed rider blocks the trail."));
+    }
+
     /// <summary>
     /// Creates a session with a short low-risk journey from Current Town to Connected Town.
     /// Inventory: 4 Food, 1 Canteen (full 10), 1 Horse (Healthy), 1 Saddle.
@@ -138,7 +145,7 @@ internal static class TravelTestFactory
     internal static (GameSession session, TravelPreview preview) CreateSixDayQuietJourney()
     {
         // The trail id, town ids, terrain and difficulty are tuned together so the
-        // deterministic TravelDayPlanGenerator produces no Foe/Npc encounters across
+        // deterministic TravelDayPlanGenerator produces no hostile encounters across
         // the whole journey. Changing any of these values may reintroduce interruptions.
         var origin = new Town(new TownId("o2"), "Pinecross",
             TownServices.None);

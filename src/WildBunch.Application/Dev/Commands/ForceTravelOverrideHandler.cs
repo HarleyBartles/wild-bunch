@@ -22,7 +22,6 @@ public sealed class ForceTravelOverrideHandler : GameSessionCommandHandler
 
         await ExecuteWithRetryAsync(sessionId, (session, ct) =>
         {
-            var category = Enum.Parse<TravelDayEncounterCategory>(command.ForcedCategory, ignoreCase: true);
             JourneyFoeProfile? foeProfile = null;
             if (command.FoeSpeed is not null || command.FoeFightStrength is not null || command.FoeMinimumBribe is not null)
             {
@@ -34,7 +33,7 @@ public sealed class ForceTravelOverrideHandler : GameSessionCommandHandler
 
             var overrideValue = foeProfile is not null
                 ? DevTravelOverride.ForFoe(foeProfile, command.EncounterMessage)
-                : DevTravelOverride.ForCategory(category, command.EncounterMessage);
+                : DevTravelOverride.ForCategory(command.ForcedCategory, command.EncounterMessage);
 
             session.ForceDevTravelOverride(overrideValue);
             return Task.FromResult(true);

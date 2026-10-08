@@ -74,6 +74,10 @@ For theft, select Food and HorseFeed branches separately while other resources m
 
 Legacy encounter-profile repair needs a declared supported shape before tests: valid old state must reconstruct deterministically or fail under the agreed policy, and rejected intent must not secretly change gameplay state. NPC interaction and starvation semantics remain scope questions; tests must not invent them from warning copy or generic encounter names.
 
+**Dated disposition, 2026-10-08:** The accepted stable 0.1.0 baseline retires generated interactive friendly trail-NPC encounters and their exclusive tests. Tests for interruption, diary projection and resource tracking now force a real hostile encounter through the event-backed developer override; the generator contract is independently tested against fixed contexts. Starvation semantics are settled in the baseline specification and belong to the retained travel work.
+
+**Follow-up, 2026-10-08:** Removing one weighted category changes fixed-salt outcomes for retained travel events without changing their weights or generator version. Resolver tests now describe the resulting deterministic event, isolate horse/upkeep behavior with a recorded Quiet override, and allow legitimate journey completion when the selected event adds no delay. Generator behavior tests continue to prove that lucky and horse-only events remain selectable.
+
 ### 5. Unrelated criminals: retired under PG-009-R, DN-03/10
 
 The ledger unit/wiring/persistence and unrelated-ledger full-replay tests described above were removed with the retired source. Their proposed ledger behavior is not a current test obligation. The migration behavior test owns the selected historical policy by proving pre-alpha session rows and their dependent data are invalidated while schema/migration history remain and a new session can be stored. Retained gang settlement and replay continue to have independent behavior coverage.

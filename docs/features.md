@@ -98,7 +98,7 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 **Assessment and evidence:** Partial with confirmed reachable failures in route distance, low-resource generated outcomes and transition/replay boundaries. Existing hostile encounters are retained. See the [Domain](../.agents/investigations/stable-0.1.0/2026-10-07-domain-layer-investigation.md), [Persistence](../.agents/investigations/stable-0.1.0/2026-10-07-persistence-layer-investigation.md), [Application](../.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md), [Web](../.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md) and linked test follow-ups. Audits identify meaningful existing and missing test scenarios; they are not a complete runtime journey proof.
 
-**0.1.0 disposition:** Retain and repair legal travel, hostile encounters, resource settlement, death and arrival. Retire generated interactive trail NPCs and their exclusive choices/weights/tests; do not turn friendly strangers into enemies or add replacement interactions.
+**0.1.0 disposition:** Retain and repair legal travel, hostile encounters, resource settlement, death and arrival. Generated interactive friendly trail-NPC encounters and their exclusive choices/weights/developer option are retired; friendly strangers are not converted into enemies and no replacement interaction is added. Hostile encounters remain a retained travel path, so PG-007 remains partial.
 
 ### PG-008 - Keep a casebook and journal
 

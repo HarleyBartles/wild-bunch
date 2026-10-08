@@ -1140,7 +1140,6 @@ internal sealed class JourneyLoop
             .Select(day => day.PendingEncounter?.Kind switch
             {
                 "foe" => TravelDayEncounterCategory.Foe,
-                "npc" => TravelDayEncounterCategory.Npc,
                 _ => (TravelDayEncounterCategory?)null
             })
             .Where(category => category is not null)

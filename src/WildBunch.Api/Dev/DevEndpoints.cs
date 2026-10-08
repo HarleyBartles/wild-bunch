@@ -138,8 +138,13 @@ public static class DevEndpoints
             {
                 return Results.BadRequest("ForcedCategory is required.");
             }
+            if (!Enum.TryParse<TravelDayEncounterCategory>(request.ForcedCategory, ignoreCase: true, out var category)
+                || !Enum.IsDefined(category))
+            {
+                return Results.BadRequest("Invalid ForcedCategory value.");
+            }
             await handler.HandleAsync(new ForceTravelOverrideCommand(
-                id, request.ForcedCategory, request.FoeSpeed,
+                id, category, request.FoeSpeed,
                 request.FoeFightStrength, request.FoeMinimumBribe, request.EncounterMessage),
                 cancellationToken);
             return Results.NoContent();
@@ -151,10 +156,6 @@ public static class DevEndpoints
         catch (GameSessionNotFoundException)
         {
             return Results.NotFound();
-        }
-        catch (ArgumentException)
-        {
-            return Results.BadRequest("Invalid ForcedCategory value.");
         }
         catch (InvalidOperationException ex)
         {

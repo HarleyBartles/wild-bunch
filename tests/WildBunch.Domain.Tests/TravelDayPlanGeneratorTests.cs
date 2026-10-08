@@ -52,6 +52,35 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
+    public void GenerateCreatesOnlyHostileChoiceEncountersWithAResolvedFoeProfile()
+    {
+        var session = CreateHighRiskEncounterSession();
+        var generatedEncounters = Enumerable.Range(1, 128)
+            .Select(index =>
+            {
+                var context = session.CreateTravelDayGenerationContext(
+                    gameSeed: $"retained-encounter-{index}",
+                    scenarioProfileId: "friendly-encounter-retirement") with
+                {
+                    DayNumber = index
+                };
+
+                return TravelDayPlanGenerator.Generate(context).Encounters;
+            })
+            .SelectMany(encounters => encounters)
+            .Where(encounter => encounter.PendingEncounter is not null)
+            .ToArray();
+
+        Assert.NotEmpty(generatedEncounters);
+        Assert.All(generatedEncounters, encounter =>
+        {
+            Assert.Equal(TravelDayEncounterCategory.Foe, encounter.Category);
+            Assert.Equal("foe", encounter.PendingEncounter!.Kind);
+            Assert.NotNull(encounter.PendingEncounter.FoeProfile);
+        });
+    }
+
+    [Fact]
     public void GenerateChangesWhenMountedStateChanges()
     {
         var baselineSession = CreateSeedSensitiveSession(withHorse: true, withSaddle: true);

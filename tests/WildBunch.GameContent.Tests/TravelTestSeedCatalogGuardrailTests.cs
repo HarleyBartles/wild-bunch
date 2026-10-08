@@ -75,16 +75,6 @@ public sealed class TravelTestSeedCatalogGuardrailTests
     }
 
     [Fact]
-    public void FrontierMountedHardNpc_RoundTrips()
-    {
-        var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierMountedHardNpc);
-        var resolved = SeedWorldResolver.Resolve(Guid.Parse(seedCode));
-
-        Assert.Equal(SeedWorldVariant.Frontier, resolved.WorldVariant);
-        Assert.Equal(8, resolved.TownCount);
-    }
-
-    [Fact]
     public void FrontierMountedNormalHighRisk_RoundTrips()
     {
         var seedCode = TravelTestSeedCatalog.ResolveSeedCode(TravelTestSeedCatalog.FrontierMountedNormalHighRisk);

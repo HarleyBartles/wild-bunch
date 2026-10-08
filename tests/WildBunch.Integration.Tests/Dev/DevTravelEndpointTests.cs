@@ -74,6 +74,39 @@ public sealed class DevTravelEndpointTests
     }
 
     [Fact]
+    public async Task ForceTravelOverride_Returns400_ForRetiredCategory_WithoutChangingTravelContext()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var (gameId, _) = await CreateSessionAndStartTravelAsync(client);
+        var auditBeforeResponse = await client.GetAsync($"/api/dev/sessions/{gameId}/audit");
+        var auditBefore = await auditBeforeResponse.Content.ReadFromJsonAsync<SessionAuditDto>();
+        Assert.NotNull(auditBefore);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{gameId}/travel/force-override",
+            new ForceTravelOverrideRequestDto("Npc", null, null, null, null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var contextResponse = await client.GetAsync($"/api/dev/sessions/{gameId}/travel-context");
+        Assert.Equal(HttpStatusCode.OK, contextResponse.StatusCode);
+        var context = await contextResponse.Content.ReadFromJsonAsync<TravelDevContextDto>();
+        Assert.NotNull(context);
+        Assert.Null(context!.PendingDevOverride);
+        Assert.True(context.HasActiveJourney);
+        Assert.Equal("Active", context.JourneyStatus);
+
+        var auditAfterResponse = await client.GetAsync($"/api/dev/sessions/{gameId}/audit");
+        var auditAfter = await auditAfterResponse.Content.ReadFromJsonAsync<SessionAuditDto>();
+        Assert.NotNull(auditAfter);
+        Assert.Equal(
+            auditBefore!.Entries.Select(entry => (entry.Sequence, entry.EventType, entry.Summary)),
+            auditAfter!.Entries.Select(entry => (entry.Sequence, entry.EventType, entry.Summary)));
+    }
+
+    [Fact]
     public async Task ForceTravelOverride_Returns403_InNonDevEnvironment()
     {
         using var factory = new NonDevApiFactory();
