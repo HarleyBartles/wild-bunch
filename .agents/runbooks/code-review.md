@@ -37,8 +37,9 @@ actual diff with relevant records through the [decision-record playbook](../play
 
 ## Local commands and paths
 
-Use `py -3 tools/run.py ci --check` for deliberate CI-parity proof. Apply the
-canonical command when selected standards or plugin subscriptions change.
+Use `py -3 tools/run.py ci --check` for deliberate fail-fast CI-parity proof.
+Use the focused target in [the command bus guide](../../tools/README.md) while
+constructing the change; manual diagnostics do not replace the canonical gate.
 
 ## Evidence contract
 

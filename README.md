@@ -6,6 +6,7 @@ A C#/.NET Western adventure game with a React/Vite web play surface, Onion/DDD/C
 
 - `AGENTS.md` — auto-injected agent law and routing to repo doctrine. Start here if you are an agent or a contributor working alongside one.
 - [Decision records](docs/decisions/README.md) — architecture decisions and their status history.
+- [Repository command bus](tools/README.md) — discover supported build, test, and validation targets.
 
 ## Run the pre-alpha locally
 
@@ -68,7 +69,7 @@ Use `Ctrl+C` in each terminal. Leave the shared PostgreSQL service running;
 
 ### Shortcuts and validation
 
-If you prefer one command to start both API and frontend, run `.\scripts\dev-servers.ps1 ensure`. For the full build/test/EF validation lane and the PostgreSQL-backed CI path, see `.agents/doctrine/validation-policy.md`, `docs/local-postgresql.md`, and `scripts/README.md`.
+If you prefer one command to start both API and frontend, run `.\scripts\dev-servers.ps1 ensure`. For build/test targets and the PostgreSQL-backed CI path, see the [command bus guide](tools/README.md), `.agents/doctrine/validation-policy.md`, and [local PostgreSQL guide](docs/local-postgresql.md).
 
 ## License
 

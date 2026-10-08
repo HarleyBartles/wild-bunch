@@ -20,7 +20,8 @@
 - The tracked-hook subscription already pins current AOM `main` at `a9d9f280316a87ac66cb2653384bc30a683603f0`. Preserve its candidate-preserving, no-repair/no-stage policy and update the stale baseline-spec statement that cites an older command-bus revision and claims the hook standard expects normalization.
 - Adopt the AOM command-bus standard from the same immutable AOM commit in the repository subscription and self-certification; do not copy the optional starter or change unrelated subscriptions.
 - Preserve exact child output and exit status, reject missing/conflicting/unsupported modes before target work, make target help useful without performing work, and keep check operations from changing maintained files.
-- Keep command-bus behavior tests under `tools/tests/`; do not move the already-correct `tools/tests/test_run.py` or mix these tests into .NET application tests.
+- The canonical gate is fail-fast and orders checks from cheapest to most expensive. Cheap diff, static, repository-contract, format, and lint checks run before test suites or expensive build/test setup when their prerequisites allow; future lint lanes from roadmap row 04 must be ahead of behavioral tests. Aggregate diagnostics remain a manual troubleshooting operation only.
+- Keep command-bus and repository-checker implementations and behavior tests under `tools/` and `tools/tests/`; the current `tools/tests/test_run.py` is already correctly placed, and no Python tooling tests belong in .NET application tests.
 - Remove only thin/redundant entrypoints: `scripts/ci-preflight.sh`, `scripts/ci-preflight.ps1`, `scripts/image_asset_pipeline.sh`, `scripts/image_asset_pipeline.ps1`, and `scripts/image_asset_pipeline.py`. Retain `scripts/dev-servers.sh`, `scripts/dev-servers.ps1`, and `tools/postgres-dev.ps1` because they perform actual platform/service lifecycle work.
 - Retire paired-filename, wrapper-existence, and non-asserting wrapper-invocation tests instead of replacing them with another filename or source-shape detector. Keep behavior proof for the command bus and tracked hook.
 - Update durable command ownership in an ADR and maintain the ADR catalogue in the same PR; update all affected human and agent routes and remove stale wrapper instructions.
@@ -32,7 +33,7 @@
 1. The published CLI actually refuses missing, conflicting, unknown, and unsupported requests before invoking work, and help, argument forwarding, child output, and exact exit codes are observable behaviors.
 2. CI and pre-commit invoke only non-mutating validation; no apply/setup action is hidden under the CI target, and the current AOM hook certification matches the implementation.
 3. Retired wrappers have no remaining callers or documentation, while retained native scripts each have a concrete platform or service requirement.
-4. Removed tests were shape/existence detectors, and surviving tests establish command-bus or hook behavior without freezing incidental filenames or private check ordering.
+4. Removed tests were shape/existence detectors, and surviving tests establish command-bus or hook behavior without freezing incidental filenames or private check ordering; the gate itself still follows the required cheapest-first, fail-fast order.
 5. The new ADR records the durable tools/scripts ownership decision and material wrapper retirement without turning implementation inventories into durable architecture.
 
 ---
@@ -57,16 +58,17 @@
 - [ ] Make failure output identify the failed target/check and the exact focused repair or recheck command without changing the child process output or status.
 - [ ] Add behavior tests for help without work, missing/invalid/conflicting modes without work, successful dispatch, faithful argument forwarding, child output/status propagation, and expected command failure.
 - [ ] Remove assertions that freeze the private CI step vector or the old diagnostics command spelling; retain independently meaningful gate behavior at the hook and hosted-CI boundaries.
-- [ ] Resolve canonical gate failure-order behavior against the user's response to the conflict between the AOM fail-fast hook standard and the spec's optional aggregate diagnostics. If aggregation remains useful, keep it outside the hook/CI gate; do not claim standard conformance for an aggregate gate.
+- [x] Apply the user's decision: the canonical hook/CI gate fails fast, orders checks from cheapest to most expensive, and keeps aggregate diagnostics manual-only. The first executable row-03 checks now include the cheap whitespace check; roadmap row 04 must place lint before tests.
 - [ ] Self-certify the bus inventory, modes, help, argument/output/status behavior, target ownership, drift controls, and the distinction between mechanical checks and semantic assessment.
 
 ## Task 3: Rationalize standalone scripts and test ownership
 
-**Files:** Delete the redundant wrappers and obsolete tests listed above; modify `scripts/README.md`, `src/WildBunch.Assets/docs/asset-operations.md`, and any retained guidance with inbound references; preserve native process scripts.
+**Files:** Move the repository checker implementations, their behavior tests, and Python tooling requirements into `tools/`; delete redundant wrappers and obsolete tests; modify `scripts/README.md`, `src/WildBunch.Assets/docs/asset-operations.md`, `.github/workflows/ci.yml`, and any retained guidance with inbound references; preserve native process scripts.
 
 - [ ] Remove the CI preflight wrappers because they only launch the canonical bus check.
 - [ ] Remove the root image-pipeline wrappers and compatibility shim; keep the asset-local Python implementation as the only image-pipeline entrypoint and correct its operation guide.
 - [ ] Remove `scripts/tests/test_script_entrypoints.py` and `scripts/tests/test_power_shell_wrappers.py` because they preserve paired filenames and wrapper existence without proving useful behavior.
+- [ ] Move `check_agent_routers.py`, `check_operating_standards.py`, `check_plugin_subscriptions.py`, their retained negative behavior tests, skill-custody behavior tests, and Python tool requirements into `tools/` and `tools/tests/`; preserve hook integration tests with script behavior tests, preserve validator negatives, and remove only the redundant `is_file()` assertion over a glob result.
 - [ ] Remove weak workflow-string/private-runner-step detectors when the corresponding behavior is already covered by the real command-bus and hook behavior tests; rely on the hosted required status check for live workflow execution.
 - [ ] Keep the Windows and Bash dev-server implementations only as distinct native process-management implementations, retain the shared PostgreSQL PowerShell lifecycle tool, and document each exception's purpose.
 - [ ] Rewrite `scripts/README.md` around only surviving operations, remove claims that every script is idempotent/safe, and explain the `tools/` command-bus versus standalone `scripts/` boundary.

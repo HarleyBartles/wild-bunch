@@ -11,10 +11,8 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 
 ## Build and test commands
 
-- `py -3 tools/run.py ci --check`
-- `dotnet build`
-- `dotnet test`
-- `npm ci && npm run typecheck && npm run test && npm run build` in `src/WildBunch.Web`
+- `py -3 tools/run.py --help` discovers supported command-bus targets.
+- `py -3 tools/run.py ci --check` runs the complete fail-fast repository gate.
 
 ## Routing pointers
 
@@ -29,6 +27,7 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - Review guidelines: [.agents/runbooks/code-review.md](.agents/runbooks/code-review.md)
 - Publication proof and PR instructions: [.agents/runbooks/pr.md](.agents/runbooks/pr.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Command bus: [tools guide](tools/README.md)
 - Security considerations: [.agents/playbooks/security.md](.agents/playbooks/security.md)
 
 ## Maintenance responsibility
