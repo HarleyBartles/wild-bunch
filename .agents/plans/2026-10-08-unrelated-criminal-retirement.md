@@ -36,11 +36,11 @@
 
 **Files:** Create this plan; modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` and `Directory.Build.props`; delete `.agents/plans/2026-10-08-authoritative-feature-matrix.md`.
 
-- [ ] Verify PR #194 is merged to `develop` at `a22b09fd6951ac752583a69b17c07fa395c7fa24` and hosted canonical gate run `37797433775` passed on reviewed head `03b9763d7bcfaba0ab7cfa030e5abcac2b8f909a`.
-- [ ] Classify the full authoritative-feature-matrix plan against PR #194 and merged source. Confirm its matrix, lifecycle routing, and plan acceptance shipped; retain the matrix and live playbook, but remove the completed plan and stale roadmap link.
-- [ ] Mark roadmap row 01 done with PR #194, merge commit `a22b09f`, and `0.1.0-dev.9`; mark row 05 executing and link this plan with `0.1.0-dev.10` reserved. Do not mark broad row 05 done after this one PG-009 slice.
-- [ ] Advance `Directory.Build.props` exactly once to `0.1.0-dev.10`. Keep the already corrected SemVer statement in the spec and roadmap; do not add a 1.0.0 promise.
-- [ ] Stage the plan, roadmap, version, and predecessor deletion; inspect the staged diff and commit through the check-only hook. Do not run the canonical full gate immediately before or after this ordinary hooked commit.
+- [x] Verify PR #194 is merged to `develop` at `a22b09fd6951ac752583a69b17c07fa395c7fa24` and hosted canonical gate run `37797433775` passed on reviewed head `03b9763d7bcfaba0ab7cfa030e5abcac2b8f909a`.
+- [x] Classify the full authoritative-feature-matrix plan against PR #194 and merged source. Confirm its matrix, lifecycle routing, and plan acceptance shipped; retain the matrix and live playbook, but remove the completed plan and stale roadmap link.
+- [x] Mark roadmap row 01 done with PR #194, merge commit `a22b09f`, and `0.1.0-dev.9`; mark row 05 executing and link this plan with `0.1.0-dev.10` reserved. Do not mark broad row 05 done after this one PG-009 slice.
+- [x] Advance `Directory.Build.props` exactly once to `0.1.0-dev.10`. Keep the already corrected SemVer statement in the spec and roadmap; do not add a 1.0.0 promise.
+- [x] With the plan committed immediately before this task, stage the roadmap, version, and predecessor deletion; inspect the staged diff and commit through the check-only hook. Do not run the canonical full gate immediately before or after this ordinary hooked commit.
 
 ### Task 2: Remove unrelated warrants from new-hunt generation
 
