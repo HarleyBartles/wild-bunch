@@ -67,7 +67,7 @@
 - [x] Obtain a fresh whole-branch review, resolve every Critical or Important finding, and defer only Minor findings with a recorded reason; review at `17b3a8a..0028c97` found none.
 - [x] Publish Draft PR #190 targeting `develop`, attach it to the current task, and verify its remote head equals local `HEAD`.
 - [ ] Advance PR #190 to Ready after validating this final roadmap update; verify successful hosted checks on the exact PR head before merge.
-- [ ] Verify the merge on refreshed `origin/develop`, update row 02 to done only when this PR's outcome is delivered, and retain this plan/spec/roadmap through the completing PR.
+- [ ] Verify PR #190 merged on refreshed `origin/develop`, confirm row 02's done state took effect with the delivered outcome, and retain this plan/spec/roadmap through the completing PR.
 - [ ] After merge proof, remove only this plan's verified branch, managed worktree, and branch-scoped scratch; preserve any path the host reports as locked.
 
 ## Acceptance Evidence
