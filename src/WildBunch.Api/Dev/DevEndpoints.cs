@@ -2,9 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Dev.Queries;
-using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Exceptions;
-using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Travel;
 
 namespace WildBunch.Api.Dev;
@@ -65,20 +63,6 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound);
 
-        // TODO: Re-enable when LockRngHandler and ClearRngHandler are implemented
-        // dev.MapPost("/sessions/{id:guid}/session/lock-rng", LockRngAsync)
-        //     .WithName("LockRng")
-        //     .Produces(StatusCodes.Status204NoContent)
-        //     .Produces(StatusCodes.Status403Forbidden)
-        //     .Produces(StatusCodes.Status404NotFound);
-
-        // TODO: Re-enable when LockRngHandler and ClearRngHandler are implemented
-        // dev.MapPost("/sessions/{id:guid}/session/clear-rng", ClearRngAsync)
-        //     .WithName("ClearRng")
-        //     .Produces(StatusCodes.Status204NoContent)
-        //     .Produces(StatusCodes.Status403Forbidden)
-        //     .Produces(StatusCodes.Status404NotFound);
-
         dev.MapPost("/sessions/{id:guid}/session/force-difficulty", ForceDevDifficultyAsync)
             .WithName("ForceDevDifficulty")
             .Produces(StatusCodes.Status204NoContent)
@@ -92,38 +76,6 @@ public static class DevEndpoints
             .Produces(StatusCodes.Status403Forbidden)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest);
-
-        dev.MapGet("/sessions/{id:guid}/town-layout/salts", GetTownLayoutSaltsAsync)
-            .WithName("GetTownLayoutSalts")
-            .Produces<TownLayoutSaltsDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status404NotFound);
-
-        dev.MapPost("/sessions/{id:guid}/town-layout/set-salts", SetTownLayoutSaltsAsync)
-            .WithName("SetTownLayoutSalts")
-            .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status404NotFound)
-            .Produces(StatusCodes.Status400BadRequest);
-
-        dev.MapPost("/sessions/{id:guid}/town-layout/generate-random", GenerateRandomTownLayoutSaltsAsync)
-            .WithName("GenerateRandomTownLayoutSalts")
-            .Produces<TownLayoutSaltsDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status404NotFound);
-
-        dev.MapPost("/games/prep", PrepGameSessionAsync)
-            .WithName("PrepGameSession")
-            .Accepts<PrepGameSessionCommand>("application/json")
-            .Produces<PrepGameSessionResult>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status403Forbidden)
-            .ProducesValidationProblem();
-
-        dev.MapPost("/games/{id:guid}/start", StartGameSessionAsync)
-            .WithName("StartGameSession")
-            .Produces<GameSessionDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status403Forbidden)
-            .Produces(StatusCodes.Status404NotFound);
 
         return app;
     }
@@ -335,60 +287,6 @@ public static class DevEndpoints
         }
     }
 
-    // TODO: Re-enable when LockRngHandler and ClearRngHandler are implemented
-    // private static async Task<IResult> LockRngAsync(
-    //     Guid id,
-    //     DevRoleGuard guard,
-    //     ForceDevSaltSourceHandler handler,
-    //     LockRngRequestDto? request,
-    //     CancellationToken cancellationToken)
-    // {
-    //     try
-    //     {
-    //         guard.EnsureDevAccess();
-    //         // Salt contract: null/empty/whitespace → handler generates a fresh fixed salt.
-    //         // Non-empty string → handler trims and uses verbatim.
-    //         var salt = request?.Salt;
-    //         await handler.HandleAsync(new ForceDevSaltSourceCommand(id, salt), cancellationToken);
-    //         return Results.NoContent();
-    //     }
-    //     catch (DevAccessDeniedException)
-    //     {
-    //         return Results.StatusCode(StatusCodes.Status403Forbidden);
-    //     }
-    //     catch (GameSessionNotFoundException)
-    //     {
-    //         return Results.NotFound();
-    //     }
-    //     catch (ArgumentException ex)
-    //     {
-    //         return Results.BadRequest(ex.Message);
-    //     }
-    // }
-
-    // TODO: Re-enable when LockRngHandler and ClearRngHandler are implemented
-    // private static async Task<IResult> ClearRngAsync(
-    //     Guid id,
-    //     DevRoleGuard guard,
-    //     ClearDevSaltSourceHandler handler,
-    //     CancellationToken cancellationToken)
-    // {
-    //     try
-    //     {
-    //         guard.EnsureDevAccess();
-    //         await handler.HandleAsync(new ClearDevSaltSourceCommand(id), cancellationToken);
-    //         return Results.NoContent();
-    //     }
-    //     catch (DevAccessDeniedException)
-    //     {
-    //         return Results.StatusCode(StatusCodes.Status403Forbidden);
-    //     }
-    //     catch (GameSessionNotFoundException)
-    //     {
-    //         return Results.NotFound();
-    //     }
-    // }
-
     private static async Task<IResult> ForceDevDifficultyAsync(
         Guid id,
         [FromServices] DevRoleGuard guard,
@@ -465,121 +363,4 @@ public static class DevEndpoints
         }
     }
 
-    private static async Task<IResult> GetTownLayoutSaltsAsync(
-        Guid id,
-        [FromServices] DevRoleGuard guard,
-        [FromServices] GetTownLayoutSaltsHandler handler,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            guard.EnsureDevAccess();
-            var result = await handler.HandleAsync(new GetTownLayoutSaltsQuery(id), cancellationToken);
-            return Results.Ok(result);
-        }
-        catch (DevAccessDeniedException)
-        {
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }
-        catch (GameSessionNotFoundException)
-        {
-            return Results.NotFound();
-        }
-    }
-
-    private static async Task<IResult> SetTownLayoutSaltsAsync(
-        Guid id,
-        [FromServices] DevRoleGuard guard,
-        [FromServices] SetTownLayoutSaltsHandler handler,
-        [FromBody] TownLayoutSaltsDto request,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            guard.EnsureDevAccess();
-            await handler.HandleAsync(new SetTownLayoutSaltsCommand(
-                id,
-                request.BuildingsSalt,
-                request.RoadsSalt,
-                request.DirtSalt,
-                request.PropsSalt),
-                cancellationToken);
-            return Results.NoContent();
-        }
-        catch (DevAccessDeniedException)
-        {
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }
-        catch (GameSessionNotFoundException)
-        {
-            return Results.NotFound();
-        }
-    }
-
-    private static async Task<IResult> GenerateRandomTownLayoutSaltsAsync(
-        Guid id,
-        [FromServices] DevRoleGuard guard,
-        [FromServices] GenerateRandomTownLayoutSaltsHandler handler,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            guard.EnsureDevAccess();
-            var result = await handler.HandleAsync(new GenerateRandomTownLayoutSaltsCommand(id), cancellationToken);
-            return Results.Ok(result);
-        }
-        catch (DevAccessDeniedException)
-        {
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }
-        catch (GameSessionNotFoundException)
-        {
-            return Results.NotFound();
-        }
-    }
-
-    private static async Task<IResult> PrepGameSessionAsync(
-        [FromBody] PrepGameSessionCommand command,
-        [FromServices] DevRoleGuard guard,
-        [FromServices] PrepGameSessionHandler handler,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            guard.EnsureDevAccess();
-            var result = await handler.HandleAsync(command, cancellationToken);
-            return Results.Ok(result);
-        }
-        catch (DevAccessDeniedException)
-        {
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }
-    }
-
-    private static async Task<IResult> StartGameSessionAsync(
-        Guid id,
-        [FromServices] DevRoleGuard guard,
-        [FromServices] StartGameSessionHandler handler,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            guard.EnsureDevAccess();
-            var command = new StartGameSessionCommand(id);
-            var result = await handler.HandleAsync(command, cancellationToken);
-            return Results.Ok(result);
-        }
-        catch (DevAccessDeniedException)
-        {
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }
-        catch (GameSessionNotFoundException)
-        {
-            return Results.NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Results.Conflict(new { error = ex.Message });
-        }
-    }
 }

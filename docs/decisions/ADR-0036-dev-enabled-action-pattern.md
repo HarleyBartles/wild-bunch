@@ -8,6 +8,7 @@
 
 - `2026-07-10` - Chose to keep developer override parameters out of player commands and let the backend own override validation and consumption.
 - `2026-10-08` - Partially superseded the prepped-snapshot player start path through ADR-0039. The player starts with Go, then reads the prologue and makes one free first arrival; a snapshot-only preparation path does not establish that game.
+- `2026-10-08` - The manual town-layout salt override, its exclusive prepped-start path and the session RNG lock/clear mutations were retired from the 0.1.0 candidate. The separation of developer controls from player command contracts remains.
 
 ## Decision Type
 
@@ -27,7 +28,7 @@ The developer workflow sought to apply test controls such as generation override
 
 Developer overrides do not become player-supplied command parameters. Their interpretation and consumption belong to a developer-enabled backend path, guarded and separated as described by ADR-0030 and ADR-0041. A developer preparation mechanism does not define or replace the player game-start lifecycle.
 
-The original prepped-snapshot flow was not an alternate player start. ADR-0039 requires player Go to settle world and case truth before the prologue, followed by one free arrival choice. The current developer prepped-state path is not evidence of complete ordinary event replay. Keep that developer mechanism distinct from the player setup lifecycle.
+The original prepped-snapshot flow was not an alternate player start. ADR-0039 requires player Go to settle world and case truth before the prologue, followed by one free arrival choice. The separate developer prepped-state implementation was retired from the 0.1.0 candidate on 2026-10-08; no current prepped-state path establishes ordinary event replay. Any future developer setup remains distinct from the player setup lifecycle.
 
 ## Rationale and Alternatives
 

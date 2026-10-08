@@ -12,7 +12,7 @@ The dev overlay may mutate game state to set up, inspect, stabilize, or clear th
 - **Allowed:** mutate state so the desired consequence can be reached through normal play.
 - **Not allowed:** force the gameplay action or final gameplay result itself.
 
-The overlay sets up descriptors, known facts, staged state, resources, location, route state, encounter state, RNG policy, and other preconditions. Then the normal game resolves the player action through its existing commands, rules, validation, and events.
+The overlay sets up descriptors, known facts, staged state, resources, location, route state, encounter state, selected entropy and other preconditions. Then the normal game resolves the player action through its existing commands, rules, validation, and events.
 
 This mirrors the backend command/query split. Dev overlay commands are explicit state-mutation commands with dev-event receipts. Normal gameplay commands remain normal gameplay commands. A dev command must not masquerade as the player having taken a gameplay action.
 
@@ -24,7 +24,7 @@ For every proposed dev control, ask:
 
 If "I am changing state," the control is probably valid. If "I am causing the gameplay action/result," the control is probably invalid.
 
-**Valid dev state controls:** force a wanted suspect to be the current saloon POI, mark a suspect as known in the casefile, stabilize POI descriptors, set inventory/wallet/location/route/time state, lock RNG, clear a pending forced descriptor after consumption.
+**Valid dev state controls:** force a wanted suspect to be the current saloon POI, mark a suspect as known in the casefile, stabilize POI descriptors, set inventory/wallet/location/route/time state, and clear a pending forced descriptor after consumption. Each listed control must have a live backend consumer before it is advertised as usable.
 
 **Invalid gameplay-action forcing:** force the sheriff to accept a prisoner, force bounty payout, force accusation success, mark a suspect as captured without the take-in flow, mark a trail encounter as resolved without playing its normal resolution.
 

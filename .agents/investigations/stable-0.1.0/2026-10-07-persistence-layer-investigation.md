@@ -8,6 +8,8 @@
 
 **Test remediation:** [The persistence source-to-test follow-up](2026-10-07-persistence-test-followup.md) maps every PS finding to existing expectations, misleading proof or a genuine gap, with corrected behavioral scenarios and consolidation at their owners.
 
+**Dated disposition, 2026-10-08:** The prepped-start lifecycle, developer layout-salt event and corresponding persistence codecs described in this static snapshot were retired from the 0.1.0 candidate. These findings and file inventory rows remain historical evidence, not current implementation recommendations; see the dated [Persistence test follow-up](2026-10-07-persistence-test-followup.md) and [developer control feature record](../../../docs/features.md#dev-001-developer-salt-controls). The normal event-backed player setup and generated layout persistence/replay contract remain supported.
+
 | Owner | Assessment |
 |---|---|
 | Root composition, DbContext, options and design-time factory | Correct infrastructure ownership. The runtime requires an explicit PostgreSQL connection; the design-time factory has a local development default. Neither needs relocation. Migration execution needs a release owner before public deployment. |

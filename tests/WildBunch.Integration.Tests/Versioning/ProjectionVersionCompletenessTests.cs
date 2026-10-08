@@ -39,7 +39,6 @@ public sealed class ProjectionVersionCompletenessTests
             GameSessionComponentNames.CurrentActionContext,
             GameSessionComponentNames.PendingDevTravelOverride,
             GameSessionComponentNames.PendingDevSaloonOverride,
-            GameSessionComponentNames.DevLayoutSalts,
         };
 
         foreach (var name in componentNames)

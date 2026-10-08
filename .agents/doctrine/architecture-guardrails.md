@@ -46,14 +46,11 @@ live in [event-sourcing integrity](event-sourcing-integrity.md).
 
 ## Persistence posture
 
-- Runtime session persistence is JSON snapshot-oriented, while the event stream
-  remains the source of history for event-backed sessions.
-- A zero-event `StartPrepped` session requires its current snapshot load
-  path.
+- Runtime session persistence is JSON snapshot-oriented, while the event stream remains the source of history for event-backed sessions.
+- Player setup creates the event history at Go; no zero-event `StartPrepped` session or snapshot-only exception remains.
 - Repo-local database artifacts live under repo-root `.local/`, never `src/`.
 - Do not add internal or save compatibility unless it is explicitly required.
-- Do not introduce a broker, separate event-store interface, EventStoreDB, or
-  normalized live-session table split without explicit scope.
+- Do not introduce a broker, separate event-store interface, EventStoreDB, or normalized live-session table split without explicit scope.
 
 Seed, difficulty, entropy, and starting-town ownership lives only in
 [game-content seed pipeline](game-content-seed-pipeline.md). Browser authority

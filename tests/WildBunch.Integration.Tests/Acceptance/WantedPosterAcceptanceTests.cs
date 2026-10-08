@@ -16,16 +16,8 @@ public sealed class WantedPosterAcceptanceTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateAuthenticatedClient();
 
+        // The API test factory supplies a fixed SaltSource at player genesis.
         var createdSession = await factory.SeedCanonicalSessionAsync();
-
-        // BUNCH-107: Force a fixed salt so the wanted-poster resolver uses
-        // boring-mode selection (deterministic). With Classic entropy, the salt
-        // is Runtime (random), making warrant selection non-deterministic.
-        // In boring mode: (townSlotIndex + visitCount) % eligibleCount = (0 + 1) % 27 = 1
-        // → warrant at index 1 = "Sundance Kid" (a gang member warrant).
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/session/lock-rng",
-            new LockRngRequestDto(Salt: "test-salt-fixed"));
 
         var response = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 

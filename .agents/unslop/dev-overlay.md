@@ -445,6 +445,10 @@ Acceptance check:
 
 - Worker return proves the playtest loop, not just the validation suite.
 
+### 16. Advertised controls without a live backend path
+
+Treat a dev control as usable only when its client action reaches a registered, guarded server command and a real state effect that the intended playtest can observe. A mocked client call, commented-out route, or skipped test does not establish a working control. Trace the UI through API registration, command handler and aggregate/event effect to the normal consumer or authoritative readback. Remove a disconnected shell when it is outside release scope; otherwise complete its real path. Do not replace this semantic review with a route-presence or source-shape test.
+
 ## Review questions
 
 Ask these before accepting dev overlay work:

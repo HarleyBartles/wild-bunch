@@ -107,7 +107,7 @@ public static class TestSessionFactory
     /// fact but no known warrants). LookAroundSaloon will spot this suspect as a wanted-suspect
     /// person of interest. Used by BUNCH-80 bounty/saloon event-sourcing tests.
     /// </summary>
-    public static GameSession CreateWithConfrontableSaloonSuspect()
+    public static GameSession CreateWithConfrontableSaloonSuspect(string salt = "")
     {
         var town = new Town(new TownId("current"), "Current Town", TownServices.None);
         var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
@@ -138,7 +138,7 @@ public static class TestSessionFactory
 
         var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+            SaltSource.CreateFixed(salt));
         session.MarkEventsCommitted();
         return session;
     }

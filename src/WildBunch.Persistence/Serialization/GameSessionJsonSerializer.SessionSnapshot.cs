@@ -27,8 +27,7 @@ public sealed partial class GameSessionJsonSerializer
         IReadOnlyList<WantedSuspectPresenceSnapshot> WantedSuspectPresenceLedger,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
         DevTravelOverride? PendingDevTravelOverride,
-        DevSaloonOverride? PendingDevSaloonOverride,
-        LayoutSaltsSnapshot? DevLayoutSalts)
+        DevSaloonOverride? PendingDevSaloonOverride)
     {
         public static GameSessionSnapshot FromDomain(GameSession session)
             => new(
@@ -53,8 +52,7 @@ public sealed partial class GameSessionJsonSerializer
                 session.WantedSuspectPresenceEntries.Select(WantedSuspectPresenceSnapshot.FromDomain).ToArray(),
                 session.TravelDiaryDays.ToArray(),
                 session.PendingDevTravelOverride,
-                session.PendingDevSaloonOverride,
-                session.DevLayoutSalts is not null ? LayoutSaltsSnapshot.FromDomain(session.DevLayoutSalts) : null);
+                session.PendingDevSaloonOverride);
 
         public GameSession ToDomain()
         {
@@ -99,11 +97,6 @@ public sealed partial class GameSessionJsonSerializer
             {
                 session.RestoreBountyLoopState(PendingDevSaloonOverride);
             }
-            if (DevLayoutSalts is not null)
-            {
-                session.RestoreDevLayoutSalts(DevLayoutSalts.ToDomain());
-            }
-
             return session;
         }
     }

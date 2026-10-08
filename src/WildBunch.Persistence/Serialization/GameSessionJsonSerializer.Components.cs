@@ -131,29 +131,6 @@ public sealed partial class GameSessionJsonSerializer
     internal DevSaloonOverride? DeserializePendingDevSaloonOverride(string? json)
         => json is null ? null : Deserialize<DevSaloonOverride>(json);
 
-    public string? SerializeDevLayoutSalts(LayoutSalts? layoutSalts)
-        => layoutSalts is null ? null : JsonSerializer.Serialize(LayoutSaltsSnapshot.FromDomain(layoutSalts), Options);
-
-    internal LayoutSalts? DeserializeDevLayoutSalts(string? json)
-        => json is null ? null : Deserialize<LayoutSaltsSnapshot>(json)?.ToDomain();
-
-    private sealed record LayoutSaltsSnapshot(
-        string BuildingsSalt,
-        string RoadsSalt,
-        string DirtSalt,
-        string PropsSalt)
-    {
-        public static LayoutSaltsSnapshot FromDomain(LayoutSalts layoutSalts)
-            => new(
-                layoutSalts.BuildingsSalt,
-                layoutSalts.RoadsSalt,
-                layoutSalts.DirtSalt,
-                layoutSalts.PropsSalt);
-
-        public LayoutSalts ToDomain()
-            => new(BuildingsSalt, RoadsSalt, DirtSalt, PropsSalt);
-    }
-
     private sealed record PlayerSnapshot(
         string Name,
         string? CurrentTownId,

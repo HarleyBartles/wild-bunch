@@ -117,17 +117,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _actionContextTracker.RestoreState(context, townId);
     }
 
-    /// <summary>
-    /// Restores dev layout salts during snapshot rehydration.
-    /// The salts are reconstructed from event replay via Apply(DevLayoutSaltsForced).
-    /// Both paths (snapshot load + event replay) must produce the same values.
-    /// See BUNCH-147.
-    /// </summary>
-    internal void RestoreDevLayoutSalts(WildBunch.Domain.World.LayoutSalts layoutSalts)
-    {
-        DevLayoutSalts = layoutSalts;
-    }
-
     public GameStatus Status { get; private set; }
 
     /// <summary>
@@ -156,13 +145,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public SaltSource SaltSource { get; private set; }
 
     public string? SeedCode { get; private set; }
-
-    /// <summary>
-    /// Dev-controlled layout salts for town hub layout generation.
-    /// When set, these salts override the derived layout salts for reproducible
-    /// layout generation. Dev-only state. See BUNCH-147.
-    /// </summary>
-    public LayoutSalts? DevLayoutSalts { get; private set; }
 
     public TownAggregate CurrentTown => _currentTown
         ?? throw new InvalidOperationException("No town has been selected yet. The current town is only available after GameStarted.");
@@ -403,15 +385,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 break;
             case DevSaloonOverrideConsumed dsc2:
                 Apply(dsc2);
-                break;
-            case DevSaltSourceForced dsf:
-                Apply(dsf);
-                break;
-            case DevSaltSourceCleared dsc:
-                Apply(dsc);
-                break;
-            case DevLayoutSaltsForced dlsf:
-                Apply(dlsf);
                 break;
             case DevDifficultyForced ddf:
                 Apply(ddf);
@@ -726,39 +699,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Applies a DevSaltSourceForced event. Replaces the RNG salt posture with the
-    /// forced fixed salt source. Dev-only event — does not affect gameplay state
-    /// directly. The salt source is persisted in the session snapshot, so
-    /// rehydration after a salt change requires no new persistence shape.
-    /// See BUNCH-101.
-    /// </summary>
-    internal void Apply(DevSaltSourceForced e)
-    {
-        SaltSource = e.ForcedSaltSource;
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies a DevSaltSourceCleared event. Restores runtime RNG.
-    /// Dev-only event. See BUNCH-101.
-    /// </summary>
-    internal void Apply(DevSaltSourceCleared e)
-    {
-        SaltSource = SaltSource.CreateRuntime();
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies a DevLayoutSaltsForced event. Sets the dev layout salts for town layout generation.
-    /// Dev-only event. See BUNCH-147.
-    /// </summary>
-    internal void Apply(DevLayoutSaltsForced e)
-    {
-        DevLayoutSalts = e.DevLayoutSalts;
-        _version++;
-    }
-
-    /// <summary>
     /// Applies a DevDifficultyForced event. Changes the session difficulty,
     /// which changes the derived TravelRules profile. Dev-only event — does
     /// not affect starting health/cash or any other gameplay state directly.
@@ -878,46 +818,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
         session.Apply(caseFileEvent);
         session._uncommittedEvents.Add(caseFileEvent);
-
-        return session;
-    }
-
-    /// <summary>
-    /// Creates a minimal game session in the prepped phase (before world generation).
-    /// The session has seed, difficulty, and entropy but no world yet.
-    /// Used for the multi-phase setup flow where dev injections happen before world generation.
-    /// </summary>
-    public static GameSession StartPrepped(
-        string seedCode,
-        GameDifficulty gameDifficulty,
-        GameEntropy gameEntropy)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
-
-        var placeholderPlayer = new Player(
-            "Prepped",
-            currentTownId: null,
-            health: 1000,
-            WildBunch.Domain.Economy.Wallet.Starting(0m),
-            DomainInventory.Empty());
-
-        var session = new GameSession(
-            GameSessionId.New(),
-            placeholderPlayer,
-            world: null,
-            caseFile: null,
-            new PursuitState(),
-            new GameClock(),
-            GameStatus.Prepped,
-            journey: null,
-            gameDifficulty,
-            SaltSource.CreateRuntime(),
-            gameEntropy,
-            currentTownVisit: null,
-            Array.Empty<TravelJourneySnapshot>(),
-            Array.Empty<WantedSuspectPresenceEntry>());
-
-        session.SeedCode = seedCode;
 
         return session;
     }
@@ -1353,33 +1253,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Dev command: locks the RNG to a fixed salt for reproducible playtesting.
-    /// Sets up reproducibility state; does not force any encounter outcome.
-    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-101.
-    /// </summary>
-    public void ForceDevSaltSource(SaltSource saltSource)
-    {
-        ArgumentNullException.ThrowIfNull(saltSource);
-        if (saltSource.Mode != SaltSourceMode.Fixed)
-        {
-            throw new ArgumentException("ForceDevSaltSource requires a Fixed salt source.", nameof(saltSource));
-        }
-
-        ProduceEvent(new DevSaltSourceForced
-        {
-            ForcedSaltSource = saltSource
-        });
-    }
-
-    /// <summary>
-    /// Dev command: restores runtime RNG. See BUNCH-101.
-    /// </summary>
-    public void ClearDevSaltSource()
-    {
-        ProduceEvent(new DevSaltSourceCleared());
-    }
-
-    /// <summary>
     /// Dev command: forces the session difficulty to a new value for playtesting.
     /// Changes the travel rules profile going forward. Does not retroactively
     /// change starting health/cash (those were set at game start).
@@ -1415,56 +1288,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             NewEntropy = entropy
         });
-    }
-
-    /// <summary>
-    /// Dev command: forces layout salts for town hub layout generation.
-    /// Stores dev-controlled layout salts for reproducible layout generation.
-    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-147.
-    /// </summary>
-    public void SetDevLayoutSalts(LayoutSalts layoutSalts)
-    {
-        ArgumentNullException.ThrowIfNull(layoutSalts);
-        ProduceEvent(new DevLayoutSaltsForced(layoutSalts));
-    }
-
-    /// <summary>
-    /// Transitions a prepped session to active phase by generating the world
-    /// with the provided world, case file, and salt source. Used by the three-phase
-    /// dev-enabled action pattern (prep → inject dev salts → start). See BUNCH-147.
-    /// </summary>
-    public void StartFromPrepped(
-        DomainWorld world,
-        CaseFile caseFile,
-        string seedCodeText,
-        SaltSource saltSource)
-    {
-        ArgumentNullException.ThrowIfNull(world);
-        ArgumentNullException.ThrowIfNull(caseFile);
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCodeText);
-        ArgumentNullException.ThrowIfNull(saltSource);
-
-        if (Status != GameStatus.Prepped)
-        {
-            throw new InvalidOperationException("Session must be in Prepped status to start from prepped.");
-        }
-
-        World = world;
-        CaseFile = caseFile;
-        SeedCode = seedCodeText;
-        SaltSource = saltSource;
-        Status = GameStatus.Active;
-
-        var caseFileSnapshot = WildBunch.Domain.Cases.CaseFileSnapshot.FromDomain(caseFile);
-        var worldEvent = new WorldGenerated
-        {
-            SeedCode = seedCodeText,
-            SaltSource = saltSource,
-            GameEntropy = GameEntropy,
-            World = WorldSnapshot.FromDomain(world),
-            CaseFile = caseFileSnapshot
-        };
-        ProduceEvent(worldEvent);
     }
 
     private void RefreshTownVisit(TownId townId)

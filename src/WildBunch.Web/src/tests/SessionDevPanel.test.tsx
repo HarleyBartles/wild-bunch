@@ -4,18 +4,10 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SessionDevPanel } from "../dev/panels/SessionDevPanel";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import {
-  clearRng,
-  forceDevDifficulty,
-  getSessionDevContext,
-  lockRng,
-  setDevEntropy,
-} from "../dev/devApi";
+import { forceDevDifficulty, getSessionDevContext, setDevEntropy } from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
   getSessionDevContext: vi.fn(),
-  lockRng: vi.fn(),
-  clearRng: vi.fn(),
   forceDevDifficulty: vi.fn(),
   setDevEntropy: vi.fn(),
   getSessionAudit: vi.fn(),
@@ -48,8 +40,6 @@ vi.mock("../api/wildBunchApi", () => ({
 }));
 
 const mockedGetContext = vi.mocked(getSessionDevContext);
-const mockedLock = vi.mocked(lockRng);
-const mockedClear = vi.mocked(clearRng);
 const mockedForceDifficulty = vi.mocked(forceDevDifficulty);
 const mockedSetEntropy = vi.mocked(setDevEntropy);
 
@@ -116,40 +106,6 @@ describe("SessionDevPanel", () => {
     expect(screen.getByText("Standard")).toBeInTheDocument();
     expect(screen.getByText("Classic")).toBeInTheDocument();
     expect(screen.getByText("Runtime")).toBeInTheDocument();
-  });
-
-  it("calls lockRng when Lock RNG is clicked", async () => {
-    seedGameId("test-game-2");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-2" });
-    mockedLock.mockResolvedValue(undefined);
-    renderPanel();
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /lock rng/i })).toBeInTheDocument();
-    });
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /lock rng/i }));
-
-    await waitFor(() => {
-      expect(mockedLock).toHaveBeenCalledWith("test-game-2", expect.objectContaining({}));
-    });
-  });
-
-  it("calls clearRng when Clear RNG is clicked", async () => {
-    seedGameId("test-game-3");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-3" });
-    mockedClear.mockResolvedValue(undefined);
-    renderPanel();
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /clear rng/i })).toBeInTheDocument();
-    });
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /clear rng/i }));
-
-    await waitFor(() => {
-      expect(mockedClear).toHaveBeenCalledWith("test-game-3");
-    });
   });
 
   it("renders difficulty control and travel-rule facts", async () => {

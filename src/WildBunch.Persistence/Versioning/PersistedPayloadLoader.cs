@@ -123,7 +123,6 @@ public sealed class PersistedPayloadLoader
             GameSessionComponentNames.CurrentActionContext => _serializer.SerializeCurrentActionContext(session.CurrentActionContext, session.CurrentActionContextTownId),
             GameSessionComponentNames.PendingDevTravelOverride => _serializer.SerializePendingDevTravelOverride(session.PendingDevTravelOverride) ?? throw new InvalidOperationException("Cannot rebuild null PendingDevTravelOverride."),
             GameSessionComponentNames.PendingDevSaloonOverride => _serializer.SerializePendingDevSaloonOverride(session.PendingDevSaloonOverride) ?? throw new InvalidOperationException("Cannot rebuild null PendingDevSaloonOverride."),
-            GameSessionComponentNames.DevLayoutSalts => _serializer.SerializeDevLayoutSalts(session.DevLayoutSalts) ?? throw new InvalidOperationException("Cannot rebuild null DevLayoutSalts."),
             _ => throw new InvalidOperationException($"Unknown component name '{componentName}' for rebuild."),
         };
     }

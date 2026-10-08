@@ -174,7 +174,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         // The snapshot components are always written (below), so the snapshot
         // version must always reflect the session's current version — even when
-        // no events were produced (e.g. StartPrepped sessions). Without this,
+        // no events were produced. Without this,
         // SnapshotVersion stays null and GetByIdAsync routes to LoadFromEventsAsync,
         // which returns null for sessions with no stored events.
         entity.SnapshotVersion = session.Version;
@@ -215,16 +215,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         else
         {
             UpsertComponent(entity.Id, GameSessionComponentNames.PendingDevSaloonOverride, devSaloonOverrideJson, now);
-        }
-
-        var devLayoutSaltsJson = _serializer.SerializeDevLayoutSalts(session.DevLayoutSalts);
-        if (devLayoutSaltsJson is null)
-        {
-            await RemoveComponentAsync(entity.Id, GameSessionComponentNames.DevLayoutSalts, cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            UpsertComponent(entity.Id, GameSessionComponentNames.DevLayoutSalts, devLayoutSaltsJson, now);
         }
 
         if (session.Journey is null)
@@ -474,16 +464,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         if (pendingDevSaloonOverride is not null)
         {
             session.RestoreBountyLoopState(pendingDevSaloonOverride);
-        }
-
-        // Restore dev layout salts from snapshot. If there are post-snapshot events,
-        // ApplyCommittedEvents will overwrite this via Apply(DevLayoutSaltsForced).
-        // When the snapshot is current, this restores the persisted dev salts. See BUNCH-147.
-        var devLayoutSaltsJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.DevLayoutSalts, _payloadLoader, store.AllEvents);
-        var devLayoutSalts = _serializer.DeserializeDevLayoutSalts(devLayoutSaltsJson);
-        if (devLayoutSalts is not null)
-        {
-            session.RestoreDevLayoutSalts(devLayoutSalts);
         }
 
         if (hasPostSnapshotEvents)

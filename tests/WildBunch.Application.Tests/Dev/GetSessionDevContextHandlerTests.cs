@@ -32,8 +32,8 @@ public sealed class GetSessionDevContextHandlerTests
         Assert.Equal(session.GameDifficulty.ToString(), result.GameDifficulty);
         Assert.Equal(session.GameEntropy.ToString(), result.GameEntropy);
         Assert.NotNull(result.SaltPosture);
-        Assert.Equal(session.SaltSource.Mode.ToString(), result.SaltPosture!.Mode);
-        Assert.Equal(session.SaltSource.Salt, result.SaltPosture.Salt);
+        Assert.Equal("Fixed", result.SaltPosture!.Mode);
+        Assert.Equal(string.Empty, result.SaltPosture.Salt);
         Assert.Equal(session.Clock.Day, result.Clock.Day);
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
         Assert.Equal(session.CurrentTown.TownId.Value, result.CurrentTownId);
@@ -73,41 +73,6 @@ public sealed class GetSessionDevContextHandlerTests
         // Brutal canteen capacity is 1
         Assert.Equal(1, brutalResult.TravelRules!.CanteenCapacity);
         Assert.NotEqual(easyResult.TravelRules.CanteenCapacity, brutalResult.TravelRules.CanteenCapacity);
-    }
-
-    [Fact]
-    public async Task HandleAsync_AfterForceDevSaltSource_ReflectsFixedSalt()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateSeededSession();
-        session.ForceDevSaltSource(SaltSource.CreateFixed("deadbeef"));
-        session.MarkEventsCommitted();
-        repository.Seed(session);
-
-        var handler = new GetSessionDevContextHandler(repository);
-
-        var result = await handler.HandleAsync(new GetSessionDevContextQuery(session.Id.Value));
-
-        Assert.Equal("Fixed", result.SaltPosture!.Mode);
-        Assert.Equal("deadbeef", result.SaltPosture.Salt);
-    }
-
-    [Fact]
-    public async Task HandleAsync_AfterClearDevSaltSource_ReflectsRuntimeMode()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateSeededSession();
-        session.ForceDevSaltSource(SaltSource.CreateFixed("deadbeef"));
-        session.MarkEventsCommitted();
-        session.ClearDevSaltSource();
-        session.MarkEventsCommitted();
-        repository.Seed(session);
-
-        var handler = new GetSessionDevContextHandler(repository);
-
-        var result = await handler.HandleAsync(new GetSessionDevContextQuery(session.Id.Value));
-
-        Assert.Equal("Runtime", result.SaltPosture!.Mode);
     }
 
     private static GameSession CreateSeededSession()
