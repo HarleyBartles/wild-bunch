@@ -26,9 +26,8 @@ public sealed class GetTownStoreOffersHandlerTests
 
         var result = await handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "redmesa"));
 
-        Assert.True(result.Available);
         Assert.Equal("Red Mesa", result.TownName);
-        Assert.Contains(result.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith && offer.DisplayName == "Revolver ammo");
+        Assert.Contains(result.Offers, offer => offer.DisplayName == "Revolver ammo");
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
 
@@ -47,12 +46,9 @@ public sealed class GetTownStoreOffersHandlerTests
 
         var result = await handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "dryfork"));
 
-        // Every town has a store (prosperity-driven). A Destitute town has only
-        // general store offers — no stable or gunsmith.
-        Assert.True(result.Available);
-        Assert.Contains(result.Offers, offer => offer.VendorType == StoreVendorType.GeneralStore);
-        Assert.DoesNotContain(result.Offers, offer => offer.VendorType == StoreVendorType.Stable);
-        Assert.DoesNotContain(result.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith);
+        Assert.Equal(
+            new[] { WildBunch.Domain.Inventory.ItemKind.Food, WildBunch.Domain.Inventory.ItemKind.HorseFeed },
+            result.Offers.Select(offer => offer.ItemKind));
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
     }

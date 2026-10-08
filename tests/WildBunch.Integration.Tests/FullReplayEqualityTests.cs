@@ -132,7 +132,7 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
         var reloaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(reloaded!.World.GetTown(reloaded.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         reloaded.Purchase(offer, 2);
         await repo.StoreAsync(reloaded);
         await uow.CommitAsync();

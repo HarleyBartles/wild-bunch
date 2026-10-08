@@ -65,7 +65,6 @@ public static class TownStoreEndpoints
                 new PurchaseStoreItemCommand(
                     gameSessionId,
                     townId,
-                    validatedRequest.VendorType,
                     validatedRequest.ItemKind,
                     validatedRequest.Quantity),
                 cancellationToken);

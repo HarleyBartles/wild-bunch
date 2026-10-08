@@ -48,7 +48,7 @@ interface StoreOffersPanelProps {
 }
 
 function quantityKey(offer: StoreOfferDto) {
-  return `${offer.vendorType}-${offer.itemKind}`;
+  return offer.itemKind;
 }
 
 function StoreOfferRow({
@@ -64,7 +64,7 @@ function StoreOfferRow({
 
   useEffect(() => {
     setQuantity("1");
-  }, [offer.itemKind, offer.vendorType]);
+  }, [offer.itemKind]);
 
   async function handleBuy() {
     const parsedQuantity = Number.parseInt(quantity, 10);
@@ -85,7 +85,7 @@ function StoreOfferRow({
         onChange={(event) => setQuantity(event.target.value)}
         disabled={disabled}
       />
-      <Button type="button" onClick={handleBuy} disabled={disabled || offer.availability !== 0}>
+      <Button type="button" onClick={handleBuy} disabled={disabled}>
         Buy
       </Button>
     </OfferRow>
@@ -114,7 +114,7 @@ export function StoreOffersPanel({
               />
             ))
           ) : (
-            <Muted>No store offers are available in this town.</Muted>
+            <Muted>No goods are currently offered at this store.</Muted>
           )}
         </OfferList>
       ) : null}

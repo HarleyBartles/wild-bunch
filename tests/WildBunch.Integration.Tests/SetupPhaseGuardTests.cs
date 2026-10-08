@@ -51,7 +51,6 @@ public sealed class SetupPhaseGuardTests
         var response = await client.PostAsJsonAsync(
             $"/api/games/{setupSession.Id}/towns/{townId}/store/buy",
             new BuyStoreItemRequest(
-                StoreVendorType.GeneralStore,
                 ItemKind.Food,
                 1));
 

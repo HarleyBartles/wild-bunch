@@ -83,7 +83,7 @@ public sealed class GameApiJournalTests
 
         var buyResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
+            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.Food, 2));
         var buyResult = await buyResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
         Assert.NotNull(buyResult);
         Assert.True(buyResult!.Success);

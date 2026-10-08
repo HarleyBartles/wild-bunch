@@ -57,8 +57,6 @@ export type WaterFeature = 0 | 1 | 2 | 3;
 export type ClueRecency = 0 | 1 | 2 | 3 | 4;
 export type JourneyTrailEventKind = 0 | 1;
 export type JourneyTrailEventId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-export type StoreVendorType = 0 | 1 | 2;
-export type StoreOfferAvailability = 0 | 1;
 export type CaseIdentityKind = 0 | 1 | 2 | 3 | 4;
 export type CaseIdentityStatus = 0 | 1 | 2 | 3;
 
@@ -379,21 +377,15 @@ export interface StoreOfferDto {
   itemKind: ItemKind;
   displayName: string;
   price: number;
-  vendorType: StoreVendorType;
-  availability: StoreOfferAvailability;
-  sourceNote: string;
 }
 
 export interface TownStoreOffersDto {
   townId: string;
   townName: string;
-  available: boolean;
-  sourceNote: string;
   offers: StoreOfferDto[];
 }
 
 export interface BuyStoreItemRequest {
-  vendorType: StoreVendorType | null;
   itemKind: ItemKind | null;
   quantity: number;
 }

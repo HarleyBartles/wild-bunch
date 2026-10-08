@@ -55,16 +55,14 @@ public sealed class PurchaseStoreItemHandler : GameSessionCommandHandler
 
             var catalog = _storeCatalogResolver.Resolve(town!);
             var offer = catalog.Offers.FirstOrDefault(candidate =>
-                command.VendorType.HasValue
-                && command.ItemKind.HasValue
-                && candidate.VendorType == command.VendorType.Value
+                command.ItemKind.HasValue
                 && candidate.ItemKind == command.ItemKind.Value);
 
-            if (offer is null || offer.Availability != StoreOfferAvailability.Available)
+            if (offer is null)
             {
                 return new GameTurnResultDto(
                     false,
-                    "That store offer is not available in this town.",
+                    "That item is not offered at this store.",
                     GameSessionMapper.ToDto(session));
             }
 

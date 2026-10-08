@@ -420,10 +420,9 @@ internal static class ScenarioSeedCatalog
 
     private static void AssertStartingTownStoreAvailability(TownStoreOffersDto storeOffers, string currentTownId)
     {
-        RequireEqual("CanonicalStartingTownServices", "store-offers.available", true, storeOffers.Available);
         RequireEqual("CanonicalStartingTownServices", "store-offers.townId", currentTownId, storeOffers.TownId);
-        Require("CanonicalStartingTownServices", "store-offers.generalStore", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.GeneralStore), "expected the starting town to expose a general store.");
-        Require("CanonicalStartingTownServices", "store-offers.stable", storeOffers.Offers.Any(offer => offer.VendorType == StoreVendorType.Stable), "expected the starting town to expose a stable.");
+        Require("CanonicalStartingTownServices", "store-offers.goods", storeOffers.Offers.Any(offer => offer.ItemKind == WildBunch.Domain.Inventory.ItemKind.Food), "expected the starting town Store to offer food.");
+        RequireEqual("CanonicalStartingTownServices", "store-offers.unique-items", storeOffers.Offers.Count, storeOffers.Offers.Select(offer => offer.ItemKind).Distinct().Count());
     }
 
     private static string DescribeCanonicalMountedShape(GameSessionDto session, TravelPreviewResultDto? preview)

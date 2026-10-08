@@ -60,7 +60,7 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 **Dependencies:** **Requires** an active game and a town Store. Purchase output **changes** inventory and wallet state consumed conditionally by `PG-006` and `PG-007`. Town prosperity **changes** store stock/prices; distinct vendor identity does not.
 
-**Assessment and evidence:** Partial. Purchase, inventory and prosperity behavior exist, but vendor splits and ownership/stacking/resource edge cases do not meet the settled contract. See the [Domain](../.agents/investigations/stable-0.1.0/2026-10-07-domain-layer-investigation.md), [Application](../.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md), [Persistence](../.agents/investigations/stable-0.1.0/2026-10-07-persistence-layer-investigation.md) and their linked test follow-ups. The audits identify tests that protect existing shapes and behavior gaps; they do not certify the full lifecycle by runtime play.
+**Assessment and evidence:** Partial. The one-store catalog, prosperity-tier item/price matrix and item-only purchase contract are implemented across Domain, Application, HTTP and browser boundaries. PG-004 remains partial because horse/canteen lifecycle and other resource ownership/consumption contracts have not all been certified, and `Rifle` still has neither a current offer nor a starting grant. See the [store/inventory boundary](../.agents/investigations/stable-0.1.0/2026-10-07-store-and-inventory-boundaries.md) and linked layer/test investigations for remaining evidence and gaps.
 
 **0.1.0 disposition:** Consolidate to one Store and repair. Preserve coherent existing item/pricing behavior by prosperity; distinct stable, gunsmith and other vendor services are future features.
 

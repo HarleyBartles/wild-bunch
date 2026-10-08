@@ -25,7 +25,7 @@ public sealed class GameApiPurchaseTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
+            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.Food, 2));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -62,7 +62,7 @@ public sealed class GameApiPurchaseTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/towns/{nonCurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 1));
+            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.Food, 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -91,7 +91,7 @@ public sealed class GameApiPurchaseTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.HorseFeed, 100));
+            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.HorseFeed, 100));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -105,7 +105,7 @@ public sealed class GameApiPurchaseTests
     }
 
     [Fact]
-    public async Task PostStoreBuyReturnsSuccessFalseForUnavailableOffer()
+    public async Task PostStoreBuyReturnsSuccessFalseForItemAbsentFromCurrentCatalog()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
@@ -118,12 +118,10 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
-        // The starting town is Prosperous — it has a general store, stable, and gunsmith.
-        // Revolver is sold by the gunsmith, not the stable. Requesting it from
-        // the stable vendor triggers the "not available" path.
+        // Rifle is a valid item kind but is not currently offered by the Store.
         var response = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.Stable, WildBunch.Domain.Inventory.ItemKind.Revolver, 1));
+            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.Rifle, 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -131,7 +129,7 @@ public sealed class GameApiPurchaseTests
 
         Assert.NotNull(result);
         Assert.False(result!.Success);
-        Assert.Equal("That store offer is not available in this town.", result.Message);
+        Assert.Equal("That item is not offered at this store.", result.Message);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
         Assert.Equal(createdSession.LogEntries.Count, result.CurrentSession.LogEntries.Count);
     }

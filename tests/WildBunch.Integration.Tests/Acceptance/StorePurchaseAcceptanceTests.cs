@@ -21,7 +21,7 @@ public sealed class StorePurchaseAcceptanceTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(StoreVendorType.GeneralStore, ItemKind.Food, 2));
+            new BuyStoreItemRequest(ItemKind.Food, 2));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

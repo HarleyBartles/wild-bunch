@@ -134,7 +134,7 @@ public sealed class GameSessionEventReplayTests
         // Perform a post-start mutation (Purchase enters Store context first).
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == ItemKind.Food);
+            .Offers.Single(o => o.ItemKind == ItemKind.Food);
         session.Purchase(offer, 1);
 
         var events = session.UncommittedEvents.ToList();

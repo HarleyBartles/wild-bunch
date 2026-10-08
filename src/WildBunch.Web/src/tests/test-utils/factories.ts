@@ -91,8 +91,6 @@ export function createStoreOffers(overrides: Partial<TownStoreOffersDto> = {}): 
   return {
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
     ...overrides,
   };

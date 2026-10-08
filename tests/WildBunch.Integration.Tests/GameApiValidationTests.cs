@@ -97,7 +97,7 @@ public sealed class GameApiValidationTests
             new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        await AssertValidationProblemAsync(response, "vendorType", "itemKind");
+        await AssertValidationProblemAsync(response, "itemKind");
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public sealed class GameApiValidationTests
 
         var response = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 0));
+            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.Food, 0));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "quantity");
