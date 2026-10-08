@@ -1,6 +1,6 @@
 # PG-009: Unrelated-criminal feature boundary
 
-**Status:** Source-traced feature assessment linked from the [authoritative feature matrix](../../../docs/features.md). The user agreed to defer unrelated-criminal gameplay from the stable 0.1.0 surface. The stories and removal boundary below are proposed detail for that decision; no source/test removal or migration has been performed. Historical compatibility policy and any future replacement design remain unresolved.
+**Status:** Historical source-traced assessment linked from the [authoritative feature matrix](../../../docs/features.md). It records the pre-retirement implementation and decision boundary. PG-009-R has since removed the live unrelated-criminal code and tests and selected explicit pre-alpha playthrough invalidation; source references below describe that earlier tree. The separate [retirement outcome](2026-10-07-unrelated-criminal-removal.md) and [future addition](2026-10-07-unrelated-criminal-addition.md) record current disposition and deferred design.
 
 ## Separate removal and future-addition records
 

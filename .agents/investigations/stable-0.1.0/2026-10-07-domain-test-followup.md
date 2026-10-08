@@ -1,12 +1,14 @@
 # Domain findings: test dispositions and invariant proof
 
-**Status:** Static follow-up to the [Domain investigation](2026-10-07-domain-layer-investigation.md), covering DN-01 through DN-16 and the user's strict CQRS requirement. Existing assertions, relevant fixture construction and supporting production paths were inspected in the live worktree, with repo-wide coverage searches. This is a targeted reassessment, not a claim to have reread every repository test again. No tests, product code, services or persisted data were changed or exercised.
+**Status:** Static follow-up to the [Domain investigation](2026-10-07-domain-layer-investigation.md), covering DN-01 through DN-16 and the user's strict CQRS requirement. Existing assertions, relevant fixture construction and supporting production paths were inspected in the live worktree, with repo-wide coverage searches. This is a targeted reassessment, not a claim to have reread every repository test again. The unrelated-criminal shell was subsequently retired under PG-009-R; ledger-only tests identified below were removed with it. The remaining entries preserve the audit findings that informed that decision.
 
-**Decision boundary:** First decide which features belong in the stable baseline. Fix tests with retained behavior; retire tests for deliberately removed features and preserve only the compatibility/migration behavior that remains supported. Unrelated criminals is a removal/deferment candidate, not an approved repair project. No test count, passing snapshot round trip or class named EventSourcing can turn an unfinished feature into a baseline obligation. Existing [Application](2026-10-07-application-test-followup.md) and [Persistence](2026-10-07-persistence-test-followup.md) dispositions remain applicable.
+**Decision boundary:** PG-009-R retired unrelated-criminal gameplay from the stable baseline, and the migration explicitly invalidates pre-alpha playthroughs. The former live loop has no compatibility obligation. Fix tests for retained behavior; no test count, passing snapshot round trip or class named EventSourcing can turn an unfinished feature into a baseline obligation. Existing [Application](2026-10-07-application-test-followup.md) and [Persistence](2026-10-07-persistence-test-followup.md) dispositions remain applicable.
 
 ## Existing tests that protect or conceal the bad baseline
 
 Paths and line references below are relative to the repository root. A useful test with a missing oracle is distinguished from an assertion that actively requires wrong behavior.
+
+The test paths and conditional repair recommendations below are a pre-retirement audit snapshot. PG-009-R removed ledger-only tests and retains only the migration behavior proof for pre-alpha history invalidation.
 
 | Existing test or fixture | What it currently establishes | Proposed disposition |
 |---|---|---|
@@ -70,11 +72,9 @@ For theft, select Food and HorseFeed branches separately while other resources m
 
 Legacy encounter-profile repair needs a declared supported shape before tests: valid old state must reconstruct deterministically or fail under the agreed policy, and rejected intent must not secretly change gameplay state. NPC interaction and starvation semantics remain scope questions; tests must not invent them from warning copy or generic encounter names.
 
-### 5. Unrelated criminals: conditional repair or deliberate retirement, DN-03/10
+### 5. Unrelated criminals: retired under PG-009-R, DN-03/10
 
-If retained, extend the existing full-replay PostgreSQL family with legal warrant collection, unrelated take-in, replacement, gang take-in and preferential retirement in meaningful order. Save events before marking committed, use independent contexts/production registration, remove or damage caches, and compare active/taken/collected/retired IDs, parity and the next surfacing/settlement behavior. Attempt repeat/retired/unknown turn-ins and prove no duplicate payment. Couple malformed-cache recovery to this complete history rather than asserting snapshot-only preservation.
-
-If removed, retire the feature-only unit/wiring/acceptance assertions together with its callers and content. Add boundary proof only where the retained product could still offer/execute it, plus the declared historical migration/load policy for streams containing those event types. Supported older playthroughs must still replay correctly or be explicitly invalidated through the accepted version/migration policy. Preserving applied migrations and ADR history requires no test that freezes filenames or every retired private type.
+The ledger unit/wiring/persistence and unrelated-ledger full-replay tests described above were removed with the retired source. Their proposed ledger behavior is not a current test obligation. The migration behavior test owns the selected historical policy by proving pre-alpha session rows and their dependent data are invalidated while schema/migration history remain and a new session can be stored. Retained gang settlement and replay continue to have independent behavior coverage.
 
 ### 6. Supported value, content and world boundaries, DN-11/14/15
 
@@ -88,4 +88,4 @@ The four travel characterization suites repeat the same deterministic fixture ac
 
 `TypedDomainEventTests` initializer echoes, interface checks, C# init/record equality inventories and `World/LayoutSaltsTests` constructor/equality tests mostly restate compiler behavior. They do not prove recorded facts are deeply immutable, reconstruct correctly or remain safe at an API boundary. Retire those echoes under the existing test-quality dispositions; preserve genuinely owned envelope/payload compatibility where a real consumer contract exists. `TravelDiarySnapshotShapeTests`, source-string journal guards and dead heat-constant checks should not be rewritten to freeze replacement implementation shapes.
 
-Do not equate fewer tests with stronger proof. Keep small tests for distinct failure behavior, explicit public value contracts and independent adapters; consolidate duplicate setup and repeated assertions of one behavior. All proposed assertions remain contingent on an agreed source correction or feature retirement. No additional regression is required merely because this audit assigns a finding ID.
+Do not equate fewer tests with stronger proof. Keep small tests for distinct failure behavior, explicit public value contracts and independent adapters; consolidate duplicate setup and repeated assertions of one behavior. Remaining proposed assertions are contingent on an agreed source correction or feature decision. No additional regression is required merely because this audit assigns a finding ID.
