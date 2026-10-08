@@ -52,7 +52,6 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
 
       try {
         const result = await buyStoreItem(gameId, currentTown.id, {
-          vendorType: offer.vendorType,
           itemKind: offer.itemKind,
           quantity,
         });

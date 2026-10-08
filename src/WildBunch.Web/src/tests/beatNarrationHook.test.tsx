@@ -152,8 +152,6 @@ function primeMocks() {
   vi.mocked(getTownStoreOffers).mockResolvedValue({
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   });
   vi.mocked(readWantedPosters).mockResolvedValue({

@@ -74,7 +74,7 @@ public sealed class JournalLogProjectorEquivalenceTests
         var resolver = new TownStoreCatalogResolver();
         var town = session.World.GetTown(session.Player.CurrentTownId!.Value);
         var offer = resolver.Resolve(town)
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == ItemKind.Food);
+            .Offers.Single(o => o.ItemKind == ItemKind.Food);
 
         session.Purchase(offer, 2);
 

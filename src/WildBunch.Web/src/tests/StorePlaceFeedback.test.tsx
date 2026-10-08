@@ -185,16 +185,11 @@ function createStoreOffers(): TownStoreOffersDto {
   return {
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [
       {
-        vendorType: 0,
         itemKind: 0,
         displayName: "Canned beans",
         price: 1.5,
-        availability: 0,
-        sourceNote: "Shelf stock",
       },
     ],
   };
@@ -297,6 +292,11 @@ describe("Store purchase feedback", () => {
     // it may take longer than the default 1000ms findByRole timeout.
     const buyButton = await screen.findByRole("button", { name: /^buy$/i }, { timeout: 10000 });
     await user.click(buyButton);
+
+    expect(mockedBuyStoreItem).toHaveBeenCalledWith("game-1", "t-town", {
+      itemKind: 0,
+      quantity: 1,
+    });
 
     // The purchase confirmation notice should appear.
     await waitFor(() => {

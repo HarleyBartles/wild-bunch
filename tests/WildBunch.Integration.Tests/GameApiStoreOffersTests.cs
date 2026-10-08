@@ -29,10 +29,10 @@ public sealed class GameApiStoreOffersTests
         var catalog = await response.Content.ReadFromJsonAsync<TownStoreOffersDto>();
 
         Assert.NotNull(catalog);
-        Assert.True(catalog!.Available);
         Assert.Equal(createdSession.Player.CurrentTownId, catalog.TownId);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.GeneralStore);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.Stable);
+        Assert.Contains(catalog.Offers, offer => offer.ItemKind == WildBunch.Domain.Inventory.ItemKind.Food);
+        Assert.Contains(catalog.Offers, offer => offer.ItemKind == WildBunch.Domain.Inventory.ItemKind.Horse);
+        Assert.Equal(catalog.Offers.Count, catalog.Offers.Select(offer => offer.ItemKind).Distinct().Count());
 
         var payload = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -71,9 +71,7 @@ public sealed class GameApiStoreOffersTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
 
-        // Every town now has a prosperity-based store. Pick a town that is not
-        // the current town — the catalog should still be available with general
-        // store offers.
+        // Catalog reads are available for towns other than the player's current town.
         var nonCurrentTownId = createdSession.World.Towns
             .Where(town => town.Id != createdSession.Player.CurrentTownId)
             .Select(town => town.Id)
@@ -85,7 +83,6 @@ public sealed class GameApiStoreOffersTests
         var catalog = await response.Content.ReadFromJsonAsync<TownStoreOffersDto>();
 
         Assert.NotNull(catalog);
-        Assert.True(catalog!.Available);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == WildBunch.Domain.Economy.StoreVendorType.GeneralStore);
+        Assert.NotEmpty(catalog!.Offers);
     }
 }

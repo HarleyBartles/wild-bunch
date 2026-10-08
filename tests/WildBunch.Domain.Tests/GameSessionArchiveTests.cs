@@ -113,10 +113,7 @@ public sealed class GameSessionArchiveTests
         var offer = new StoreOffer(
             DomainItemKind.Food,
             "Trail Biscuits",
-            1m,
-            StoreVendorType.GeneralStore,
-            StoreOfferAvailability.Available,
-            "Pinecross general store");
+            1m);
 
         var result = session.Purchase(offer, 1);
 

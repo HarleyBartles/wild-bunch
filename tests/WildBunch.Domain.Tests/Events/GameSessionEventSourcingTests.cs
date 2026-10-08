@@ -114,7 +114,7 @@ public class GameSessionEventSourcingTests
 
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 3);
 
@@ -139,7 +139,7 @@ public class GameSessionEventSourcingTests
 
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 2);
 
@@ -190,7 +190,7 @@ public class GameSessionEventSourcingTests
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 3);
         var events = session.UncommittedEvents.ToList();
@@ -214,9 +214,9 @@ public class GameSessionEventSourcingTests
         var commandSession = CreateSession();
         var resolver = new TownStoreCatalogResolver();
         var foodOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         var canteenOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Canteen);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Canteen);
 
         commandSession.Purchase(foodOffer, 2);
         commandSession.Purchase(foodOffer, 1);
@@ -366,7 +366,7 @@ public class GameSessionEventSourcingTests
         // Perform an operation to prove post-start events also survive replay
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         session.Purchase(offer, 1);
 
         // Collect ALL events (6 setup + operation events)

@@ -376,7 +376,6 @@ public sealed class GameApiTests
         var foodPurchaseResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/towns/{firstDestination}/store/buy",
             new BuyStoreItemRequest(
-                WildBunch.Domain.Economy.StoreVendorType.GeneralStore,
                 WildBunch.Domain.Inventory.ItemKind.Food,
                 6));
 

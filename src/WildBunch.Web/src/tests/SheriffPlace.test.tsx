@@ -187,8 +187,6 @@ function primeMocksWithSheriffLeads() {
   mockedGetTownStoreOffers.mockResolvedValue({
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   });
   mockedReadWantedPosters.mockResolvedValue({
@@ -253,8 +251,6 @@ describe("SheriffPlace", () => {
     mockedGetTownStoreOffers.mockResolvedValue({
       townId: "t-town",
       townName: "Tumbleweed",
-      available: true,
-      sourceNote: "General store",
       offers: [],
     });
 

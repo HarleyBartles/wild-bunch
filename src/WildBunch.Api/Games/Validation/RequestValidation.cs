@@ -54,11 +54,6 @@ public static class RequestValidation
     {
         var errors = new Dictionary<string, string[]>();
 
-        if (request is null || request.VendorType is null)
-        {
-            errors["vendorType"] = ["Vendor type is required."];
-        }
-
         if (request is null || request.ItemKind is null)
         {
             errors["itemKind"] = ["Item kind is required."];

@@ -211,8 +211,6 @@ function primeMocks(
   mockedGetTownStoreOffers.mockResolvedValue({
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   });
 }

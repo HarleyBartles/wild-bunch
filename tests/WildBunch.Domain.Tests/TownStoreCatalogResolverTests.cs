@@ -7,84 +7,76 @@ namespace WildBunch.Domain.Tests;
 public sealed class TownStoreCatalogResolverTests
 {
     [Fact]
-    public void ProsperousTownReturnsGeneralStoreAndStableOffers()
+    public void CatalogOffersOneProsperityPricedEntryForEachCurrentItem()
     {
         var resolver = new TownStoreCatalogResolver();
-        var town = new Town(new TownId("pinecross"), "Pinecross", TownServices.None, TownProsperity.Prosperous);
+        var towns = new[]
+        {
+            (
+                TownProsperity.Boomtown,
+                new[]
+                {
+                    (ItemKind.Food, "Food", 2m),
+                    (ItemKind.HorseFeed, "Horse feed", 1m),
+                    (ItemKind.Canteen, "Canteen", 5m),
+                    (ItemKind.Knife, "Knife", 8m),
+                    (ItemKind.Horse, "Horse", 60m),
+                    (ItemKind.Saddle, "Saddle", 20m),
+                    (ItemKind.Revolver, "Revolver", 32m),
+                    (ItemKind.RevolverAmmo, "Revolver ammo", 4m),
+                    (ItemKind.RifleAmmo, "Rifle ammo", 6m)
+                }),
+            (
+                TownProsperity.Prosperous,
+                new[]
+                {
+                    (ItemKind.Food, "Food", 2m),
+                    (ItemKind.HorseFeed, "Horse feed", 1m),
+                    (ItemKind.Canteen, "Canteen", 5m),
+                    (ItemKind.Knife, "Knife", 8m),
+                    (ItemKind.Horse, "Horse", 60m),
+                    (ItemKind.Saddle, "Saddle", 20m),
+                    (ItemKind.Revolver, "Revolver", 35m),
+                    (ItemKind.RevolverAmmo, "Revolver ammo", 4m),
+                    (ItemKind.RifleAmmo, "Rifle ammo", 6m)
+                }),
+            (
+                TownProsperity.Poor,
+                new[]
+                {
+                    (ItemKind.Food, "Food", 2.5m),
+                    (ItemKind.HorseFeed, "Horse feed", 1.25m),
+                    (ItemKind.Canteen, "Canteen", 6m),
+                    (ItemKind.Horse, "Horse", 75m),
+                    (ItemKind.Saddle, "Saddle", 25m)
+                }),
+            (
+                TownProsperity.Destitute,
+                new[]
+                {
+                    (ItemKind.Food, "Food", 3m),
+                    (ItemKind.HorseFeed, "Horse feed", 1.5m)
+                })
+        };
 
-        var catalog = resolver.Resolve(town);
+        foreach (var (prosperity, expectedOffers) in towns)
+        {
+            var town = new Town(
+                new TownId(prosperity.ToString().ToLowerInvariant()),
+                prosperity.ToString(),
+                TownServices.None,
+                prosperity);
 
-        Assert.True(catalog.Available);
-        Assert.Equal("Pinecross", catalog.TownName);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.GeneralStore && offer.ItemKind == ItemKind.Food);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.Stable && offer.ItemKind == ItemKind.Horse);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith && offer.ItemKind == ItemKind.Revolver);
+            var actualOffers = resolver.Resolve(town).Offers
+                .Select(offer => (offer.ItemKind, offer.DisplayName, offer.Price))
+                .ToArray();
+
+            Assert.Equal(expectedOffers.Length, actualOffers.Length);
+            Assert.Equal(
+                expectedOffers.OrderBy(offer => offer.Item2, StringComparer.OrdinalIgnoreCase),
+                actualOffers);
+            Assert.Equal(actualOffers.Length, actualOffers.Select(offer => offer.Item1).Distinct().Count());
+        }
     }
 
-    [Fact]
-    public void BoomtownReturnsFullStockIncludingGunsmith()
-    {
-        var resolver = new TownStoreCatalogResolver();
-        var town = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph, TownProsperity.Boomtown);
-
-        var catalog = resolver.Resolve(town);
-
-        Assert.True(catalog.Available);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith && offer.ItemKind == ItemKind.Revolver);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith && offer.ItemKind == ItemKind.RevolverAmmo);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.Stable && offer.ItemKind == ItemKind.Horse);
-    }
-
-    [Fact]
-    public void PoorTownHasNoGunsmithButHasGeneralStore()
-    {
-        var resolver = new TownStoreCatalogResolver();
-        var town = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None, TownProsperity.Poor);
-
-        var catalog = resolver.Resolve(town);
-
-        Assert.True(catalog.Available);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.GeneralStore && offer.ItemKind == ItemKind.Food);
-        Assert.DoesNotContain(catalog.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith);
-    }
-
-    [Fact]
-    public void DestituteTownHasMinimalStock()
-    {
-        var resolver = new TownStoreCatalogResolver();
-        var town = new Town(new TownId("hardpan"), "Hardpan", TownServices.None, TownProsperity.Destitute);
-
-        var catalog = resolver.Resolve(town);
-
-        Assert.True(catalog.Available);
-        Assert.Contains(catalog.Offers, offer => offer.VendorType == StoreVendorType.GeneralStore && offer.ItemKind == ItemKind.Food);
-        // Destitute towns have no stable, no gunsmith.
-        Assert.DoesNotContain(catalog.Offers, offer => offer.VendorType == StoreVendorType.Stable);
-        Assert.DoesNotContain(catalog.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith);
-    }
-
-    [Fact]
-    public void HorseFeedDisplayNamesAreDisambiguatedByVendor()
-    {
-        var resolver = new TownStoreCatalogResolver();
-        var town = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph, TownProsperity.Boomtown);
-
-        var catalog = resolver.Resolve(town);
-
-        var horseFeedOffers = catalog.Offers
-            .Where(o => o.ItemKind == ItemKind.HorseFeed)
-            .ToList();
-
-        // Boomtown has both a general store and a stable selling horse feed
-        Assert.Equal(2, horseFeedOffers.Count);
-
-        var generalStoreOffer = horseFeedOffers.Single(o => o.VendorType == StoreVendorType.GeneralStore);
-        var stableOffer = horseFeedOffers.Single(o => o.VendorType == StoreVendorType.Stable);
-
-        Assert.Equal("Horse feed (General store)", generalStoreOffer.DisplayName);
-        Assert.Equal("Horse feed (Stable)", stableOffer.DisplayName);
-
-        // Display names must be distinct so the store panel doesn't show duplicate-looking cards
-        Assert.NotEqual(generalStoreOffer.DisplayName, stableOffer.DisplayName);
-    }
 }

@@ -31,7 +31,6 @@ public sealed class PurchaseStoreItemHandlerTests
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             2));
 
@@ -58,7 +57,6 @@ public sealed class PurchaseStoreItemHandlerTests
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "redmesa",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             1));
 
@@ -81,17 +79,15 @@ public sealed class PurchaseStoreItemHandlerTests
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
             new HudProjector(), new DiaryProjector());
 
-        // Pinecross is Destitute — gunsmith offers are only available in
-        // Boomtown and Prosperous towns, so RifleAmmo is not available here.
+        // Rifle is a valid inventory kind but is not in the current Store catalog.
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.Gunsmith,
-            DomainItemKind.RifleAmmo,
+            DomainItemKind.Rifle,
             1));
 
         Assert.False(result.Success);
-        Assert.Equal("That store offer is not available in this town.", result.Message);
+        Assert.Equal("That item is not offered at this store.", result.Message);
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
@@ -111,7 +107,6 @@ public sealed class PurchaseStoreItemHandlerTests
         await Assert.ThrowsAsync<TownNotFoundException>(() => handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "missing-town",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             1)));
 
@@ -135,7 +130,6 @@ public sealed class PurchaseStoreItemHandlerTests
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             1));
 
@@ -162,7 +156,6 @@ public sealed class PurchaseStoreItemHandlerTests
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             2));
 

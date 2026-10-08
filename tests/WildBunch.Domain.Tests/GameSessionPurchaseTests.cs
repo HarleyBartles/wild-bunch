@@ -21,7 +21,7 @@ public sealed class GameSessionPurchaseTests
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
 
         var result = session.Purchase(offer, 3);
 
@@ -39,7 +39,7 @@ public sealed class GameSessionPurchaseTests
         var session = CreateSession(emptyInventory: true, wallet: Wallet.Starting(100m));
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.Stable && candidate.ItemKind == DomainItemKind.Horse);
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Horse);
 
         var result = session.Purchase(offer, 1);
 
@@ -58,7 +58,7 @@ public sealed class GameSessionPurchaseTests
         var session = CreateSession(wallet: Wallet.Starting(4m));
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Canteen);
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Canteen);
 
         var result = session.Purchase(offer, 1);
 
@@ -78,7 +78,7 @@ public sealed class GameSessionPurchaseTests
         }));
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Canteen);
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Canteen);
 
         var result = session.Purchase(offer, 1);
 
@@ -95,7 +95,7 @@ public sealed class GameSessionPurchaseTests
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
 
         var result = session.Purchase(offer, 0);
 
@@ -113,7 +113,7 @@ public sealed class GameSessionPurchaseTests
         StartJourney(session);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.GeneralStore && candidate.ItemKind == DomainItemKind.Food);
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
 
         var result = session.Purchase(offer, 1);
 
@@ -132,7 +132,7 @@ public sealed class GameSessionPurchaseTests
         var session = CreateSession(emptyInventory: true);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(candidate => candidate.VendorType == StoreVendorType.Stable && candidate.ItemKind == DomainItemKind.Horse);
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Horse);
 
         var result = session.Purchase(offer, 2);
 
