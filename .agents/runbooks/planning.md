@@ -19,8 +19,9 @@ Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) 
 2. Read the accepted specification and bind the applicable doctrine, contracts,
    repository paths, and validation commands below.
 3. Select governing ADRs through the [decision-record playbook](../playbooks/decision-records.md) and include required record creation, correction, or supersession in the plan.
-4. Save and commit the active artifact in its declared home before execution.
-5. Hand execution exact seams, exclusions, task exits, and evidence without
+4. For a plan that changes a product promise, capability boundary, release disposition or dependency, read the [feature matrix](../../docs/features.md) through its [maintenance playbook](../playbooks/feature-matrix.md) and include any required matrix update in the same delivery.
+5. Save and commit the active artifact in its declared home before execution.
+6. Hand execution exact seams, exclusions, task exits, and evidence without
    copying the planning skill's method into the artifact.
 
 ## Doctrine and contracts

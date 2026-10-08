@@ -1,6 +1,6 @@
 # PG-009: Unrelated-criminal feature boundary
 
-**Status:** Source-traced feature assessment linked from the [working inventory](2026-10-07-feature-inventory.md). The user agreed to defer unrelated-criminal gameplay from the stable 0.1.0 surface. The stories and removal boundary below are proposed detail for that decision; no source/test removal or migration has been performed. Historical compatibility policy and any future replacement design remain unresolved.
+**Status:** Source-traced feature assessment linked from the [authoritative feature matrix](../../../docs/features.md). The user agreed to defer unrelated-criminal gameplay from the stable 0.1.0 surface. The stories and removal boundary below are proposed detail for that decision; no source/test removal or migration has been performed. Historical compatibility policy and any future replacement design remain unresolved.
 
 ## Separate removal and future-addition records
 

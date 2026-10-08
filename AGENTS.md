@@ -20,6 +20,7 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 - Agent Operating Model adoption: [.agents/contracts/operating-standards.json](.agents/contracts/operating-standards.json) and [standards certification](.agents/contracts/standards-certification.md).
 - Lifecycle runbooks: [repo workflow policy](.agents/doctrine/repo-runbook-policy.md)
 - Decision records: [catalogue](docs/decisions/README.md) and [decision-record playbook](.agents/playbooks/decision-records.md)
+- Product capabilities: [feature matrix](docs/features.md) and [maintenance playbook](.agents/playbooks/feature-matrix.md)
 - Topical playbooks: [testing](.agents/playbooks/testing.md) and [code style](.agents/playbooks/code-style.md)
 - Scoped routing: [thin AGENTS policy](.agents/doctrine/repo-runbook-policy.md#scoped-agent-entrypoints)
 - Testing instructions: [.agents/playbooks/testing.md](.agents/playbooks/testing.md)

@@ -22,9 +22,10 @@ actual diff with relevant records through the [decision-record playbook](../play
 2. Check the diff against the doctrine, contracts, local commands, and evidence
    obligations below rather than against the PR summary.
 3. Independently compare the actual diff with relevant decisions from the [catalogue](../../docs/decisions/README.md); require matching history updates or evidence that no durable decision changed. Do not rely on the PR author's assertion or the presence of an ADR edit.
-4. Route every accepted finding through review finding analysis and correction; re-check the
+4. Independently compare product promises, dependencies, dispositions and evidence changes with the [feature matrix](../../docs/features.md) through its [maintenance playbook](../playbooks/feature-matrix.md); require a truthful update or evidence that no current feature truth changed.
+5. Route every accepted finding through review finding analysis and correction; re-check the
    repaired diff rather than trusting the response.
-5. Use evidence-based result verification to bind the final verdict to the
+6. Use evidence-based result verification to bind the final verdict to the
    current local head and, when a PR exists, its remote head and checks.
 
 ## Doctrine and contracts

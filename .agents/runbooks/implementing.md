@@ -17,18 +17,19 @@ Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) 
 1. Read the approved plan and invoke only the focused Wild Bunch capability
    skills whose declared boundaries the change crosses.
 2. Follow the decisions named by the plan; use the [decision-record playbook](../playbooks/decision-records.md) to record any discovered divergence or material removal in the same change.
-3. Bind those decisions to the applicable doctrine and contracts below.
-4. Use behavior-focused test development to construct each observable behavior through
+3. When actual product promises, release disposition or dependencies change, follow the [feature-matrix playbook](../playbooks/feature-matrix.md) and update the [matrix](../../docs/features.md) in the same PR.
+4. Bind those decisions to the applicable doctrine and contracts below.
+5. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
-5. When a maintained artifact needs updating, run its named owning maintenance
+6. When a maintained artifact needs updating, run its named owning maintenance
    command and review its changes before staging. `setup-hooks --apply`
    configures this checkout's hook path; validation uses `ci --check`. Then
    stage the intended tree and use the normal hooked commit; the hook validates
    the staged candidate and never applies or stages corrections.
-6. The canonical gate is fail-fast and cheapest-first. Resolve a formatter or
+7. The canonical gate is fail-fast and cheapest-first. Resolve a formatter or
    linter failure before starting builds or behavioral tests; do not wait for
    downstream test suites when an earlier check has already failed.
-7. Use evidence-based result verification to reconcile the committed head with
+8. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 
 ## Doctrine and contracts
