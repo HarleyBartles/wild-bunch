@@ -42,21 +42,19 @@ router checker checks links and does not score content.
 
 ## tracked-validation-hook
 
-**Assessment:** Not certified under the pinned tracked-validation-hook
-standard. Wild Bunch's approved policy is that pre-commit and CI are
-check-only; they never normalize files, stage corrections, or move refs. The
-pinned standard requires hook-side candidate normalization, so its requirement
-conflicts with the repository policy and must be reconciled at the subscription
-boundary before any conformance claim. The tracked hook materializes the staged
-candidate locally, runs only the declared check command, and restores unrelated
-unstaged and untracked work. Hosted mode requires a clean detached checkout at
-the declared `HEAD`, runs the same check command in place, and verifies that
-`HEAD`, the index, and candidate worktree remain unchanged. Behavior tests
-observe stale generated content rejection, partial-staging isolation, success
-and failure restoration, and hosted state preservation. Windows local evidence
-is established by the focused fixture and canonical gate; hosted Linux evidence
-is pending the non-draft GitHub run. Certification remains blocked by the
-policy mismatch even after hosted parity is proven.
+**Assessment:** The pinned standard at `a9d9f280316a87ac66cb2653384bc30a683603f0`
+permits the repository's check-only policy: maintained-file normalization,
+formatting, generation, and repairs belong in explicit apply targets, while the
+hook rejects a candidate that needs repair without changing or staging it. The
+tracked hook materializes the staged candidate locally, runs only the declared
+check command, and restores unrelated unstaged and untracked work. Hosted mode
+requires a clean detached checkout at the declared `HEAD`, runs the same check
+command in place, and verifies that `HEAD`, the index, and candidate worktree
+remain unchanged. Behavior tests observe stale generated content rejection,
+partial-staging isolation, success and failure restoration, and hosted state
+preservation. Windows local evidence is established by the focused fixture and
+canonical gate. Hosted Linux evidence is pending the non-draft GitHub run, so
+cross-platform parity is not yet certified.
 
 ## completed-artifact-custody
 
