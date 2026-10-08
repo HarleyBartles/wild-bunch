@@ -71,9 +71,9 @@
 
 **Files:** `docs/features.md`; `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`; all implementation and test paths from Tasks 2-3.
 
-- [ ] Update PG-001's evidence to record backend event-backed genesis and production persisted replay coverage, while keeping the complete capability partial because browser setup, resume and start-flow behavior remain unproven.
-- [ ] Add a dated persistence-test follow-up describing the retired runtime-salt fallback assertion, its production replacement, and remaining row 07 cache-restoration findings.
-- [ ] Review the change against ADR-0028 and current event-sourcing doctrine; record why no ADR change is needed, or update the decision log if behavior contradicts it.
-- [ ] Run focused tests and `py -3 tools/run.py ci --check`; verify no migration/event schema version changed and the generated web version identity resolves to `0.1.0-dev.15`.
+- [x] Update PG-001's evidence to record backend event-backed genesis and production persisted replay coverage, while keeping the complete capability partial because browser setup, resume and start-flow behavior remain unproven.
+- [x] Add a dated persistence-test follow-up describing the retired runtime-salt fallback assertion, its production replacement, and remaining row 07 cache-restoration findings.
+- [x] Review the change against ADR-0028 and current event-sourcing doctrine; no ADR change is needed because immutable event history remains authoritative, event replay uses recorded facts, and caches remain rebuildable. The reviewed diff implements the current decision.
+- [x] Run focused tests and the commit hook's `py -3 tools/run.py ci --check`; verify no migration/event schema version changed and the generated web version identity resolves to `0.1.0-dev.15`.
 - [ ] Review the whole branch against this plan, baseline spec, feature matrix, backend architecture unslop profile, and code-review runbook. Use the documented self-review fallback if independent dispatch is unavailable under the active runtime policy.
 - [ ] Open and attach a PR targeting `develop`; verify exact source head, successful hosted canonical gate and merged state. Keep this plan until the next successor slice classifies and retires it.
