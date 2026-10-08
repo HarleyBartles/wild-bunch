@@ -93,5 +93,5 @@
 - [x] Run the canonical local check gate with its real prerequisites and confirm the staged-candidate hook leaves the candidate and unrelated working state unchanged.
 - [x] Search the final diff for stale command-bus pins, removed wrapper names, direct gate instructions, empty template sections, and inaccurate certification claims.
 - [x] Review ADR freshness against the exact diff and update the author decision-record check; the independent reviewer must repeat it.
-- [x] Complete a fresh whole-branch code review and address every actionable finding; the reviewer found none, so no post-review fix rerun was needed. Publish Draft PR #191 to `develop`; its canonical hosted check is currently skipped because the PR is Draft, not passed.
+- [x] Complete a fresh whole-branch code review and address every actionable finding; the reviewer found none, so no post-review fix rerun was needed. Publish PR #191 to `develop` and move it from Draft to Ready after review; the hosted canonical gate passed for head `d8210e2276f84cc93f620760f2b0843493c6b400` in [workflow run 37758195778](https://github.com/HarleyBartles/wild-bunch/actions/runs/37758195778).
 - [ ] Keep this plan through its completing PR; the next successor slice will classify it for retirement.
