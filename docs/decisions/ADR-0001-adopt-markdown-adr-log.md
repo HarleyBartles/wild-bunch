@@ -1,107 +1,35 @@
-# ADR-0001 Adopt Markdown ADR Log
+# ADR-0001 Adopt a Markdown Decision Log
 
 ## Status
 
-live
+`live`
 
-## Dated Status History
+## Dated History
 
-- 2026-06-01 - live: the repo now has a dedicated Markdown ADR log and template under `docs/adr`.
-- 2026-09-29 - clarified: the ADR home moved to `docs/decisions/`; see ADR-0037.
+- `2026-06-01` - Adopted a numbered Markdown log for durable architecture and gameplay decisions, with explicit status and decision types.
+- `2026-09-29` - Moved the log from `docs/adr` to `docs/decisions`; ADR-0037 records the related documentation decision.
+- `2026-10-08` - Editorial clarification: the log preserves decisions and their history. The authored README catalogue supports progressive discovery; the log is not an implementation report or generated navigation mesh.
 
 ## Decision Type
 
-architecture, process
+`architecture`, `process`
 
 ## Related ADRs
 
-- `informs`: ADR-0002 through ADR-0012
+- `related to`: ADR-0037
 
 ## Context
 
-Wild Bunch needed a stable way to preserve high-value architecture and gameplay
-decisions without copying issue threads, worker notes, or chat history into
-source docs. The repo already had durable documentation for testing lanes and
-local PostgreSQL, but no dedicated ADR log.
+The repository needed a durable place to preserve decisions beyond issue discussions and worker handoffs. Architecture and gameplay decisions share one repository history and should be discoverable through one authored convention.
 
-## Decision Drivers
+## Decision
 
-- Decisions must survive beyond a single worker pass.
-- Architecture and gameplay decisions belong in one shared convention.
-- Status and decision-type metadata need to stay explicit.
-- The log must be easy for humans to scan and for future workers to extend.
+Keep one numbered Markdown decision log under `docs/decisions`, with stable filenames, explicit status and decision type, cross-links, an authored catalogue, and a template. Preserve each decision as it was made and record later changes as dated amendments or successor decisions. The catalogue summarizes decisions so a reader can select relevant records without loading the entire log.
 
-## Decision Summary
+## Rationale and Alternatives
 
-Create a Markdown ADR log under `docs/adr` with padded ADR numbers, a reusable
-template, a lightweight index, explicit status values, decision-type metadata,
-and cross-linking rules.
+Issue comments remain useful for transient discussion but do not provide a stable decision history. Separate logs for architecture and gameplay would split related repository decisions without a distinct authority boundary.
 
-## Detailed Decision Breakdown
+## Consequences
 
-The ADR system uses one directory, one numbering convention, one template, and
-one status taxonomy. That keeps the repository from drifting into parallel logs
-for architecture, gameplay, or operations decisions.
-
-The README in `docs/decisions/README.md` documents numbering, naming, status values,
-decision types, and cross-linking rules. The template in
-`docs/decisions/TEMPLATE.md` captures the required sections so future ADRs stay
-consistent.
-
-The initial backfill uses ADR numbers `0001` through `0012` so the log can cover
-the stable decisions already visible in the repo and the remaining planned
-boundaries from issue `#36`.
-
-## Options Considered and Rejected
-
-- Keep decisions in issue comments and worker handoffs only.
-- Create separate logs for architecture and gameplay.
-- Skip status metadata and rely on prose alone.
-
-## When a Rejected Option Would Have Been Better
-
-Issue comments would be better for transient discussion that is not ready to be
-promoted. Separate logs would only be better if the repo had truly independent
-decision systems, which it does not.
-
-## Benefits
-
-- Future maintainers can find a decision without reconstructing a worker pass.
-- Architecture and gameplay stay in one stable human-facing convention.
-- The log can record both live decisions and future constraints cleanly.
-
-## Accepted Tradeoffs
-
-- The log adds one more durable doc surface to maintain.
-- Some decisions need to be summarized rather than exhaustively re-litigated.
-
-## Risks
-
-- The log can become stale if it is not updated when the repo changes.
-- Over-linking to brittle implementation details could make ADRs noisy.
-
-## Consequences for Future Work
-
-Future ADRs should follow the same template and cross-link deliberately. New
-decision families should reuse the existing status and type vocabulary instead
-of inventing a new system.
-
-## Implementation Status or Plan
-
-Live. The ADR directory, README index, template, and initial files now exist.
-
-## Related Stable Source Surfaces
-
-- `docs/decisions/README.md`
-- `docs/decisions/TEMPLATE.md`
-
-## Proof of Implementation or Explicit Non-Implementation
-
-The repository now contains a dedicated ADR directory with an index and
-template. That is the durable evidence that the log convention exists.
-
-## Review Triggers
-
-- When a new decision type or status value is needed.
-- When the ADR log starts to duplicate issue-tracking behavior.
-- When the template no longer covers a recurring decision pattern.
+The catalogue and records require semantic maintenance when decisions change. Operational plans, implementation inventories, test receipts, and backlog assignments belong in their owning repository surfaces rather than the ADR log.

@@ -1,99 +1,40 @@
-# ADR-0016 Use React, Vite, TanStack React Query, and styled-components for the web client
+# ADR-0016 Use React, Vite, TanStack Query, and styled-components
 
 ## Status
 
-live
+`partially superseded`
 
-## Dated Status History
+## Dated History
 
-- 2026-06-01 - live: the web client uses React 18, Vite, TanStack React Query, and styled-components as its current stack.
+- `2026-06-01` - Chose React, Vite, TanStack React Query, and styled-components for the browser client.
+- `2026-10-08` - Editorial clarification: the stack decision survives, while the original cockpit and modal routing assumptions were replaced by later shell and flow decisions.
 
 ## Decision Type
 
-ui, architecture, tooling
+`ui`, `architecture`
 
 ## Related ADRs
 
 - `depends on`: ADR-0015
-- `informs`: ADR-0011, ADR-0017, ADR-0019
+- `partially superseded by`: ADR-0027, ADR-0030, ADR-0039
+- `related to`: ADR-0019, ADR-0035
 
 ## Context
 
-The web client is a TypeScript React application built with Vite. Source shows React Query coordinating server state and mutation invalidation, styled-components handling component styling, and a hand-authored API module providing typed access to the backend.
+The browser client needs a component framework, build tool, server-state coordination, and styling approach while remaining a client of server-authoritative game state.
 
-## Decision Drivers
+## Decision
 
-- The client needs a clear, current stack for rendering and server-state coordination.
-- Server truth should not be duplicated in local component state when React Query can own fetch, mutate, and invalidate behavior.
-- Styling should remain component-scoped and composable.
-- The current cockpit/modal evolution should not be prematurely locked into a final routing stance.
+Use React and Vite for the browser client, TanStack React Query for server state and mutation coordination, and styled-components for component-owned styling. Keep gameplay state authoritative on the server; use React state and context for client-owned presentation state.
 
-## Decision Summary
+## Rationale and Alternatives
 
-Use React 18 with Vite, TanStack React Query, and styled-components for the web client. Treat React Query as the primary server-state and mutation-coordination layer, and keep styling component-scoped instead of defaulting to a CSS framework or global state pattern.
+Scattered fetch logic makes loading, errors, and refresh behavior inconsistent. A global client store is not a substitute for server state. A styling framework or global selector model would not express the chosen component-scoped styling approach.
 
-## Detailed Decision Breakdown
+## Consequences
 
-The current web app bootstraps React through Vite, wraps the app in a `QueryClientProvider`, and centralizes API calls in a typed client module. Hooks such as the travel panel state hook use React Query to fetch fresh server state, run mutations, and invalidate stale queries after successful actions.
+Queries and mutations must keep client views aligned with server results. Component styling remains close to its display contract. The original cockpit and routing direction is replaced in part by ADR-0027 and the later setup-flow decision in ADR-0039; the stack decision survives.
 
-styled-components is the established styling approach for UI surfaces and shared travel components. That keeps component styling close to the component tree while allowing the cockpit and modal surfaces to evolve without forcing a different app-wide layout strategy too early.
+## Successors and Surviving Scope
 
-This ADR deliberately stays aligned with the current source shape and does not claim a final routing architecture beyond the cockpit/modal direction already captured in ADR-0011.
-
-## Options Considered and Rejected
-
-- Use Redux or another global client-state library as the default server-state tool.
-- Scatter ad hoc fetch, loading, and error handling through individual components.
-- Move to a server-rendered or full-stack framework as the default client posture.
-- Make a CSS framework the primary styling strategy.
-
-## When a Rejected Option Would Have Been Better
-
-A global client-state store would only be better if the app's primary problem were local-only state orchestration rather than server truth. A full-stack framework would only be better if the product had already committed to server-driven routing and rendering as the default model.
-
-## Benefits
-
-- Server state and mutation coordination live in one clear place.
-- The UI stack stays familiar and productive for current feature work.
-- Component styling stays expressive without a framework lock-in.
-
-## Accepted Tradeoffs
-
-- The app depends on a client build step and a Vite toolchain.
-- Query invalidation discipline has to stay consistent so server truth remains authoritative.
-- Styled-components introduces a runtime styling dependency that must remain intentional.
-
-## Risks
-
-- API shape drift could spread if the typed client is not kept centralized.
-- Component-level styling could become inconsistent if shared tokens or primitives are not reused.
-
-## Consequences for Future Work
-
-New UI work should assume React Query for server state, the existing typed API module for transport, and styled-components for styling unless a later ADR changes the stack.
-
-## Implementation Status or Plan
-
-Live. The current source tree already uses the described client stack.
-
-## Related Stable Source Surfaces
-
-- `src/WildBunch.Web/package.json`
-- `src/WildBunch.Web/src/main.tsx`
-- `src/WildBunch.Web/src/api/wildBunchApi.ts`
-- `src/WildBunch.Web/src/api/types.ts`
-- `src/WildBunch.Web/src/hooks/useTravelPanelState.ts`
-- `src/WildBunch.Web/src/hooks/useCurrentGameSession.ts`
-- `src/WildBunch.Web/src/hooks/useTownStoreOffers.ts`
-- `src/WildBunch.Web/src/components/`
-- `src/WildBunch.Web/src/components/travel/travelShared.tsx`
-
-## Proof of Implementation or Explicit Non-Implementation
-
-`package.json` declares the React, Vite, React Query, and styled-components stack, `main.tsx` wires the query client provider, and the hooks/components already use the centralized typed API module and component-scoped styling.
-
-## Review Triggers
-
-- When the client moves to a different framework or rendering model.
-- When client state starts duplicating server truth instead of using React Query.
-- When styling shifts away from styled-components as the main approach.
+ADR-0027, ADR-0030, and ADR-0039 supersede the original route and cockpit assumptions. React, Vite, TanStack React Query, and styled-components remain the selected client stack.

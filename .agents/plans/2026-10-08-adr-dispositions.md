@@ -140,14 +140,14 @@ Every ADR from 0001 through 0037 is assessed below. `Retain` means no edit unles
 
 **Files:** Modify only those `docs/decisions/ADR-*.md` files whose matrix treatment requires a change; leave accurately retained records unchanged.
 
-- [ ] Editorially rewrite surviving ADRs around their historical durable decision, rationale, alternatives and material consequences; preserve the original decision date and add a dated editorial note where the rewrite materially changes how the record reads.
-- [ ] Add partial/full supersession histories to the affected predecessors, linking ADR-0038 through ADR-0042 and identifying the exact replaced scope and surviving scope.
-- [ ] Add dated factual corrections for the removed `GameSessionLogEntries` authority, current PostgreSQL lane, implemented turn-in/payout, heat turn notation, current setup/map transport and unsupported archive guarantees where the evidence supports them.
-- [ ] Keep the ADR-0035 accessible town-selection decision even though the current interaction does not meet it; state the gap truthfully and leave the implementation to row 15.
-- [ ] Preserve ADR-0011 and ADR-0033 as historical superseded records and preserve ADR-0037's already-correct partial status; do not rewrite historical decisions just to match current code.
-- [ ] Remove implementation status/proof sections, mutable source/test lists, endpoint/table/class inventories and future backlog prose from edited records only after preserving any genuine historical decision or material removal they contain.
-- [ ] Ensure ADR-0034 no longer claims database-global uniqueness, supported concurrency, or atomic replacement; do not weaken the approved per-user future rule or imply it already exists.
-- [ ] Re-read each edited predecessor and successor together and check all reciprocal links and status history before proceeding.
+- [x] Editorially rewrite surviving ADRs around their historical durable decision, rationale, alternatives and material consequences; preserve the original decision date and add a dated editorial note where the rewrite materially changes how the record reads.
+- [x] Add partial/full supersession histories to the affected predecessors, linking ADR-0038 through ADR-0042 and identifying the exact replaced scope and surviving scope.
+- [x] Add dated factual corrections for the removed `GameSessionLogEntries` authority, current PostgreSQL lane, implemented turn-in/payout, heat turn notation, current setup/map transport and unsupported archive guarantees where the evidence supports them.
+- [x] Keep the ADR-0035 accessible town-selection decision even though the current interaction does not meet it; state the gap truthfully and leave the implementation to row 15.
+- [x] Preserve ADR-0011 and ADR-0033 as historical superseded records and preserve ADR-0037's already-correct partial status; do not rewrite historical decisions just to match current code.
+- [x] Remove implementation status/proof sections, mutable source/test lists, endpoint/table/class inventories and future backlog prose from edited records only after preserving any genuine historical decision or material removal they contain.
+- [x] Ensure ADR-0034 no longer claims database-global uniqueness, supported concurrency, or atomic replacement; do not weaken the approved per-user future rule or imply it already exists.
+- [x] Re-read each edited predecessor and successor together and check all reciprocal links and status history before proceeding.
 
 ## Task 5: Update the authored catalogue and validate the complete history
 
