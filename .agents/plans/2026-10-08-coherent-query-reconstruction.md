@@ -56,11 +56,11 @@
 
 **Files:** `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`.
 
-- [ ] Add a test-only EF command interceptor with `TaskCompletionSource` barriers that pauses the reader after its envelope query; do not use sleeps or scheduler timing as the synchronization contract.
-- [ ] Start a real PostgreSQL player/journal read, commit `ArchivePlaythrough("start-over")` from a fresh writer context while the reader is paused, then release it; assert the returned status and journal occurrence are both from the pre-archive state, and a subsequent fresh query returns the archived status and archive entry.
-- [ ] Witness the interleaving test fail without a transaction because the old envelope can be combined with the newly committed event stream.
-- [ ] Keep the complete `GameSessionReadStoreLoader.LoadStoreAsync` query sequence inside an EF transaction at `IsolationLevel.RepeatableRead`, disposed after all four query groups have materialized.
-- [ ] Run `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModels_ConcurrentArchiveReturnsOneCoherentState|FullyQualifiedName~ReadModel_StaleSnapshotRebuildsPlayerAndJournalFromEvents|FullyQualifiedName~ReadModel_StartingTownSelectedRestoresPhase"`.
+- [x] Add a test-only EF command interceptor with `TaskCompletionSource` barriers that pauses the reader after its envelope query; do not use sleeps or scheduler timing as the synchronization contract.
+- [x] Start real PostgreSQL player and journal reads and pause both after their envelope queries; from a fresh writer context purchase food and then call `ArchivePlaythrough("start-over")` before one commit, then release both readers. Assert each read returns active status with no purchase journal entry, and subsequent fresh reads return archived status with the purchase entry.
+- [x] Witness the interleaving test fail without a transaction because the old active envelope can be combined with the newly committed Player cache and purchase event.
+- [x] Keep the complete `GameSessionReadStoreLoader.LoadStoreAsync` query sequence inside an EF transaction at `IsolationLevel.RepeatableRead`, disposed after all four query groups have materialized.
+- [x] Run `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModels_ConcurrentArchiveReturnsOneCoherentState|FullyQualifiedName~ReadModel_StaleSnapshotRebuildsPlayerAndJournalFromEvents|FullyQualifiedName~ReadModel_StartingTownSelectedRestoresPhase"`.
 
 ### Task 4: Reconcile evidence and deliver
 

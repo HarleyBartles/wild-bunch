@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Dev.Models;
@@ -21,6 +22,7 @@ using WildBunch.Persistence.Serialization;
 using WildBunch.Persistence.Versioning;
 using WildBunch.Persistence;
 using System.Text.Json;
+using System.Data.Common;
 
 namespace WildBunch.Integration.Tests;
 
@@ -662,6 +664,74 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(StartFlowPhase.StartingTownSelected, readModel!.StartFlowPhase);
     }
 
+    [Fact]
+    public async Task ReadModels_ConcurrentArchiveReturnsOneCoherentState()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var setupRepository = CreateRepository(fixture, out var setupUnitOfWork);
+        var session = CreateSession();
+        await PersistAsync(setupRepository, setupUnitOfWork, session);
+        var foodPrice = new TownStoreCatalogResolver()
+            .Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
+            .Offers.Single(offer => offer.ItemKind == DomainItemKind.Food)
+            .Price;
+
+        var interceptor = new PauseAfterTwoEnvelopeQueriesInterceptor();
+        var readOptions = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(fixture.Database.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+        var readStoreLoader = CreateReadStoreLoader();
+        await using var playerReadContext = new WildBunchDbContext(readOptions);
+        await using var journalReadContext = new WildBunchDbContext(readOptions);
+        var readRepository = new EfGameSessionReadRepository(playerReadContext, readStoreLoader);
+        var journalRepository = new EfGameJournalReadRepository(journalReadContext, readStoreLoader);
+
+        var playerReadTask = readRepository.GetByIdAsync(session.Id);
+        var journalReadTask = journalRepository.GetByIdAsync(session.Id);
+        try
+        {
+            await interceptor.BothEnvelopeQueriesExecuted.WaitAsync(TimeSpan.FromSeconds(30));
+
+            var writerRepository = CreateRepository(fixture, out var writerUnitOfWork);
+            var writerSession = await writerRepository.GetByIdAsync(session.Id);
+            Assert.NotNull(writerSession);
+            var foodOffer = new TownStoreCatalogResolver()
+                .Resolve(writerSession!.World.GetTown(writerSession.Player.CurrentTownId!.Value))
+                .Offers.Single(offer => offer.ItemKind == DomainItemKind.Food);
+            Assert.True(writerSession.Purchase(foodOffer, 2).Success);
+            writerSession.ArchivePlaythrough("start-over", new DateTime(2026, 10, 8, 12, 0, 0, DateTimeKind.Utc));
+            await PersistAsync(writerRepository, writerUnitOfWork, writerSession);
+        }
+        finally
+        {
+            interceptor.ReleaseReaders();
+        }
+
+        var playerRead = await playerReadTask;
+        var journalRead = await journalReadTask;
+        Assert.NotNull(playerRead);
+        Assert.Equal(GameStatus.Active, playerRead!.Status);
+        Assert.Equal(session.Player.Wallet.Cash, playerRead.Player.Wallet.Cash);
+        Assert.DoesNotContain(playerRead.LogEntries, entry => entry.Kind == GameLogEntryKind.Purchase);
+        Assert.NotNull(journalRead);
+        Assert.Equal(GameStatus.Active, journalRead!.Status);
+        Assert.DoesNotContain(journalRead.LogEntries, entry => entry.Kind == GameLogEntryKind.Purchase);
+
+        await using var freshPlayerReadContext = fixture.CreateContext();
+        await using var freshJournalReadContext = fixture.CreateContext();
+        var freshReadRepository = new EfGameSessionReadRepository(freshPlayerReadContext, readStoreLoader);
+        var freshJournalRepository = new EfGameJournalReadRepository(freshJournalReadContext, readStoreLoader);
+        var freshPlayerRead = await freshReadRepository.GetByIdAsync(session.Id);
+        var freshJournalRead = await freshJournalRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(freshPlayerRead);
+        Assert.Equal(GameStatus.Archived, freshPlayerRead!.Status);
+        Assert.Equal(session.Player.Wallet.Cash - foodPrice * 2, freshPlayerRead.Player.Wallet.Cash);
+        Assert.NotNull(freshJournalRead);
+        Assert.Equal(GameStatus.Archived, freshJournalRead!.Status);
+        Assert.Contains(freshJournalRead.LogEntries, entry => entry.Kind == GameLogEntryKind.Purchase);
+    }
+
     private static EfGameSessionRepository CreateRepository(PostgreSqlPersistenceFixture fixture, out EfGameSessionUnitOfWork unitOfWork)
     {
         var context = fixture.CreateContext();
@@ -686,6 +756,36 @@ public sealed class EfGameSessionRepositoryTests
             new TravelDiaryDayProjector(),
             rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
         return new GameSessionReadStoreLoader(payloadLoader, serializer);
+    }
+
+    private sealed class PauseAfterTwoEnvelopeQueriesInterceptor : DbCommandInterceptor
+    {
+        private readonly TaskCompletionSource _bothEnvelopeQueriesExecuted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseReaders = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _envelopeQueryCount;
+
+        public Task BothEnvelopeQueriesExecuted => _bothEnvelopeQueriesExecuted.Task;
+
+        public void ReleaseReaders() => _releaseReaders.TrySetResult();
+
+        public override async ValueTask<DbDataReader> ReaderExecutedAsync(
+            DbCommand command,
+            CommandExecutedEventData eventData,
+            DbDataReader result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("FROM \"GameSessions\"", StringComparison.Ordinal))
+            {
+                if (Interlocked.Increment(ref _envelopeQueryCount) == 2)
+                {
+                    _bothEnvelopeQueriesExecuted.TrySetResult();
+                }
+
+                await _releaseReaders.Task.WaitAsync(cancellationToken);
+            }
+
+            return result;
+        }
     }
 
     private static async Task PersistAsync(

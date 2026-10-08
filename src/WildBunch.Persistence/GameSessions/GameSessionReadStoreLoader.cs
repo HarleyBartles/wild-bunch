@@ -174,6 +174,10 @@ public sealed class GameSessionReadStoreLoader
         GameSessionId id,
         CancellationToken cancellationToken)
     {
+        await using var transaction = await dbContext.Database
+            .BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead, cancellationToken)
+            .ConfigureAwait(false);
+
         var envelope = await dbContext.GameSessions.AsNoTracking().SingleOrDefaultAsync(session => session.Id == id.Value, cancellationToken).ConfigureAwait(false);
         if (envelope is null)
         {
@@ -194,15 +198,15 @@ public sealed class GameSessionReadStoreLoader
             .OrderBy(e => e.Sequence)
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
-
-        var domainEvents = _payloadLoader.LoadEvents(storedEvents);
-
         var diaryDayEntities = await dbContext.GameSessionDiaryDays.AsNoTracking()
             .Where(day => day.SessionId == id.Value)
             .OrderBy(day => day.Sequence)
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        var domainEvents = _payloadLoader.LoadEvents(storedEvents);
         var diaryDays = _payloadLoader.LoadDiaryDays(diaryDayEntities, domainEvents);
 
         return new GameSessionStore(
