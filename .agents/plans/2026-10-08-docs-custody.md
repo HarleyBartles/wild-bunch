@@ -49,10 +49,11 @@
 
 - [x] Search the repository for every inbound reference to all six documents, including Markdown links and plain-text routes; resolve each reference before deleting its target. Preserve README and `scripts/README.md` links to `docs/local-postgresql.md`.
 - [x] Update the investigation's status and disposition table to distinguish its original assessment from the delivered outcome; preserve its evidence and explain that no external Linear taxonomy was verified.
+- [x] Reconcile parent-investigation status and hook-standard claims superseded by the accepted specification, roadmap and PR #189; preserve dated assessment evidence without leaving its former work instructions active.
 - [x] In frontend standards, remove the stale `docs/frontend-styling.md` route and remove any whole-doctrine enforcement claim. If describing existing enforcement, state only the specific legacy stylesheet/class/inline-style conditions the test actually checks; do not claim it proves token discipline or component ownership.
 - [x] Add the settled styling ownership boundary: each component owns its display contract; parents arrange composition using supported props and layout, not selectors that reach through into child internals.
 - [x] Compare local PostgreSQL guide commands and database claims with `tools/postgres-dev.ps1`, `scripts/README.md`, and the testing playbook; retain the helpful human setup and safety explanation, removing or rewriting worker-only policy that duplicates the agent owner.
-- [x] Retire the five documents only after their useful guidance is represented at existing current owners: testing policy/execution in validation doctrine and testing/browser playbooks; player copy/visual guidance in routed unslop profiles; proposed issue taxonomy retired as an unaccepted, unreferenced repo proposal without making claims about external Linear configuration.
+- [x] Retire the five documents only after their accepted current obligations are represented at existing owners: testing policy/execution in validation doctrine and testing/browser playbooks; player copy/visual guidance in routed unslop profiles; proposed issue taxonomy retired as an unaccepted, unreferenced repo proposal without making claims about external Linear configuration.
 - [x] Review the full diff for unsupported claims, duplicate current authority, stale links, and empty sections; run `git diff --check` and commit this documentation outcome normally.
 
 ## Task 3: Validate and publish the row-02 documentation outcome
@@ -72,7 +73,7 @@
 
 - Row 02 records both merged ADR outcomes and this completed document-custody outcome with actual PR evidence.
 - The only retained non-ADR document in this slice is the locally useful PostgreSQL guide, routed from both human entrypoints and consistent with the service implementation.
-- Retired docs have no remaining repo-local inbound routes, and their useful current obligations have a single existing owner.
+- Retired docs have no remaining repo-local inbound routes, and each accepted current obligation has one existing owner; unaccepted issue taxonomy and unsupported test minimums remain retired.
 - Frontend standards accurately describe test enforcement and prevent parent styling reach-through while preserving the component-owned display contract.
 - No application or test source changed; no structural document checker was added.
 - The canonical repository gate, fresh whole-branch review, exact-head hosted checks, and develop merge are verified before completion.
