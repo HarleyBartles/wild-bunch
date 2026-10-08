@@ -13,10 +13,6 @@ export function actionIsCheckLocalRecords(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.CheckSheriffRecords;
 }
 
-export function actionIsFollowTelegraphLeads(action: AvailableActionDto) {
-  return action.kind === AvailableActionKind.FollowTelegraphLeads;
-}
-
 export function actionIsGatherLocalGossip(action: AvailableActionDto) {
   return action.kind === AvailableActionKind.GatherLocalGossip;
 }

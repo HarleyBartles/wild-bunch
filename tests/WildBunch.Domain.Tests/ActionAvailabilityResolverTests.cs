@@ -5,7 +5,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -18,7 +17,7 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void TownWithSuppliesExposesBuySuppliesAction()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -31,21 +30,33 @@ public sealed class ActionAvailabilityResolverTests
     }
 
     [Fact]
-    public void TownWithTelegraphExposesSendTelegram()
+    public void TownWithTelegraphBuildingDoesNotExposeTelegraphActions()
     {
-        var session = CreateSession(TownServices.Telegraph);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
 
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.SendTelegram);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
+        Assert.Equal(
+            new[]
+            {
+                AvailableActionKind.Travel,
+                AvailableActionKind.ViewMap,
+                AvailableActionKind.ViewJournal,
+                AvailableActionKind.ReadWantedPosters,
+                AvailableActionKind.BuySupplies,
+                AvailableActionKind.InspectNoticeBoard,
+                AvailableActionKind.CheckSheriffRecords,
+                AvailableActionKind.GatherLocalGossip,
+                AvailableActionKind.LookAroundSaloon
+            },
+            result.Select(action => action.Kind));
     }
 
     [Fact]
     public void TownWithNoticeBoardExposesReadWantedPosters()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -59,7 +70,7 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void TownWithoutNoticeBoardStillExposesBaselineInvestigationActions()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -70,13 +81,12 @@ public sealed class ActionAvailabilityResolverTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
     }
 
     [Fact]
     public void TownWithoutOutgoingTrailsDoesNotExposeTravel()
     {
-        var session = CreateSession(TownServices.None, addTrail: false);
+        var session = CreateSession(addTrail: false);
         var resolver = new ActionAvailabilityResolver();
 
         var result = resolver.Resolve(session);
@@ -89,7 +99,7 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void ActiveJourneyReplacesTravelWithAdvanceTravelDay()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("connected"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
@@ -104,7 +114,6 @@ public sealed class ActionAvailabilityResolverTests
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
     }
 
@@ -135,10 +144,10 @@ public sealed class ActionAvailabilityResolverTests
             "A hard-eyed rider cuts across my path.",
             new JourneyFoeProfile(5, 5, 8m));
 
-    private static GameSession CreateSession(TownServices currentTownServices, bool addTrail = true)
+    private static GameSession CreateSession(bool addTrail = true)
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             addTrail
@@ -159,8 +168,8 @@ public sealed class ActionAvailabilityResolverTests
 
     private static GameSession CreateHighRiskSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]

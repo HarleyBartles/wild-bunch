@@ -7,7 +7,7 @@ namespace WildBunch.GameContent.NewGame;
 
 /// <summary>
 /// Generates deterministic town hub surface layouts. The same seed code, town
-/// identity, and <see cref="TownServices"/> always produce the same layout — no
+/// identity always produce the same layout — no
 /// unseeded randomness is used. Buildings are placed on a fixed logical grid
 /// (0-100 in both dimensions) at tile centers for consistent placement. The
 /// frontend scales these logical units to actual canvas pixels.
@@ -43,14 +43,12 @@ internal static class TownLayoutGenerator
 
     /// <summary>
     /// Generates a deterministic <see cref="TownLayout"/> for a town hub surface.
-    /// Always emits the baseline navigation buildings (Store, Sheriff, Saloon,
-    /// Trailhead). Emits Telegraph only when <paramref name="services"/> has the
-    /// <see cref="TownServices.Telegraph"/> flag set. Uses the
+    /// Always emits the core service buildings (Store, Sheriff, Saloon, Telegraph)
+    /// and navigation Trailheads. Uses the
     /// <paramref name="layoutPalette"/> to select the building layout pattern from
     /// <see cref="BuildingLayoutCatalog"/>.
     /// </summary>
     public static TownLayout GenerateLayout(
-        TownServices services,
         TownProsperity prosperity,
         TownId townId,
         int townSlotIndex,
@@ -71,7 +69,7 @@ internal static class TownLayoutGenerator
         var majorRoadZones = availableZones.Where(z => !z.IsOnSpur).ToList();
 
         // Assign buildings to zones using seed-derived ordering
-        var buildingKinds = GetBuildingKindsForTown(services);
+        var buildingKinds = GetBuildingKindsForTown();
 
         // Handle Trailhead specially - place at north and south tips of major road
         // Trailhead spans 2 tiles horizontally above and below the road (columns 3-6)
@@ -315,23 +313,8 @@ internal static class TownLayoutGenerator
         return selectedZones;
     }
 
-    private static List<BuildingKind> GetBuildingKindsForTown(TownServices services)
-    {
-        var kinds = new List<BuildingKind>
-        {
-            BuildingKind.Store,
-            BuildingKind.Sheriff,
-            BuildingKind.Saloon,
-            BuildingKind.Trailhead
-        };
-
-        if ((services & TownServices.Telegraph) == TownServices.Telegraph)
-        {
-            kinds.Add(BuildingKind.Telegraph);
-        }
-
-        return kinds;
-    }
+    private static List<BuildingKind> GetBuildingKindsForTown()
+        => [BuildingKind.Store, BuildingKind.Sheriff, BuildingKind.Saloon, BuildingKind.Telegraph, BuildingKind.Trailhead];
 
     internal static int GetBuildingZoneCount(TownProsperity prosperity, int totalZones)
     {

@@ -25,15 +25,13 @@ public sealed class TownAggregate
 
     public string TownName => Definition.Name;
 
-    public TownServices Services => Definition.Services;
-
-    public TownSourceCatalog Sources => Definition.Sources;
+    public TownSourceCatalog Sources => TownSourceCatalog.Default;
 
     public IReadOnlyList<AvailableAction> GetInvestigationActions()
-        => Sources.GetInvestigationActions(Services);
+        => Sources.GetInvestigationActions();
 
     public bool IsAvailable(InvestigationSourceKind sourceKind)
-        => Sources.IsAvailable(sourceKind, Services);
+        => Sources.IsAvailable(sourceKind);
 
     public TownSourceDefinition GetRequiredSourceDefinition(InvestigationSourceKind sourceKind)
         => Sources.GetRequiredDefinition(sourceKind);
@@ -50,9 +48,9 @@ public sealed class TownAggregate
     public void EnterTown(Town town)
     {
         Definition = town ?? throw new ArgumentNullException(nameof(town));
-        VisitState.EnterTown(town.Id, town.Sources);
+        VisitState.EnterTown(town.Id);
     }
 
     public void PrimeCurrentTown()
-        => VisitState.PrimeCurrentTown(Sources);
+        => VisitState.PrimeCurrentTown();
 }

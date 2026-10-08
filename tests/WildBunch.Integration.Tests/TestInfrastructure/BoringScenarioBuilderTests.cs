@@ -92,9 +92,9 @@ public sealed class BoringScenarioBuilderTests
     }
 
     [Fact]
-    public void StartingTownServicesOrWantedPosterReadyKeepsThePublicServiceSurfaceReady()
+    public void StartingTownReadyKeepsThePublicServiceSurfaceReady()
     {
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
 
         scenario.AssertReady();
 

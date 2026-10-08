@@ -19,19 +19,6 @@ public sealed class SeedWorldFactoryTests
     }
 
     [Fact]
-    public void CreateCanonicalWorldAppliesHubTelegraphServicesPalette()
-    {
-        var world = SeedWorldFactory.CreateCanonicalWorld();
-        var townsByIndex = world.Towns.OrderBy(t => t.Id.Value, StringComparer.OrdinalIgnoreCase).ToArray();
-
-        // HubTelegraph: only slot 0 has telegraph. But slot assignment is by
-        // position in the derived name list, not by sorted order. We verify
-        // that exactly one town has telegraph.
-        var telegraphTowns = world.Towns.Where(t => t.Services.HasFlag(TownServices.Telegraph)).ToArray();
-        Assert.Single(telegraphTowns);
-    }
-
-    [Fact]
     public void DifferentSeedsCanProduceDifferentTownNames()
     {
         // Different encoded fields produce different name shuffles, so different
@@ -127,12 +114,12 @@ public sealed class SeedWorldFactoryTests
                     seedWorld.DefaultCulpritIndex,
                     seedWorld.CashBonus,
                     seedWorld.ProsperityPalette,
-                    seedWorld.ServicesPalette);
+                    seedWorld.ReservedTownNameDerivationBits);
 
                 var world = SeedWorldFactory.CreateWorld(
                     seedWorld.WorldVariant,
                     townNames,
-                    seedWorld.ServicesPalette,
+                    seedWorld.ReservedTownNameDerivationBits,
                     seedWorld.ProsperityPalette,
                     Array.Empty<SeedWorldTrail>());
 

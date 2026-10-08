@@ -58,7 +58,6 @@ vi.mock("../api/wildBunchApi", () => ({
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
@@ -105,8 +104,8 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -196,13 +195,13 @@ function primeMocks() {
     variantId: "variant-1",
   });
   mockedGetStartingTowns.mockResolvedValue([
-    { id: "t-town", name: "Tumbleweed", services: 0 },
-    { id: "dust-fork", name: "Dust Fork", services: 0 },
+    { id: "t-town", name: "Tumbleweed" },
+    { id: "dust-fork", name: "Dust Fork" },
   ]);
   mockedGetStartingTownMap.mockResolvedValue({
     towns: [
-      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
-      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
+      { id: "t-town", name: "Tumbleweed", x: 150, y: 500 },
+      { id: "dust-fork", name: "Dust Fork", x: 450, y: 400 },
     ],
     trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
   });

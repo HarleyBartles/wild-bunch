@@ -137,7 +137,6 @@ public static class GameSessionMapper
         => new(
             town.Id.Value,
             town.Name,
-            town.Services,
             town.MapX,
             town.MapY,
             TownLayoutMapper.ToDto(town.Layout));

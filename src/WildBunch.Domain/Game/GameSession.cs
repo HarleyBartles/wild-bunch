@@ -1946,43 +1946,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return assessment with { SessionChanged = true };
     }
 
-    public CaseInvestigationResult FollowTelegraphLeads()
-    {
-        if (IsArchived)
-        {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
-        }
-
-        if (!CurrentTown.IsAvailable(InvestigationSourceKind.TelegraphLead))
-        {
-            return CaseInvestigationResult.Failed("There is no telegraph office here.");
-        }
-
-        var beatSpent = Clock.TimeOfDay;
-        EnterActionContext(TownActionContext.TelegraphOffice);
-        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TelegraphOffice, CurrentTown.TownName);
-
-        var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
-        var context = new InvestigationContext(
-            CaseFile,
-            CurrentTownSlotIndex,
-            CurrentTownVisitCount,
-            boringSalt,
-            CurrentTown.TownId,
-            CurrentTown.TownName,
-            beatNarration,
-            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead),
-            IsSourceAvailable: true);
-        var outcome = _investigationLoop.FollowTelegraphLeads(context);
-        ProduceEvent(outcome.Event);
-        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
-    }
-
     public CaseInvestigationResult GatherLocalGossip()
     {
         if (IsArchived)

@@ -14,7 +14,7 @@ public sealed class DevEndpointTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
@@ -54,7 +54,7 @@ public sealed class DevEndpointTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");

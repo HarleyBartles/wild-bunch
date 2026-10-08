@@ -74,7 +74,6 @@ vi.mock("../api/wildBunchApi", () => ({
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   getPrologue: vi.fn(),
   getStartingTowns: vi.fn(),
@@ -103,8 +102,8 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     player: { name: "Ruth", currentTownId: "t-town", health: 9 },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [
         {
@@ -236,8 +235,8 @@ function primeMocks(session: GameSessionDto = createSession()) {
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetWorldMap.mockResolvedValue({
     towns: [
-      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
-      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
+      { id: "t-town", name: "Tumbleweed", x: 150, y: 500 },
+      { id: "dust-fork", name: "Dust Fork", x: 450, y: 400 },
     ],
     trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
   });

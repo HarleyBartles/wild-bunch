@@ -3,7 +3,6 @@ import {
   actionIsWantedPosters,
   actionIsInspectNoticeBoard,
   actionIsCheckLocalRecords,
-  actionIsFollowTelegraphLeads,
   actionIsGatherLocalGossip,
   actionIsLookAroundSaloon,
 } from "../utils/actionTypePredicates";
@@ -35,12 +34,6 @@ describe("actionTypePredicates", () => {
 
   it("identifies CheckSheriffRecords as checkLocalRecords", () => {
     expect(actionIsCheckLocalRecords(makeAction(AvailableActionKind.CheckSheriffRecords))).toBe(
-      true,
-    );
-  });
-
-  it("identifies FollowTelegraphLeads", () => {
-    expect(actionIsFollowTelegraphLeads(makeAction(AvailableActionKind.FollowTelegraphLeads))).toBe(
       true,
     );
   });

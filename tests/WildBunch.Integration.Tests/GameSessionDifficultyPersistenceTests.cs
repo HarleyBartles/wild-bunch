@@ -296,7 +296,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
 
-        var firstResult = session.FollowTelegraphLeads();
+        var firstResult = session.GatherLocalGossip();
         Assert.True(firstResult.Success);
 
         session.Player.TravelTo(new TownId("connected"));
@@ -306,7 +306,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         session.CurrentTownVisit.Reset(new TownId("current"));
         session.ResetActionContextForTownChange();
 
-        var afterReturnResult = session.FollowTelegraphLeads();
+        var afterReturnResult = session.GatherLocalGossip();
         Assert.True(afterReturnResult.Success);
 
         await repository.StoreAsync(session);
@@ -321,7 +321,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Equal(2, currentTownState!.VisitNumber);
         Assert.Equal(new TownId("connected"), connectedTownState!.TownId);
         Assert.True(connectedTownState.VisitNumber >= 1);
-        Assert.True(currentTownState.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.True(currentTownState.IsSpent(InvestigationSourceKind.LocalGossip));
         Assert.Empty(connectedTownState.SpentInvestigationSources);
         Assert.Single(reloaded.CaseFile.KnownClues);
         Assert.Empty(reloaded.CaseFile.PublicClues);
@@ -362,7 +362,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         var serializer = new GameSessionJsonSerializer();
         var session = CreateTownVisitSession();
 
-        session.FollowTelegraphLeads();
+        session.GatherLocalGossip();
 
         var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();
         var currentTownVisit = legacySnapshot["currentTownVisit"]!.AsObject();
@@ -372,7 +372,7 @@ public sealed class GameSessionDifficultyPersistenceTests
 
         Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
-        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
         Assert.Single(reloaded.CaseFile.KnownClues);
         Assert.Empty(reloaded.CaseFile.PublicClues);
     }
@@ -383,16 +383,16 @@ public sealed class GameSessionDifficultyPersistenceTests
         var serializer = new GameSessionJsonSerializer();
         var session = CreateTownVisitSession();
 
-        var result = session.FollowTelegraphLeads();
+        var result = session.GatherLocalGossip();
         Assert.True(result.Success);
-        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
 
         var json = serializer.Serialize(session);
         var reloaded = serializer.Deserialize(json);
 
         Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
-        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
         Assert.Single(reloaded.CaseFile.KnownClues);
         Assert.Empty(reloaded.CaseFile.PublicClues);
     }
@@ -412,9 +412,9 @@ public sealed class GameSessionDifficultyPersistenceTests
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
 
-        var result = session.FollowTelegraphLeads();
+        var result = session.GatherLocalGossip();
         Assert.True(result.Success);
-        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
 
         await repository.StoreAsync(session);
         await unitOfWork.CommitAsync();
@@ -423,15 +423,15 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.NotNull(reloaded);
         Assert.Equal(session.Player.CurrentTownId!.Value, reloaded!.Player.CurrentTownId);
         Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
-        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
         Assert.Single(reloaded.CaseFile.KnownClues);
         Assert.Empty(reloaded.CaseFile.PublicClues);
     }
 
     private static GameSession CreateSession(GameDifficulty GameDifficulty, GameEntropy entropy)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var holloway = new Town(new TownId("holloway"), "Holloway");
 
         var world = new World(
             new[] { pinecross, holloway },
@@ -466,8 +466,8 @@ public sealed class GameSessionDifficultyPersistenceTests
 
     private static GameSession CreateTownVisitSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
 
         var world = new World(
             new[] { currentTown, connectedTown },
@@ -496,7 +496,7 @@ public sealed class GameSessionDifficultyPersistenceTests
                     "A telegraph clerk filed a name in shorthand.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.TelegraphLead,
+                    InvestigationSourceKind.LocalGossip,
                     source: "telegraph clerk",
                     context: "Telegraph lead")
             });
@@ -700,9 +700,9 @@ public sealed class GameSessionDifficultyPersistenceTests
 
     private static GameSession CreateJourneyHistorySession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var openpass = new Town(new TownId("openpass"), "Open Pass");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
 
         var world = new World(
             new[] { pinecross, openpass, dryfork },

@@ -63,8 +63,8 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
 
     private static GameSession CreateSessionWithJourney()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite");
         var world = new DomainWorld(
             new[] { pinecross, quartzsite },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, quartzsite.Id, TrailRisk.Low) });

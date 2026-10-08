@@ -40,9 +40,9 @@ afterEach(() => {
 function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTownMapDto {
   return {
     towns: [
-      { id: "t-town", name: "Tumbleweed", services: 0, x: 150, y: 500 },
-      { id: "dust-fork", name: "Dust Fork", services: 0, x: 450, y: 400 },
-      { id: "hardpan", name: "Hardpan", services: 0, x: 100, y: 300 },
+      { id: "t-town", name: "Tumbleweed", x: 150, y: 500 },
+      { id: "dust-fork", name: "Dust Fork", x: 450, y: 400 },
+      { id: "hardpan", name: "Hardpan", x: 100, y: 300 },
     ],
     trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
     ...overrides,

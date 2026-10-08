@@ -20,7 +20,6 @@ import {
   getTownStoreOffers,
   buyStoreItem,
   checkLocalRecords,
-  followTelegraphLeads,
   gatherLocalGossip,
   inspectNoticeBoard,
   confrontSaloonPersonOfInterest,
@@ -41,7 +40,6 @@ vi.mock("../api/wildBunchApi", () => ({
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
@@ -72,7 +70,6 @@ const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
-const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 const mockedAcknowledgeTravelArrival = vi.mocked(acknowledgeTravelArrival);
@@ -117,8 +114,8 @@ function createSession(): GameSessionDto {
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -255,8 +252,8 @@ function createInTownSessionAtDestination(): GameSessionDto {
   const session = createSession();
   session.player.currentTownId = "dust-fork";
   session.world.towns = [
-    { id: "t-town", name: "Tumbleweed", services: 0 },
-    { id: "dust-fork", name: "Dust Fork", services: 0 },
+    { id: "t-town", name: "Tumbleweed" },
+    { id: "dust-fork", name: "Dust Fork" },
   ];
   return session;
 }
@@ -289,11 +286,6 @@ function primeMocks() {
     currentJournal: createJournal(),
   });
   mockedCheckLocalRecords.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedFollowTelegraphLeads.mockResolvedValue({
     success: true,
     message: "ok",
     currentJournal: createJournal(),

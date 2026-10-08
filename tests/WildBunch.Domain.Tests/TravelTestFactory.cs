@@ -8,7 +8,6 @@ using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -98,9 +97,8 @@ internal static class TravelTestFactory
     {
         // Mirror the CreateHighRiskSession pattern from AdvanceTravelDayHandlerTests
         // but in the Domain test project (no handler, just session + preview).
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross",
-            TownServices.Telegraph);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -147,9 +145,8 @@ internal static class TravelTestFactory
         // The trail id, town ids, terrain and difficulty are tuned together so the
         // deterministic TravelDayPlanGenerator produces no hostile encounters across
         // the whole journey. Changing any of these values may reintroduce interruptions.
-        var origin = new Town(new TownId("o2"), "Pinecross",
-            TownServices.None);
-        var destination = new Town(new TownId("d2"), "Six Mile", TownServices.None);
+        var origin = new Town(new TownId("o2"), "Pinecross");
+        var destination = new Town(new TownId("d2"), "Six Mile");
         var world = new DomainWorld(
             new[] { origin, destination },
             new[]

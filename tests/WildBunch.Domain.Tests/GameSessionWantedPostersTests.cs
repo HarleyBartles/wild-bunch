@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -17,7 +16,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersInSupportedTownAddsPublicClueAndLogEntry()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
 
         var result = session.ReadWantedPosters();
 
@@ -41,7 +40,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersTwiceDoesNotDuplicateTheSameClue()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
 
         var first = session.ReadWantedPosters();
         var second = session.ReadWantedPosters();
@@ -61,7 +60,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersSkipsTelegraphAndGossipClues()
     {
-        var session = CreateSession(TownServices.None, includeSourceSpecificClues: true);
+        var session = CreateSession(includeSourceSpecificClues: true);
 
         var first = session.ReadWantedPosters();
 
@@ -71,7 +70,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
@@ -79,13 +78,9 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersInTownWithoutNoticeBoardStillSucceeds()
     {
-        // Every town has a sheriff's office. ReadWantedPosters is always available,
-        // even in a town with TownServices.None. The action should succeed and
-        // reveal the same warrants/clues as in a town with NoticeBoard.
-        var session = CreateSession(TownServices.None);
-
-        // Prove the precondition: the town carries no services (TownServices.None).
-        Assert.Equal(TownServices.None, session.CurrentTown.Services);
+        // Every town has a sheriff's office. ReadWantedPosters is always available
+        // and reveals its warrants and clues.
+        var session = CreateSession();
 
         var result = session.ReadWantedPosters();
 
@@ -104,7 +99,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersWhileJourneyAwaitingAcknowledgementFailsWithoutMutation()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         StartJourney(session);
         session.Journey!.MarkCompleted();
 
@@ -122,10 +117,10 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(JourneyStatus.Completed, session.Journey.Status);
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices, bool includeSourceSpecificClues = false)
+    private static GameSession CreateSession(bool includeSourceSpecificClues = false)
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -165,7 +160,7 @@ public sealed class GameSessionWantedPostersTests
                         "A telegraph clerk filed a name in shorthand.",
                         new[] { new SuspectId("suspect-2") },
                         InvestigationTargetKind.Suspected,
-                        InvestigationSourceKind.TelegraphLead,
+                        InvestigationSourceKind.LocalGossip,
                         source: "telegraph clerk",
                         context: "Telegraph lead"),
                     new Clue(

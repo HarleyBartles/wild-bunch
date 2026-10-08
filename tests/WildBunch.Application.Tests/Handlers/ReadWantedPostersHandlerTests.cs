@@ -10,7 +10,6 @@ using WildBunch.Domain.WantedPosters;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -22,7 +21,7 @@ public sealed class ReadWantedPostersHandlerTests
     public async Task ReadWantedPostersLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
@@ -59,10 +58,10 @@ public sealed class ReadWantedPostersHandlerTests
     public async Task ReadWantedPostersSucceedsEvenWithoutNoticeBoardService()
     {
         // Every town has a sheriff's office. ReadWantedPosters is always available,
-        // even in a town with TownServices.None. The action should succeed and
+        // regardless of which town is current. The action should succeed and
         // reveal warrants/clues just like in a town with NoticeBoard.
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
@@ -91,7 +90,7 @@ public sealed class ReadWantedPostersHandlerTests
     public async Task ReadWantedPostersWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         StartJourney(session);
         session.Journey!.MarkCompleted();
         session.MarkEventsCommitted();
@@ -119,10 +118,10 @@ public sealed class ReadWantedPostersHandlerTests
             () => handler.HandleAsync(new ReadWantedPostersCommand(Guid.NewGuid())));
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices)
+    private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]

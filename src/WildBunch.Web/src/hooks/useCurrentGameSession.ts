@@ -8,7 +8,6 @@ import {
 } from "../api/types";
 import {
   actionIsCheckLocalRecords,
-  actionIsFollowTelegraphLeads,
   actionIsGatherLocalGossip,
   actionIsInspectNoticeBoard,
   actionIsLookAroundSaloon,
@@ -83,7 +82,6 @@ export function useCurrentGameSession() {
     readWantedPostersMutation,
     inspectNoticeBoardMutation,
     checkLocalRecordsMutation,
-    followTelegraphLeadsMutation,
     gatherLocalGossipMutation,
     lookAroundSaloonMutation,
     confrontSaloonMutation,
@@ -101,7 +99,6 @@ export function useCurrentGameSession() {
   const investigationPending =
     inspectNoticeBoardMutation.isPending ||
     checkLocalRecordsMutation.isPending ||
-    followTelegraphLeadsMutation.isPending ||
     gatherLocalGossipMutation.isPending ||
     lookAroundSaloonMutation.isPending ||
     confrontSaloonMutation.isPending;
@@ -121,7 +118,6 @@ export function useCurrentGameSession() {
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
   const canInspectNoticeBoard = actions.some(actionIsInspectNoticeBoard);
   const canCheckLocalRecords = actions.some(actionIsCheckLocalRecords);
-  const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
   const canConfrontSaloonPersonOfInterest = Boolean(
@@ -210,13 +206,6 @@ export function useCurrentGameSession() {
     await checkLocalRecordsMutation.mutateAsync();
   }, [gameId, canCheckLocalRecords, checkLocalRecordsMutation]);
 
-  const handleFollowTelegraphLeads = useCallback(async () => {
-    if (!gameId || !canFollowTelegraphLeads) {
-      return;
-    }
-    await followTelegraphLeadsMutation.mutateAsync();
-  }, [gameId, canFollowTelegraphLeads, followTelegraphLeadsMutation]);
-
   const handleGatherLocalGossip = useCallback(async () => {
     if (!gameId || !canGatherLocalGossip) {
       return;
@@ -302,7 +291,6 @@ export function useCurrentGameSession() {
     canReadWantedPosters,
     canInspectNoticeBoard,
     canCheckLocalRecords,
-    canFollowTelegraphLeads,
     canGatherLocalGossip,
     canLookAroundSaloon,
     canConfrontSaloonPersonOfInterest,
@@ -318,7 +306,6 @@ export function useCurrentGameSession() {
     handleReadWantedPosters,
     handleInspectNoticeBoard,
     handleCheckLocalRecords,
-    handleFollowTelegraphLeads,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
     handleConfrontSaloonPersonOfInterest,

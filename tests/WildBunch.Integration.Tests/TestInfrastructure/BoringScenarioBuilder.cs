@@ -25,10 +25,10 @@ internal static class BoringScenarioBuilder
             ScenarioName: "HighRiskFoeInterruptRoute",
             Fixture: ScenarioSeedCatalog.HighRiskFoeInterruptRoute);
 
-    public static BoringScenario StartingTownServicesOrWantedPosterReady()
+    public static BoringScenario StartingTownReady()
         => new(
-            ScenarioName: "StartingTownServicesOrWantedPosterReady",
-            Fixture: ScenarioSeedCatalog.CanonicalStartingTownServices);
+            ScenarioName: "StartingTownReady",
+            Fixture: ScenarioSeedCatalog.CanonicalStartingTown);
 }
 
 internal sealed record BoringScenario(

@@ -8,7 +8,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -20,7 +19,7 @@ public sealed class CheckSheriffRecordsHandlerTests
     public async Task CheckSheriffRecordsLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new CheckSheriffRecordsHandler(repository, repository, new JournalResolver());
 
@@ -45,7 +44,7 @@ public sealed class CheckSheriffRecordsHandlerTests
     public async Task CheckSheriffRecordsLoadsSessionSavesSuccessfulMutationEvenWithoutNoticeBoardService()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new CheckSheriffRecordsHandler(repository, repository, new JournalResolver());
 
@@ -64,7 +63,7 @@ public sealed class CheckSheriffRecordsHandlerTests
     public async Task CheckSheriffRecordsWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         StartJourney(session);
         session.Journey!.MarkCompleted();
         session.MarkEventsCommitted();
@@ -81,10 +80,10 @@ public sealed class CheckSheriffRecordsHandlerTests
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices)
+    private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]

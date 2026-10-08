@@ -20,7 +20,6 @@ public sealed class WorldSnapshotTests
         var town = new Town(
             new TownId("t1"),
             "Dodge",
-            TownServices.Telegraph,
             TownProsperity.Boomtown,
             MapX: 100,
             MapY: 200,
@@ -48,7 +47,6 @@ public sealed class WorldSnapshotTests
         var town = new Town(
             new TownId("t2"),
             "Tombstone",
-            TownServices.None,
             TownProsperity.Poor,
             MapX: 500,
             MapY: 500,

@@ -27,20 +27,14 @@ public sealed class ActionAvailabilityResolver
         // is always available when not traveling.
         availableActions.Add(new AvailableAction(AvailableActionKind.BuySupplies, "Buy supplies"));
 
-        if ((currentTown.Services & TownServices.Telegraph) != 0)
-        {
-            availableActions.Add(new AvailableAction(AvailableActionKind.SendTelegram, "Send telegram"));
-        }
-
-        availableActions.AddRange(currentTown.Sources.GetInvestigationActions(currentTown.Services));
+        availableActions.AddRange(session.CurrentTown.GetInvestigationActions());
 
         if (session.Journey is not null)
         {
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.Travel);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.BuySupplies);
-            availableActions.RemoveAll(action => action.Kind == AvailableActionKind.SendTelegram);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.ReadWantedPosters);
-            foreach (var source in currentTown.Sources.Definitions)
+            foreach (var source in session.CurrentTown.Sources.Definitions)
             {
                 availableActions.RemoveAll(action => action.Kind == source.ActionKind);
             }

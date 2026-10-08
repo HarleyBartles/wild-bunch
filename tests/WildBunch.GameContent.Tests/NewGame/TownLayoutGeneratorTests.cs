@@ -25,9 +25,9 @@ public sealed class TownLayoutGeneratorTests
         var sourceB = new LayoutDeterministicSource("test-seed", townId, 0, "1.0.0", salts);
 
         var a = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceA, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+            TownProsperity.Prosperous, townId, 0, sourceA, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
         var b = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, sourceB, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
+            TownProsperity.Prosperous, townId, 0, sourceB, BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
         Assert.Equal(a.PlayerSpawnX, b.PlayerSpawnX);
         Assert.Equal(a.PlayerSpawnY, b.PlayerSpawnY);
@@ -39,43 +39,24 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_AlwaysIncludesBaselineNavigationBuildings()
+    public void GenerateLayout_AlwaysIncludesCoreServicesAndNavigationBuildings()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Store, kinds);
         Assert.Contains(BuildingKind.Sheriff, kinds);
         Assert.Contains(BuildingKind.Saloon, kinds);
-        Assert.Contains(BuildingKind.Trailhead, kinds);
-    }
-
-    [Fact]
-    public void GenerateLayout_IncludesTelegraphWhenServiceSet()
-    {
-        var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
-
-        var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
         Assert.Contains(BuildingKind.Telegraph, kinds);
-    }
-
-    [Fact]
-    public void GenerateLayout_ExcludesTelegraphWhenNoServices()
-    {
-        var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
-
-        var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
-        Assert.DoesNotContain(BuildingKind.Telegraph, kinds);
+        Assert.Contains(BuildingKind.Trailhead, kinds);
     }
 
     [Fact]
     public void GenerateLayout_PlacesTrailheadInBuildingZoneAndSpawnInCenter()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.None, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         Assert.Equal(50, layout.PlayerSpawnX);
         Assert.Equal(50, layout.PlayerSpawnY);
@@ -96,7 +77,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_BaselineBuildingsUseStandardFootprint()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         Assert.All(layout.Buildings.Where(b => b.Kind != BuildingKind.Trailhead), b =>
         {
@@ -116,7 +97,7 @@ public sealed class TownLayoutGeneratorTests
     {
         var townId = NewTownId("town-1");
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         // Tile-based system: buildings are placed at exact tile centers (no jitter)
         // Each tile is 10 logical units, so tile (row, col) centers at (col*10 + 5, row*10 + 5)
@@ -138,7 +119,7 @@ public sealed class TownLayoutGeneratorTests
         foreach (var prosperity in new[] { TownProsperity.Boomtown, TownProsperity.Prosperous, TownProsperity.Poor, TownProsperity.Destitute })
         {
             var layout = TownLayoutGenerator.GenerateLayout(
-                TownServices.Telegraph, prosperity, townId, 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+                prosperity, townId, 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
             Assert.Equal(6, layout.Buildings.Count); // Store, Sheriff, Saloon, Telegraph, north trailhead, south trailhead
         }
     }
@@ -150,12 +131,12 @@ public sealed class TownLayoutGeneratorTests
 
         // No spurs: 8 building zones
         var noSpursLayout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
         Assert.Equal(6, noSpursLayout.Buildings.Count);
 
         // One spur: 8 building zones + 1 spur zone = 9 zones
         var oneSpurLayout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
         Assert.Equal(6, oneSpurLayout.Buildings.Count); // Still 6 buildings (zones available >= building count)
     }
 
@@ -163,7 +144,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_GeneratesPathSegments()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         // Path generation is intentionally disabled for the current hub generator.
         Assert.Empty(layout.Paths);
@@ -176,7 +157,7 @@ public sealed class TownLayoutGeneratorTests
 
         // With a spur, at least one building should be placed on the spur
         var oneSpurLayout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
 
         // Check that at least one building is on the left side (where the spur is)
         // Spur building zone is at column 2 (left of building zone at column 3)
@@ -188,7 +169,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_TileGridHasCorrectDimensions()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         Assert.NotNull(layout.TileGrid);
         Assert.Equal(10, layout.TileGrid.Length); // 10 rows
@@ -199,7 +180,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_TileGridHasMajorRoadInCenter()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         Assert.NotNull(layout.TileGrid);
 
@@ -215,7 +196,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_TileGridHasBuildingZonesOnSides()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         Assert.NotNull(layout.TileGrid);
 
@@ -231,7 +212,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_TileGridHasSpurTilesWhenSpursExist()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
 
         Assert.NotNull(layout.TileGrid);
 
@@ -245,7 +226,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_BuildingsAreDistributedVertically()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         // Get non-trailhead buildings
         var nonTrailheadBuildings = layout.Buildings.Where(b => b.Kind != BuildingKind.Trailhead).ToList();
@@ -259,7 +240,7 @@ public sealed class TownLayoutGeneratorTests
     public void GenerateLayout_PathsAreDisabled()
     {
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         // Path generation is disabled until proper tile-based rules are implemented
         Assert.Empty(layout.Paths);
@@ -273,7 +254,6 @@ public sealed class TownLayoutGeneratorTests
         var layoutSource = new LayoutDeterministicSource("test-seed", townId, 0, "1.0.0", salts);
 
         var layout = TownLayoutGenerator.GenerateLayout(
-            TownServices.Telegraph,
             TownProsperity.Prosperous,
             townId,
             0,

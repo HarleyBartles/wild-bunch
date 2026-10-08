@@ -5,7 +5,6 @@ import {
   archiveGame,
   checkLocalRecords,
   confrontSaloonPersonOfInterest,
-  followTelegraphLeads,
   gatherLocalGossip,
   inspectNoticeBoard,
   lookAroundSaloon,
@@ -197,21 +196,6 @@ export function useGameSessionMutations({
     },
   });
 
-  const followTelegraphLeadsMutation = useMutation({
-    mutationFn: () => followTelegraphLeads(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error ? exception.message : "Unable to follow telegraph leads.",
-      );
-    },
-  });
-
   const gatherLocalGossipMutation = useMutation({
     mutationFn: () => gatherLocalGossip(gameId as string),
     onSuccess: async (result) => {
@@ -272,7 +256,6 @@ export function useGameSessionMutations({
     readWantedPostersMutation,
     inspectNoticeBoardMutation,
     checkLocalRecordsMutation,
-    followTelegraphLeadsMutation,
     gatherLocalGossipMutation,
     lookAroundSaloonMutation,
     confrontSaloonMutation,

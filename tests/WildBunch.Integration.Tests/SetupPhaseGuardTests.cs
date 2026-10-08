@@ -22,7 +22,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
@@ -42,7 +42,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
@@ -63,7 +63,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
@@ -83,7 +83,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
@@ -107,7 +107,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 

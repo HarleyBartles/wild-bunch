@@ -83,8 +83,8 @@ public sealed class GameSessionEventReplayTests
         var placeholderWorld = new DomainWorld(
             new[]
             {
-                new Town(new TownId("pinecross"), "PLACEHOLDER", TownServices.None),
-                new Town(new TownId("redmesa"), "PLACEHOLDER", TownServices.None)
+                new Town(new TownId("pinecross"), "PLACEHOLDER"),
+                new Town(new TownId("redmesa"), "PLACEHOLDER")
             },
             new[] { new Trail(new TrailId("trail-1"), new TownId("pinecross"), new TownId("redmesa"), TrailRisk.Low) });
 
@@ -193,7 +193,6 @@ public sealed class GameSessionEventReplayTests
         var pinecross = new Town(
             new TownId("pinecross"),
             "Pinecross",
-            TownServices.Telegraph,
             TownProsperity.Prosperous,
             MapX: 100,
             MapY: 100,
@@ -203,7 +202,6 @@ public sealed class GameSessionEventReplayTests
         var redmesa = new Town(
             new TownId("redmesa"),
             "Red Mesa",
-            TownServices.None,
             TownProsperity.Poor,
             MapX: 400,
             MapY: 300,

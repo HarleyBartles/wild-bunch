@@ -14,7 +14,6 @@ public static class BeatNarration
         { TownActionContext.Store, "the general store" },
         { TownActionContext.Stable, "the stable" },
         { TownActionContext.Jail, "the jail" },
-        { TownActionContext.TelegraphOffice, "the telegraph office" },
         { TownActionContext.TownSquare, "the town square" },
     };
 

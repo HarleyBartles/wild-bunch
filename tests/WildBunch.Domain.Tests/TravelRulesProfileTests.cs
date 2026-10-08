@@ -15,7 +15,6 @@ using DomainTrailId = WildBunch.Domain.World.TrailId;
 using DomainTrailRisk = WildBunch.Domain.World.TrailRisk;
 using DomainTrailTerrain = WildBunch.Domain.World.TrailTerrain;
 using DomainWaterFeature = WildBunch.Domain.World.WaterFeature;
-using DomainTownServices = WildBunch.Domain.World.TownServices;
 
 namespace WildBunch.Domain.Tests;
 
@@ -64,8 +63,8 @@ public sealed class TravelRulesProfileTests
         var world = new DomainWorld(
             new[]
             {
-                new DomainTown(new DomainTownId("pinecross"), "Pinecross", DomainTownServices.None),
-                new DomainTown(new DomainTownId("holloway"), "Holloway", DomainTownServices.None)
+                new DomainTown(new DomainTownId("pinecross"), "Pinecross"),
+                new DomainTown(new DomainTownId("holloway"), "Holloway")
             },
             new[]
             {

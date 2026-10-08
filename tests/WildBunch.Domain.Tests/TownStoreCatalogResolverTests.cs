@@ -64,7 +64,6 @@ public sealed class TownStoreCatalogResolverTests
             var town = new Town(
                 new TownId(prosperity.ToString().ToLowerInvariant()),
                 prosperity.ToString(),
-                TownServices.None,
                 prosperity);
 
             var actualOffers = resolver.Resolve(town).Offers

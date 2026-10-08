@@ -1,5 +1,4 @@
 import type { GameSessionDto, TownDto } from "../api/types";
-import { formatServices } from "../ui/formatters";
 import { InventoryPanel } from "./InventoryPanel";
 import { StoreOffersPanel } from "./StoreOffersPanel";
 import { TravelPanel } from "./TravelPanel";
@@ -64,10 +63,6 @@ export function FieldReportPanel({
           <div>
             <dt>Town id</dt>
             <dd>{currentTown?.id ?? session.player.currentTownId}</dd>
-          </div>
-          <div>
-            <dt>Services</dt>
-            <dd>{currentTown ? formatServices(currentTown.services) : "Unknown"}</dd>
           </div>
           <div>
             <dt>World towns</dt>

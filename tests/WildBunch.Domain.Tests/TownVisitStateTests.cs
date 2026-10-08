@@ -11,16 +11,15 @@ public sealed class TownVisitStateTests
     public void TownVisitStateTracksFirstChecksRevisitsAndTownReturnRefreshesPerTown()
     {
         var state = new TownVisitState(new TownId("current"));
-        state.PrimeCurrentTown(TownSourceCatalog.Default);
+        state.PrimeCurrentTown();
 
-        var firstCheck = state.CheckSource(InvestigationSourceKind.TelegraphLead);
-        var repeatCheck = state.CheckSource(InvestigationSourceKind.TelegraphLead);
+        var firstCheck = state.CheckSource(InvestigationSourceKind.NoticeBoard);
+        var repeatCheck = state.CheckSource(InvestigationSourceKind.NoticeBoard);
 
         state.Reset(new TownId("connected"));
         state.Reset(new TownId("current"));
-        state.PrimeCurrentTown(TownSourceCatalog.Default);
 
-        var afterReturnCheck = state.CheckSource(InvestigationSourceKind.TelegraphLead);
+        var afterReturnCheck = state.CheckSource(InvestigationSourceKind.NoticeBoard);
 
         Assert.Equal(TownSourceCheckOutcome.FirstCheck, firstCheck);
         Assert.Equal(TownSourceCheckOutcome.RepeatNoNewInfo, repeatCheck);
@@ -30,10 +29,10 @@ public sealed class TownVisitStateTests
         Assert.Equal(2, currentTownState!.VisitNumber);
         Assert.Equal(new TownId("connected"), connectedTownState!.TownId);
         Assert.True(connectedTownState.VisitNumber >= 1);
-        Assert.True(currentTownState.TryGetSourceState(InvestigationSourceKind.TelegraphLead, out var telegraphLeadState));
-        Assert.Equal(TownSourceRefreshPolicy.PerVisit, telegraphLeadState!.RefreshPolicy);
-        Assert.Equal(currentTownState.VisitNumber, telegraphLeadState.LastRefreshedVisitNumber);
-        Assert.True(currentTownState.IsSpent(InvestigationSourceKind.TelegraphLead));
+        Assert.True(currentTownState.TryGetSourceState(InvestigationSourceKind.NoticeBoard, out var noticeBoardState));
+        Assert.Equal(TownSourceRefreshPolicy.PerVisit, noticeBoardState!.RefreshPolicy);
+        Assert.Equal(currentTownState.VisitNumber, noticeBoardState.LastRefreshedVisitNumber);
+        Assert.True(currentTownState.IsSpent(InvestigationSourceKind.NoticeBoard));
         Assert.Single(currentTownState.SpentInvestigationSources);
         Assert.Empty(connectedTownState.SpentInvestigationSources);
     }

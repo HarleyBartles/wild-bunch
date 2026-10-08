@@ -10,7 +10,6 @@ using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
 using DomainItemKind = WildBunch.Domain.Inventory.ItemKind;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -72,13 +71,16 @@ public class BeatModelEconomyTests
     [Fact]
     public void FullDayPasses_WhenFourBeatsConsumed()
     {
-        var session = TestSessionFactory.CreateDefault();
+        var session = CreateSessionWithStore();
         var dayBefore = session.Clock.Day;
 
         session.InspectNoticeBoard();      // beat 1: TownSquare
         session.GatherLocalGossip();       // beat 2: Saloon
         session.CheckSheriffRecords();     // beat 3: SheriffOffice
-        session.FollowTelegraphLeads();    // beat 4: TelegraphOffice (wraps to next day)
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
+            .Offers.Single(item => item.ItemKind == DomainItemKind.Food);
+        session.Purchase(offer, 1); // beat 4: Store (wraps to next day)
 
         Assert.Equal(dayBefore + 1, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
@@ -88,13 +90,16 @@ public class BeatModelEconomyTests
     [Fact]
     public void HeatIncreases_WhenFullDayPassesInTown()
     {
-        var session = TestSessionFactory.CreateDefault();
+        var session = CreateSessionWithStore();
         var heatBefore = session.PursuitState.Heat;
 
         session.InspectNoticeBoard();
         session.GatherLocalGossip();
         session.CheckSheriffRecords();
-        session.FollowTelegraphLeads(); // wraps to next day
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
+            .Offers.Single(item => item.ItemKind == DomainItemKind.Food);
+        session.Purchase(offer, 1); // wraps to next day
 
         Assert.Equal(heatBefore + 1, session.PursuitState.Heat);
     }
@@ -116,8 +121,8 @@ public class BeatModelEconomyTests
 
     private static GameSession CreateSessionWithStore()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         var world = new DomainWorld(
             new[] { pinecross, redmesa },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });

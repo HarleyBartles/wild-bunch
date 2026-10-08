@@ -30,9 +30,9 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     },
     world: {
       towns: [
-        { id: "pinecross", name: "Pinecross", services: 0 },
-        { id: "holloway", name: "Holloway", services: 0 },
-        { id: "dryfork", name: "Dry Fork", services: 0 },
+        { id: "pinecross", name: "Pinecross" },
+        { id: "holloway", name: "Holloway" },
+        { id: "dryfork", name: "Dry Fork" },
       ],
       trails: [
         {

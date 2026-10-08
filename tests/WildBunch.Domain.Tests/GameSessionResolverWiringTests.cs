@@ -7,7 +7,6 @@ using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -93,9 +92,9 @@ public sealed class GameSessionResolverWiringTests
     /// </summary>
     private static (GameSession SessionA, GameSession SessionB) CreateTwoSessionsInDifferentTowns()
     {
-        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
-        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
-        var townC = new Town(new TownId("town-c"), "Town C", TownServices.None);
+        var townA = new Town(new TownId("town-a"), "Town A");
+        var townB = new Town(new TownId("town-b"), "Town B");
+        var townC = new Town(new TownId("town-c"), "Town C");
         var world = new DomainWorld(
             new[] { townA, townB, townC },
             new[]
@@ -146,9 +145,9 @@ public sealed class GameSessionResolverWiringTests
 
     private static GameSession CreateSessionWithMultipleWarrants()
     {
-        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
-        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
-        var townC = new Town(new TownId("town-c"), "Town C", TownServices.None);
+        var townA = new Town(new TownId("town-a"), "Town A");
+        var townB = new Town(new TownId("town-b"), "Town B");
+        var townC = new Town(new TownId("town-c"), "Town C");
         var world = new DomainWorld(
             new[] { townA, townB, townC },
             new[]
@@ -202,8 +201,8 @@ public sealed class GameSessionResolverWiringTests
 
     private static GameSession CreateSessionWithCulpritAndGangWarrants()
     {
-        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
-        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
+        var townA = new Town(new TownId("town-a"), "Town A");
+        var townB = new Town(new TownId("town-b"), "Town B");
         var world = new DomainWorld(
             new[] { townA, townB },
             new[]
@@ -258,8 +257,8 @@ public sealed class GameSessionResolverWiringTests
 
     private static GameSession CreateSessionWithColorOnlyGossipClue()
     {
-        var townA = new Town(new TownId("town-a"), "Town A", TownServices.None);
-        var townB = new Town(new TownId("town-b"), "Town B", TownServices.None);
+        var townA = new Town(new TownId("town-a"), "Town A");
+        var townB = new Town(new TownId("town-b"), "Town B");
         var world = new DomainWorld(
             new[] { townA, townB },
             new[]

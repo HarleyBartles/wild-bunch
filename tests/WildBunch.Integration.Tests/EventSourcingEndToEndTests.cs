@@ -62,8 +62,8 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite");
         var world = new DomainWorld(
             new[] { pinecross, quartzsite },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, quartzsite.Id, TrailRisk.Low) });

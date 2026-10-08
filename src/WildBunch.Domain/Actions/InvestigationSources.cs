@@ -13,8 +13,6 @@ public static class InvestigationSources
 
     public static TownSourceDefinition LocalRecords => Catalog.GetRequiredDefinition(InvestigationSourceKind.LocalRecords);
 
-    public static TownSourceDefinition TelegraphLead => Catalog.GetRequiredDefinition(InvestigationSourceKind.TelegraphLead);
-
     public static TownSourceDefinition LocalGossip => Catalog.GetRequiredDefinition(InvestigationSourceKind.LocalGossip);
 
     public static TownSourceDefinition SaloonLookAround => Catalog.GetRequiredDefinition(InvestigationSourceKind.SaloonLookAround);

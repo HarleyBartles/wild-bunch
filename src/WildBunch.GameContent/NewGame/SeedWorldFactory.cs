@@ -15,7 +15,7 @@ public enum SeedWorldVariant
 /// <summary>
 /// A flavor name entry in the town name pool. Names are purely cosmetic —
 /// the seed derives which names go to which slots. Gameplay properties
-/// (services, prosperity, trails) are all slot-based and independent of names.
+/// (prosperity, trails and layout variation) are slot-based and independent of names.
 /// </summary>
 internal sealed record TownNameEntry(string Id, string Name);
 
@@ -64,52 +64,11 @@ internal static class ProsperityPalettes
 }
 
 /// <summary>
-/// Catalog-defined services palettes. Each palette maps slot indices to
-/// <see cref="TownServices"/> flags. Adding new service flags means defining
-/// new palette entries that use them — zero additional bit cost.
-/// </summary>
-internal static class ServicesPalettes
-{
-    public const int Count = 8;
-
-    private static readonly TownServices[][] Palettes =
-    [
-        // 0: NoTelegraph — no town has telegraph
-        [TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None],
-        // 1: HubTelegraph — only slot 0 has telegraph
-        [TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None],
-        // 2: TwinTelegraph — slots 0 and 10
-        [TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None],
-        // 3: RegionalTelegraph — slots 0, 6, 13
-        [TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None],
-        // 4: FrontierTelegraph — slots 0 and 1
-        [TownServices.Telegraph, TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None],
-        // 5: TelegraphWeb — alternating
-        [TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.Telegraph, TownServices.None],
-        // 6: SparseTelegraph — slots 0, 6, 13
-        [TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.Telegraph, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None, TownServices.None],
-        // 7: AllTelegraph — every slot
-        [TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph, TownServices.Telegraph]
-    ];
-
-    /// <summary>
-    /// Resolves the services flags for a town at the given slot index.
-    /// </summary>
-    public static TownServices Resolve(ServicesPalette palette, int slotIndex)
-    {
-        var services = Palettes[(int)palette];
-        return (uint)slotIndex < (uint)services.Length
-            ? services[slotIndex]
-            : TownServices.None;
-    }
-}
-
-/// <summary>
 /// The slot-based world factory. Town names are flavor — derived from the
 /// seed, not encoded. The factory provides a name pool (40 entries, twice
 /// the max town count of 20) and a slot-based trail topology covering
-/// slots 0-19. Services and prosperity are palette-indexed. The seed
-/// encodes only: town count, variant, services palette, prosperity palette,
+/// slots 0-19. Prosperity is palette-indexed. The seed
+/// encodes only: town count, variant, reserved town-name derivation bits, prosperity palette,
 /// accusation index, culprit index, and cash bonus. Bandwidth scales with
 /// max selection (20), not factory size.
 /// </summary>
@@ -178,7 +137,7 @@ internal static class SeedWorldFactory
         int defaultCulpritIndex,
         int cashBonus,
         ProsperityPalette prosperityPalette,
-        ServicesPalette servicesPalette)
+        int reservedTownNameDerivationBits)
     {
         // Combine encoded fields into a 32-bit seed.
         var seed = (uint)(
@@ -188,7 +147,7 @@ internal static class SeedWorldFactory
             ((cashBonus & 0xF) << 10) |
             ((townCount & 0xF) << 14) |
             ((int)prosperityPalette & 0x7) << 18 |
-            ((int)servicesPalette & 0x7) << 21);
+            (reservedTownNameDerivationBits & 0x7) << 21);
 
         // xorshift32 PRNG — deterministic, stable across runs.
         // Guard against seed=0: xorshift32 has 0 as a fixed point (produces all
@@ -221,14 +180,13 @@ internal static class SeedWorldFactory
     }
 
     /// <summary>
-    /// Builds a World from the seed-derived town names, services palette,
-    /// prosperity palette, and trail graph. Prosperity and services are
-    /// applied by slot position.
+    /// Builds a World from seed-derived town names, prosperity and the trail graph.
+    /// The town layout owns the fixed visible service buildings.
     /// </summary>
     public static World CreateWorld(
         SeedWorldVariant variant,
         IReadOnlyList<TownNameEntry> townNames,
-        ServicesPalette servicesPalette,
+        int reservedTownNameDerivationBits,
         ProsperityPalette prosperityPalette,
         IReadOnlyList<SeedWorldTrail> trails,
         Dictionary<int, (int X, int Y)>? townCoordinates = null,
@@ -240,14 +198,13 @@ internal static class SeedWorldFactory
         var towns = townNames
             .Select((entry, index) =>
             {
-                var services = ServicesPalettes.Resolve(servicesPalette, index);
                 var prosperity = ProsperityPalettes.Resolve(prosperityPalette, index);
                 var (mapX, mapY) = townCoordinates != null && townCoordinates.TryGetValue(index, out var coords)
                     ? coords
                     : (0, 0);
 
                 var isOutlier = outlierSlot.HasValue && index == outlierSlot.Value;
-                return new Town(new TownId(entry.Id), entry.Name, services, prosperity, MapX: mapX, MapY: mapY, IsOutlier: isOutlier);
+                return new Town(new TownId(entry.Id), entry.Name, prosperity, MapX: mapX, MapY: mapY, IsOutlier: isOutlier);
             })
             .ToArray();
         var domainTrails = trails
@@ -265,7 +222,7 @@ internal static class SeedWorldFactory
 
     /// <summary>
     /// The canonical world: 8 towns, Canonical variant, UniformProsperous
-    /// palette, HubTelegraph services palette. Used by SeedWorldMapLayout
+    /// prosperity palette. Used by SeedWorldMapLayout
     /// for the start-screen map.
     /// </summary>
     public static World CreateCanonicalWorld()
@@ -277,14 +234,14 @@ internal static class SeedWorldFactory
             defaultCulpritIndex: 3,
             cashBonus: 0,
             prosperityPalette: ProsperityPalette.UniformProsperous,
-            servicesPalette: ServicesPalette.HubTelegraph);
+            reservedTownNameDerivationBits: 1);
         // Trails are generated by MapGenerator at game setup time, not here.
         // The canonical world is only used for town listings (StartingTownCatalog);
         // it never needs trails.
         return CreateWorld(
             SeedWorldVariant.Canonical,
             townNames,
-            ServicesPalette.HubTelegraph,
+            reservedTownNameDerivationBits: 1,
             ProsperityPalette.UniformProsperous,
             Array.Empty<SeedWorldTrail>(),
             townCoordinates: null,

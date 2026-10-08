@@ -41,6 +41,10 @@ public sealed class SeededNewGameFactoryTests
         Assert.Single(session.CaseFile.Suspects, suspect => suspect.Id.Equals(session.CaseFile.TrueCulpritId));
         Assert.Equal(5, session.CaseFile.KillerReleaseThreshold);
         Assert.Equal("The culprit has a scar on the left cheek.", session.CaseFile.OpeningLead.Description);
+        Assert.Contains(session.CaseFile.KnownClues, clue => clue.Description == session.CaseFile.OpeningLead.Description
+            && clue.SourceKind == InvestigationSourceKind.Prologue);
+        Assert.DoesNotContain(session.CaseFile.KnownClues.Concat(session.CaseFile.PublicClues),
+            clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(5, session.CaseFile.KillerReleaseState.RequiredPublicClues);
@@ -66,17 +70,15 @@ public sealed class SeededNewGameFactoryTests
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
             && clue.Description == session.CaseFile.OpeningLead.Description);
         Assert.Single(session.CaseFile.KnownClues);
-        // 6 base surface-tagged clues only; town-specific clues are a runtime/salt concern.
-        Assert.Equal(6, session.CaseFile.PublicClues.Count);
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A witness tied the rider to ", StringComparison.Ordinal));
+        // 4 base surface-tagged clues only; town-specific clues are a runtime/salt concern.
+        Assert.Equal(4, session.CaseFile.PublicClues.Count);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", StringComparison.Ordinal));
         Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
         Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A poster links the alias ", StringComparison.Ordinal));
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A public notice describes an unnamed rider who ", StringComparison.Ordinal));
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A telegraph clerk filed the alias ", StringComparison.Ordinal));
         Assert.Contains(
             session.CaseFile.PublicClues,
             clue => clue.Description.StartsWith("Local gossip out of ", StringComparison.Ordinal)
@@ -149,12 +151,12 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void CaseFile_PublicClues_HasSixBaseCluesNoTownSpecificOnes()
+    public void CaseFile_PublicClues_HasFourBaseCluesNoTownSpecificOnes()
     {
         var factory = new SeededNewGameFactory();
         var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
 
-        Assert.Equal(6, session.CaseFile.PublicClues.Count);
+        Assert.Equal(4, session.CaseFile.PublicClues.Count);
     }
 
     [Fact]
@@ -167,7 +169,7 @@ public sealed class SeededNewGameFactoryTests
 
         Assert.Contains(session.Player.CurrentTownId!.Value.Value, SeedWorldFactory.NamePool.Select(n => n.Id));
         // Town-specific civic clues are a runtime/salt concern; setup has only the base clue pool.
-        Assert.Equal(6, session.CaseFile.PublicClues.Count);
+        Assert.Equal(4, session.CaseFile.PublicClues.Count);
     }
 
     [Fact]

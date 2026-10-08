@@ -76,7 +76,6 @@ public sealed class FullAuditProjector : IDomainEventProjector<FullAuditProjecti
         TownActionContext.Store => "the store",
         TownActionContext.Stable => "the stable",
         TownActionContext.Jail => "the jail",
-        TownActionContext.TelegraphOffice => "the telegraph office",
         TownActionContext.TownSquare => "the town square",
         _ => FormatEnumName(context)
     };
@@ -85,7 +84,6 @@ public sealed class FullAuditProjector : IDomainEventProjector<FullAuditProjecti
     {
         InvestigationSourceKind.NoticeBoard => "the notice board",
         InvestigationSourceKind.LocalRecords => "local records",
-        InvestigationSourceKind.TelegraphLead => "a telegraph lead",
         InvestigationSourceKind.LocalGossip => "local gossip",
         InvestigationSourceKind.StableLedger => "the stable ledger",
         InvestigationSourceKind.SheriffWarrants => "sheriff warrants",

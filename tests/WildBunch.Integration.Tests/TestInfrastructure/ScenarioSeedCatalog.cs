@@ -40,7 +40,7 @@ internal static class ScenarioSeedCatalog
         .WithTownCount(8)
         .WithPreview(ScenarioPreviewExpectation.Mounted(2, 2));
 
-    private static readonly ScenarioSeedDescriptor CanonicalStartingTownServicesDescriptor = ScenarioSeedDescriptor.Create("CanonicalStartingTownServices")
+    private static readonly ScenarioSeedDescriptor CanonicalStartingTownDescriptor = ScenarioSeedDescriptor.Create("CanonicalStartingTown")
         .WithCodecVersion(ScenarioSeedCodecVersion.Current)
         .WithEntropy(GameEntropy.Boring)
         .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
@@ -85,21 +85,21 @@ internal static class ScenarioSeedCatalog
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedStandard", session, destinationTownId, preview));
 
-    public static readonly ScenarioSeedFixture CanonicalStartingTownServices = new(
-        Name: "CanonicalStartingTownServices",
+    public static readonly ScenarioSeedFixture CanonicalStartingTown = new(
+        Name: "CanonicalStartingTown",
         SeedCode: CanonicalMountedStandard.SeedCode,
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
-        Contract: CanonicalStartingTownServicesDescriptor,
-        DescribeShapeSignature: DescribeCanonicalStartingTownServicesShape,
+        Contract: CanonicalStartingTownDescriptor,
+        DescribeShapeSignature: DescribeCanonicalStartingTownShape,
         AssertCreatedSessionContract: session =>
         {
-            AssertCanonicalMountedStartState("CanonicalStartingTownServices", session);
+            AssertCanonicalMountedStartState("CanonicalStartingTown", session);
 
-            RequireEqual("CanonicalStartingTownServices", "start-game.inventory.food.quantity", 4, RequireItem("CanonicalStartingTownServices", session, ItemKind.Food).Quantity);
-            RequireEqual("CanonicalStartingTownServices", "start-game.inventory.horseFeed.quantity", 3, RequireItem("CanonicalStartingTownServices", session, ItemKind.HorseFeed).Quantity);
+            RequireEqual("CanonicalStartingTown", "start-game.inventory.food.quantity", 4, RequireItem("CanonicalStartingTown", session, ItemKind.Food).Quantity);
+            RequireEqual("CanonicalStartingTown", "start-game.inventory.horseFeed.quantity", 3, RequireItem("CanonicalStartingTown", session, ItemKind.HorseFeed).Quantity);
         },
-        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalStartingTownServices", session, destinationTownId, preview));
+        AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalStartingTown", session, destinationTownId, preview));
 
     public static readonly ScenarioSeedFixture HighRiskFoeInterruptRoute = new(
         Name: "HighRiskFoeInterruptRoute",
@@ -151,7 +151,7 @@ internal static class ScenarioSeedCatalog
         new[]
         {
             CanonicalMountedStandard,
-            CanonicalStartingTownServices,
+            CanonicalStartingTown,
             HighRiskFoeInterruptRoute,
             NoHorseLightEasy
         };
@@ -164,25 +164,25 @@ internal static class ScenarioSeedCatalog
         }
     }
 
-    public static async Task AssertStartingTownServices(this ScenarioSeedFixture fixture, HttpClient client, Guid gameId, GameSessionDto session)
+    public static async Task AssertStartingTownReady(this ScenarioSeedFixture fixture, HttpClient client, Guid gameId, GameSessionDto session)
     {
-        RequireEqual("CanonicalStartingTownServices", "scenario.name", "CanonicalStartingTownServices", fixture.Name);
+        RequireEqual("CanonicalStartingTown", "scenario.name", "CanonicalStartingTown", fixture.Name);
 
         fixture.AssertCreatedSession(session);
         AssertStartingTownConnectedTownAssumptions(session);
 
         var actionsResponse = await client.GetAsync($"/api/games/{gameId}/actions");
-        RequireEqual("CanonicalStartingTownServices", "actions.statusCode", HttpStatusCode.OK, actionsResponse.StatusCode);
+        RequireEqual("CanonicalStartingTown", "actions.statusCode", HttpStatusCode.OK, actionsResponse.StatusCode);
 
         var actions = await actionsResponse.Content.ReadFromJsonAsync<AvailableActionDto[]>();
-        Require("CanonicalStartingTownServices", "actions.payload", actions is not null, "expected available actions to deserialize.");
+        Require("CanonicalStartingTown", "actions.payload", actions is not null, "expected available actions to deserialize.");
         AssertStartingTownActionAvailability(actions!);
 
         var storeOffersResponse = await client.GetAsync($"/api/games/{gameId}/towns/{session.Player.CurrentTownId}/store-offers");
-        RequireEqual("CanonicalStartingTownServices", "store-offers.statusCode", HttpStatusCode.OK, storeOffersResponse.StatusCode);
+        RequireEqual("CanonicalStartingTown", "store-offers.statusCode", HttpStatusCode.OK, storeOffersResponse.StatusCode);
 
         var storeOffers = await storeOffersResponse.Content.ReadFromJsonAsync<TownStoreOffersDto>();
-        Require("CanonicalStartingTownServices", "store-offers.payload", storeOffers is not null, "expected town store offers to deserialize.");
+        Require("CanonicalStartingTown", "store-offers.payload", storeOffers is not null, "expected town store offers to deserialize.");
         AssertStartingTownStoreAvailability(storeOffers!, session.Player.CurrentTownId!);
     }
 
@@ -401,28 +401,28 @@ internal static class ScenarioSeedCatalog
             .Distinct()
             .ToArray();
 
-        Require("CanonicalStartingTownServices", "start-game.connectedTownIds.count",
+        Require("CanonicalStartingTown", "start-game.connectedTownIds.count",
             connectedTownIds.Length >= 2,
             $"expected at least 2 connected towns from {session.Player.CurrentTownId}, got {connectedTownIds.Length}");
     }
 
     private static void AssertStartingTownActionAvailability(AvailableActionDto[] actions)
     {
-        Require("CanonicalStartingTownServices", "actions.travel", actions.Any(action => action.Kind == AvailableActionKind.Travel), "expected Travel to be available.");
-        Require("CanonicalStartingTownServices", "actions.viewMap", actions.Any(action => action.Kind == AvailableActionKind.ViewMap), "expected ViewMap to be available.");
-        Require("CanonicalStartingTownServices", "actions.viewJournal", actions.Any(action => action.Kind == AvailableActionKind.ViewJournal), "expected ViewJournal to be available.");
-        Require("CanonicalStartingTownServices", "actions.buySupplies", actions.Any(action => action.Kind == AvailableActionKind.BuySupplies), "expected BuySupplies to be available.");
-        Require("CanonicalStartingTownServices", "actions.readWantedPosters", actions.Any(action => action.Kind == AvailableActionKind.ReadWantedPosters), "expected ReadWantedPosters to be available.");
-        Require("CanonicalStartingTownServices", "actions.inspectNoticeBoard", actions.Any(action => action.Kind == AvailableActionKind.InspectNoticeBoard), "expected InspectNoticeBoard to be available.");
-        Require("CanonicalStartingTownServices", "actions.checkLocalRecords", actions.Any(action => action.Kind == AvailableActionKind.CheckSheriffRecords), "expected CheckSheriffRecords to be available.");
-        Require("CanonicalStartingTownServices", "actions.gatherLocalGossip", actions.Any(action => action.Kind == AvailableActionKind.GatherLocalGossip), "expected GatherLocalGossip to be available.");
+        Require("CanonicalStartingTown", "actions.travel", actions.Any(action => action.Kind == AvailableActionKind.Travel), "expected Travel to be available.");
+        Require("CanonicalStartingTown", "actions.viewMap", actions.Any(action => action.Kind == AvailableActionKind.ViewMap), "expected ViewMap to be available.");
+        Require("CanonicalStartingTown", "actions.viewJournal", actions.Any(action => action.Kind == AvailableActionKind.ViewJournal), "expected ViewJournal to be available.");
+        Require("CanonicalStartingTown", "actions.buySupplies", actions.Any(action => action.Kind == AvailableActionKind.BuySupplies), "expected BuySupplies to be available.");
+        Require("CanonicalStartingTown", "actions.readWantedPosters", actions.Any(action => action.Kind == AvailableActionKind.ReadWantedPosters), "expected ReadWantedPosters to be available.");
+        Require("CanonicalStartingTown", "actions.inspectNoticeBoard", actions.Any(action => action.Kind == AvailableActionKind.InspectNoticeBoard), "expected InspectNoticeBoard to be available.");
+        Require("CanonicalStartingTown", "actions.checkLocalRecords", actions.Any(action => action.Kind == AvailableActionKind.CheckSheriffRecords), "expected CheckSheriffRecords to be available.");
+        Require("CanonicalStartingTown", "actions.gatherLocalGossip", actions.Any(action => action.Kind == AvailableActionKind.GatherLocalGossip), "expected GatherLocalGossip to be available.");
     }
 
     private static void AssertStartingTownStoreAvailability(TownStoreOffersDto storeOffers, string currentTownId)
     {
-        RequireEqual("CanonicalStartingTownServices", "store-offers.townId", currentTownId, storeOffers.TownId);
-        Require("CanonicalStartingTownServices", "store-offers.goods", storeOffers.Offers.Any(offer => offer.ItemKind == WildBunch.Domain.Inventory.ItemKind.Food), "expected the starting town Store to offer food.");
-        RequireEqual("CanonicalStartingTownServices", "store-offers.unique-items", storeOffers.Offers.Count, storeOffers.Offers.Select(offer => offer.ItemKind).Distinct().Count());
+        RequireEqual("CanonicalStartingTown", "store-offers.townId", currentTownId, storeOffers.TownId);
+        Require("CanonicalStartingTown", "store-offers.goods", storeOffers.Offers.Any(offer => offer.ItemKind == WildBunch.Domain.Inventory.ItemKind.Food), "expected the starting town Store to offer food.");
+        RequireEqual("CanonicalStartingTown", "store-offers.unique-items", storeOffers.Offers.Count, storeOffers.Offers.Select(offer => offer.ItemKind).Distinct().Count());
     }
 
     private static string DescribeCanonicalMountedShape(GameSessionDto session, TravelPreviewResultDto? preview)
@@ -439,11 +439,11 @@ internal static class ScenarioSeedCatalog
             $"towns={session.World.Towns.Count}",
             $"preview={DescribeMountedPreview(preview)}");
 
-    private static string DescribeCanonicalStartingTownServicesShape(GameSessionDto session, TravelPreviewResultDto? preview)
+    private static string DescribeCanonicalStartingTownShape(GameSessionDto session, TravelPreviewResultDto? preview)
         => string.Join(
             "|",
             ScenarioSeedCodecVersion.Current.Value,
-            "CanonicalStartingTownServices",
+            "CanonicalStartingTown",
             $"entropy={session.GameEntropy}",
             "start=default-playable-start",
             $"horse={DescribeHorseState(session.Inventory.HorseState)}",
