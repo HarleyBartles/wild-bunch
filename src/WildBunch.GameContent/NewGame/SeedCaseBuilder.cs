@@ -308,18 +308,6 @@ internal static class SeedCaseBuilder
                 InvestigationSourceKind.SheriffWarrants));
         }
 
-        // 21 unrelated criminal warrants from the shared pool.
-        foreach (var profile in CaseCharacterRoster.UnrelatedWantedCriminalPool)
-        {
-            publicWarrants.Add(CreateWarrant(
-                GameSetupDeterministicLabels.CasePublicWarrants,
-                warrantIndex++,
-                profile,
-                source,
-                "Wanted for unrelated territorial offenses.",
-                InvestigationSourceKind.SheriffWarrants));
-        }
-
         return publicWarrants;
     }
 

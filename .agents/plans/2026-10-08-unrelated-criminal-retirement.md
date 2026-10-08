@@ -44,12 +44,12 @@
 
 ### Task 2: Remove unrelated warrants from new-hunt generation
 
-**Files:** Modify `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs` and `src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs`; modify `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`, `tests/WildBunch.GameContent.Tests/NewGame/GameSetupResolverTests.cs`, and `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs`; reconcile any generator guardrail that specifically depends on the removed pool.
+**Files:** Modify `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs` and `src/WildBunch.GameContent/NewGame/CaseCharacterRoster.cs`; modify `tests/WildBunch.GameContent.Tests/SeededNewGameFactoryTests.cs`, `tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs`, and `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs`; reconcile any generator guardrail that specifically depends on the removed pool.
 
-- [ ] In the existing seeded-new-game behavior test, replace the assertion for seven gang plus twenty-one unrelated warrants with an independent contract: generated public warrants correspond to the seven generated gang/culprit identities, and there is no separate non-gang bounty population. Run the focused test and record RED because current generation still adds the unrelated warrants.
-- [ ] Remove `UnrelatedWantedCriminals`, its salt selector and the unrelated-warrant selection path from `CaseCharacterRoster`; keep retained gang and associated-character pools, their deterministic behavior, and unrelated-character data that still has a live non-warrant use only if source tracing proves that use.
-- [ ] Remove unrelated warrant creation from `SeedCaseBuilder.CreatePublicWarrants`; retain the gang/culprit warrants and their identity/bounty facts. Do not compensate for the smaller set with filler targets.
-- [ ] Update setup and roster tests to assert only retained behavior, removing tests whose sole purpose is to freeze the removed candidate pool. Run `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj` and verify GREEN.
+- [x] In the existing seeded-new-game behavior test, replace the assertion for seven gang plus twenty-one unrelated warrants with an independent contract: generated public warrants correspond to the seven generated gang/culprit identities, and there is no separate non-gang bounty population. Run the focused test and record RED because current generation still adds the unrelated warrants.
+- [x] Remove `UnrelatedWantedCriminals`, its salt selector and the unrelated-warrant selection path from `CaseCharacterRoster`; keep retained gang and associated-character pools and their deterministic behavior.
+- [x] Remove unrelated warrant creation from `SeedCaseBuilder.CreatePublicWarrants`; retain the gang/culprit warrants and their identity/bounty facts. Do not compensate for the smaller set with filler targets.
+- [x] Update setup and roster tests to assert only retained behavior, removing tests whose sole purpose is to freeze the removed candidate pool. Run `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj` and verify GREEN.
 - [ ] Commit this task after reviewing the staged generator and test diff.
 
 ### Task 3: Add explicit pre-alpha playthrough invalidation

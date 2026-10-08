@@ -105,10 +105,6 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(ClueRecency.Recent, sightingClue.Anchors.Times[0].Recency);
         Assert.NotEmpty(sightingClue.Anchors.Directions);
         Assert.Contains("rail spur", sightingClue.Anchors.Directions[0].Movement, StringComparison.OrdinalIgnoreCase);
-        // 7 gang member warrants (one per suspect, including the true culprit) + 21 unrelated = 28.
-        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
-        Assert.Equal(7, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
-        Assert.Equal(21, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
         Assert.Equal("Butch Cassidy", session.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(InvestigationTargetKind.GangMember, session.CaseFile.PublicWarrants[0].Terms.TargetKind);
         Assert.Equal(WarrantDisposition.DeadOrAlive, session.CaseFile.PublicWarrants[0].Terms.Disposition);
@@ -139,14 +135,17 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void CaseFile_PublicWarrants_HasSevenGangPlusTwentyOneUnrelated()
+    public void CaseFile_PublicWarrants_ContainOnlyGangAndCulpritTargets()
     {
         var factory = new SeededNewGameFactory();
         var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
 
-        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
-        Assert.Equal(7, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
-        Assert.Equal(21, session.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
+        Assert.Equal(7, session.CaseFile.PublicWarrants.Count);
+        Assert.All(session.CaseFile.PublicWarrants, warrant => Assert.True(
+            warrant.Terms.TargetKind is InvestigationTargetKind.GangMember or InvestigationTargetKind.TrueCulprit));
+        Assert.All(session.CaseFile.PublicWarrants, warrant => Assert.Contains(
+            session.CaseFile.Suspects,
+            suspect => suspect.Name == warrant.TargetName));
     }
 
     [Fact]
@@ -167,10 +166,8 @@ public sealed class SeededNewGameFactoryTests
         var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
 
         Assert.Contains(session.Player.CurrentTownId!.Value.Value, SeedWorldFactory.NamePool.Select(n => n.Id));
-        // Town-specific civic clues/warrants are a runtime/salt concern (Task 4),
-        // not setup-time. The seed case file surfaces only the base pools.
+        // Town-specific civic clues are a runtime/salt concern; setup has only the base clue pool.
         Assert.Equal(6, session.CaseFile.PublicClues.Count);
-        Assert.Equal(28, session.CaseFile.PublicWarrants.Count);
     }
 
     [Fact]
