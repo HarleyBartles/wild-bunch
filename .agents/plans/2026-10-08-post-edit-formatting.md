@@ -40,48 +40,48 @@
 
 **Files:** Create `.agents/plans/2026-10-08-post-edit-formatting.md`; modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`, `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`, and `Directory.Build.props`; delete `.agents/plans/2026-10-08-code-style-enforcement.md`.
 
-- [ ] Verify PR #192 is merged to `develop` at `68b69448a12be3722548d6af1666af634c186c77`, its reviewed head is `3990eca7c9c6954badea9f5bc4719495be04ded2`, and hosted run `37777709733` passed on that head.
-- [ ] Compare the completed predecessor plan's full scope with PR #192's merged tree and validation/review evidence; preserve the durable code-style rules already moved into their current owners, then retire the completed plan and replace the stale row 04 link.
-- [ ] Record that PR #192 delivered `0.1.0-dev.7`; mark the next per-PR version reservation as `0.1.0-dev.8` and make no other version change.
-- [ ] Record the settled initial support boundary: VS Code workspace format-on-save plus Codex Desktop/CLI synchronous post-tool formatting; unsupported agent runtimes retain explicit command-bus formatting and check-only commit/CI enforcement.
-- [ ] Commit the plan, version, specification, roadmap and predecessor retirement through the normal check-only hook before implementation begins.
+- [x] Verify PR #192 is merged to `develop` at `68b69448a12be3722548d6af1666af634c186c77`, its reviewed head is `3990eca7c9c6954badea9f5bc4719495be04ded2`, and hosted run `37777709733` passed on that head.
+- [x] Compare the completed predecessor plan's full scope with PR #192's merged tree and validation/review evidence; preserve the durable code-style rules already moved into their current owners, then retire the completed plan and replace the stale row 04 link.
+- [x] Record that PR #192 delivered `0.1.0-dev.7`; mark the next per-PR version reservation as `0.1.0-dev.8` and make no other version change.
+- [x] Record the settled initial support boundary: VS Code workspace format-on-save plus Codex Desktop/CLI synchronous post-tool formatting; unsupported agent runtimes retain explicit command-bus formatting and check-only commit/CI enforcement.
+- [x] Commit the plan, version, specification, roadmap and predecessor retirement through the normal check-only hook before implementation begins.
 
 ## Task 2: Prove per-tool source-change detection and synchronous formatting
 
 **Files:** Add `.codex/hooks/format_after_edit.py`; add focused behavior tests in `tools/tests/test_format_after_edit_hook.py`.
 
-**Interface:** `main() -> int` decodes the Codex event from stdin and calls `handle_event(event: dict[str, object]) -> int`. `PreToolUse` saves a content-hash snapshot of supported files for the event's repository, `session_id` and `tool_use_id` under the system temporary directory. `PostToolUse` compares that exact snapshot with current supported files, removes the snapshot, and invokes the command below with `cwd` set to the repository root. On success it emits `hookSpecificOutput.additionalContext` with changed paths; on failure or missing/mismatched snapshot it emits `decision: "block"` with an accurate recovery instruction and diagnostic. A block replaces the model-visible tool result but cannot reverse the tool side effect.
+**Interface:** `main() -> int` decodes the Codex event from stdin and calls `handle_event(event: dict[str, Any]) -> int`. `PreToolUse` saves a content-hash snapshot of supported files for the event's repository, `session_id` and `tool_use_id` under the system temporary directory. `PostToolUse` compares that exact snapshot with current supported files, removes the snapshot, and invokes the command below with `cwd` set to the repository root. On success it emits `hookSpecificOutput.additionalContext` with changed paths; on failure or missing/mismatched snapshot it emits `decision: "block"` with an accurate recovery instruction and diagnostic. A block replaces the model-visible tool result but cannot reverse the tool side effect.
 
 ```python
 command = [sys.executable, str(root / "tools/run.py"), "format", "--apply", *changed_paths]
 result = subprocess.run(command, cwd=root, capture_output=True, text=True, check=False)
 ```
 
-- [ ] Write behavior tests using a temporary Git repository and fake bus process: an edit to one already-dirty source file formats that file before `main` returns while an unrelated dirty source file stays byte-identical.
-- [ ] Run the focused test and confirm RED because the adapter does not exist.
-- [ ] Add tests for new supported files, paths with spaces, deleted files, Markdown/generated exclusions, no-change tool calls, and shell/patch/MCP events using the same before/after contract.
-- [ ] Add tests proving the exact argument-vector bus invocation does not stage or change the Git index and that an absent, expired or mismatched snapshot reports a focused explicit-format command instead of guessing scope.
-- [ ] Add a child-process failure case proving Codex receives `decision: "block"`, the actual formatter diagnostic and an explicit-format recovery command, while the feedback truthfully says the write already occurred.
-- [ ] Implement only the snapshot comparison, per-session/tool state cleanup, explicit changed-path command-bus call and concise `PostToolUse` result; do not add a new formatter implementation or lifecycle framework.
-- [ ] Run the focused tests and verify they pass, including a test that reads the formatted file immediately after the synchronous hook returns.
+- [x] Write behavior tests using a temporary Git repository and fake bus process: an edit to one already-dirty source file formats that file before `main` returns while an unrelated dirty source file stays byte-identical.
+- [x] Run the focused test and confirm RED because the adapter does not exist.
+- [x] Add tests for new supported files, paths with spaces, deleted files, Markdown/generated exclusions, no-change tool calls, and shell/patch/MCP events using the same before/after contract.
+- [x] Add tests proving the exact argument-vector bus invocation does not stage or change the Git index and that an absent, expired or mismatched snapshot reports a focused explicit-format command instead of guessing scope.
+- [x] Add a child-process failure case proving Codex receives `decision: "block"`, the actual formatter diagnostic and an explicit-format recovery command, while the feedback truthfully says the write already occurred.
+- [x] Implement only the snapshot comparison, per-session/tool state cleanup, explicit changed-path command-bus call and concise `PostToolUse` result; do not add a new formatter implementation or lifecycle framework.
+- [x] Run the focused tests and verify they pass, including a test that reads the formatted file immediately after the synchronous hook returns.
 
 ## Task 3: Configure the supported Codex hook and VS Code save formatters
 
-**Files:** Add `.codex/hooks.json`, `.vscode/settings.json`, and `.vscode/extensions.json`; modify `.agents/playbooks/code-style.md`.
+**Files:** Add `.codex/hooks.json`, `.vscode/settings.json`, and `.vscode/extensions.json`; add narrow `.gitignore` exceptions for the repository-owned Codex hook definition and script; modify `.agents/playbooks/code-style.md`.
 
-- [ ] Configure `PreToolUse` and synchronous `PostToolUse` command hooks for Bash, `apply_patch`/Edit/Write aliases and MCP calls; use a POSIX command plus `commandWindows` for the correct Python launcher, resolve the script from the Git root, and keep hooks in `.codex/hooks.json` beside the existing project `config.toml` rather than adding a second inline representation.
-- [ ] Configure per-language VS Code `editor.formatOnSave` and the selected formatter IDs for C#, Python, JavaScript, TypeScript, TSX and SCSS; recommend only the matching C#, Ruff and Prettier extensions and leave Markdown, lint fixes and import sorting out of save actions.
-- [ ] Update the code-style playbook to identify the bus as the canonical agent repair route, explain that Codex hooks require exact-definition trust and only supported runtimes autoformat, and preserve explicit bus formatting for other runtimes.
-- [ ] Validate JSON and TOML syntax and inspect the workspace formatter mapping against `.editorconfig`, `pyproject.toml`, `.prettierrc.json` and the existing project dependencies; run the adapter with synthetic Codex event payloads without bypassing the real hook trust prompt.
-- [ ] Run the adapter behavior tests and focused Python format/lint checks; verify no hook runs a mutating formatter during pre-commit or CI and no test freezes only hook-config strings.
+- [x] Configure `PreToolUse` and synchronous `PostToolUse` command hooks for Bash, `apply_patch`/Edit/Write aliases and MCP calls; use a POSIX command plus `commandWindows` for the correct Python launcher, resolve the script from the Git root, and keep hooks in `.codex/hooks.json` beside the existing project `config.toml` rather than adding a second inline representation.
+- [x] Configure per-language VS Code `editor.formatOnSave` and the selected formatter IDs for C#, Python, JavaScript, TypeScript, TSX and SCSS; recommend only the matching C#, Ruff and Prettier extensions and leave Markdown, lint fixes and import sorting out of save actions.
+- [x] Update the code-style playbook to identify the bus as the canonical agent repair route, explain that Codex hooks require exact-definition trust and only supported runtimes autoformat, and preserve explicit bus formatting for other runtimes.
+- [x] Validate JSON and TOML syntax and inspect the workspace formatter mapping against `.editorconfig`, `pyproject.toml`, `.prettierrc.json` and the existing project dependencies; run the adapter with synthetic Codex event payloads without bypassing the real hook trust prompt.
+- [x] Run the adapter behavior tests and focused Python format/lint checks; verify no hook runs a mutating formatter during pre-commit or CI and no test freezes only hook-config strings.
 
 ## Task 4: Validate and prepare the PR
 
 **Files:** All Task 1-3 changes; update the code-style implementation plan only if review identifies a real scope discrepancy before publication.
 
-- [ ] Run the focused hook tests, `py -3 tools/run.py ci --check`, and `git diff --check`; confirm the installed extension settings do not add lint auto-fixes or format Markdown.
-- [ ] Search all changed documentation and code for stale claims that `.editorconfig` formats files by itself, that the hook covers unsupported runtimes, or that pre-commit/CI may mutate files.
-- [ ] Compare the diff with ADR-0043 and the decision-record playbook; record why the adapter preserves command-bus ownership and introduces no new durable architectural decision.
+- [x] Run the focused hook tests, `py -3 tools/run.py ci --check`, and `git diff --check`; confirm the installed extension settings do not add lint auto-fixes or format Markdown.
+- [x] Search all changed documentation and code for stale claims that `.editorconfig` formats files by itself, that the hook covers unsupported runtimes, or that pre-commit/CI may mutate files.
+- [x] Compare the diff with ADR-0043 and the decision-record playbook; record why the adapter preserves command-bus ownership and introduces no new durable architectural decision.
 - [ ] Commit the implementation and guidance through the normal check-only hook, then perform a fresh whole-branch review and fix/re-review all actionable findings.
 - [ ] Publish/update a Draft PR to `develop`, advance to Ready only after review and local validation pass, and verify the exact remote head and successful hosted canonical gate before merge.
 - [ ] Keep this plan and its governing specification through the completing PR; the next substantive successor slice classifies them for retirement.

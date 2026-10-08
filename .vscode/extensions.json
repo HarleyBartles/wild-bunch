@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "ms-dotnettools.csharp",
+    "charliermarsh.ruff",
+    "esbenp.prettier-vscode"
+  ]
+}
