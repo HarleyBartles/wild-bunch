@@ -8,7 +8,7 @@
 
 **Tech Stack:** C#/.NET, EF Core, Npgsql/PostgreSQL, typed `GameSession` events, xUnit, and the repository command bus.
 
-**Spec:** [Stable 0.1.0 baseline](../specs/2026-10-07-stable-0.1.0-baseline.md#cache-backed-state-and-recovery), [row 07 persistence roadmap](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md#07-persistence-restoration-and-retries), [ADR-0028](../../docs/decisions/ADR-0028-immutable-event-history-and-rebuildable-state.md), [persistence investigation](../investigations/stable-0.1.0/2026-10-07-persistence-layer-investigation.md#findings), and [persistence test follow-up](../investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md#mapping-every-persistence-finding-to-the-right-proof).
+**Spec:** [Stable 0.1.0 baseline](../specs/2026-10-07-stable-0.1.0-baseline.md#cache-backed-state-and-recovery), [row 07 persistence roadmap](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md#07-persistence-restoration-and-retries), [ADR-0028](../../docs/decisions/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md), [persistence investigation](../investigations/stable-0.1.0/2026-10-07-persistence-layer-investigation.md#findings), and [persistence test follow-up](../investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md#mapping-every-persistence-finding-to-the-right-proof).
 
 **Execution Strategy:** `executing-plans` inline because the stale-snapshot reconstruction and coherent read cut share one PostgreSQL loader, test fixture and event-derived result contract; separate implementers would duplicate setup and obscure whether one read stays consistent end to end.
 
@@ -34,12 +34,12 @@
 
 **Files:** This plan; `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; `Directory.Build.props`; delete `.agents/plans/2026-10-08-replay-complete-player-genesis.md`.
 
-- [ ] Verify PR #200 is merged into `develop` at `c6c5b52efdbdde3a860be5438634531a741a4072`, its exact reviewed source is `bd2523205dd653166885ac3cf1dad57106c99711`, and hosted canonical gate run 37852123315 passed.
-- [ ] Classify row 06 as shipped from its complete implementation and acceptance evidence; confirm ADR-0028 and durable replay guidance remain truthful, then retire the row 06 plan and stale roadmap links in this successor's first substantive commit.
-- [ ] Mark roadmap row 06 done with PR #200, merge/source SHAs and hosted run; mark row 07 executing with this plan and identify this as the first read-side consistency slice while retaining the other row 07 obligations.
-- [ ] Commit this plan by itself first; then record its commit SHA in the roadmap during the first implementation commit, without another version change.
-- [ ] After the plan-only commit, stage only the roadmap, version and eligible predecessor retirement; inspect the staged diff and commit through the check-only hook.
-- [ ] Verify generated `version.json` reports `0.1.0-dev.16` and the worktree remains clean after the task commit.
+- [x] Verify PR #200 is merged into `develop` at `c6c5b52efdbdde3a860be5438634531a741a4072`, its exact reviewed source is `bd2523205dd653166885ac3cf1dad57106c99711`, and hosted canonical gate run 37852123315 passed.
+- [x] Classify row 06 as shipped from its complete implementation and acceptance evidence; confirm ADR-0028 and durable replay guidance remain truthful, then retire the row 06 plan and stale roadmap links in this successor's first substantive commit.
+- [x] Mark roadmap row 06 done with PR #200, merge/source SHAs and hosted run; mark row 07 executing with this plan and identify this as the first read-side consistency slice while retaining the other row 07 obligations.
+- [x] Commit this plan by itself first; then record its commit SHA in the roadmap during the first implementation commit, without another version change.
+- [x] After the plan-only commit, stage only the roadmap, version and eligible predecessor retirement; inspect the staged diff and commit through the check-only hook.
+- [x] Verify generated `version.json` reports `0.1.0-dev.16` and the worktree remains clean after the task commit.
 
 ### Task 2: Rebuild stale player and journal views from events
 
