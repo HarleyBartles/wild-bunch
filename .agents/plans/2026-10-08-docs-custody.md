@@ -65,7 +65,8 @@
 - [x] Run `git diff --check` and `py -3 tools/run.py ci --check`; read the actual output and verify the check-only hook did not mutate the tree.
 - [x] Review the final diff against the plan, spec, documentation-custody investigation, ADR/unslop routing, and actual local PostgreSQL implementation; fix material findings with a focused edit and normal hooked commit.
 - [x] Obtain a fresh whole-branch review, resolve every Critical or Important finding, and defer only Minor findings with a recorded reason; review at `17b3a8a..0028c97` found none.
-- [ ] Publish a Draft PR targeting `develop`, attach it to the current task, and advance it to Ready only after local gate and review pass; verify successful hosted checks on the exact PR head before merge.
+- [x] Publish Draft PR #190 targeting `develop`, attach it to the current task, and verify its remote head equals local `HEAD`.
+- [ ] Advance PR #190 to Ready after validating this final roadmap update; verify successful hosted checks on the exact PR head before merge.
 - [ ] Verify the merge on refreshed `origin/develop`, update row 02 to done only when this PR's outcome is delivered, and retain this plan/spec/roadmap through the completing PR.
 - [ ] After merge proof, remove only this plan's verified branch, managed worktree, and branch-scoped scratch; preserve any path the host reports as locked.
 
