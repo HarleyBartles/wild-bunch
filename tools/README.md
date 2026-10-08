@@ -15,7 +15,7 @@ Run `py -3 tools/run.py` to list available targets, or `py -3 tools/run.py <targ
 | `python-tests` | `--check` | Run repository script and tooling behavior tests; arguments after `--` go to both pytest suites. |
 | `setup-hooks` | `--check`, `--apply` | Verify or set this checkout's local `core.hooksPath` to `githooks`. |
 
-The canonical gate stops at the first failure and orders checks from cheapest to most expensive. Fast formatting, lint, static, and repository-contract checks run before test suites or expensive builds when their prerequisites allow. `ci --check --diagnostics` is a separate manual troubleshooting mode that reports independent failures; it is never used by the commit hook or hosted CI.
+The canonical gate stops at the first failure and orders implemented checks from cheapest to most expensive. It currently runs available whitespace and repository-contract checks before test suites; dedicated lint and formatting lanes are planned in row 04 and must run before behavioral tests. This keeps an agent from waiting on an expensive test run after a cheaper check has already failed. `ci --check --diagnostics` is a separate manual troubleshooting mode that reports independent failures; it is never used by the commit hook or hosted CI.
 
 Check targets may create ignored build and test outputs, but do not repair maintained files or stage changes. `setup-hooks --apply` changes local Git configuration and uses the shared-checkout guard; pass `--allow-shared-checkout` only when applying it in a shared `main` checkout.
 
