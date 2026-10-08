@@ -27,7 +27,7 @@ Before authoring the PR, read [writing](../unslop/writing.md) and [code-review g
 
 ## Composition
 
-For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan delivery contract](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md#develop-integration-and-per-plan-delivery) before publication. Its explicit user-selected develop base overrides the main defaults below; carry fresh per-plan worktrees, successor-artifact retirement and development-version advancement into the PR. Use the base specified by the active approved work rather than assuming main from this runbook.
+Use `develop` as the repository's default base for ordinary development PRs. `main` is the release line; target it only when the approved release or hotfix flow requires it. For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan delivery contract](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md#develop-integration-and-per-plan-delivery) before publication and carry fresh per-plan worktrees, successor-artifact retirement and development-version advancement into the PR.
 
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.
@@ -35,7 +35,7 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 3. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
 4. Use GitHub branch and Draft PR publication to push the task branch and create or update the
-   Draft PR against the selected base branch (`main` by default).
+   Draft PR against the selected base branch (`develop` by default).
 5. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
    applicable hosted checks with the published tree.
 
@@ -49,7 +49,7 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 
 ## Local commands and paths
 
-- Default base branch: `main`
+- Default base branch: `develop`
 - Default PR state: Draft
 - Apply: `py -3 tools/run.py ci --apply`
 - Check: `py -3 tools/run.py ci --check`
@@ -63,7 +63,7 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 ## Evidence contract
 
 - [ ] The local tree is clean and the branch is published from a dedicated worktree.
-- [ ] The GitHub PR targets the selected base branch (`main` by default) and its remote head equals local `HEAD`.
+- [ ] The GitHub PR targets the selected base branch (`develop` by default) and its remote head equals local `HEAD`.
 - [ ] The PR body describes current scope and validation evidence.
 - [ ] Draft state and hosted-check expectations match the repo policy.
 

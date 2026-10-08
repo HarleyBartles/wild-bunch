@@ -15,6 +15,7 @@
 ## Global Constraints
 
 - Start from refreshed `origin/develop` at `c34d688ba5c919703f739cfeca3452feedcb3db1`, in this fresh canonical worktree, and deliver by PR to `develop`.
+- `develop` is the repository default branch and ordinary development PR base; `main` is reserved for explicit releases and hotfixes.
 - This PR advances the merged `0.1.0-dev.2` identity to `0.1.0-dev.3` exactly once; `Directory.Build.props` remains the only authored application version.
 - Retire the completed plan 01 and its stale roadmap link in this successor PR's first substantive commit; preserve this plan, the parent specification, and the roadmap through this PR.
 - Preserve every ADR's original decision date and material change/removal history. Editorial cleanup must not make drift or accidental loss look deliberate.
@@ -121,7 +122,7 @@
 ### Task 6: Review, publish, merge, and retire this worktree
 
 - [ ] **Step 1: Complete the whole-branch review.** Review `origin/develop..HEAD` against this plan, the baseline specification, the ADR/document investigations, the review runbook, and applicable unslop guards. Correct all Important findings with focused proof and normal hooked commits; report unresolved Minor findings without broadening scope.
-- [ ] **Step 2: Publish a Draft PR to `develop`.** Push this branch, open a Draft PR, attach it to the task, and read back the PR head/base/status. Keep the parent spec and roadmap and this plan through the completing PR.
+- [ ] **Step 2: Set the repository default and publish a Draft PR to `develop`.** Set and read back GitHub's default branch as `develop`, push this branch, open a Draft PR to `develop`, attach it to the task, and read back the PR head/base/status. Keep the parent spec and roadmap and this plan through the completing PR.
 - [ ] **Step 3: Enable hosted validation after local proof and review are clean.** Mark the PR ready, read back hosted checks on the exact head, and merge to `develop` only after they pass.
 - [ ] **Step 4: Verify integration and clean the branch.** Confirm the PR is merged, its merge commit is in refreshed `origin/develop`, and the feature head is integrated. Remove only this merged worktree/branch and its branch-scoped scratch after preserving the review outcome and rulings in the execution ledger; stop if the host reports a locked worktree.
 
