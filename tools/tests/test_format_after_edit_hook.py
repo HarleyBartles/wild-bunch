@@ -106,6 +106,65 @@ def test_post_tool_formats_only_changed_dirty_file_before_return_and_preserves_i
     ]
 
 
+def test_post_tool_formats_clean_tracked_file_changed_by_the_tool(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    root, _ = _repository(tmp_path)
+    bus_log = tmp_path / "bus args.json"
+    monkeypatch.setenv("FAKE_BUS_LOG", str(bus_log))
+    monkeypatch.setattr(hook, "TEMP_ROOT", tmp_path / "hook-state")
+    source = root / "src" / "tracked.py"
+    source.parent.mkdir()
+    source.write_text("value = 0\n", encoding="utf-8")
+    _git(root, "add", "src")
+    _git(root, "commit", "-m", "baseline")
+
+    assert hook.handle_event(_event(root, "PreToolUse", "Bash", "clean-tracked")) == 0
+    source.write_text("value=1\n", encoding="utf-8")
+    assert hook.handle_event(_event(root, "PostToolUse", "Bash", "clean-tracked")) == 0
+
+    assert source.read_text(encoding="utf-8") == "value = 1\n"
+    assert json.loads(bus_log.read_text(encoding="utf-8")) == [
+        "format",
+        "--apply",
+        "src/tracked.py",
+    ]
+    assert _hook_output(capsys) is not None
+
+
+def test_post_tool_does_not_format_index_only_transition_with_unchanged_worktree(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    root, _ = _repository(tmp_path)
+    bus_log = tmp_path / "bus args.json"
+    monkeypatch.setenv("FAKE_BUS_LOG", str(bus_log))
+    monkeypatch.setattr(hook, "TEMP_ROOT", tmp_path / "hook-state")
+    source = root / "src" / "staged.py"
+    source.parent.mkdir()
+    source.write_text("value=1\n", encoding="utf-8")
+    _git(root, "add", "src")
+    _git(root, "commit", "-m", "baseline")
+
+    assert hook.handle_event(_event(root, "PreToolUse", "Bash", "index-only")) == 0
+    index_blob = (
+        subprocess.run(
+            ["git", "hash-object", "-w", "--stdin"],
+            cwd=root,
+            input=b"value = 1\n",
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode("ascii")
+        .strip()
+    )
+    _git(root, "update-index", "--cacheinfo", f"100644,{index_blob},src/staged.py")
+    assert hook.handle_event(_event(root, "PostToolUse", "Bash", "index-only")) == 0
+
+    assert source.read_text(encoding="utf-8") == "value=1\n"
+    assert not bus_log.exists()
+    assert _hook_output(capsys) is None
+
+
 @pytest.mark.parametrize(
     ("tool_name", "tool_use_id"),
     [("Bash", "shell"), ("apply_patch", "patch"), ("mcp__filesystem__write_file", "mcp")],

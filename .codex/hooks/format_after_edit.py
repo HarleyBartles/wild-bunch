@@ -49,24 +49,86 @@ def _style_module(root: Path) -> Any:
     return module
 
 
-def _supported_file_hashes(root: Path) -> dict[str, str]:
+def _worktree_paths(root: Path) -> set[str]:
+    result = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=all", "-z"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
     style = _style_module(root)
-    hashes: dict[str, str] = {}
-    for path in style._tracked_and_untracked_files(root):
+    paths: set[str] = set()
+    records = iter(result.stdout.split(b"\0"))
+    for record in records:
+        if not record:
+            continue
+        if len(record) < 4:
+            raise RuntimeError("git status returned an invalid porcelain record")
+        status = record[:2].decode("ascii", errors="strict")
+        raw_path = record[3:]
+        # Porcelain -z uses the destination path first, followed by the source
+        # path for renames and copies. Only the destination can be formatted.
+        if "R" in status or "C" in status:
+            next(records, None)
+        if status[1] == " " and status != "??":
+            continue
         try:
-            resolved = path.resolve(strict=True)
+            candidate = root / Path(os.fsdecode(raw_path))
+            if candidate.is_symlink():
+                continue
+            resolved = candidate.resolve(strict=True)
             resolved.relative_to(root)
         except (OSError, ValueError):
             continue
         if not resolved.is_file() or not style._is_supported(root, resolved):
             continue
+        paths.add(resolved.relative_to(root).as_posix())
+    return paths
+
+
+def _supported_file_hashes(root: Path, paths: set[str]) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for relative in paths:
+        path = root / Path(relative)
         try:
-            hashes[resolved.relative_to(root).as_posix()] = hashlib.sha256(
-                resolved.read_bytes()
-            ).hexdigest()
+            hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
         except OSError:
             continue
     return hashes
+
+
+def _tracked_blob_ids(root: Path) -> dict[str, str]:
+    result = subprocess.run(
+        ["git", "ls-files", "--stage", "-z"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    style = _style_module(root)
+    blobs: dict[str, str] = {}
+    for record in result.stdout.split(b"\0"):
+        if not record:
+            continue
+        metadata, separator, raw_path = record.partition(b"\t")
+        if not separator:
+            raise RuntimeError("git ls-files returned an invalid index record")
+        parts = metadata.split()
+        if len(parts) != 3 or parts[0] not in {b"100644", b"100755"} or parts[2] != b"0":
+            continue
+        relative = Path(os.fsdecode(raw_path)).as_posix()
+        if style._is_supported(root, root / relative):
+            blobs[relative] = parts[1].decode("ascii")
+    return blobs
+
+
+def _working_blob_id(root: Path, relative: str) -> str | None:
+    result = subprocess.run(
+        ["git", "hash-object", f"--path={relative}", relative],
+        cwd=root,
+        check=False,
+        capture_output=True,
+    )
+    return result.stdout.decode("ascii").strip() if result.returncode == 0 else None
 
 
 def _snapshot_path(root: Path, session_id: str, tool_use_id: str) -> Path:
@@ -93,7 +155,17 @@ def _write_snapshot(root: Path, session_id: str, tool_use_id: str) -> None:
     state_file = _snapshot_path(root, session_id, tool_use_id)
     state_file.parent.mkdir(parents=True, exist_ok=True)
     temporary = state_file.with_suffix(f".{os.getpid()}.tmp")
-    temporary.write_text(json.dumps(_supported_file_hashes(root), sort_keys=True), encoding="utf-8")
+    dirty_paths = _worktree_paths(root)
+    temporary.write_text(
+        json.dumps(
+            {
+                "worktree_hashes": _supported_file_hashes(root, dirty_paths),
+                "tracked_blob_ids": _tracked_blob_ids(root),
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
     temporary.replace(state_file)
 
 
@@ -188,10 +260,18 @@ def handle_event(event: dict[str, Any]) -> int:
             )
             _hook_output(_post_tool_block(message))
             return 0
-        before = json.loads(state_file.read_text(encoding="utf-8"))
+        snapshot = json.loads(state_file.read_text(encoding="utf-8"))
         state_file.unlink(missing_ok=True)
-        if not isinstance(before, dict) or not all(
-            isinstance(path, str) and isinstance(digest, str) for path, digest in before.items()
+        if not isinstance(snapshot, dict):
+            snapshot = {}
+        before = snapshot.get("worktree_hashes")
+        before_index = snapshot.get("tracked_blob_ids")
+        if not all(
+            isinstance(values, dict)
+            and all(
+                isinstance(path, str) and isinstance(digest, str) for path, digest in values.items()
+            )
+            for values in (before, before_index)
         ):
             message = (
                 "Codex formatting hook's before-snapshot is invalid; inspect the completed write "
@@ -200,8 +280,17 @@ def handle_event(event: dict[str, Any]) -> int:
             )
             _hook_output(_post_tool_block(message))
             return 0
-        after = _supported_file_hashes(root)
-        changed_paths = sorted(path for path, digest in after.items() if before.get(path) != digest)
+        after_paths = _worktree_paths(root)
+        changed_paths = {
+            path
+            for path, digest in _supported_file_hashes(root, after_paths & before.keys()).items()
+            if before[path] != digest
+        }
+        for path in after_paths - before.keys():
+            current_blob = _working_blob_id(root, path)
+            if path not in before_index or current_blob != before_index[path]:
+                changed_paths.add(path)
+        changed_paths = sorted(changed_paths)
         if not changed_paths:
             return 0
 
