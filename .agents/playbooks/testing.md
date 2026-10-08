@@ -9,21 +9,8 @@ Adding, changing, or running Wild Bunch tests and validation gates.
 - Construct observable behavior through focused, behavior-first tests.
 - Verify claims against current repository and hosted evidence.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
-
 ## Unslop before work
-
-Before test design or assessment, read [backend guards](../unslop/backend-architecture.md) for domain/API/persistence/replay tests and [play-surface UI guards](../unslop/play-surface-ui.md) for web tests in full; dev tests also require [dev overlay](../unslop/dev-overlay.md). Apply [code-review guards](../unslop/code-review.md) when judging claimed coverage. Record distinct misleading-proof incidents through the [observation loop](../unslop/README.md#record-and-improve), not a log of test runs.
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

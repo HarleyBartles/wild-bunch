@@ -9,17 +9,11 @@ Reviewing a Wild Bunch diff, branch, or pull request.
 - Provide independent review of a committed diff and select relevant domain and quality lenses.
 - Analyze review feedback, resolve findings with evidence, and verify the resulting head.
 
-## Optional capabilities
+## Before review
 
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+Follow the [unslop playbook](../playbooks/unslop.md) and select profiles for
+each changed concern. For durable-decision scope, independently compare the
+actual diff with relevant records through the [decision-record playbook](../playbooks/decision-records.md).
 
 ## Composition
 
@@ -27,7 +21,7 @@ Reviewing a Wild Bunch diff, branch, or pull request.
    the applicable Wild Bunch capability and anti-slop lenses.
 2. Check the diff against the doctrine, contracts, local commands, and evidence
    obligations below rather than against the PR summary.
-3. Compare relevant decisions from the [catalogue](../../docs/decisions/README.md) with the diff and check required history updates using the [decision-record playbook](../playbooks/decision-records.md).
+3. Independently compare the actual diff with relevant decisions from the [catalogue](../../docs/decisions/README.md); require matching history updates or evidence that no durable decision changed. Do not rely on the PR author's assertion or the presence of an ADR edit.
 4. Route every accepted finding through review finding analysis and correction; re-check the
    repaired diff rather than trusting the response.
 5. Use evidence-based result verification to bind the final verdict to the
@@ -39,7 +33,7 @@ Reviewing a Wild Bunch diff, branch, or pull request.
   and [event-sourcing integrity](../doctrine/event-sourcing-integrity.md).
 - Frontend changes: [frontend standards](../doctrine/frontend-standards.md).
 - Tests: [validation doctrine](../doctrine/validation-policy.md).
-- Read [code-review guards](../unslop/code-review.md) in full before review, plus [backend](../unslop/backend-architecture.md), [play-surface UI](../unslop/play-surface-ui.md), [dev overlay](../unslop/dev-overlay.md) and [writing](../unslop/writing.md) for touched concerns. Changed agent guidance also requires [routing guards](../unslop/routing.md). Select and maintain observations through the [unslop loop](../unslop/README.md).
+- Select code-review and changed-concern profiles through the [unslop playbook](../playbooks/unslop.md); route new observations through that playbook's observation loop.
 
 ## Local commands and paths
 

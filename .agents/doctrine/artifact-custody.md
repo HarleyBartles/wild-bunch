@@ -15,7 +15,7 @@
 - Architecture decisions belong in `docs/decisions/`.
 - Current agent rules belong in `.agents/doctrine/`, `.agents/contracts/`, or
   `.agents/runbooks/` according to their authority role.
-- Canonical unslop profiles and distinct observations live under `.agents/unslop/`. [Selection and maintenance](../unslop/README.md) binds their scope, work-point routing and feedback loop; do not retain competing profiles at old contract or scoped locations.
+- Canonical unslop profiles and distinct observations live under `.agents/unslop/`. The [unslop playbook](../playbooks/unslop.md) binds their selection, work-point routing and feedback loop; do not retain competing profiles at old contract or scoped locations.
 
 ## Agent document placement
 

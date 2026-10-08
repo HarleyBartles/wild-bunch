@@ -8,15 +8,15 @@ assessment here.
 
 ## root-agent-router
 
-**Assessment:** Self-certified. The root router is 35 lines, within Wild Bunch's 40-line budget, and points to authoritative contribution, workflow, review, publication, testing, security, subscription and unslop guidance. Thin scoped routers cover established scripts, web, game-content, asset and agent-guidance boundaries; [placement policy](../doctrine/repo-runbook-policy.md#scoped-agent-entrypoints) records their one-sentence scope, read condition and outside-scope disqualifier. They are the scoped pointers for both Codex and Devin; the separate Devin rules were replaced. `scripts/check_agent_routers.py` checks tracked router size, required root routes, local links and the 15-line, single scoped sentence policy through the canonical hook and CI. Semantic review remains responsible for usefulness, safe scope, disqualifiers, harness-independent pointers and whether a new router is needed.
+**Assessment:** Self-certified. The root router remains within Wild Bunch's 40-line budget and points to authoritative contribution, workflow, review, publication, testing, security, subscription and unslop guidance. Thin scoped routers cover established scripts, web, game-content, asset and agent-guidance boundaries; [placement policy](../doctrine/repo-runbook-policy.md#scoped-agent-entrypoints) records their one-sentence scope, read condition and outside-scope disqualifier. They are the scoped pointers for both Codex and Devin; the separate Devin rules were replaced. `scripts/check_agent_routers.py` checks tracked router size, required root routes, local links and the 15-line, single scoped sentence policy through the canonical hook and CI. Semantic review remains responsible for usefulness, safe scope, disqualifiers, harness-independent pointers and whether a new router is needed.
 
 ## unslop
 
-**Assessment:** Self-certified for the repository-owned maintenance and routing mechanism. Canonical profiles and observations live in `.agents/unslop/`; the five existing profiles were moved there without retaining competing contract/scoped copies. `README.md` requires full reading of applicable profiles before investigation, design, planning, implementation and review, selects guards by work class, and defines evidence-based maintenance. `routing.md` addresses the concrete discovery gap recorded as U-001 in `observations.md`. Historical recurrence and prior agents' reading or compliance are unknown, not inferred from existing profile content.
+**Assessment:** Self-certified for the repository-owned maintenance and routing mechanism. Canonical profiles and observations live in `.agents/unslop/`; the five existing profiles were moved there without retaining competing contract/scoped copies. The central [unslop playbook](../playbooks/unslop.md) selects applicable profiles, routes their observations and defines evidence-based maintenance; `README.md` is the profile catalogue. `routing.md` addresses the concrete discovery gap recorded in `observations.md`. Historical recurrence and prior agents' reading or compliance are unknown, not inferred from existing profile content.
 
-Root `AGENTS.md` and `CONTRIBUTING.md` route every repository task to selection and observations. Lifecycle runbooks name the relevant writing, backend, web, dev and review profiles directly. Topical playbooks, owning doctrine, all six repository skills and the thin scoped AGENTS pointers link the profiles at their respective decision points. Profile changes must preserve those routes, applicability, corrective behavior and false-positive boundaries. Occurrence records distinguish separate incidents from duplicate reports and distinguish missing discovery, ineffective correction and ignored useful guidance. Agents revise, narrow, consolidate or retire guards based on those observations while preserving useful evidence.
+Root `AGENTS.md`, `CONTRIBUTING.md`, `REVIEW.md`, lifecycle runbooks, topical playbooks, owning doctrine, all six repository skills and thin scoped `AGENTS.md` pointers route through the central unslop playbook. Decision-record obligations are routed to the decision-record playbook; PR authors and reviewers independently compare the actual diff with relevant ADRs. Profile changes must preserve routes, applicability, corrective behavior and false-positive boundaries. Occurrence records distinguish separate incidents from duplicate reports and distinguish missing discovery, ineffective correction and ignored useful guidance. Agents revise, narrow, consolidate or retire guards based on those observations while preserving useful evidence.
 
-Mechanical checks establish subscription structure, root routes and local link facts. Semantic review established that the work-point instructions name the profiles to read and that U-001 maps to a corrective guard and feedback loop; U-002 records removal of an obsolete location-only detector rather than freezing the new layout in a replacement test. Neither link existence nor a passing CI gate proves that a later agent read a guard or that it prevented a defect. The upcoming interactive stable-0.1.0 audit and later work must assess observed reach and effect, leave unknown outcomes unknown, and update guards and this assessment when evidence changes the mechanism. This adoption adds no required plugin dependency or telemetry service.
+Mechanical checks establish subscription structure, root routes and local link facts. Semantic review confirms that work-point guidance routes through the selector and that U-001 maps to a corrective guard and feedback loop; U-002 records removal of an obsolete location-only detector rather than freezing the new layout in a replacement test. Neither link existence nor a passing CI gate proves that a later agent read a guard or that it prevented a defect. Continue to assess observed reach and effect, leave unknown outcomes unknown, and update guards and this assessment when evidence changes the mechanism. This adoption adds no required plugin dependency or telemetry service.
 
 ## runbook-composition
 
@@ -42,21 +42,19 @@ router checker checks links and does not score content.
 
 ## tracked-validation-hook
 
-**Assessment:** Not certified under the pinned tracked-validation-hook
-standard. Wild Bunch's approved policy is that pre-commit and CI are
-check-only; they never normalize files, stage corrections, or move refs. The
-pinned standard requires hook-side candidate normalization, so its requirement
-conflicts with the repository policy and must be reconciled at the subscription
-boundary before any conformance claim. The tracked hook materializes the staged
-candidate locally, runs only the declared check command, and restores unrelated
-unstaged and untracked work. Hosted mode requires a clean detached checkout at
-the declared `HEAD`, runs the same check command in place, and verifies that
-`HEAD`, the index, and candidate worktree remain unchanged. Behavior tests
-observe stale generated content rejection, partial-staging isolation, success
-and failure restoration, and hosted state preservation. Windows local evidence
-is established by the focused fixture and canonical gate; hosted Linux evidence
-is pending the non-draft GitHub run. Certification remains blocked by the
-policy mismatch even after hosted parity is proven.
+**Assessment:** Self-certified against the pinned definition at
+`a9d9f280316a87ac66cb2653384bc30a683603f0`. Maintained-file normalization,
+formatting, generation, and repairs belong in explicit apply targets; the hook
+rejects a candidate that needs repair without changing or staging it. The
+tracked hook materializes the staged candidate locally, runs only the declared
+check command, and restores unrelated unstaged and untracked work. Hosted mode
+requires a clean detached checkout at the declared `HEAD`, runs the same check
+command in place, and verifies that `HEAD`, the index, and candidate worktree
+remain unchanged. Behavior tests observe stale generated content rejection,
+partial-staging isolation, success and failure restoration, and hosted state
+preservation. The canonical gate is run locally on Windows and by the required
+hosted Linux status check on each proposed commit; parity claims rely on the
+successful check for the exact PR head, never a prior revision.
 
 ## completed-artifact-custody
 

@@ -1,6 +1,6 @@
 # Wild Bunch Web Play-Surface Unslop Profile
 
-Read this profile in full before work in its stated scope and maintain encountered patterns through the [observation loop](README.md#record-and-improve). Game-native presentation does not override accessible naming, explicit user direction or real recovery needs. Developer diagnostics may show clearly labelled internal information only within the developer boundary; they must not leak it into player surfaces.
+Read this profile in full when selected through the [unslop playbook](../playbooks/unslop.md) and maintain encountered patterns through its [observation loop](../playbooks/unslop.md#record-and-improve). Game-native presentation does not override accessible naming, explicit user direction or real recovery needs. Developer diagnostics may show clearly labelled internal information only within the developer boundary; they must not leak it into player surfaces.
 
 Project-specific anti-slop profile for `src/WildBunch.Web`.
 

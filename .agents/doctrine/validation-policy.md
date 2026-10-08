@@ -1,6 +1,6 @@
 # Validation doctrine
 
-Before work governed by this doctrine, read [code-review guards](../unslop/code-review.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 This file records Wild Bunch test-lane ownership and invariants. The executable
 sequence and environment setup live in the [testing playbook](../playbooks/testing.md).

@@ -18,7 +18,7 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 
 ## Routing pointers
 
-- Before repository work, read [unslop selection and observation rules](.agents/unslop/README.md) and each applicable profile in full; follow the direct stage and concern routes below.
+- Before repository work, read the [unslop playbook](.agents/playbooks/unslop.md) and follow its scoped profile selection; read the [decision-record playbook](.agents/playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 - Agent Operating Model adoption: [.agents/contracts/operating-standards.json](.agents/contracts/operating-standards.json) and [standards certification](.agents/contracts/standards-certification.md).
 - Lifecycle runbooks: [repo workflow policy](.agents/doctrine/repo-runbook-policy.md)
 - Decision records: [catalogue](docs/decisions/README.md) and [decision-record playbook](.agents/playbooks/decision-records.md)

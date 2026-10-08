@@ -1,68 +1,36 @@
-# ADR-0031 Event-Sourced Dev Travel Controls
+# ADR-0031 Developer Travel Overrides Are Event-Backed and One-Shot
 
 ## Status
 
 `live`
 
-## Dated Status History
+## Dated History
 
-- 2026-06-25 - live: Event-sourced dev travel override implemented. Three dev events (DevTravelOverrideForced, DevTravelOverrideCleared, DevTravelOverrideConsumed) flow through GameSession command methods, Apply, and event replay. DevTravelOverrideConsumed provides replay-safe consumption semantics. TravelDevPanel registered in DevOverlay. Dev endpoints under /api/dev/sessions/{id}/travel-context, /travel/force-override, /travel/clear-override. Hidden-truth guard test extended to cover the dev travel-context endpoint.
+- `2026-06-25` - Added developer controls for forcing and clearing the next travel encounter, with consumption recorded so replay reconstructs whether the override was used.
 
 ## Decision Type
 
-architecture, dev, event-sourcing
+`architecture`, `gameplay`, `persistence`
 
 ## Related ADRs
 
-- `depends on`: ADR-0028 (event-sourcing posture — dev events are domain events, replayed through Apply)
-- `depends on`: ADR-0030 (dev overlay and dev endpoint namespace — /api/dev/ route and DevRoleGuard)
-- `related to`: ADR-0007 (hidden culprit boundaries — dev travel-context must not leak hidden truth)
+- `depends on`: ADR-0028, ADR-0030
+- `related to`: ADR-0007, ADR-0032, ADR-0036, ADR-0041
 
 ## Context
 
-Playtesting travel encounters requires forcing specific encounter categories (Foe, Npc, Lucky, etc.) and foe profiles (speed, fight strength, minimum bribe) on the next travel-day advance. The previous debug cockpit had no travel forcing capability. ADR-0030 established the dev overlay and /api/dev/ namespace but did not implement travel-specific dev controls.
-
-The core design challenge is replay safety: a forced override must be consumed exactly once by the next AdvanceJourneyDay, and replaying the event stream must reconstruct the correct final state. A naive "set a flag and clear it in the command" approach breaks replay because the clear happens outside the event stream.
+Playtesting needs a way to choose the next travel encounter without changing ordinary player commands or making the result disappear during event replay. A pending override must not be silently cleared outside the event history.
 
 ## Decision
 
-1. **DevTravelOverride record.** A plain domain record `DevTravelOverride(TravelDayEncounterCategory ForcedCategory, JourneyFoeProfile? FoeProfile, string? EncounterMessage)` carries the override payload. Factory methods `ForFoe` and `ForCategory` construct common shapes.
+Developer travel overrides are recorded as domain events. Forcing an override, clearing a pending override, and consuming it are distinct recorded facts. The next travel-day generation consumes a pending override once; later days use ordinary generation unless another override is forced. The generated result then follows the normal travel event and state path.
 
-2. **Three dev events.** The override lifecycle is event-sourced through three sealed record events implementing IDomainEvent:
-   - `DevTravelOverrideForced` — sets the pending override. Produced by `ForceDevTravelOverride`.
-   - `DevTravelOverrideCleared` — clears the pending override. Produced by `ClearDevTravelOverride` (no-op if nothing pending).
-   - `DevTravelOverrideConsumed` — marks the override as consumed by the next travel-day advance. Produced by `PrepareTravelDayAdvance` when a pending override exists.
+The override is a developer capability under ADR-0030 and ADR-0041. It does not alter the ordinary player command contract or disclose hidden case truth through player reads.
 
-   All three events have Apply methods on GameSession and cases in ApplyProducedEvent and GameSessionEventReplay.ApplyEvent.
+## Rationale and Alternatives
 
-3. **Consume-once with capture-before-emit.** In `PrepareTravelDayAdvance`, the pending override is captured into a local variable before `ProduceEvent(new DevTravelOverrideConsumed())` is called. This is critical because `ProduceEvent` calls `Apply`, which clears `_pendingDevTravelOverride`. The forced day plan is built from the captured local, not the field. This ordering bug was caught during plan review.
-
-4. **TravelDayPlanFactory.** A pure helper creates a `TravelDayPlanState` from a `DevTravelOverride`, bypassing the normal `TravelDayPlanGenerator`. The forced plan contains a single encounter matching the override category. For Foe overrides, the encounter uses the provided foe profile or a default derived from `TravelRulesProfile.EncounterBribeCash`.
-
-5. **Dev endpoints.** Three endpoints under /api/dev/:
-   - `GET /api/dev/sessions/{id}/travel-context` — returns journey state, pending encounter, and pending dev override via `TravelDevContextDto`.
-   - `POST /api/dev/sessions/{id}/travel/force-override` — forces the next travel override.
-   - `POST /api/dev/sessions/{id}/travel/clear-override` — clears a pending override.
-
-   All gated by `DevRoleGuard.EnsureDevAccess()`. Dev DTOs are separate types from player DTOs.
-
-6. **Persistence.** The three dev events are registered in `ResolveEventType` for event-stream serialization. The `PendingDevTravelOverride` is stored as a snapshot component (`pendingDevTravelOverride`) in the EF component-based snapshot path and as a field in the full `GameSessionSnapshot` record. On load, `_pendingDevTravelOverride` is set via `GameSessionRehydrator.SetBackingField`. Post-snapshot event replay overwrites the snapshot value via Apply.
-
-7. **Frontend.** `TravelDevPanel` registered in `DevPanelRegistry` renders journey state, pending override, and force/clear controls. Uses `@tanstack/react-query` for the dev context query and invalidates on force/clear.
-
-8. **Hidden-truth boundary.** The dev travel-context endpoint exposes journey internals (status, days, pending encounter kind/message, foe profile, dev override) but does NOT expose hidden culprit truth. `GameApiHiddenTruthTests` includes a guard test for the dev travel-context endpoint.
-
-## Options Considered and Rejected
-
-- **Set-and-clear without events.** Rejected: breaks replay. The clear happens outside the event stream, so a replayed session would have a stale pending override.
-- **Single DevTravelOverrideSet event (force + clear in one).** Rejected: conflates two distinct dev intents and makes the event stream harder to audit.
-- **Consume in AdvanceJourneyDay without a DevTravelOverrideConsumed event.** Rejected: the consumption is invisible in the event stream. Replay cannot distinguish "override was pending and consumed" from "override was never set." The explicit consumed event makes the lifecycle fully auditable.
-- **Dev override as a flag on TravelDayAdvanced.** Rejected: couples dev state to a gameplay event. Dev events should be separate so they can be filtered, audited, and stripped independently.
+A transient flag set and cleared outside event history could produce different results after replay. Treating the override as event-backed lets the developer action and its one-time consumption be reconstructed without making it a second game authority.
 
 ## Consequences
 
-- Dev travel overrides are fully event-sourced and replay-safe.
-- The event stream is auditable: Forced, Cleared, and Consumed events record the full override lifecycle.
-- Future dev controls (saloon POI forcing, encounter seeding) follow the same pattern: dev events + Apply + replay cases + dev endpoints + DevRoleGuard.
-- The TravelDevPanel is the second panel in the DevOverlay, establishing the registry pattern from ADR-0030.
-- Snapshot persistence includes the pending dev override, so a session loaded from snapshot retains the override without replaying the full stream.
+Replay must preserve the pending, cleared, and consumed states in order. Developer controls may select a test result, but they do not waive ordinary travel legality or change the player-facing meaning of the resulting encounter.

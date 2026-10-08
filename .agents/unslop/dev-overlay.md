@@ -1,6 +1,6 @@
 # Wild Bunch Dev Overlay Unslop Profile
 
-Read this profile in full before dev-overlay work and maintain encountered patterns through the [observation loop](README.md#record-and-improve). Its player-surface constraints apply when player UI is touched; a genuinely developer-only diagnostic may display explicitly labelled internal detail. Approved scenario preparation remains legitimate when normal gameplay still resolves the outcome.
+Read this profile in full when selected through the [unslop playbook](../playbooks/unslop.md) and maintain encountered patterns through its [observation loop](../playbooks/unslop.md#record-and-improve). Its player-surface constraints apply when player UI is touched; a genuinely developer-only diagnostic may display explicitly labelled internal detail. Approved scenario preparation remains legitimate when normal gameplay still resolves the outcome.
 
 Repo-specific anti-slop profile for Wild Bunch dev overlay work.
 

@@ -12,7 +12,7 @@ metadata:
 
 # Wild Bunch Domain Modeling
 
-Before using this skill, read the applicable [backend architecture](../../unslop/backend-architecture.md) guards in full. Follow [selection and observations](../../unslop/README.md) when scope changes or a distinct incident warrants recording.
+Before using this skill, follow the [unslop playbook](../../playbooks/unslop.md) for gameplay-domain boundaries and read the selected profiles in full; consult the [decision-record playbook](../../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Owned decision
 

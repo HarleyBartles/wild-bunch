@@ -1,6 +1,6 @@
 # Wild Bunch Backend Architecture Unslop Profile
 
-Read this profile in full before the backend work described below. Maintain encountered patterns through the [observation loop](README.md#record-and-improve). These guards preserve current authority boundaries; they do not prohibit an explicitly approved architecture change or prove that an untouched historical flow already conforms.
+Read this profile in full when selected through the [unslop playbook](../playbooks/unslop.md). Maintain encountered patterns through its [observation loop](../playbooks/unslop.md#record-and-improve). These guards preserve current authority boundaries; they do not prohibit an explicitly approved architecture change or prove that an untouched historical flow already conforms.
 
 Repo-wide drift-prevention profile for Wild Bunch backend work.
 

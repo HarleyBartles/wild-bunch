@@ -1,6 +1,6 @@
 # Architecture guardrails
 
-Before work governed by this doctrine, read [backend-architecture guards](../unslop/backend-architecture.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 Wild Bunch uses DDD, CQRS, and event sourcing as established architecture, not
 optional aspirations.

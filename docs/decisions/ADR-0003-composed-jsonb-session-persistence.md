@@ -2,107 +2,40 @@
 
 ## Status
 
-live
+`partially superseded`
 
-## Dated Status History
+## Dated History
 
-- 2026-06-01 - live: session state is persisted as an envelope plus composed
-  component payloads and replayable history rows.
+- `2026-06-01` - Chose a composed persistence shape for session state rather than a single opaque payload or a fully relational model.
+- `2026-06-24` - Removed the dedicated `GameSessionLogEntries` table and its write path; commit `6cdd23e` records the event-projection replacement and removal of the legacy log path.
+- `2026-10-08` - Editorial clarification: composed session snapshots remain, while event history and projections, not dedicated log rows, own the durable event-derived history.
 
 ## Decision Type
 
-architecture, persistence
+`architecture`, `persistence`
 
 ## Related ADRs
 
 - `depends on`: ADR-0002
-- `informs`: ADR-0004, ADR-0005, ADR-0007, ADR-0008, ADR-0012
+- `partially superseded by`: ADR-0028
+- `related to`: ADR-0004
 
 ## Context
 
-Wild Bunch persists live session state through PostgreSQL-backed EF storage, but
-the runtime model is not a simple one-table relational shape. Session-owned
-state is composed of an envelope, JSON-backed component payloads, and ordered
-history rows.
+Session state is composed of concepts with different persistence needs. A coherent resumable session requires a durable snapshot without coupling the domain model to EF Core or forcing every runtime detail into normalized tables.
 
-## Decision Drivers
+## Decision
 
-- The domain should stay plain and rehydratable.
-- Session-owned state needs durable snapshots without forcing a full relational
-  redesign of runtime state.
-- The store must preserve ordered history and component-level shape.
-- Persistence should remain adaptable if the store evolves later.
+Persist session state through a session envelope and composed component snapshots. Keep persistence translation in the adapter. Durable event history and event-derived player-facing history are governed by ADR-0028; this record does not establish separate log-entry rows as an authority.
 
-## Decision Summary
+## Rationale and Alternatives
 
-Persist runtime session state as a composed store: a session envelope, JSONB
-component payloads for the major session-owned pieces, and dedicated ordered
-rows for log and diary history.
+A fully relational runtime model would be appropriate if ad hoc relational queries over all session details were the primary need. One opaque blob would lose useful component boundaries. The composed shape allows the domain and persistence adapter to evolve separately while preserving a coherent session snapshot.
 
-## Detailed Decision Breakdown
+## Consequences
 
-The current persistence layer writes the aggregate envelope, the main session
-components, and the ordered history lists separately. The serializer owns the
-conversion between domain objects and snapshot payloads, while the repository
-coordinates save/load behavior.
+Snapshot serialization, persistence mapping, and replay must preserve the same session meaning. Schema migrations remain necessary when persisted payloads change. The old dedicated log table is historical and is not to be recreated as a parallel source of truth.
 
-This shape keeps the domain model free of EF concerns while preserving the
-durable session state needed to resume play exactly where it left off.
+## Successors and Surviving Scope
 
-## Options Considered and Rejected
-
-- Fully relationalize every runtime detail into many normalized tables.
-- Collapse the whole session into one opaque blob with no composed sub-shape.
-- Move persistence shape knowledge into the domain model itself.
-
-## When a Rejected Option Would Have Been Better
-
-A fully relational model would only be better if the repo needed rich ad hoc SQL
-reporting over runtime state as the primary use case. An opaque blob would only
-be better if the app never needed component-level reasoning or partial updates.
-
-## Benefits
-
-- The aggregate can be rehydrated coherently.
-- JSON payloads stay focused on coherent session-owned components.
-- The persistence adapter can evolve without forcing domain refactors.
-
-## Accepted Tradeoffs
-
-- The store shape is more complex than a single table.
-- Save/load logic has to keep several durable pieces in sync.
-
-## Risks
-
-- The composed shape can drift if the serializer and repository are not kept in
-  lockstep.
-- Multiple persistence surfaces mean more places to verify during schema work.
-
-## Consequences for Future Work
-
-Any future schema change should preserve the aggregate boundary and the
-composed session shape unless a source-backed reason exists to replace it.
-
-## Implementation Status or Plan
-
-Live. The current persistence stack already uses the composed session model.
-
-## Related Stable Source Surfaces
-
-- `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`
-- `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs`
-- `src/WildBunch.Persistence/Serialization/GameSessionRehydrator.cs`
-- `src/WildBunch.Persistence/GameSessions/`
-- `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`
-- `tests/WildBunch.Integration.Tests/MigrationTests.cs`
-
-## Proof of Implementation or Explicit Non-Implementation
-
-The repository saves a `GameSessions` envelope plus composed component,
-log-entry, and diary-day rows, and the serializer can round-trip the aggregate
-back into a `GameSession`.
-
-## Review Triggers
-
-- When the store shape no longer needs the component/history split.
-- When a better source-backed store topology emerges.
+ADR-0028 replaces this record's dedicated log-history authority with immutable event history and rebuildable projections. The composed snapshot decision survives.

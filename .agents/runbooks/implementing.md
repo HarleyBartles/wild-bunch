@@ -9,21 +9,8 @@ Implementing an approved Wild Bunch change in a task worktree.
 - Develop observable behavior through focused, behavior-first tests.
 - Verify claims against current repository and hosted evidence.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
-
 ## Unslop before work
-
-Before implementation, read the applicable [backend](../unslop/backend-architecture.md), [web](../unslop/play-surface-ui.md) and [dev-overlay](../unslop/dev-overlay.md) profiles in full. Authored prose requires [writing](../unslop/writing.md); agent guidance requires [routing](../unslop/routing.md). Recheck applicability at boundary changes and maintain [distinct observations](../unslop/README.md#record-and-improve) while working.
+Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

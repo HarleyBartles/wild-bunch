@@ -4,7 +4,7 @@ This page routes work to Wild Bunch's current lifecycle and concern guides.
 The list describes repository practice; it is not a required template or a
 minimum inventory. Update links as guidance changes.
 
-Before entering a stage or concern below, read [unslop selection and observations](../unslop/README.md) and the applicable profiles in full. Each stage and topical guide also names the guards required at its own work point. Profile/routing changes require [routing guards](../unslop/routing.md).
+Before entering a stage or concern below, read the [unslop playbook](../playbooks/unslop.md) and follow its scoped profile selection. Read the [decision-record playbook](../playbooks/decision-records.md) whenever work makes, changes, corrects, or materially removes a durable decision. Each stage and topical guide names when these procedures apply. Guidance changes also require the routing profile selected through the unslop playbook.
 
 ## Scoped agent entrypoints
 

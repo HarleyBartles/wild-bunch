@@ -1,6 +1,6 @@
 # Dev overlay doctrine
 
-Before work governed by this doctrine, read [dev-overlay guards](../unslop/dev-overlay.md) in full and follow [unslop selection and observations](../unslop/README.md) for other touched concerns.
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 This is the binding repository doctrine for the Dev Overlay and Playtest
 Control Plane. All dev-overlay work must follow it.
