@@ -35,7 +35,7 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 3. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
 4. Use GitHub branch and Draft PR publication to push the task branch and create or update the
-   Draft PR against `main`.
+   Draft PR against the selected base branch (`main` by default).
 5. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
    applicable hosted checks with the published tree.
 
@@ -63,7 +63,7 @@ For the stable 0.1.0 epic, read the [roadmap's develop integration and per-plan 
 ## Evidence contract
 
 - [ ] The local tree is clean and the branch is published from a dedicated worktree.
-- [ ] The GitHub PR targets `main` and its remote head equals local `HEAD`.
+- [ ] The GitHub PR targets the selected base branch (`main` by default) and its remote head equals local `HEAD`.
 - [ ] The PR body describes current scope and validation evidence.
 - [ ] Draft state and hosted-check expectations match the repo policy.
 
