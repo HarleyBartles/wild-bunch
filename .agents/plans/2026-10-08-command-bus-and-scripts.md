@@ -52,46 +52,46 @@
 
 **Files:** Modify `tools/run.py`, `tools/tests/test_run.py`, `.agents/contracts/operating-standards.json`, `.agents/contracts/standards-certification.md`, `.agents/contracts/repo-standards-commands.json`, and any canonical command references changed by the selected CLI.
 
-- [ ] Add the immutable `command-bus` subscription from AOM commit `a9d9f280316a87ac66cb2653384bc30a683603f0` and keep the existing current `tracked-validation-hook` pin unchanged.
-- [ ] Implement truthful top-level help, target discovery, target-specific help, explicit mode selection, early rejection of unknown/conflicting/unsupported requests, target argument forwarding, and exact subprocess exit propagation.
-- [ ] Expose the supported focused .NET, web, Python-tooling, hook-setup, and canonical CI operations as named targets, with modes limited to meaningful behavior; keep CI as a check-only composition and keep local hook installation as an explicitly named apply operation.
-- [ ] Make failure output identify the failed target/check and the exact focused repair or recheck command without changing the child process output or status.
-- [ ] Add behavior tests for help without work, missing/invalid/conflicting modes without work, successful dispatch, faithful argument forwarding, child output/status propagation, and expected command failure.
-- [ ] Remove assertions that freeze the private CI step vector or the old diagnostics command spelling; retain independently meaningful gate behavior at the hook and hosted-CI boundaries.
+- [x] Add the immutable `command-bus` subscription from AOM commit `a9d9f280316a87ac66cb2653384bc30a683603f0` and keep the existing current `tracked-validation-hook` pin unchanged.
+- [x] Implement truthful top-level help, target discovery, target-specific help, explicit mode selection, early rejection of unknown/conflicting/unsupported requests, target argument forwarding, and exact subprocess exit propagation.
+- [x] Expose the supported focused .NET, web, Python-tooling, hook-setup, and canonical CI operations as named targets, with modes limited to meaningful behavior; keep CI as a check-only composition and keep local hook installation as an explicitly named apply operation.
+- [x] Make failure output identify the failed target/check and the exact focused repair or recheck command without changing the child process output or status.
+- [x] Add behavior tests for help without work, missing/invalid/conflicting modes without work, successful dispatch, faithful argument forwarding, child output/status propagation, and expected command failure.
+- [x] Remove assertions that freeze the private CI step vector or the old diagnostics command spelling; retain independently meaningful gate behavior at the hook and hosted-CI boundaries.
 - [x] Apply the user's decision: the canonical hook/CI gate fails fast, orders checks from cheapest to most expensive, and keeps aggregate diagnostics manual-only. The first executable row-03 checks now include the cheap whitespace check; roadmap row 04 must place lint before tests.
-- [ ] Self-certify the bus inventory, modes, help, argument/output/status behavior, target ownership, drift controls, and the distinction between mechanical checks and semantic assessment.
+- [x] Self-certify the bus inventory, modes, help, argument/output/status behavior, target ownership, drift controls, and the distinction between mechanical checks and semantic assessment.
 
 ## Task 3: Rationalize standalone scripts and test ownership
 
 **Files:** Move the repository checker implementations, their behavior tests, and Python tooling requirements into `tools/`; delete redundant wrappers and obsolete tests; modify `scripts/README.md`, `src/WildBunch.Assets/docs/asset-operations.md`, `.github/workflows/ci.yml`, and any retained guidance with inbound references; preserve native process scripts.
 
-- [ ] Remove the CI preflight wrappers because they only launch the canonical bus check.
-- [ ] Remove the root image-pipeline wrappers and compatibility shim; keep the asset-local Python implementation as the only image-pipeline entrypoint and correct its operation guide.
-- [ ] Remove `scripts/tests/test_script_entrypoints.py` and `scripts/tests/test_power_shell_wrappers.py` because they preserve paired filenames and wrapper existence without proving useful behavior.
-- [ ] Move `check_agent_routers.py`, `check_operating_standards.py`, `check_plugin_subscriptions.py`, their retained negative behavior tests, skill-custody behavior tests, and Python tool requirements into `tools/` and `tools/tests/`; preserve hook integration tests with script behavior tests, preserve validator negatives, and remove only the redundant `is_file()` assertion over a glob result.
-- [ ] Remove weak workflow-string/private-runner-step detectors when the corresponding behavior is already covered by the real command-bus and hook behavior tests; rely on the hosted required status check for live workflow execution.
-- [ ] Keep the Windows and Bash dev-server implementations only as distinct native process-management implementations, retain the shared PostgreSQL PowerShell lifecycle tool, and document each exception's purpose.
-- [ ] Rewrite `scripts/README.md` around only surviving operations, remove claims that every script is idempotent/safe, and explain the `tools/` command-bus versus standalone `scripts/` boundary.
-- [ ] Search repository-wide for removed wrapper names and obsolete direct agent-facing gate commands; update or retire each live reference without rewriting historical investigation statements that clearly identify themselves as historical.
+- [x] Remove the CI preflight wrappers because they only launch the canonical bus check.
+- [x] Remove the root image-pipeline wrappers and compatibility shim; keep the asset-local Python implementation as the only image-pipeline entrypoint and correct its operation guide.
+- [x] Remove `scripts/tests/test_script_entrypoints.py` and `scripts/tests/test_power_shell_wrappers.py` because they preserve paired filenames and wrapper existence without proving useful behavior.
+- [x] Move `check_agent_routers.py`, `check_operating_standards.py`, `check_plugin_subscriptions.py`, their retained negative behavior tests, skill-custody behavior tests, and Python tool requirements into `tools/` and `tools/tests/`; preserve hook integration tests with script behavior tests, preserve validator negatives, and remove only the redundant `is_file()` assertion over a glob result.
+- [x] Remove weak workflow-string/private-runner-step detectors when the corresponding behavior is already covered by the real command-bus and hook behavior tests; rely on the hosted required status check for live workflow execution.
+- [x] Keep the Windows and Bash dev-server implementations only as distinct native process-management implementations, retain the shared PostgreSQL PowerShell lifecycle tool, and document each exception's purpose.
+- [x] Rewrite `scripts/README.md` around only surviving operations, remove claims that every script is idempotent/safe, and explain the `tools/` command-bus versus standalone `scripts/` boundary.
+- [x] Search repository-wide for removed wrapper names and obsolete direct agent-facing gate commands; update or retire each live reference without rewriting historical investigation statements that clearly identify themselves as historical.
 
 ## Task 4: Route the command bus and record its durable ownership
 
 **Files:** Modify root `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, relevant testing/PR guidance, and `docs/decisions/README.md`; add `tools/README.md`, `tools/AGENTS.md`, and the next ADR.
 
-- [ ] Make `tools/` immediately discoverable as the command bus in human and agent entrypoints, with concise links to the target inventory and certification.
-- [ ] Add a thin scoped `tools/AGENTS.md` only if needed to route implementers to the bus guide and relevant unslop/ADR obligations; keep it within the scoped-router contract.
-- [ ] Record the durable decision that named repository build/test/lint/format/validation work belongs to the bus and that scripts remain for justified standalone/native operations; record the wrapper retirements as dated history without storing a script inventory as architecture.
-- [ ] Add the ADR to the authored catalogue with a one-sentence summary and correct links/status history for any predecessor decision it clarifies.
-- [ ] Remove empty headings or empty template sections encountered in touched guidance; do not add a checker that asserts section presence or absence.
-- [ ] Update the command-bus self-certification and affected playbooks/runbooks so contributors can discover the bus, invoke the correct mode, and preserve the no-mutation hook rule.
+- [x] Make `tools/` immediately discoverable as the command bus in human and agent entrypoints, with concise links to the target inventory and certification.
+- [x] Add a thin scoped `tools/AGENTS.md` only if needed to route implementers to the bus guide and relevant unslop/ADR obligations; keep it within the scoped-router contract.
+- [x] Record the durable decision that named repository build/test/lint/format/validation work belongs to the bus and that scripts remain for justified standalone/native operations; record the wrapper retirements as dated history without storing a script inventory as architecture.
+- [x] Add the ADR to the authored catalogue with a one-sentence summary and correct links/status history for any predecessor decision it clarifies.
+- [x] Remove empty headings or empty template sections encountered in touched guidance; do not add a checker that asserts section presence or absence.
+- [x] Update the command-bus self-certification and affected playbooks/runbooks so contributors can discover the bus, invoke the correct mode, and preserve the no-mutation hook rule.
 
 ## Task 5: Verify and prepare the PR
 
 **Files:** All Task 1-4 changes.
 
-- [ ] Run focused command-bus tests and script/hook behavior tests, inspect their output, and correct any failure.
-- [ ] Run the canonical local check gate with its real prerequisites and confirm the staged-candidate hook leaves the candidate and unrelated working state unchanged.
-- [ ] Search the final diff for stale command-bus pins, removed wrapper names, direct gate instructions, empty template sections, and inaccurate certification claims.
-- [ ] Review ADR freshness against the exact diff and update the author decision-record check; the independent reviewer must repeat it.
-- [ ] Complete a fresh whole-branch code review, address every actionable finding, rerun affected tests and the canonical gate, then publish a Draft PR to `develop` with current head and hosted status evidence.
+- [x] Run focused command-bus tests and script/hook behavior tests, inspect their output, and correct any failure.
+- [x] Run the canonical local check gate with its real prerequisites and confirm the staged-candidate hook leaves the candidate and unrelated working state unchanged.
+- [x] Search the final diff for stale command-bus pins, removed wrapper names, direct gate instructions, empty template sections, and inaccurate certification claims.
+- [x] Review ADR freshness against the exact diff and update the author decision-record check; the independent reviewer must repeat it.
+- [x] Complete a fresh whole-branch code review and address every actionable finding; the reviewer found none, so no post-review fix rerun was needed. Publish Draft PR #191 to `develop`; its canonical hosted check is currently skipped because the PR is Draft, not passed.
 - [ ] Keep this plan through its completing PR; the next successor slice will classify it for retirement.
