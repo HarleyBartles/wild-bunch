@@ -97,6 +97,24 @@ public class GameSessionEventSourcingTests
             new[] { oldGameStarted });
 
         Assert.Null(rehydrated.SeedCode);
+        Assert.Equal(oldGameStarted.SaltSource, rehydrated.SaltSource);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_RejectsPlayerSetupWithoutWorldGenerated()
+    {
+        var setupCompleted = new PlayerSetupCompleted
+        {
+            PlayerName = "Ranger Vale",
+            GameDifficulty = GameDifficulty.Standard,
+            GameEntropy = GameEntropy.Classic,
+            SeedCode = "recorded-seed"
+        };
+
+        Assert.Throws<InvalidOperationException>(() => GameSession.RehydrateFromEvents(
+            GameSessionId.New(),
+            CreateWorld(),
+            new IDomainEvent[] { setupCompleted }));
     }
 
     [Fact]

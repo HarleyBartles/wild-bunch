@@ -47,14 +47,14 @@
 
 ### Task 2: Reject incomplete genesis and remove salt invention from restoration
 
-**Files:** `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs`; `tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs`; `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`; `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs`.
+**Files:** `src/WildBunch.Domain/Game/GameSessionEventReplay.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs`; `tests/WildBunch.Domain.Tests/Events/GameSessionEventSourcingTests.cs`; `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`; `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs`; `tests/WildBunch.Integration.Tests/FullReplayEqualityTests.cs`.
 
-- [ ] Add a Domain negative test with a valid `PlayerSetupCompleted` event but no `WorldGenerated`; witness current replay incorrectly succeeds with a runtime salt, then require an explicit failure. Preserve and run the existing direct `GameStarted` replay test with its recorded salt.
-- [ ] Add a PostgreSQL repository behavior test that stores a normally event-backed session, removes only its salt-source cache component, loads through a fresh repository context, and asserts the exact salt from its `WorldGenerated` event is restored. Witness failure against the current fast path/fallback before changing production code.
-- [ ] Make setup replay require `WorldGenerated` and remove runtime salt creation from setup replay. Keep legacy/direct `GameStarted` streams valid only from their recorded salt.
-- [ ] Route a missing salt cache component through full event replay and fail closed when neither supported genesis event contains the recorded salt. Remove runtime salt fallbacks from production snapshot/component deserialization; do not synthesize a replacement.
-- [ ] Retire `MissingSaltSourceInLegacySessionJsonFallsBackToRuntimeSalted`, which blesses a test-only snapshot that invents a new salt. Its replacement is the real PostgreSQL recovery test above, not another JSON round trip.
-- [ ] Run the focused Domain replay and PostgreSQL repository tests, including the supported `WorldGenerated` legacy upcast tests.
+- [x] Add a Domain negative test with a valid `PlayerSetupCompleted` event but no `WorldGenerated`; witness current replay incorrectly succeeds with a runtime salt, then require an explicit failure. Preserve and run the existing direct `GameStarted` replay test with its recorded salt.
+- [x] Add a PostgreSQL repository behavior test that stores a normally event-backed session, removes only its salt-source cache component, loads through a fresh repository context, and asserts the exact salt from its `WorldGenerated` event is restored. Witness failure against the current fast path/fallback before changing production code.
+- [x] Make setup replay require `WorldGenerated` and remove runtime salt creation from setup replay. Keep legacy/direct `GameStarted` streams valid only from their recorded salt.
+- [x] Route a missing salt cache component through full event replay and fail closed when neither supported genesis event contains the recorded salt. Remove runtime salt fallbacks from production snapshot/component deserialization; do not synthesize a replacement.
+- [x] Retire the runtime-salt success expectation from `MissingSaltSourceInLegacySessionJsonFallsBackToRuntimeSalted`; fail closed for the malformed snapshot and cover the production event-backed recovery through the PostgreSQL test above.
+- [x] Run the focused Domain replay and PostgreSQL repository tests, including the supported `WorldGenerated` legacy upcast tests.
 
 ### Task 3: Prove normal player genesis through production codecs and replay
 
