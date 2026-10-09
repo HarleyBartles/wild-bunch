@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Exceptions;
@@ -434,12 +435,146 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             await uow1.CommitAsync();
             copy1.MarkEventsCommitted();
 
+            var dbContext1 = scope1.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+            var winningEnvelope = await dbContext1.GameSessions.AsNoTracking().SingleAsync(entity => entity.Id == sessionId.Value);
+            var winningComponents = await dbContext1.GameSessionComponents.AsNoTracking()
+                .Where(component => component.SessionId == sessionId.Value)
+                .OrderBy(component => component.ComponentName)
+                .Select(component => new { component.ComponentName, component.ComponentVersion, component.PayloadJson })
+                .ToArrayAsync();
+            var winningDiaryDays = await dbContext1.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == sessionId.Value)
+                .OrderBy(day => day.Sequence)
+                .Select(day => new { day.Sequence, day.SchemaVersion, day.PayloadJson })
+                .ToArrayAsync();
+            var winningEvents = await dbContext1.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == sessionId.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new { storedEvent.Sequence, storedEvent.EventId, storedEvent.EventType, storedEvent.PayloadJson })
+                .ToArrayAsync();
+
             // Second request's commit fails at the unique index on (StreamId, Sequence)
             // because sequence 7 already exists. The UoW must translate this
             // DbUpdateException to ConcurrencyException so the handler can retry.
             var thrown = await Assert.ThrowsAsync<ConcurrencyException>(() => uow2.CommitAsync());
             Assert.Contains("Concurrency conflict", thrown.Message, StringComparison.Ordinal);
+
+            using (var verificationScope = services.CreateScope())
+            {
+                var verificationDb = verificationScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+                var verificationRepository = verificationScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+                var envelopeAfterConflict = await verificationDb.GameSessions.AsNoTracking().SingleAsync(entity => entity.Id == sessionId.Value);
+                Assert.Equal(winningEnvelope.StreamVersion, envelopeAfterConflict.StreamVersion);
+                Assert.Equal(winningEnvelope.SnapshotVersion, envelopeAfterConflict.SnapshotVersion);
+                Assert.Equal(winningEnvelope.UpdatedAtUtc, envelopeAfterConflict.UpdatedAtUtc);
+
+                var componentsAfterConflict = await verificationDb.GameSessionComponents.AsNoTracking()
+                    .Where(component => component.SessionId == sessionId.Value)
+                    .OrderBy(component => component.ComponentName)
+                    .Select(component => new { component.ComponentName, component.ComponentVersion, component.PayloadJson })
+                    .ToArrayAsync();
+                Assert.Equal(winningComponents, componentsAfterConflict);
+
+                var diaryAfterConflict = await verificationDb.GameSessionDiaryDays.AsNoTracking()
+                    .Where(day => day.SessionId == sessionId.Value)
+                    .OrderBy(day => day.Sequence)
+                    .Select(day => new { day.Sequence, day.SchemaVersion, day.PayloadJson })
+                    .ToArrayAsync();
+                Assert.Equal(winningDiaryDays, diaryAfterConflict);
+
+                var eventsAfterConflict = await verificationDb.StoredEvents.AsNoTracking()
+                    .Where(storedEvent => storedEvent.StreamId == sessionId.Value)
+                    .OrderBy(storedEvent => storedEvent.Sequence)
+                    .Select(storedEvent => new { storedEvent.Sequence, storedEvent.EventId, storedEvent.EventType, storedEvent.PayloadJson })
+                    .ToArrayAsync();
+                Assert.Equal(winningEvents, eventsAfterConflict);
+                var persistedPurchases = eventsAfterConflict.Where(storedEvent => storedEvent.EventType == nameof(StoreItemPurchased)).ToArray();
+                Assert.Single(persistedPurchases);
+
+                var winningState = await verificationRepository.GetByIdAsync(sessionId);
+                Assert.NotNull(winningState);
+                Assert.Equal(copy1.Player.GetQuantity(DomainItemKind.Food), winningState!.Player.GetQuantity(DomainItemKind.Food));
+                Assert.Equal(copy1.Player.Wallet.Cash, winningState.Player.Wallet.Cash);
+            }
+
+            using (var retryScope = services.CreateScope())
+            {
+                var retryRepository = retryScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+                var retryUnitOfWork = retryScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+                var retry = await retryRepository.GetByIdAsync(sessionId);
+                Assert.NotNull(retry);
+                var retryOffer = resolver.Resolve(retry!.World.GetTown(retry.Player.CurrentTownId!.Value))
+                    .Offers.Single(offer => offer.ItemKind == DomainItemKind.Food);
+                retry.Purchase(retryOffer, 1);
+                await retryRepository.StoreAsync(retry);
+                await retryUnitOfWork.CommitAsync();
+
+                var retriedState = await retryRepository.GetByIdAsync(sessionId);
+                Assert.NotNull(retriedState);
+                Assert.Equal(retry.Player.GetQuantity(DomainItemKind.Food), retriedState!.Player.GetQuantity(DomainItemKind.Food));
+                Assert.Equal(retry.Player.Wallet.Cash, retriedState.Player.Wallet.Cash);
+
+                var eventsAfterRetry = await retryScope.ServiceProvider.GetRequiredService<WildBunchDbContext>().StoredEvents.AsNoTracking()
+                    .Where(storedEvent => storedEvent.StreamId == sessionId.Value)
+                    .OrderBy(storedEvent => storedEvent.Sequence)
+                    .ToArrayAsync();
+                Assert.Equal(
+                    Enumerable.Range(1, eventsAfterRetry.Length).Select(sequence => (long)sequence),
+                    eventsAfterRetry.Select(storedEvent => storedEvent.Sequence));
+                var purchasesAfterRetry = eventsAfterRetry.Where(storedEvent => storedEvent.EventType == nameof(StoreItemPurchased)).ToArray();
+                Assert.Equal(2, purchasesAfterRetry.Length);
+                Assert.Equal(purchasesAfterRetry.Length, purchasesAfterRetry.Select(storedEvent => storedEvent.Sequence).Distinct().Count());
+            }
         }
+    }
+
+    [Fact]
+    public async Task CommitAsync_PreservesEventIdUniqueViolationAsIntegrityFailure()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        var first = CreateSession();
+        var second = CreateSession();
+
+        using (var seedScope = services.CreateScope())
+        {
+            var repository = seedScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            var unitOfWork = seedScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+            await repository.StoreAsync(first);
+            await repository.StoreAsync(second);
+            await unitOfWork.CommitAsync();
+        }
+
+        using var scope = services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+        var unitOfWorkForInvalidRows = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+        var duplicateEventId = Guid.NewGuid();
+        dbContext.StoredEvents.AddRange(
+            new StoredEventEntity
+            {
+                StreamId = first.Id.Value,
+                Sequence = first.Version + 1,
+                EventId = duplicateEventId,
+                OccurredAtUtc = DateTime.UtcNow,
+                EventType = "TestEvent",
+                PayloadJson = "{}",
+                SchemaVersion = 1
+            },
+            new StoredEventEntity
+            {
+                StreamId = second.Id.Value,
+                Sequence = second.Version + 1,
+                EventId = duplicateEventId,
+                OccurredAtUtc = DateTime.UtcNow,
+                EventType = "TestEvent",
+                PayloadJson = "{}",
+                SchemaVersion = 1
+            });
+
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(() => unitOfWorkForInvalidRows.CommitAsync());
+        var providerException = Assert.IsType<PostgresException>(exception.InnerException);
+        Assert.Equal(PostgresErrorCodes.UniqueViolation, providerException.SqlState);
+        Assert.Equal("IX_GameSessionStoredEvents_EventId", providerException.ConstraintName);
     }
 
     /// <summary>
