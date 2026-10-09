@@ -1057,9 +1057,88 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Contains(freshJournalRead.LogEntries, entry => entry.Kind == GameLogEntryKind.Purchase);
     }
 
+    [Fact]
+    public async Task CommandLoad_ConcurrentAppendReturnsOneConsistentSnapshot()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        await using var setupContext = fixture.CreateContext();
+        var setupRepository = CreateRepository(setupContext, out var setupUnitOfWork);
+        var session = CreateSession();
+        await PersistAsync(setupRepository, setupUnitOfWork, session);
+        var initialCash = session.Player.Wallet.Cash;
+        var initialFood = session.Player.GetQuantity(DomainItemKind.Food);
+        var interceptor = new PauseAfterSecondCommandEnvelopeReadInterceptor();
+        var readOptions = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(fixture.Database.ConnectionString)
+            .AddInterceptors(interceptor)
+            .Options;
+        await using var readerContext = new WildBunchDbContext(readOptions);
+        var readerRepository = CreateRepository(readerContext, out _);
+        Task<GameSession?>? readerTask = null;
+        long expectedVersion = 0;
+        decimal expectedCash = 0;
+        int expectedFood = 0;
+
+        try
+        {
+            readerTask = readerRepository.GetByIdAsync(session.Id);
+            await interceptor.SecondEnvelopeReadPaused.WaitAsync(TimeSpan.FromSeconds(30));
+
+            await using var writerContext = fixture.CreateContext();
+            var writerRepository = CreateRepository(writerContext, out var writerUnitOfWork);
+            var writerSession = await writerRepository.GetByIdAsync(session.Id);
+            Assert.NotNull(writerSession);
+            var foodOffer = new TownStoreCatalogResolver()
+                .Resolve(writerSession!.World.GetTown(writerSession.Player.CurrentTownId!.Value))
+                .Offers.Single(offer => offer.ItemKind == DomainItemKind.Food);
+            Assert.True(writerSession.Purchase(foodOffer, 2).Success);
+            expectedVersion = session.Version + writerSession.UncommittedEvents.Count;
+            expectedCash = writerSession.Player.Wallet.Cash;
+            expectedFood = writerSession.Player.GetQuantity(DomainItemKind.Food);
+            await PersistAsync(writerRepository, writerUnitOfWork, writerSession);
+            Assert.Equal(expectedVersion, writerSession.Version);
+        }
+        finally
+        {
+            interceptor.ReleaseReader();
+        }
+
+        var inFlightRead = await readerTask!;
+        Assert.NotNull(inFlightRead);
+        Assert.Equal(session.Version, inFlightRead!.Version);
+        Assert.Equal(initialCash, inFlightRead.Player.Wallet.Cash);
+        Assert.Equal(initialFood, inFlightRead.Player.GetQuantity(DomainItemKind.Food));
+
+        await using var verificationContext = fixture.CreateContext();
+        var verificationRepository = CreateRepository(verificationContext, out _);
+        var freshRead = await verificationRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(freshRead);
+        Assert.Equal(expectedVersion, freshRead!.Version);
+        Assert.Equal(expectedCash, freshRead.Player.Wallet.Cash);
+        Assert.Equal(expectedFood, freshRead.Player.GetQuantity(DomainItemKind.Food));
+
+        var events = await verificationRepository.GetEventStreamAsync(session.Id);
+        Assert.Equal(expectedVersion, events.Count);
+        Assert.Single(events.OfType<StoreItemPurchased>());
+
+        var storedEvents = await verificationContext.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+            .OrderBy(storedEvent => storedEvent.Sequence)
+            .Select(storedEvent => new { storedEvent.Sequence, storedEvent.EventType })
+            .ToArrayAsync();
+        Assert.Equal(
+            Enumerable.Range(1, checked((int)expectedVersion)).Select(sequence => (long)sequence),
+            storedEvents.Select(storedEvent => storedEvent.Sequence));
+        Assert.Single(storedEvents, storedEvent => storedEvent.EventType == nameof(StoreItemPurchased));
+    }
+
     private static EfGameSessionRepository CreateRepository(PostgreSqlPersistenceFixture fixture, out EfGameSessionUnitOfWork unitOfWork)
     {
-        var context = fixture.CreateContext();
+        return CreateRepository(fixture.CreateContext(), out unitOfWork);
+    }
+
+    private static EfGameSessionRepository CreateRepository(WildBunchDbContext context, out EfGameSessionUnitOfWork unitOfWork)
+    {
         unitOfWork = new EfGameSessionUnitOfWork(context);
         var serializer = new GameSessionJsonSerializer();
         var registry = new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters());
@@ -1107,6 +1186,33 @@ public sealed class EfGameSessionRepositoryTests
                 }
 
                 await _releaseReaders.Task.WaitAsync(cancellationToken);
+            }
+
+            return result;
+        }
+    }
+
+    private sealed class PauseAfterSecondCommandEnvelopeReadInterceptor : DbCommandInterceptor
+    {
+        private readonly TaskCompletionSource _secondEnvelopeReadPaused = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseReader = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _envelopeQueryCount;
+
+        public Task SecondEnvelopeReadPaused => _secondEnvelopeReadPaused.Task;
+
+        public void ReleaseReader() => _releaseReader.TrySetResult();
+
+        public override async ValueTask<DbDataReader> ReaderExecutedAsync(
+            DbCommand command,
+            CommandExecutedEventData eventData,
+            DbDataReader result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("FROM \"GameSessions\"", StringComparison.Ordinal)
+                && Interlocked.Increment(ref _envelopeQueryCount) == 2)
+            {
+                _secondEnvelopeReadPaused.TrySetResult();
+                await _releaseReader.Task.WaitAsync(cancellationToken);
             }
 
             return result;
