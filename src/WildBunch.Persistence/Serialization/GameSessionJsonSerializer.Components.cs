@@ -721,7 +721,7 @@ public sealed partial class GameSessionJsonSerializer
         public static PursuitState ToDomain(PursuitStateSnapshot snapshot)
         {
             var pursuitState = new PursuitState();
-            GameSessionRehydrator.SetBackingField(pursuitState, "<Heat>k__BackingField", snapshot.Heat!.Value);
+            pursuitState.SetHeat(snapshot.Heat!.Value);
             return pursuitState;
         }
     }
@@ -734,8 +734,7 @@ public sealed partial class GameSessionJsonSerializer
         public static GameClock ToDomain(GameClockSnapshot snapshot)
         {
             var clock = new GameClock();
-            GameSessionRehydrator.SetBackingField(clock, "<Day>k__BackingField", snapshot.Day!.Value);
-            GameSessionRehydrator.SetBackingField(clock, "<Turn>k__BackingField", snapshot.Turn!.Value);
+            clock.Set(snapshot.Day!.Value, snapshot.Turn!.Value);
             return clock;
         }
     }

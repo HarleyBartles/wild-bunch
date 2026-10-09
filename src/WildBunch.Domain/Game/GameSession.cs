@@ -85,6 +85,43 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _journeyLoop = new JourneyLoop(journey, completedJourneyHistory);
     }
 
+    internal static GameSession RestoreFromSnapshot(
+        GameSessionId id,
+        Player player,
+        DomainWorld world,
+        CaseFile caseFile,
+        PursuitState pursuitState,
+        GameClock clock,
+        GameStatus status,
+        TravelJourney? journey,
+        GameDifficulty gameDifficulty,
+        SaltSource saltSource,
+        GameEntropy gameEntropy,
+        TownVisitState? currentTownVisit,
+        IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory,
+        IReadOnlyList<WantedSuspectPresenceEntry>? wantedSuspectPresenceEntries)
+        => new(
+            id,
+            player,
+            world,
+            caseFile,
+            pursuitState,
+            clock,
+            status,
+            journey,
+            gameDifficulty,
+            saltSource,
+            gameEntropy,
+            currentTownVisit,
+            completedJourneyHistory,
+            wantedSuspectPresenceEntries);
+
+    internal void RestoreVersion(int version) => _version = version;
+
+    internal void RestoreSeedCode(string? seedCode) => SeedCode = seedCode;
+
+    internal void RestoreStartFlowPhase(StartFlowPhase phase) => StartFlowPhase = phase;
+
     public GameSessionId Id { get; }
 
     /// <summary>

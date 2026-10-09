@@ -507,7 +507,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var initialVersion = hasPostSnapshotEvents
             ? (int)store.Envelope.SnapshotVersion.GetValueOrDefault()
             : (int)store.Envelope.StreamVersion;
-        GameSessionRehydrator.SetVersion(session, initialVersion);
+        session.RestoreVersion(initialVersion);
 
         // Set SeedCode from snapshot as a cache. The true source of truth is the
         // GameStarted event, which will be applied during event replay if there are
@@ -523,7 +523,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 seedCode = setupEvent.SeedCode;
             }
         }
-        GameSessionRehydrator.SetBackingField(session, "<SeedCode>k__BackingField", seedCode);
+        session.RestoreSeedCode(seedCode);
 
         // Set StartFlowPhase from the event stream. The Apply methods for
         // PlayerSetupCompleted, PrologueViewed, and GameStarted set this during
@@ -532,13 +532,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         if (!hasPostSnapshotEvents)
         {
             var derivedPhase = DeriveStartFlowPhase(store.AllEvents);
-            GameSessionRehydrator.SetBackingField(session, "<StartFlowPhase>k__BackingField", derivedPhase);
+            session.RestoreStartFlowPhase(derivedPhase);
         }
 
         // Set CurrentActionContext from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(TownActionContextEntered).
         // When the snapshot is current, this restores the persisted context.
-        GameSessionRehydrator.RestoreActionContextState(session, currentActionContext, currentActionContextTownId);
+        session.RestoreActionContextState(currentActionContext, currentActionContextTownId);
 
         // Set PendingDevTravelOverride from snapshot. If there are post-snapshot events,
         // ApplyCommittedEvents will overwrite this via Apply(DevTravelOverrideForced/Cleared/Consumed).

@@ -311,6 +311,28 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var reloaded = await repo.GetByIdAsync(session.Id);
         Assert.NotNull(reloaded);
         Assert.Equal(TownActionContext.Saloon, reloaded!.CurrentActionContext);
+
+        var clockBeforeRetry = (reloaded.Clock.Day, reloaded.Clock.Turn);
+        var streamVersionBeforeRetry = reloaded.Version;
+        Assert.False(reloaded.EnterActionContext(TownActionContext.Saloon));
+        Assert.Equal(clockBeforeRetry, (reloaded.Clock.Day, reloaded.Clock.Turn));
+        Assert.Equal(streamVersionBeforeRetry, reloaded.Version);
+
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(reloaded.World.GetTown(reloaded.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(reloaded.Purchase(offer, 1).Success);
+        Assert.Equal(streamVersionBeforeRetry + 2, reloaded.Version);
+        await repo.StoreAsync(reloaded);
+        await uow.CommitAsync();
+
+        var fresh = await repo.GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Single(fresh!.AllEvents.OfType<StoreItemPurchased>());
+        Assert.Equal(streamVersionBeforeRetry + 2, fresh.Version);
+        Assert.Equal(
+            new[] { nameof(TownActionContextEntered), nameof(StoreItemPurchased) },
+            fresh.AllEvents.TakeLast(2).Select(domainEvent => domainEvent.GetType().Name));
     }
 
     [Fact]
