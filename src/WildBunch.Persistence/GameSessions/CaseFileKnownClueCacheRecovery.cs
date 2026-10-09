@@ -30,24 +30,45 @@ internal static class CaseFileKnownClueCacheRecovery
             return true;
         }
 
-        var expectedKnownClueIds = generatedCaseFile.Clues
+        var expectedKnownClues = generatedCaseFile.Clues.ToList();
+        var expectedKnownClueIds = expectedKnownClues
             .Select(clue => clue.Id)
             .ToHashSet(StringComparer.Ordinal);
-        var generatedPublicClueIds = generatedCaseFile.PublicClues
-            .Select(clue => clue.Id)
-            .ToHashSet(StringComparer.Ordinal);
+        var generatedPublicClues = generatedCaseFile.PublicClues
+            .GroupBy(clue => clue.Id, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
 
         foreach (var investigation in events
                      .Skip(generatedCaseFileIndex + 1)
                      .OfType<InvestigationPerformed>())
         {
             if (investigation.ClueId is not null
-                && generatedPublicClueIds.Contains(investigation.ClueId.Value.Value))
+                && generatedPublicClues.TryGetValue(investigation.ClueId.Value.Value, out var clue)
+                && expectedKnownClueIds.Add(clue.Id))
             {
-                expectedKnownClueIds.Add(investigation.ClueId.Value.Value);
+                expectedKnownClues.Add(clue);
             }
         }
 
-        return expectedKnownClueIds.SetEquals(cachedCaseFile.KnownClues.Select(clue => clue.Id.Value));
+        var actualKnownClues = cachedCaseFile.KnownClues
+            .Select(ClueSnapshot.FromDomain)
+            .ToArray();
+
+        return expectedKnownClues.Count == actualKnownClues.Length
+            && expectedKnownClues.Zip(actualKnownClues).All(pair => SameCluePayload(pair.First, pair.Second));
     }
+
+    private static bool SameCluePayload(ClueSnapshot expected, ClueSnapshot actual)
+        => expected.Id == actual.Id
+            && expected.Kind == actual.Kind
+            && expected.Description == actual.Description
+            && expected.LinkedSuspectIds.SequenceEqual(actual.LinkedSuspectIds, StringComparer.Ordinal)
+            && expected.TargetKind == actual.TargetKind
+            && expected.SourceKind == actual.SourceKind
+            && expected.Source == actual.Source
+            && expected.Context == actual.Context
+            && expected.Anchors.Subjects.SequenceEqual(actual.Anchors.Subjects)
+            && expected.Anchors.Locations.SequenceEqual(actual.Anchors.Locations)
+            && expected.Anchors.Times.SequenceEqual(actual.Anchors.Times)
+            && expected.Anchors.Directions.SequenceEqual(actual.Anchors.Directions);
 }
