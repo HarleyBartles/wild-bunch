@@ -60,7 +60,7 @@ Ruling: Keep the command path, player/journal read paths and historical-row pres
 - [x] Add `LegacyWorldGenerated_WithoutCaseFileEventFailsClosed`: remove the `CaseFileGenerated` row from the downgraded history, force the stale-snapshot path, and assert command and read loads surface `InvalidOperationException` with `Cannot replay a legacy WorldGenerated event without a CaseFileGenerated event.` rather than returning defaults.
 - [x] Prove the fail-closed test is sensitive by temporarily bypassing the legacy missing-case-file guard in a disposable edit; the expected explicit failure assertion must fail, then restore the guard.
 - [x] Ensure `./tools/postgres-dev.ps1 ensure` succeeds, then run: `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.LegacyWorldGenerated_LoadsFromPersistedEvents_AndCurrentWritesUseV2|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.ReadModels_LegacyWorldGeneratedEventUpcastsThroughProductionLoaderWithoutWriteback|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.LegacyWorldGenerated_WithoutCaseFileEventFailsClosed"`.
-- [ ] Commit the focused behavior test and any minimal required production correction after the focused proof passes through the normal check-only hook.
+- [x] Commit the focused behavior test and any minimal required production correction after the focused proof passes through the normal check-only hook.
 
 ### Task 3: Record bounded evidence and deliver the slice
 
@@ -70,10 +70,10 @@ Ruling: Keep the command path, player/journal read paths and historical-row pres
 
 **Produces:** A truthful PLAT-001/test disposition and a reviewed implementation PR to `develop`, with merged `0.1.0-dev.29` delivery evidence.
 
-- [ ] Add a dated persistence-test disposition limited to production repository and typed read reconstruction of a supported v1 `WorldGenerated`, immutable stored event rows, stale-cache no-writeback, legal-save convergence and the missing-`CaseFileGenerated` failure; keep unrelated historical formats and all other recovery gaps open.
-- [ ] Update PLAT-001 with the production full-replay/upcaster result and exact evidence limits; preserve prior row 07 outcomes and do not claim general historical-data compatibility beyond the supported v1 fixture.
-- [ ] Compare the diff with ADR-0028 and the decision-record playbook; state that event history/upcasting/cache decisions are unchanged and leave the ADR untouched unless implementation reveals a genuine durable divergence.
-- [ ] Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.29`; do not stage generated build output. The normal hooked commit runs `py -3 tools/run.py ci --check` on its staged candidate and must pass.
+- [x] Add a dated persistence-test disposition limited to production repository and typed read reconstruction of a supported v1 `WorldGenerated`, immutable stored event rows, stale-cache no-writeback, legal-save convergence and the missing-`CaseFileGenerated` failure; keep unrelated historical formats and all other recovery gaps open.
+- [x] Update PLAT-001 with the production full-replay/upcaster result and exact evidence limits; preserve prior row 07 outcomes and do not claim general historical-data compatibility beyond the supported v1 fixture.
+- [x] Compare the diff with ADR-0028 and the decision-record playbook; state that event history/upcasting/cache decisions are unchanged and leave the ADR untouched unless implementation reveals a genuine durable divergence.
+- [x] Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.29`; do not stage generated build output. The normal hooked commit runs `py -3 tools/run.py ci --check` on its staged candidate and must pass.
 - [ ] Complete a fresh whole-branch review against this plan, the accepted spec, PS-11/12/16, ADR-0028, event-sourcing integrity, selected backend/code-review unslop profiles, feature matrix, and code-review runbook; resolve actionable findings before publication.
 - [ ] Open a Draft PR targeting `develop`; verify its body, base and exact remote head, then mark it ready after review and local validation. Require and verify the hosted canonical gate on that exact head.
 - [ ] Merge to `develop`; verify the merge and hosted gate, fast-forward the primary checkout, and clean only the verified merged worktree, local/remote branch and branch-scoped scratch.
