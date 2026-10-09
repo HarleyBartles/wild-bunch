@@ -2078,6 +2078,8 @@ public sealed class EfGameSessionRepositoryTests
     [InlineData("suspect-status")]
     [InlineData("opening-lead")]
     [InlineData("release-threshold")]
+    [InlineData("accusation")]
+    [InlineData("release-progress")]
     [InlineData("turf-assignment")]
     [InlineData("turf-order")]
     public async Task ReadModel_CaseFileCacheSameIdAlteredGeneratedFactsRecoversFromEventsWithoutWritingBack(
@@ -2086,6 +2088,9 @@ public sealed class EfGameSessionRepositoryTests
         using var fixture = new PostgreSqlPersistenceFixture();
         var session = CreateSession(caseFileOverride: CreateGeneratedFactsCaseFile());
         var generatedCaseFile = Assert.Single(session.AllEvents.OfType<CaseFileGenerated>()).CaseFile;
+        Assert.Equal("suspect-1", generatedCaseFile.AccusationId);
+        Assert.Equal(0, generatedCaseFile.KillerReleaseProgress);
+        Assert.Equal(4, generatedCaseFile.KillerReleaseThreshold);
         var repository = CreateRepository(fixture, out var unitOfWork);
         await PersistAsync(repository, unitOfWork, session);
 
@@ -2119,8 +2124,10 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(commandRead);
         AssertGeneratedFactsEqual(generatedCaseFile, commandRead!.CaseFile);
+        Assert.False(commandRead.CaseFile.KillerReleaseState.IsReleased);
         Assert.NotNull(playerRead);
         AssertGeneratedFactsEqual(generatedCaseFile, playerRead!.CaseFile);
+        Assert.False(playerRead.CaseFile.KillerReleaseState.IsReleased);
         var playerDto = GameSessionMapper.ToDto(playerRead);
         Assert.Equal(generatedCaseFile.OpeningLead.Description, playerDto.CaseFile.OpeningLead);
         Assert.Equal(
@@ -2128,6 +2135,9 @@ public sealed class EfGameSessionRepositoryTests
                 .Select(suspect => suspect.Name),
             playerDto.CaseFile.DiscoveredSuspects.Select(suspect => suspect.Name));
         Assert.NotNull(journalRead);
+        Assert.Equal(generatedCaseFile.AccusationId, journalRead!.AccusationId);
+        Assert.Equal(generatedCaseFile.KillerReleaseProgress, journalRead.KillerReleaseState.Progress);
+        Assert.False(journalRead.KillerReleaseState.IsReleased);
         var journalDto = JournalMapper.ToDto(journalRead!);
         Assert.Equal(generatedCaseFile.OpeningLead.Description, journalDto.CaseFile.OpeningLead);
         Assert.Equal(
@@ -4578,7 +4588,7 @@ public sealed class EfGameSessionRepositoryTests
             SuspectStatus.AtLarge);
 
         return new CaseFile(
-            accusation: null,
+            accusation: new SuspectId("suspect-1"),
             suspects: new[] { firstSuspect, secondSuspect },
             trueCulpritId: secondSuspect.Id,
             openingLead: CaseOpeningLead.Create("Find the outlaw with a missing left ear."),
@@ -4775,6 +4785,12 @@ public sealed class EfGameSessionRepositoryTests
             case "release-threshold":
                 payload["killerReleaseThreshold"] = 2;
                 break;
+            case "accusation":
+                payload["accusationId"] = "suspect-2";
+                break;
+            case "release-progress":
+                payload["killerReleaseProgress"] = 4;
+                break;
             case "turf-assignment":
                 turfAssignments[0]!["turfTownId"] = "silvercreek";
                 break;
@@ -4790,6 +4806,8 @@ public sealed class EfGameSessionRepositoryTests
     private static void AssertGeneratedFactsEqual(CaseFileSnapshot expected, CaseFile actual)
     {
         Assert.Equal(expected.TrueCulpritId, actual.TrueCulpritId.Value);
+        Assert.Equal(expected.AccusationId, actual.Accusation?.Value);
+        Assert.Equal(expected.KillerReleaseProgress, actual.KillerReleaseProgress);
         Assert.Equal(expected.Suspects.Count, actual.Suspects.Count);
         for (var index = 0; index < expected.Suspects.Count; index++)
         {

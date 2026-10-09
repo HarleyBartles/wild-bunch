@@ -200,6 +200,8 @@ These linked records keep an agreed 0.1.0 retirement or repair distinct from a l
 
 **Disposition:** Required supporting capability for stable 0.1.0; not a player feature by itself.
 
+**Dated evidence, 2026-10-09, row 07 CaseFile genesis cache:** The current CaseFile cache must match the latest `CaseFileGenerated` snapshot's nullable `AccusationId` and initial `KillerReleaseProgress`, as well as the generated facts already checked. PostgreSQL mutations to a different valid roster accusation and to the release threshold recover through command, player and journal loads; reads preserve stored state, and a later legal purchase repairs the component. This covers only values established at generation. It does not implement later accusation or release progression, confrontation/settlement history, five-of-six gameplay, or broader event compatibility.
+
 ### PLAT-002 - Public identity and session isolation
 
 **Purpose and scope:** A future public browser deployment needs a player identity associated with saved playthroughs, Google sign-in as the selected starting provider, and server-side ownership checks so one player cannot read or act on another player's game. The pre-alpha local baseline has no public login or multi-user isolation and cannot be exposed as the public game until those boundaries exist.
