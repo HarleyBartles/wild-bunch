@@ -42,12 +42,12 @@
 
 **Produces:** Current owners record the exact immutable generation-fact recovery, its remaining mutable-state and compatibility limits, the completed plan is retired, row 07 points at this plan and `.39`, and only `Directory.Build.props` advances the application version.
 
-- [ ] Record PR #223's source, merge, matching tree, exact-head hosted gate, review outcome, bounded behavior and `.38` identity in the roadmap, PLAT-001 and persistence follow-up.
-- [ ] Classify the entire generated-facts plan against its code, eleven PostgreSQL mutation rows, focused healthy comparator, read no-writeback, privacy, ordinary-save repair, review and hosted gate; preserve mutable CaseFile and broader history gaps in current owners, then remove the completed plan and stale links.
-- [ ] Add the settled discovered-suspect membership rule to the spec and update PLAT-001/follow-up to identify valid same-ID membership drift as the next open cache gap; preserve the limit that only generated genesis IDs and successfully revealed generated public clues establish membership.
-- [ ] Update the row 07 active-plan pointer and target version to this plan and `.39`; preserve row 07 as executing because other persistence and compatibility gaps remain.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.39`; do not commit generated web identity output or duplicate version fields.
-- [ ] Inspect the complete staged successor disposition and `git diff --cached --check`, then commit it as `docs: retire generated facts plan and record delivery`; let the normal check-only hook validate the staged candidate.
+- [x] Record PR #223's source, merge, matching tree, exact-head hosted gate, review outcome, bounded behavior and `.38` identity in the roadmap, PLAT-001 and persistence follow-up.
+- [x] Classify the entire generated-facts plan against its code, eleven PostgreSQL mutation rows, focused healthy comparator, read no-writeback, privacy, ordinary-save repair, review and hosted gate; preserve mutable CaseFile and broader history gaps in current owners, then remove the completed plan and stale links.
+- [x] Add the settled discovered-suspect membership rule to the spec and update PLAT-001/follow-up to identify valid same-ID membership drift as the next open cache gap; preserve the limit that only generated genesis IDs and successfully revealed generated public clues establish membership.
+- [x] Update the row 07 active-plan pointer and target version to this plan and `.39`; preserve row 07 as executing because other persistence and compatibility gaps remain.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.39`; do not commit generated web identity output or duplicate version fields.
+- [x] Inspect the complete staged successor disposition and `git diff --cached --check`, then commit it as `docs: retire generated facts plan and record delivery`; let the normal check-only hook validate the staged candidate.
 
 **Expected:** PR #223's completed and reviewed scope is durably recorded; its plan is retired only after promotion; the spec states how event-established suspect membership is derived; row 07 points at this plan; and the sole authored application version advances once.
 
