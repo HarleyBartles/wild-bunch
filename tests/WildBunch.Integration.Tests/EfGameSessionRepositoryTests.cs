@@ -1184,6 +1184,8 @@ public sealed class EfGameSessionRepositoryTests
             Assert.Equal(expectedDiaryRows, diaryRows.Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion)).ToArray());
         }
 
+
+
         Assert.True(recovered.AdvanceJourneyDay().Success);
         await PersistAsync(recoveryRepository, recoveryUnitOfWork, recovered);
 
@@ -1199,6 +1201,237 @@ public sealed class EfGameSessionRepositoryTests
         var fresh = await freshRepository.GetByIdAsync(session.Id);
         Assert.NotNull(fresh);
         AssertJourneyFacts(recovered.Journey!.ToSnapshot(), fresh!.Journey!.ToSnapshot());
+    }
+
+    [Theory]
+    [InlineData("missing-row")]
+    [InlineData("null-root")]
+    public async Task ReadModel_DamagedTownVisitCacheRecoversWithoutWritingBack(string damage)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSession();
+        Assert.True(session.LookAroundSaloon().Success);
+        var spotted = Assert.Single(session.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+        var expectedTownId = session.CurrentTownVisit.CurrentTownId;
+        var expectedVisitNumber = session.CurrentTownVisit.CurrentTownState.VisitNumber;
+        var expectedDescriptor = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor;
+        var expectedSuspectId = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
+        var expectedKind = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind;
+        Assert.Equal(expectedTownId, spotted.TownId);
+        Assert.Equal(expectedDescriptor, spotted.Descriptor);
+        Assert.Equal(expectedSuspectId, spotted.SuspectId);
+        Assert.Equal(expectedKind, spotted.PersonOfInterestKind);
+        Assert.Contains(InvestigationSourceKind.SaloonLookAround, session.CurrentTownVisit.SpentInvestigationSources);
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        int? originalComponentVersion;
+        string? damagedPayload = null;
+        (long? SnapshotVersion, long StreamVersion, long? DiaryStreamVersion, int? DiaryDayCount) expectedEnvelope;
+        (long Sequence, Guid EventId, string EventType, string PayloadJson, Guid? CorrelationId, Guid? CausationId, int SchemaVersion)[] expectedEvents;
+        (int Sequence, string PayloadJson, int SchemaVersion)[] expectedDiaryRows;
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+            originalComponentVersion = component.ComponentVersion;
+            if (damage == "missing-row")
+            {
+                context.GameSessionComponents.Remove(component);
+            }
+            else
+            {
+                component.PayloadJson = "null";
+                damagedPayload = component.PayloadJson;
+            }
+
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            expectedEnvelope = (
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount);
+            var events = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new
+                {
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion
+                })
+                .ToArrayAsync();
+            expectedEvents = events.Select(storedEvent => (
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion))
+                .ToArray();
+            var diaryRows = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .OrderBy(day => day.Sequence)
+                .ToArrayAsync();
+            expectedDiaryRows = diaryRows.Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion)).ToArray();
+
+            await context.SaveChangesAsync();
+        }
+
+        void AssertVisitFacts(TownVisitState? actual)
+        {
+            Assert.NotNull(actual);
+            Assert.Equal(expectedTownId, actual!.CurrentTownId);
+            Assert.Equal(expectedVisitNumber, actual.CurrentTownState.VisitNumber);
+            Assert.Contains(InvestigationSourceKind.SaloonLookAround, actual.SpentInvestigationSources);
+            Assert.Equal(expectedDescriptor, actual.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+            Assert.Equal(expectedSuspectId, actual.CurrentTownState.ActiveSaloonPersonOfInterestId);
+            Assert.Equal(expectedKind, actual.CurrentTownState.ActiveSaloonPersonOfInterestKind);
+        }
+
+        await using (var context = fixture.CreateContext())
+        {
+            var readRepository = new EfGameSessionReadRepository(context, CreateReadStoreLoader());
+            var readModel = await readRepository.GetByIdAsync(session.Id);
+            Assert.NotNull(readModel);
+            AssertVisitFacts(readModel!.TownVisitState);
+        }
+
+        var commandRepository = CreateRepository(fixture, out _);
+        var recovered = await commandRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        AssertVisitFacts(recovered!.CurrentTownVisit);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.AsNoTracking().SingleOrDefaultAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+            if (damage == "missing-row")
+            {
+                Assert.Null(component);
+            }
+            else
+            {
+                Assert.NotNull(component);
+                Assert.Equal(originalComponentVersion, component!.ComponentVersion);
+                Assert.Equal(damagedPayload, component.PayloadJson);
+            }
+
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            Assert.Equal(expectedEnvelope, (
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount));
+            var events = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new
+                {
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion
+                })
+                .ToArrayAsync();
+            var actualEvents = events.Select(storedEvent => (
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion))
+                .ToArray();
+            Assert.Equal(expectedEvents, actualEvents);
+            var diaryRows = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .OrderBy(day => day.Sequence)
+                .ToArrayAsync();
+            Assert.Equal(expectedDiaryRows, diaryRows.Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion)).ToArray());
+        }
+
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var repairSession = await repairRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(repairSession);
+        var foodOffer = new TownStoreCatalogResolver()
+            .Resolve(repairSession!.World.GetTown(repairSession.Player.CurrentTownId!.Value))
+            .Offers.Single(offer => offer.ItemKind == DomainItemKind.Food);
+        Assert.True(repairSession.Purchase(foodOffer, 1).Success);
+        await PersistAsync(repairRepository, repairUnitOfWork, repairSession);
+
+        var freshRepository = CreateRepository(fixture, out _);
+        var repaired = await freshRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(repaired);
+        AssertVisitFacts(repaired!.CurrentTownVisit);
+        await using var repairedContext = fixture.CreateContext();
+        var repairedComponent = await repairedContext.GameSessionComponents.AsNoTracking().SingleAsync(candidate =>
+            candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+        Assert.Equal(ProjectionVersions.ForComponent("townVisitState"), repairedComponent.ComponentVersion);
+    }
+
+    [Theory]
+    [InlineData("missing-row")]
+    [InlineData("null-root")]
+    public async Task DamagedTownVisitCacheDoesNotHideInvalidEventHistory(string damage)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSession();
+        Assert.True(session.LookAroundSaloon().Success);
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+            if (damage == "missing-row")
+            {
+                context.GameSessionComponents.Remove(component);
+            }
+            else
+            {
+                component.PayloadJson = "null";
+            }
+
+            var gameStarted = await context.StoredEvents.SingleAsync(storedEvent =>
+                storedEvent.StreamId == session.Id.Value && storedEvent.EventType == nameof(GameStarted));
+            gameStarted.PayloadJson = "{}";
+            await context.SaveChangesAsync();
+        }
+
+        var commandRepository = CreateRepository(fixture, out _);
+        await Assert.ThrowsAsync<System.Text.Json.JsonException>(() => commandRepository.GetByIdAsync(session.Id));
+
+        await using var readContext = fixture.CreateContext();
+        var readRepository = new EfGameSessionReadRepository(readContext, CreateReadStoreLoader());
+        await Assert.ThrowsAsync<System.Text.Json.JsonException>(() => readRepository.GetByIdAsync(session.Id));
     }
 
     [Theory]
@@ -1507,6 +1740,7 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(readModel);
         Assert.Equal(StartFlowPhase.StartingTownSelected, readModel!.StartFlowPhase);
+        Assert.Null(readModel.TownVisitState);
     }
 
     [Fact]

@@ -133,6 +133,12 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
+        if (!store.Components.ContainsKey(GameSessionComponentNames.TownVisitState)
+            && TownVisitCacheRecovery.HasStartedGame(store.AllEvents))
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
         try
         {
             return ToAggregate(store);

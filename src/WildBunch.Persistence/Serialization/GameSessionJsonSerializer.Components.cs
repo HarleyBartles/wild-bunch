@@ -176,9 +176,24 @@ public sealed partial class GameSessionJsonSerializer
 
     internal TownVisitState DeserializeTownVisitState(string json)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<TownVisitStateSnapshot>(json);
-        return snapshot.ToDomain();
+        try
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(json);
+            var snapshot = Deserialize<TownVisitStateSnapshot>(json)
+                ?? throw new InvalidOperationException("TownVisitState cache root cannot be null.");
+            return snapshot.ToDomain();
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "townVisitState",
+                "TownVisitState component cache could not be decoded.",
+                exception);
+        }
     }
 
     public string SerializeCurrentActionContext(TownActionContext context, TownId? townId)
