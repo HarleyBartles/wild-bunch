@@ -41,8 +41,8 @@
 
 **Produces:** A committed plan for missing and malformed `currentActionContext` recovery, before changing predecessor artifacts, version identity, tests or implementation.
 
-- [ ] Confirm the exact context and clock event behavior from `GameSession.EnterActionContext`, `TownActionContextEntered`, event replay, command loading and the production PostgreSQL fixture.
-- [ ] Commit only this plan as the first branch commit; record its SHA in this plan after commit.
+- [x] Confirm the exact context and clock event behavior from `GameSession.EnterActionContext`, `TownActionContextEntered`, event replay, command loading and the production PostgreSQL fixture.
+- [x] Commit only this plan as the first branch commit; record its SHA in this plan after commit. Plan-only commit: `f245e23df00092dd1d05fef0ee48f5b2d78c13a2`.
 
 ### Task 2: Retire the completed predecessor and record verified delivery
 
@@ -52,12 +52,12 @@
 
 **Produces:** A truthful PR #210 delivery record, a narrow completion disposition for the retired predecessor, and `0.1.0-dev.26`.
 
-- [ ] In the first substantive commit, record PR #210's target, source head, merge commit and exact-head hosted gate result in row 07; record the delivered TownVisit missing-row/null-root behavior and retire `.agents/plans/2026-10-09-town-visit-cache-recovery.md` with stale links removed.
-- [ ] Verify and record that PS-06 diary partial-row recovery was already delivered in PR #203 (`66165171b92a9f578d7ee43a2c9a473ed98c9ad7`, merge `2b6472cafac1869b0d94ddbe13891b1364424052`, canonical gate `37865661644`) by `ReadModel_PartialDiaryDayCacheRebuildsFromEventsWithoutWritingBack`; do not plan or implement duplicate diary recovery.
-- [ ] Keep row 07 open for the current-context gap and other unhandled nested or optional cache cases; do not claim comprehensive optional-cache correctness.
-- [ ] Confirm ADR-0028 remains truthful because this slice applies its existing event-authority and rebuildable-cache choice; no ADR or feature-matrix change is required.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.25` to `0.1.0-dev.26`; do not edit generated web identity output.
-- [ ] Inspect and commit the intended successor-artifact and version diff before adding or changing tests and implementation.
+- [x] In the first substantive commit, record PR #210's target, source head, merge commit and exact-head hosted gate result in row 07; record the delivered TownVisit missing-row/null-root behavior and retire `.agents/plans/2026-10-09-town-visit-cache-recovery.md` with stale links removed.
+- [x] Verify and record that PS-06 diary partial-row recovery was already delivered in PR #203 (`66165171b92a9f578d7ee43a2c9a473ed98c9ad7`, merge `2b6472cafac1869b0d94ddbe13891b1364424052`, canonical gate `37865661644`) by `ReadModel_PartialDiaryDayCacheRebuildsFromEventsWithoutWritingBack`; do not plan or implement duplicate diary recovery.
+- [x] Keep row 07 open for the current-context gap and other unhandled nested or optional cache cases; do not claim comprehensive optional-cache correctness.
+- [x] Confirm ADR-0028 remains truthful because this slice applies its existing event-authority and rebuildable-cache choice; no ADR or feature-matrix change is required.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.25` to `0.1.0-dev.26`; do not edit generated web identity output.
+- [x] Inspect and commit the intended successor-artifact and version diff before adding or changing tests and implementation.
 
 ### Task 3: Witness action-context cache loss at PostgreSQL boundaries
 
