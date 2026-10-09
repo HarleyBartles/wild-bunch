@@ -151,7 +151,7 @@ public sealed class GameSessionReadStoreLoader
                 GameSessionComponentNames.CaseFile,
                 _payloadLoader,
                 store.AllEvents));
-            if (!CaseFileKnownClueCacheRecovery.MatchesEventKnownClues(store.AllEvents, caseFile))
+            if (!CaseFileClueCacheRecovery.MatchesEventClueCollections(store.AllEvents, caseFile))
             {
                 return CreateReadStateFromEvents(store, logEntries);
             }

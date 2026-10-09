@@ -1914,21 +1914,170 @@ public sealed class EfGameSessionRepositoryTests
         var session = CreateSession(publicClues: new[] { unlearnedClue });
 
         Assert.Empty(session.CaseFile.KnownClues);
-        Assert.True(CaseFileKnownClueCacheRecovery.MatchesEventKnownClues(session.AllEvents, session.CaseFile));
+        Assert.True(CaseFileClueCacheRecovery.MatchesEventClueCollections(session.AllEvents, session.CaseFile));
     }
 
     [Fact]
-    public void CaseFileKnownClueCacheMatchesExactPayloadAndOrderFromHistory()
+    public async Task ReadModel_CaseFileCacheSameIdAlteredPublicCluePayloadRecoversFromEventsWithoutWritingBack()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var expectedClue = CreatePayloadCacheClue();
+        var session = CreateSession(publicClues: new[] { expectedClue });
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            var clue = payload["publicClues"]!.AsArray().Single()!.AsObject();
+            clue["description"] = "The altered cache invents a different witness statement.";
+            clue["anchors"]!["subjects"]![0]!["feature"] = "a silver spur";
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var expectedStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandRead = await repairRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        AssertCluePayloadEqual(expectedClue, Assert.Single(commandRead!.CaseFile.PublicClues));
+        Assert.NotNull(playerRead);
+        AssertCluePayloadEqual(expectedClue, Assert.Single(playerRead!.CaseFile.PublicClues));
+        Assert.NotNull(journalRead);
+        var playerDtoJson = JsonSerializer.Serialize(GameSessionMapper.ToDto(playerRead));
+        Assert.DoesNotContain(expectedClue.Id.Value, playerDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedClue.Description, playerDtoJson, StringComparison.Ordinal);
+        var journalJson = JsonSerializer.Serialize(journalRead);
+        Assert.DoesNotContain(expectedClue.Id.Value, journalJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(expectedClue.Description, journalJson, StringComparison.Ordinal);
+
+        var actualStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(expectedStoredState.ComponentVersion, actualStoredState.ComponentVersion);
+        Assert.Equal(expectedStoredState.ComponentPayload, actualStoredState.ComponentPayload);
+        Assert.Equal(expectedStoredState.SnapshotVersion, actualStoredState.SnapshotVersion);
+        Assert.Equal(expectedStoredState.StreamVersion, actualStoredState.StreamVersion);
+        Assert.Equal(expectedStoredState.Events, actualStoredState.Events);
+        Assert.Equal(expectedStoredState.Diary, actualStoredState.Diary);
+
+        var investigationCount = commandRead.AllEvents.OfType<InvestigationPerformed>().Count();
+        Assert.True(commandRead.GatherLocalGossip().Success);
+        var revealedEvent = Assert.Single(commandRead.UncommittedEvents.OfType<InvestigationPerformed>());
+        Assert.Equal(expectedClue.Id, revealedEvent.ClueId);
+        Assert.Contains(expectedClue.Description, revealedEvent.Message, StringComparison.Ordinal);
+        Assert.Equal(investigationCount + 1, commandRead.AllEvents.OfType<InvestigationPerformed>().Count());
+        await PersistAsync(repairRepository, repairUnitOfWork, commandRead);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        AssertCluePayloadEqual(expectedClue, Assert.Single(fresh!.CaseFile.KnownClues));
+        Assert.Empty(fresh.CaseFile.PublicClues);
+        Assert.Equal(investigationCount + 1, fresh.AllEvents.OfType<InvestigationPerformed>().Count());
+    }
+
+    [Fact]
+    public async Task ReadModel_CaseFileCacheReorderedPublicCluesRecoversFromEvents()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var firstClue = new Clue(
+            new ClueId("first-public-gossip-clue"),
+            ClueKind.Whereabouts,
+            "The first witness saw a rider leave by the rail spur.",
+            new[] { new SuspectId("suspect-1") },
+            InvestigationTargetKind.GangMember,
+            InvestigationSourceKind.LocalGossip,
+            anchors: new ClueAnchors(
+                subjects: new[] { new ClueSubjectAnchor("first rider", Feature: "red hat") }));
+        var secondClue = new Clue(
+            new ClueId("second-public-gossip-clue"),
+            ClueKind.Whereabouts,
+            "The second witness saw a rider leave by the north road.",
+            new[] { new SuspectId("suspect-1") },
+            InvestigationTargetKind.GangMember,
+            InvestigationSourceKind.LocalGossip,
+            anchors: new ClueAnchors(
+                subjects: new[] { new ClueSubjectAnchor("second rider", Feature: "blue coat") }));
+        var publicClues = new[] { firstClue, secondClue };
+        var session = CreateSession(publicClues: publicClues);
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            payload["publicClues"] = new JsonArray(payload["publicClues"]!.AsArray()
+                .Reverse().Select(clue => clue!.DeepClone()).ToArray());
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var expectedStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandRead = await repairRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        Assert.Equal(new[] { firstClue.Id, secondClue.Id }, commandRead!.CaseFile.PublicClues.Select(clue => clue.Id));
+        Assert.NotNull(playerRead);
+        Assert.Equal(new[] { firstClue.Id, secondClue.Id }, playerRead!.CaseFile.PublicClues.Select(clue => clue.Id));
+        Assert.NotNull(journalRead);
+        var journalJson = JsonSerializer.Serialize(journalRead);
+        Assert.DoesNotContain(firstClue.Id.Value, journalJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(secondClue.Id.Value, journalJson, StringComparison.Ordinal);
+
+        var actualStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(expectedStoredState.ComponentVersion, actualStoredState.ComponentVersion);
+        Assert.Equal(expectedStoredState.ComponentPayload, actualStoredState.ComponentPayload);
+        Assert.Equal(expectedStoredState.SnapshotVersion, actualStoredState.SnapshotVersion);
+        Assert.Equal(expectedStoredState.StreamVersion, actualStoredState.StreamVersion);
+        Assert.Equal(expectedStoredState.Events, actualStoredState.Events);
+        Assert.Equal(expectedStoredState.Diary, actualStoredState.Diary);
+
+        Assert.True(commandRead.GatherLocalGossip().Success);
+        var revealedEvent = Assert.Single(commandRead.UncommittedEvents.OfType<InvestigationPerformed>());
+        Assert.Equal(secondClue.Id, revealedEvent.ClueId);
+        Assert.Contains(secondClue.Description, revealedEvent.Message, StringComparison.Ordinal);
+        await PersistAsync(repairRepository, repairUnitOfWork, commandRead);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(secondClue.Id, Assert.Single(fresh!.CaseFile.KnownClues).Id);
+        Assert.Equal(new[] { firstClue.Id }, fresh.CaseFile.PublicClues.Select(clue => clue.Id));
+    }
+
+    [Fact]
+    public void CaseFileClueCacheMatchesExactPayloadAndOrderFromHistory()
     {
         var expectedClue = CreatePayloadCacheClue();
         var session = CreateSession(includeKnownClue: true, publicClues: new[] { expectedClue });
 
+        Assert.True(CaseFileClueCacheRecovery.MatchesEventClueCollections(session.AllEvents, session.CaseFile));
         var result = session.GatherLocalGossip();
 
         Assert.True(result.Success);
         Assert.Equal(new[] { "known-legacy-clue", expectedClue.Id.Value },
             session.CaseFile.KnownClues.Select(clue => clue.Id.Value));
-        Assert.True(CaseFileKnownClueCacheRecovery.MatchesEventKnownClues(session.AllEvents, session.CaseFile));
+        Assert.Empty(session.CaseFile.PublicClues);
+        Assert.True(CaseFileClueCacheRecovery.MatchesEventClueCollections(session.AllEvents, session.CaseFile));
     }
 
     [Fact]
@@ -4034,6 +4183,51 @@ public sealed class EfGameSessionRepositoryTests
             new[] { new SuspectId("suspect-1") },
             InvestigationTargetKind.GangMember,
             InvestigationSourceKind.NoticeBoard);
+
+    private static async Task<(int ComponentVersion, string ComponentPayload, long? SnapshotVersion, long StreamVersion,
+        (long Sequence, Guid EventId, string EventType, string PayloadJson, int SchemaVersion)[] Events,
+        (int Sequence, string PayloadJson, int SchemaVersion)[] Diary)> CaptureCaseFileCacheRecoveryStateAsync(
+        PostgreSqlPersistenceFixture fixture,
+        GameSessionId sessionId)
+    {
+        await using var context = fixture.CreateContext();
+        var component = await context.GameSessionComponents.AsNoTracking().SingleAsync(candidate =>
+            candidate.SessionId == sessionId.Value && candidate.ComponentName == "caseFile");
+        var envelope = await context.GameSessions.AsNoTracking()
+            .Where(entity => entity.Id == sessionId.Value)
+            .Select(entity => new { entity.SnapshotVersion, entity.StreamVersion })
+            .SingleAsync();
+        var events = await context.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == sessionId.Value)
+            .OrderBy(storedEvent => storedEvent.Sequence)
+            .Select(storedEvent => new
+            {
+                storedEvent.Sequence,
+                storedEvent.EventId,
+                storedEvent.EventType,
+                storedEvent.PayloadJson,
+                storedEvent.SchemaVersion
+            })
+            .ToArrayAsync();
+        var diaryRows = await context.GameSessionDiaryDays.AsNoTracking()
+            .Where(day => day.SessionId == sessionId.Value)
+            .OrderBy(day => day.Sequence)
+            .Select(day => new { day.Sequence, day.PayloadJson, day.SchemaVersion })
+            .ToArrayAsync();
+        return (
+            component.ComponentVersion,
+            component.PayloadJson,
+            envelope.SnapshotVersion,
+            envelope.StreamVersion,
+            events.Select(storedEvent => (
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.SchemaVersion))
+                .ToArray(),
+            diaryRows.Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion)).ToArray());
+    }
 
     private static void AssertCluePayloadEqual(Clue expected, Clue actual)
     {
