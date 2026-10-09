@@ -150,9 +150,24 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
+        if (!store.Components.ContainsKey(GameSessionComponentNames.CompletedJourneyHistory)
+            && CompletedJourneyHistoryCacheRecovery.HasAcknowledgedHistory(store.AllEvents))
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
         try
         {
-            return ToAggregate(store);
+            var aggregate = ToAggregate(store);
+            if (!CompletedJourneyHistoryCacheRecovery.MatchesAcknowledgedHistory(
+                    store.AllEvents,
+                    aggregate.CompletedJourneyHistory,
+                    _serializer))
+            {
+                return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+            }
+
+            return aggregate;
         }
         catch (InvalidComponentCacheShapeException)
         {
@@ -420,9 +435,24 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey, _payloadLoader, store.AllEvents);
         var journey = journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson);
         var completedJourneyHistoryJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CompletedJourneyHistory, _payloadLoader, store.AllEvents);
-        var completedJourneyHistory = completedJourneyHistoryJson is null
-            ? Array.Empty<TravelJourneySnapshot>()
-            : _serializer.DeserializeCompletedJourneyHistory(completedJourneyHistoryJson);
+        IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory;
+        if (completedJourneyHistoryJson is null)
+        {
+            completedJourneyHistory = Array.Empty<TravelJourneySnapshot>();
+        }
+        else
+        {
+            try
+            {
+                completedJourneyHistory = _serializer.DeserializeCompletedJourneyHistory(completedJourneyHistoryJson);
+            }
+            catch (InvalidComponentCacheShapeException exception) when (
+                exception.ComponentName == GameSessionComponentNames.CompletedJourneyHistory
+                && !CompletedJourneyHistoryCacheRecovery.HasAcknowledgedHistory(store.AllEvents))
+            {
+                completedJourneyHistory = Array.Empty<TravelJourneySnapshot>();
+            }
+        }
         var wantedSuspectPresenceLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.WantedSuspectPresenceLedger, _payloadLoader, store.AllEvents);
         var wantedSuspectPresenceEntries = wantedSuspectPresenceLedgerJson is null
             ? Array.Empty<WantedSuspectPresenceEntry>()
