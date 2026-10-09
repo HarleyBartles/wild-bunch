@@ -182,10 +182,63 @@ public sealed class MigrationTests
         }
 
         Assert.DoesNotContain("StateJson", columns);
-        Assert.Contains("SchemaVersion", columns);
         Assert.Contains("GameDifficulty", columns);
         Assert.Contains("TravelDiaryProjectionStreamVersion", columns);
         Assert.Contains("TravelDiaryProjectionDayCount", columns);
+    }
+
+    [Fact]
+    public async Task RemovingUnusedSchemaArtifactsPreservesStoredSession()
+    {
+        const string priorMigration = "20261009001543_AddTravelDiaryProjectionWatermark";
+        using var database = new PostgreSqlTestDatabase();
+
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .Options;
+        var session = CreateSession();
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync(priorMigration);
+
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(session);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+        }
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.MigrateAsync();
+
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+            var reloaded = await repository.GetByIdAsync(session.Id);
+
+            Assert.NotNull(reloaded);
+            Assert.Equal(session.Player.Name, reloaded!.Player.Name);
+            Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+            Assert.Equal(session.Version, reloaded.Version);
+            Assert.Equal(
+                session.AllEvents.Count,
+                await context.StoredEvents.CountAsync(storedEvent => storedEvent.StreamId == session.Id.Value));
+        }
     }
 
     private static async Task AssertJsonbColumnTypesAsync(NpgsqlConnection connection)

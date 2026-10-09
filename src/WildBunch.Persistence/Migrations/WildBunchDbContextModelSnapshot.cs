@@ -80,9 +80,6 @@ namespace WildBunch.Persistence.Migrations
                     b.Property<int>("GameDifficulty")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SchemaVersion")
-                        .HasColumnType("integer");
-
                     b.Property<string>("SeedCode")
                         .HasMaxLength(36)
                         .HasColumnType("character varying(36)");
@@ -147,9 +144,6 @@ namespace WildBunch.Persistence.Migrations
                     b.HasKey("StreamId", "Sequence");
 
                     b.HasIndex("EventId")
-                        .IsUnique();
-
-                    b.HasIndex("StreamId", "Sequence")
                         .IsUnique();
 
                     b.ToTable("GameSessionStoredEvents", (string)null);
