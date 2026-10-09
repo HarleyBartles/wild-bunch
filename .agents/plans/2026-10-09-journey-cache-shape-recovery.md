@@ -24,7 +24,7 @@
 
 ## Review Focus
 
-- A nested Journey cache shape can deserialize into a plausible but incomplete object without throwing; the test must damage a structurally required route field and compare independently captured journey facts.
+- A nested Journey cache shape can deserialize into a plausible but incomplete object without throwing; the test must omit a structurally required route field and compare independently captured journey facts.
 - A malformed cache can tempt a broad exception catch that hides event-codec or replay failures; the negative case must corrupt authoritative Journey history and observe that failure.
 - Journey absence is a valid state outside travel; retain the normal no-Journey read behavior and do not make absent optional rows globally trigger replay.
 
@@ -64,12 +64,12 @@
 **Produces:** Red behavior proof for command/query recovery, no-writeback and fail-closed history.
 
 - [x] Start and persist an active Journey through the production aggregate and repository; capture sequence, route endpoints, remaining distance/days, and any pending encounter facts from the accepted Journey event before mutating storage.
-- [x] Change only the current Journey component's nested `routeProfile` to null while preserving event rows and all unrelated component, envelope and diary data.
+- [x] Omit only the current Journey component's nested `routeProfile` while preserving event rows and all unrelated component, envelope and diary data.
 - [x] Load through fresh command and player-read repository contexts; assert the independently captured in-progress Journey facts rather than a same-cache equality oracle.
 - [x] Assert both reads leave the damaged Journey payload and component version, event rows, snapshot/stream positions and diary metadata unchanged.
 - [x] Save after a legal travel command through the existing Unit of Work; assert the persisted Journey row has the current component version and expected event-established state, then load fresh and verify the same result.
 - [x] Add a negative where the Journey cache is malformed and its required `JourneyStarted` event payload cannot be decoded; assert the event-history error remains visible.
-- [x] Run the new tests before production changes and observe failure at the original nested-deserialization or wrong-state boundary, not at fixture setup. The first scenario failed with `NullReferenceException` in `TravelRouteProfileSnapshot.ToDomain`; the event-history negative already failed as expected.
+- [x] Run the new tests before production changes and observe failure at the original nested-deserialization or wrong-state boundary, not at fixture setup. The explicit-null scenario first failed with `NullReferenceException` in `TravelRouteProfileSnapshot.ToDomain`; after changing the case to omitted property, it failed with an empty route trail ID instead of the event-established `trail-preview`. The event-history negative already failed as expected.
 
 ### Task 4: Recover a malformed present Journey cache from events
 
@@ -79,7 +79,7 @@
 
 **Produces:** Exact event-backed Journey state on command and player-read paths, with read-only recovery and normal-save repair.
 
-- [x] Introduce or extend the narrow typed cache-shape classification so malformed present Journey payloads enter the existing replay fallback without broadening it to event, cancellation or infrastructure failures.
+- [x] Introduce or extend the narrow typed cache-shape classification so omitted or null required `routeProfile` values in present Journey payloads enter the existing replay fallback without broadening it to event, cancellation or infrastructure failures.
 - [x] Apply identical classification at command aggregate and player-read model boundaries; keep legitimately absent Journey rows nullable and unchanged.
 - [x] Preserve cache/event/envelope no-writeback during recovery, allow a later legal save to repair the component, and keep unreplayable event history explicit.
 - [x] Run focused PostgreSQL red/green cases plus existing Journey round-trip and pending-encounter persistence tests; verify an ordinary no-Journey load still returns no active Journey. `Journey|TravelDiary|MalformedJourneyCache` integration filter passed 8/8.

@@ -71,7 +71,7 @@ public sealed partial class GameSessionJsonSerializer
         public string DestinationTownId { get; set; } = string.Empty;
         public string OriginTownName { get; set; } = string.Empty;
         public string DestinationTownName { get; set; } = string.Empty;
-        public TravelRouteProfileSnapshot RouteProfile { get; set; } = new();
+        public TravelRouteProfileSnapshot? RouteProfile { get; set; }
         public TravelMode TravelMode { get; set; }
         public JourneyStatus Status { get; set; }
         public bool MountedTravelAvailable { get; set; }
@@ -141,7 +141,7 @@ public sealed partial class GameSessionJsonSerializer
                 new TownId(DestinationTownId),
                 OriginTownName,
                 DestinationTownName,
-                RouteProfile.ToDomain(),
+                RouteProfile?.ToDomain() ?? throw new InvalidOperationException("Journey snapshot must contain a route profile."),
                 TravelMode,
                 Status,
                 MountedTravelAvailable,

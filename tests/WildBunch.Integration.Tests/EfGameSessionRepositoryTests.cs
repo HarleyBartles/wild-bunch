@@ -1013,7 +1013,7 @@ public sealed class EfGameSessionRepositoryTests
                 component.SessionId == session.Id.Value && component.ComponentName == "journey");
             componentVersion = journey.ComponentVersion;
             var payload = JsonNode.Parse(journey.PayloadJson)!.AsObject();
-            payload["routeProfile"] = null;
+            payload.Remove("routeProfile");
             journey.PayloadJson = payload.ToJsonString();
             damagedPayload = journey.PayloadJson;
 
