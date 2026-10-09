@@ -68,7 +68,7 @@
 - [x] Remove `RegisteredPayloadTypes` and its nonbehavioral nonempty assertion; keep the behavior test that every concrete `IEventUpcaster` in the Persistence assembly appears in DI and ensure registry construction validates registered chains.
 - [x] Change `CreateDefaultUpcasters` to return event upcasters and update stale comments that claim event upcasting is still hypothetical. Keep the payload loader and repository constructor behavior unchanged.
 - [x] Append dated PS-12 and test-follow-up dispositions explaining the removed projection capability, unreachable private-state test, preserved constructor and event-chain guarantees, and unchanged projection rebuild. Leave ADR-0028 unchanged.
-- [ ] Run the focused upcaster/version selection through the command bus, then stage intended changes and let the normal check-only commit hook run the complete fail-fast gate. Confirm its web build generated `src/WildBunch.Web/dist/version.json` with `0.1.0-dev.45`; do not run `ci --check` immediately before the hooked commit.
+- [x] Run the focused upcaster/version selection through the command bus, then stage intended changes and let the normal check-only commit hook run the complete fail-fast gate. Confirm its web build generated `src/WildBunch.Web/dist/version.json` with `0.1.0-dev.45`; do not run `ci --check` immediately before the hooked commit.
 
 **Expected:** Only event upcasters can enter the registry. Duplicate or incomplete chains fail at construction, valid event chains remain ordered and versioned, production event loading remains intact, and projection caches continue to rebuild from events through their existing path.
 
