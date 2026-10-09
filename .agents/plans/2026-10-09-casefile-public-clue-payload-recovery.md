@@ -39,13 +39,13 @@
 
 **Produces:** Row 07 and PLAT-001 record PR #220's exact known-clue payload/order outcome and its limits; this plan becomes the row 07 active plan; the persistence follow-up records PR #220 evidence; the completed plan and stale links are retired; `Directory.Build.props` declares `0.1.0-dev.36`.
 
-- [ ] Confirm the clean branch is based on current `origin/develop` PR #220, the source/merge trees match, the hosted canonical gate and review evidence remain available, and `Directory.Build.props` declares `0.1.0-dev.35`.
-- [ ] Read the complete predecessor plan and compare every criterion with PR #220's merged implementation, tests, hosted gate, and review. Classify exact known-clue payload/order recovery, healthy/empty state, no-writeback, legal-save repair, and unrevealed clue privacy as delivered; retain public-clue payload/order mismatch as the successor scope.
-- [ ] Update roadmap row 07 with PR #220 merge/source/tree/gate/review/version evidence and link this plan as the active plan; state this slice owns public-clue payload/order consistency while other CaseFile and event-compatibility gaps remain open.
-- [ ] Update PLAT-001 and the persistence test follow-up with PR #220 evidence and the bounded public-clue successor gap. State ADR-0028 remains unchanged because both slices preserve its existing event-authority and rebuildable-cache decision.
-- [ ] Remove the completed predecessor plan and its stale links after promoting its durable evidence to the roadmap, feature matrix, and follow-up; do not create a tracked archive.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.36`; do not author or commit generated web identity output or duplicate application version fields.
-- [ ] Inspect the complete staged diff and `git diff --cached --check`, then commit as `docs: prepare public clue cache recovery`; use the check-only staged-candidate hook and do not rerun its full gate manually.
+- [x] Confirm the clean branch is based on current `origin/develop` PR #220, the source/merge trees match, the hosted canonical gate and review evidence remain available, and `Directory.Build.props` declares `0.1.0-dev.35`.
+- [x] Read the complete predecessor plan and compare every criterion with PR #220's merged implementation, tests, hosted gate, and review. Classify exact known-clue payload/order recovery, healthy/empty state, no-writeback, legal-save repair, and unrevealed clue privacy as delivered; retain public-clue payload/order mismatch as the successor scope.
+- [x] Update roadmap row 07 with PR #220 merge/source/tree/gate/review/version evidence and link this plan as the active plan; state this slice owns public-clue payload/order consistency while other CaseFile and event-compatibility gaps remain open.
+- [x] Update PLAT-001 and the persistence test follow-up with PR #220 evidence and the bounded public-clue successor gap. State ADR-0028 remains unchanged because both slices preserve its existing event-authority and rebuildable-cache decision.
+- [x] Remove the completed predecessor plan and its stale links after promoting its durable evidence to the roadmap, feature matrix, and follow-up; do not create a tracked archive.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.36`; do not author or commit generated web identity output or duplicate application version fields.
+- [x] Inspect the complete staged diff and `git diff --cached --check`, then commit as `docs: prepare public clue cache recovery`; use the check-only staged-candidate hook and do not rerun its full gate manually.
 
 **Expected:** PR #220 is recorded as delivered at `.35`; this plan exclusively owns exact public-clue pool payload/order recovery; its predecessor and stale links are retired; only the authored version advances.
 
