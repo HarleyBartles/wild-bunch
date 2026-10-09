@@ -1914,7 +1914,190 @@ public sealed class EfGameSessionRepositoryTests
         var session = CreateSession(publicClues: new[] { unlearnedClue });
 
         Assert.Empty(session.CaseFile.KnownClues);
-        Assert.True(CaseFileClueCacheRecovery.MatchesEventClueCollections(session.AllEvents, session.CaseFile));
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(session.AllEvents, session.CaseFile));
+    }
+
+    [Fact]
+    public void CaseFileEvidenceCacheMatchesExactPayloadAndOrderFromHistory()
+    {
+        var known = CreatePayloadCacheWarrant("known-cache-warrant");
+        var first = CreatePayloadCacheWarrant("first-public-cache-warrant");
+        var second = CreatePayloadCacheWarrant("second-public-cache-warrant");
+        var session = CreateSession(knownWarrants: new[] { known }, publicWarrants: new[] { first, second });
+
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(session.AllEvents, session.CaseFile));
+        var result = session.ReadWantedPosters();
+
+        Assert.True(result.Success);
+        var investigation = Assert.Single(session.UncommittedEvents.OfType<InvestigationPerformed>());
+        Assert.Equal(second.Id, investigation.WarrantId);
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(session.AllEvents, session.CaseFile));
+        Assert.Equal(new[] { known.Id, second.Id }, session.CaseFile.KnownWarrants.Select(warrant => warrant.Id));
+        Assert.Equal(new[] { first.Id }, session.CaseFile.PublicWarrants.Select(warrant => warrant.Id));
+
+        var revealed = CreatePayloadCacheWarrant("only-public-cache-warrant");
+        var fullyRevealed = CreateSession(publicWarrants: new[] { revealed });
+        Assert.True(fullyRevealed.ReadWantedPosters().Success);
+        AssertWarrantPayloadEqual(revealed, Assert.Single(fullyRevealed.CaseFile.KnownWarrants));
+        Assert.Empty(fullyRevealed.CaseFile.PublicWarrants);
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(
+            fullyRevealed.AllEvents,
+            fullyRevealed.CaseFile));
+
+        var overlappingKnown = CreatePayloadCacheWarrant("overlapping-cache-warrant");
+        var overlapping = CreateSession(
+            knownWarrants: new[] { overlappingKnown },
+            publicWarrants: new[] { overlappingKnown });
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(
+            overlapping.AllEvents,
+            overlapping.CaseFile));
+
+        var empty = CreateSession();
+        Assert.Empty(empty.CaseFile.KnownWarrants);
+        Assert.Empty(empty.CaseFile.PublicWarrants);
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(empty.AllEvents, empty.CaseFile));
+    }
+
+    [Fact]
+    public async Task ReadModel_CaseFileCacheSameIdAlteredKnownWarrantPayloadRecoversFromEventsWithoutWritingBack()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var expectedWarrant = CreatePayloadCacheWarrant("known-payload-cache-warrant");
+        var session = CreateSession(publicWarrants: new[] { expectedWarrant });
+        var posterRead = session.ReadWantedPosters();
+        Assert.True(posterRead.Success);
+        var originalInvestigation = Assert.Single(session.UncommittedEvents.OfType<InvestigationPerformed>());
+        Assert.Equal(expectedWarrant.Id, originalInvestigation.WarrantId);
+
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            var warrant = payload["knownWarrants"]!.AsArray().Single()!.AsObject();
+            warrant["summary"] = "The altered cache invents a different wanted notice.";
+            warrant["terms"]!["bountyAmount"] = 1m;
+            warrant["terms"]!["knownAliases"]![0] = "An invented alias";
+            warrant["terms"]!["knownFeatures"]![0] = "a silver spur";
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var expectedStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandRead = await repairRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(commandRead!.CaseFile.KnownWarrants));
+        Assert.NotNull(playerRead);
+        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(playerRead!.CaseFile.KnownWarrants));
+        Assert.NotNull(journalRead);
+        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(journalRead!.KnownWarrants));
+
+        var actualStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(expectedStoredState.ComponentVersion, actualStoredState.ComponentVersion);
+        Assert.Equal(expectedStoredState.ComponentPayload, actualStoredState.ComponentPayload);
+        Assert.Equal(expectedStoredState.SnapshotVersion, actualStoredState.SnapshotVersion);
+        Assert.Equal(expectedStoredState.StreamVersion, actualStoredState.StreamVersion);
+        Assert.Equal(expectedStoredState.Events, actualStoredState.Events);
+        Assert.Equal(expectedStoredState.Diary, actualStoredState.Diary);
+
+        var investigationCount = commandRead.AllEvents.OfType<InvestigationPerformed>().Count();
+        Assert.True(commandRead.Purchase(new StoreOffer(DomainItemKind.Food, "Food", 2m), 1).Success);
+        Assert.Equal(investigationCount, commandRead.AllEvents.OfType<InvestigationPerformed>().Count());
+        await PersistAsync(repairRepository, repairUnitOfWork, commandRead);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(fresh!.CaseFile.KnownWarrants));
+        Assert.Empty(fresh.CaseFile.PublicWarrants);
+        Assert.Equal(investigationCount, fresh.AllEvents.OfType<InvestigationPerformed>().Count());
+    }
+
+    [Fact]
+    public async Task ReadModel_CaseFileCacheReorderedPublicWarrantsRecoversFromEvents()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var firstWarrant = CreatePayloadCacheWarrant("first-public-cache-warrant");
+        var secondWarrant = CreatePayloadCacheWarrant("second-public-cache-warrant");
+        var publicWarrants = new[] { firstWarrant, secondWarrant };
+        var session = CreateSession(publicWarrants: publicWarrants);
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            payload["publicWarrants"] = new JsonArray(payload["publicWarrants"]!.AsArray()
+                .Reverse().Select(warrant => warrant!.DeepClone()).ToArray());
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var expectedStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandRead = await repairRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        Assert.Equal(new[] { firstWarrant.Id, secondWarrant.Id }, commandRead!.CaseFile.PublicWarrants.Select(warrant => warrant.Id));
+        Assert.NotNull(playerRead);
+        Assert.Equal(new[] { firstWarrant.Id, secondWarrant.Id }, playerRead!.CaseFile.PublicWarrants.Select(warrant => warrant.Id));
+        Assert.NotNull(journalRead);
+        Assert.Empty(journalRead!.KnownWarrants);
+        var playerDtoJson = JsonSerializer.Serialize(GameSessionMapper.ToDto(playerRead));
+        var journalJson = JsonSerializer.Serialize(journalRead);
+        foreach (var warrant in publicWarrants)
+        {
+            Assert.DoesNotContain(warrant.Id.Value, playerDtoJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.TargetName, playerDtoJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.Summary, playerDtoJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.Terms.KnownAliases[0], playerDtoJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.Terms.KnownFeatures[0], playerDtoJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.Id.Value, journalJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.TargetName, journalJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.Summary, journalJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.Terms.KnownAliases[0], journalJson, StringComparison.Ordinal);
+            Assert.DoesNotContain(warrant.Terms.KnownFeatures[0], journalJson, StringComparison.Ordinal);
+        }
+
+        var actualStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(expectedStoredState.ComponentVersion, actualStoredState.ComponentVersion);
+        Assert.Equal(expectedStoredState.ComponentPayload, actualStoredState.ComponentPayload);
+        Assert.Equal(expectedStoredState.SnapshotVersion, actualStoredState.SnapshotVersion);
+        Assert.Equal(expectedStoredState.StreamVersion, actualStoredState.StreamVersion);
+        Assert.Equal(expectedStoredState.Events, actualStoredState.Events);
+        Assert.Equal(expectedStoredState.Diary, actualStoredState.Diary);
+
+        Assert.True(commandRead.ReadWantedPosters().Success);
+        var revealedEvent = Assert.Single(commandRead.UncommittedEvents.OfType<InvestigationPerformed>());
+        Assert.Equal(secondWarrant.Id, revealedEvent.WarrantId);
+        await PersistAsync(repairRepository, repairUnitOfWork, commandRead);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        AssertWarrantPayloadEqual(secondWarrant, Assert.Single(fresh!.CaseFile.KnownWarrants));
+        AssertWarrantPayloadEqual(firstWarrant, Assert.Single(fresh.CaseFile.PublicWarrants));
     }
 
     [Fact]
@@ -2070,14 +2253,14 @@ public sealed class EfGameSessionRepositoryTests
         var expectedClue = CreatePayloadCacheClue();
         var session = CreateSession(includeKnownClue: true, publicClues: new[] { expectedClue });
 
-        Assert.True(CaseFileClueCacheRecovery.MatchesEventClueCollections(session.AllEvents, session.CaseFile));
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(session.AllEvents, session.CaseFile));
         var result = session.GatherLocalGossip();
 
         Assert.True(result.Success);
         Assert.Equal(new[] { "known-legacy-clue", expectedClue.Id.Value },
             session.CaseFile.KnownClues.Select(clue => clue.Id.Value));
         Assert.Empty(session.CaseFile.PublicClues);
-        Assert.True(CaseFileClueCacheRecovery.MatchesEventClueCollections(session.AllEvents, session.CaseFile));
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(session.AllEvents, session.CaseFile));
     }
 
     [Fact]
@@ -4077,7 +4260,11 @@ public sealed class EfGameSessionRepositoryTests
         return session;
     }
 
-    private static GameSession CreateSession(bool includeKnownClue = false, IEnumerable<Clue>? publicClues = null)
+    private static GameSession CreateSession(
+        bool includeKnownClue = false,
+        IEnumerable<Clue>? publicClues = null,
+        IEnumerable<Warrant>? knownWarrants = null,
+        IEnumerable<Warrant>? publicWarrants = null)
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale");
         var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
@@ -4121,7 +4308,9 @@ public sealed class EfGameSessionRepositoryTests
             new SuspectId("suspect-1"),
             CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
             knownClues,
-            publicClues: publicClues);
+            publicClues: publicClues,
+            knownWarrants: knownWarrants,
+            publicWarrants: publicWarrants);
         caseFile.DiscoverSuspect(new SuspectId("suspect-1"));
 
         var inventory = new DomainInventory(new[]
@@ -4174,6 +4363,22 @@ public sealed class EfGameSessionRepositoryTests
                 {
                     new ClueDirectionAnchor("heading east", "heading east", new TownId("silvercreek"), "east line")
                 }));
+
+    private static Warrant CreatePayloadCacheWarrant(string id)
+        => new(
+            new WarrantId(id),
+            "Ben Kilpatrick",
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                125m,
+                new[] { "The Tall Texan", "Kid Curry" },
+                new[] { "missing left ear", "red neckerchief" },
+                "Sheriff's public noticeboard",
+                InvestigationTargetKind.GangMember,
+                new[] { OutlawGangIds.WildBunch },
+                OutlawGangIds.WildBunch,
+                InvestigationSourceKind.SheriffWarrants),
+            "Wanted for a stagecoach robbery near Dustvale.");
 
     private static Clue CreateUnlearnedCacheClue()
         => new(
@@ -4243,6 +4448,22 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(expected.Anchors.Locations, actual.Anchors.Locations);
         Assert.Equal(expected.Anchors.Times, actual.Anchors.Times);
         Assert.Equal(expected.Anchors.Directions, actual.Anchors.Directions);
+    }
+
+    private static void AssertWarrantPayloadEqual(Warrant expected, Warrant actual)
+    {
+        Assert.Equal(expected.Id, actual.Id);
+        Assert.Equal(expected.TargetName, actual.TargetName);
+        Assert.Equal(expected.Summary, actual.Summary);
+        Assert.Equal(expected.Terms.Disposition, actual.Terms.Disposition);
+        Assert.Equal(expected.Terms.BountyAmount, actual.Terms.BountyAmount);
+        Assert.Equal(expected.Terms.KnownAliases, actual.Terms.KnownAliases);
+        Assert.Equal(expected.Terms.KnownFeatures, actual.Terms.KnownFeatures);
+        Assert.Equal(expected.Terms.IssuingSource, actual.Terms.IssuingSource);
+        Assert.Equal(expected.Terms.TargetKind, actual.Terms.TargetKind);
+        Assert.Equal(expected.Terms.GangAffiliations, actual.Terms.GangAffiliations);
+        Assert.Equal(expected.Terms.AdvancesGangPressureFor, actual.Terms.AdvancesGangPressureFor);
+        Assert.Equal(expected.Terms.SourceKind, actual.Terms.SourceKind);
     }
 
     private static GameSession CreateLuckySession()
