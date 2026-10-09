@@ -36,10 +36,10 @@
 
 **Produces:** The current row 07 plan reference, recorded PR #204 completion evidence, retired predecessor plan and the next development identity in the first substantive commit.
 
-- [ ] Verify PR #204 merged to `develop` from source `6fdea1f7cdaa92719f31668ce3826e6143928899`, source and merge tree are `b8014c58d64b7aed2aae92afc74492d7d2847c1a`, and hosted canonical run `37868234493` passed.
-- [ ] In the first substantive commit, set this plan as row 07's current plan, record PR #204 source, merge `3acf6257c9c5f750432796e679575781041a0c9a`, tree, version `0.1.0-dev.19`, and hosted gate; summarize exact event-sequence retry classification and retire the completed predecessor plan.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.19` to `0.1.0-dev.20` in that same first substantive commit; do not hand-edit generated web version output.
-- [ ] Keep the plan-only commit separate and first; inspect the staged roadmap, predecessor retirement and version diff before committing.
+- [x] Verify PR #204 merged to `develop` from source `6fdea1f7cdaa92719f31668ce3826e6143928899`, source and merge tree are `b8014c58d64b7aed2aae92afc74492d7d2847c1a`, and hosted canonical run `37868234493` passed.
+- [x] In the first substantive commit, set this plan as row 07's current plan, record PR #204 source, merge `3acf6257c9c5f750432796e679575781041a0c9a`, tree, version `0.1.0-dev.19`, and hosted gate; summarize exact event-sequence retry classification and retire the completed predecessor plan.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.19` to `0.1.0-dev.20` in that same first substantive commit; do not hand-edit generated web version output.
+- [x] Keep the plan-only commit separate and first; inspect the staged roadmap, predecessor retirement and version diff before committing.
 
 ### Task 2: Prove command loads span one database snapshot
 
