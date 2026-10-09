@@ -40,7 +40,7 @@
 - [x] Read the completed-artifact doctrine and assess `.agents/plans/2026-10-09-suspect-presence-cache-recovery.md` against its merged implementation; retain its durable cache-recovery findings in the feature matrix and persistence test follow-up, then remove the completed plan and replace its stale roadmap pointer.
 - [x] Update row 07 with PR #212's exact source, merge, gate, and `0.1.0-dev.27` delivery facts; identify completed-journey history as the next bounded cache gap and link this plan.
 - [x] Advance only `Directory.Build.props` from `0.1.0-dev.27` to `0.1.0-dev.28`; do not commit generated web identity output or duplicate the application version elsewhere.
-- [ ] Review and commit this successor-artifact/version diff before adding or changing behavior tests and implementation; let the normal check-only pre-commit hook validate the staged candidate.
+- [x] Review and commit this successor-artifact/version diff before adding or changing behavior tests and implementation; let the normal check-only pre-commit hook validate the staged candidate.
 
 ### Task 2: Recover acknowledged journey history through command replay
 
@@ -62,8 +62,8 @@ The red run observed missing-row history as empty and JSON-null as an `InvalidOp
 - [x] Start the next legal journey from the recovered aggregate and assert sequence 2 before saving. Persist through the normal unit of work, then fresh-load and verify the history remains sequence 1, the active journey is sequence 2, and the repaired component uses the current projection version.
 - [x] Add `DamagedCompletedJourneyHistoryCacheDoesNotHideInvalidAcknowledgementEvent`; damage the history cache and the authoritative `JourneyArrivalAcknowledged` payload, then assert command loading surfaces the event decoding failure.
 - [x] Add a no-acknowledgement `null-root` cache case with unrelated snapshot-only state by extending `SaveAfterPendingFoeEncounterWithHiddenPressureRoundTripsTheHiddenState`; prove that state survives command load and that forced replay fails this assertion.
-- [ ] Ensure `./tools/postgres-dev.ps1 ensure` succeeds, then run: `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.CommandLoad_CompletedJourneyHistoryCacheRecoversFromEventsWithoutWritingBack|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.DamagedCompletedJourneyHistoryCacheDoesNotHideInvalidEventHistory|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.SaveAfterPendingFoeEncounterWithHiddenPressureRoundTripsTheHiddenState|FullyQualifiedName~WildBunch.Integration.Tests.GameSessionDifficultyPersistenceTests.TownVisitStateWithMultipleTownVisitsRoundTripsThroughRepositoryPersistence"`.
-- [ ] Commit focused behavior and implementation after the tests pass through the normal check-only hook.
+- [x] Ensure `./tools/postgres-dev.ps1 ensure` succeeds, then run: `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.CommandLoad_CompletedJourneyHistoryCacheRecoversFromEventsWithoutWritingBack|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.DamagedCompletedJourneyHistoryCacheDoesNotHideInvalidAcknowledgementEvent|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.SaveAfterPendingFoeEncounterWithHiddenPressureRoundTripsTheHiddenState|FullyQualifiedName~WildBunch.Integration.Tests.GameSessionDifficultyPersistenceTests.TownVisitStateWithMultipleTownVisitsRoundTripsThroughRepositoryPersistence"`.
+- [x] Commit focused behavior and implementation after the tests pass through the normal check-only hook.
 
 ### Task 3: Record the bounded result and deliver the slice
 
@@ -73,10 +73,10 @@ The red run observed missing-row history as empty and JSON-null as an `InvalidOp
 
 **Produces:** An accurately bounded feature/test disposition and a reviewed implementation PR to `develop`, with merged `0.1.0-dev.28` delivery evidence.
 
-- [ ] Add a dated PS-04/PS-05 and PLAT-001 disposition limited to missing-row and JSON-null completed-history recovery, the no-ack absent-empty fast path, read no-writeback, next-save repair, correct next-sequence behavior, and fail-closed event decoding. State explicitly that this does not prove recovery for every malformed history payload or every optional component.
-- [ ] Update PLAT-001 in `docs/features.md` to include the recovered acknowledgement history and next-journey sequence behavior while preserving all previously delivered row 07 facts and open gaps.
-- [ ] Compare the diff with ADR-0028 and relevant doctrine. Confirm there is no schema migration, event serializer/upcaster contract, event payload/version, query repository, or durable architecture change; do not modify the ADR when its decision remains true.
-- [ ] Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.28`; do not stage or commit generated build output. The normal hooked commit runs `py -3 tools/run.py ci --check` on its staged candidate and must pass.
+- [x] Add a dated PS-04/PS-05 and PLAT-001 disposition limited to missing-row and JSON-null completed-history recovery, the no-ack absent-empty fast path, read no-writeback, next-save repair, correct next-sequence behavior, and fail-closed event decoding. State explicitly that this does not prove recovery for every malformed history payload or every optional component.
+- [x] Update PLAT-001 in `docs/features.md` to include the recovered acknowledgement history and next-journey sequence behavior while preserving all previously delivered row 07 facts and open gaps.
+- [x] Compare the diff with ADR-0028 and relevant doctrine. Confirm there is no schema migration, event serializer/upcaster contract, event payload/version, query repository, or durable architecture change; do not modify the ADR when its decision remains true.
+- [x] Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.28`; do not stage or commit generated build output. The normal hooked commit runs `py -3 tools/run.py ci --check` on its staged candidate and must pass.
 - [ ] Complete the fresh whole-branch review against this plan, the accepted spec, PS-04/05, ADR-0028, event-sourcing integrity, selected backend/code-review unslop profiles, feature matrix, and code-review runbook. Resolve actionable findings before publication.
 - [ ] Open or update a Draft PR targeting `develop`, verify its exact source head and body, mark it ready once review and local validation pass, and require the hosted canonical gate on that head.
 - [ ] Merge the approved PR to `develop`; verify the merge and exact-head hosted gate; fast-forward the primary checkout and clean only the verified merged worktree, local/remote branch, and branch-scoped scratch.
