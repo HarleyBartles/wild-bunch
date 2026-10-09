@@ -16,7 +16,7 @@ namespace WildBunch.Integration.Tests;
 public sealed class GameSessionDifficultyPersistenceTests
 {
     [Fact]
-    public async Task GameDifficultyAndEntropyRoundTripThroughJsonPersistence()
+    public async Task GameDifficultyAndEntropyRoundTripThroughRepositoryPersistence()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         await using var context = fixture.CreateContext();
@@ -39,72 +39,6 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Equal(GameEntropy.Wild, reloaded.GameEntropy);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Capacity);
         Assert.Equal(10, reloaded.Player.Inventory.GetCanteenState()!.Charges);
-    }
-
-    [Fact]
-    public void MissingEntropyInLegacySessionJsonDefaultsToStandard()
-    {
-        var serializer = new GameSessionJsonSerializer();
-        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(GameDifficulty.Standard, GameEntropy.Boring)))!.AsObject();
-        legacySnapshot.Remove("gameEntropy");
-
-        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
-
-        Assert.Equal(GameEntropy.Classic, reloaded.GameEntropy);
-    }
-
-    [Fact]
-    public void CompletedJourneyHistoryRoundTripsThroughFullSessionJsonSnapshot()
-    {
-        var serializer = new GameSessionJsonSerializer();
-        var session = CreateJourneyHistorySession();
-        var preview = CreateJourneyPreview(session.Player.CurrentTownId!.Value, new TownId("openpass"), "Pinecross", "Open Pass");
-
-        session.StartJourney(preview);
-        session.Journey!.MarkCompleted();
-        session.AcknowledgeJourneyArrival();
-
-        var json = serializer.Serialize(session);
-        var reloaded = serializer.Deserialize(json);
-
-        Assert.Null(reloaded.Journey);
-        Assert.Single(reloaded.CompletedJourneyHistory);
-        Assert.Equal(1, reloaded.CompletedJourneyHistory[0].JourneySequence);
-        Assert.Equal(JourneyStatus.Completed, reloaded.CompletedJourneyHistory[0].Status);
-    }
-
-    [Fact]
-    public void WantedSuspectPresenceLedgerRoundTripsThroughFullSessionJsonSnapshot()
-    {
-        var serializer = new GameSessionJsonSerializer();
-        var session = CreateSession(GameDifficulty.Standard, GameEntropy.Boring);
-        var suspectId = new SuspectId("suspect-1");
-
-        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.SecuredAlive);
-
-        var json = serializer.Serialize(session);
-        var reloaded = serializer.Deserialize(json);
-
-        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, reloaded.GetWantedSuspectPresenceState(suspectId));
-        Assert.Single(reloaded.WantedSuspectPresenceEntries);
-        Assert.Equal(suspectId, reloaded.WantedSuspectPresenceEntries[0].SuspectId);
-        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, reloaded.WantedSuspectPresenceEntries[0].State);
-    }
-
-    [Fact]
-    public void LegacyFullSessionJsonWithoutWantedSuspectPresenceLedgerDefaultsToEmptyLedger()
-    {
-        var serializer = new GameSessionJsonSerializer();
-        var session = CreateSession(GameDifficulty.Standard, GameEntropy.Boring);
-        session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.GoneToGround);
-
-        var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();
-        legacySnapshot.Remove("wantedSuspectPresenceLedger");
-
-        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
-
-        Assert.Empty(reloaded.WantedSuspectPresenceEntries);
-        Assert.Equal(WantedSuspectPresenceState.Unavailable, reloaded.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
     }
 
     [Fact]
@@ -282,16 +216,6 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
-    public void MissingSaltSourceInSessionSnapshotFailsClosed()
-    {
-        var serializer = new GameSessionJsonSerializer();
-        var legacySnapshot = JsonNode.Parse(serializer.Serialize(CreateSession(GameDifficulty.Easy, GameEntropy.Boring)))!.AsObject();
-        legacySnapshot.Remove("saltSource");
-
-        Assert.Throws<InvalidOperationException>(() => serializer.Deserialize(legacySnapshot.ToJsonString()));
-    }
-
-    [Fact]
     public async Task TownVisitStateWithMultipleTownVisitsRoundTripsThroughRepositoryPersistence()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
@@ -364,47 +288,6 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Contains("\"activeSaloonPersonOfInterestDescriptor\"", json, StringComparison.Ordinal);
         Assert.Null(reloaded.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Equal("a stranger with a limp in the left leg", reloaded.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
-    }
-
-    [Fact]
-    public void LegacyTownVisitSnapshotWithoutTownStatesStillDeserializes()
-    {
-        var serializer = new GameSessionJsonSerializer();
-        var session = CreateTownVisitSession();
-
-        session.GatherLocalGossip();
-
-        var legacySnapshot = JsonNode.Parse(serializer.Serialize(session))!.AsObject();
-        var currentTownVisit = legacySnapshot["currentTownVisit"]!.AsObject();
-        currentTownVisit.Remove("townStates");
-
-        var reloaded = serializer.Deserialize(legacySnapshot.ToJsonString());
-
-        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
-        Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
-        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
-        Assert.Single(reloaded.CaseFile.KnownClues);
-        Assert.Empty(reloaded.CaseFile.PublicClues);
-    }
-
-    [Fact]
-    public void TownVisitInvestigationStateRoundTripsThroughFullSessionJsonSnapshot()
-    {
-        var serializer = new GameSessionJsonSerializer();
-        var session = CreateTownVisitSession();
-
-        var result = session.GatherLocalGossip();
-        Assert.True(result.Success);
-        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
-
-        var json = serializer.Serialize(session);
-        var reloaded = serializer.Deserialize(json);
-
-        Assert.Equal(session.Player.CurrentTownId!.Value, reloaded.Player.CurrentTownId);
-        Assert.Equal(session.CurrentTownVisit.TownId, reloaded.CurrentTownVisit.TownId);
-        Assert.True(reloaded.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
-        Assert.Single(reloaded.CaseFile.KnownClues);
-        Assert.Empty(reloaded.CaseFile.PublicClues);
     }
 
     [Fact]
@@ -680,69 +563,4 @@ public sealed class GameSessionDifficultyPersistenceTests
             knownClues: clues);
     }
 
-    private static TravelPreview CreateJourneyPreview(TownId originTownId, TownId destinationTownId, string originTownName, string destinationTownName)
-        => new(
-            originTownId,
-            destinationTownId,
-            originTownName,
-            destinationTownName,
-            new TravelRouteProfile("trail-preview", TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 1m, 1m, 1m, Array.Empty<string>()),
-            TravelMode.Mounted,
-            MountedTravelAvailable: true,
-            WaterSecure: true,
-            RideDayDistance: 1m,
-            RemainingRideDayDistance: 1m,
-            BaselineRideDays: 1,
-            ExpectedDays: 1,
-            RemainingDays: 1,
-            CanteenChargesPerDay: 0,
-            RequiredCanteenCharges: 0,
-            AvailableCanteenCharges: 0,
-            CanteenReserveCharges: 0,
-            DelayMarginDays: 0,
-            DelayRisk: false,
-            RequiredFood: 1,
-            AvailableFood: 6,
-            RequiredHorseFeed: 0,
-            AvailableHorseFeed: 0,
-            HorseState: HorseTravelState.Healthy,
-            Warnings: Array.Empty<string>());
-
-    private static GameSession CreateJourneyHistorySession()
-    {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
-        var openpass = new Town(new TownId("openpass"), "Open Pass");
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
-
-        var world = new World(
-            new[] { pinecross, openpass, dryfork },
-            new[]
-            {
-                new Trail(new TrailId("trail-pine-open"), pinecross.Id, openpass.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m),
-                new Trail(new TrailId("trail-open-dry"), openpass.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m)
-            });
-
-        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var inventory = new Inventory(new[]
-        {
-            new InventoryItem(ItemKind.Food, 6),
-            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(6)),
-            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
-            new InventoryItem(ItemKind.Saddle, 1),
-            new InventoryItem(ItemKind.Knife, 1)
-        });
-
-        var session = GameSession.StartSetup(
-            "Ranger Vale",
-            world,
-            caseFile,
-            GameDifficulty.Easy,
-            GameEntropy.Classic,
-            "test-seed",
-            SaltSource.CreateFixed("test"));
-        session.ViewPrologue("test-prologue-descriptor");
-        session.SelectStartingTown(pinecross.Id);
-        session.CompleteGameStart(Wallet.Starting(25m), inventory);
-        return session;
-    }
 }

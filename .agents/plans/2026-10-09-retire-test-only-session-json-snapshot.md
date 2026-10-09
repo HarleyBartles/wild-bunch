@@ -33,7 +33,7 @@
 ## Review Focus
 
 - No production or test consumer requires whole-session JSON serialization after the obsolete tests are removed.
-- Tests left behind prove real repository persistence or production component/event codec contracts, not the deleted aggregate snapshot shape.
+- Tests left behind prove real repository persistence or production component/event codec contracts, not the deleted aggregate snapshot shape; the PostgreSQL confrontation recovery scenario also asserts `SecuredAlive` presence state after event-based load.
 - All three unused snapshot helper types and the unused Domain-test Persistence reference are removed without affecting retained callers.
 - Event-aware restoration and the following legal command still work through the PostgreSQL repository path.
 - Decision-record and feature-matrix review confirms no durable choice, supported save shape, player promise, or dependency changed.
@@ -56,14 +56,14 @@
 
 ### Task 2: Retire the non-production whole-session snapshot path
 
-**Files:** Modify `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.cs`, `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Travel.cs`, and `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs`; delete `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs` and `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Log.cs`; modify `tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj`; remove dated PS-13 dispositions for the retired surfaces from the persistence investigation and test follow-up.
+**Files:** Modify `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.cs`, `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Travel.cs`, `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs`, `tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj`, `.agents/investigations/stable-0.1.0/2026-10-07-persistence-layer-investigation.md`, and `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`; delete `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.SessionSnapshot.cs` and `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Log.cs`.
 
-- [ ] Recheck whole-repository call sites for `Serialize(GameSession)`, `Deserialize(string)`, `GameSessionSnapshot`, and the three dead helper types; classify each remaining use before editing.
-- [ ] Remove the whole-session `Serialize`/`Deserialize` API and its private snapshot record while retaining generic `Deserialize<T>`, JSON options, converters, component serialization, event codecs, and explicit production rehydration.
-- [ ] Remove only tests that exercise the unsupported whole-session snapshot representation. Retain the real repository difficulty/entropy round trip, repository town-visit scenarios, component-codec behavior, and supported legacy component-shape tests. Remove helper factories/imports made unused by these retirements.
-- [ ] Remove `GameLogEntrySnapshot`, `JourneyTrailEventSnapshot`, and `TravelDiaryEncounterResolutionSnapshot` after confirming each has no consumer; retain the live domain-record serialization path.
-- [ ] Remove the unused Persistence project reference and stale comment from the Domain test project. Do not add a test that merely asserts the serializer, type, or reference is absent.
-- [ ] Append dated PS-13 implementation and test dispositions explaining the production call-graph boundary, the full-session path and tests removed, the production behaviors retained, and the unchanged event/cache restoration contracts. Leave ADR-0003, ADR-0028, and ADR-0038 unchanged.
+- [x] Recheck whole-repository call sites for `Serialize(GameSession)`, `Deserialize(string)`, `GameSessionSnapshot`, and the three dead helper types; classify each remaining use before editing.
+- [x] Remove the whole-session `Serialize`/`Deserialize` API and its private snapshot record while retaining generic `Deserialize<T>`, JSON options, converters, component serialization, event codecs, and explicit production rehydration.
+- [x] Remove only tests that exercise the unsupported whole-session snapshot representation. Retain the real repository difficulty/entropy round trip, repository town-visit scenarios, component-codec behavior, and supported legacy component-shape tests. Remove helper factories/imports made unused by these retirements.
+- [x] Remove `GameLogEntrySnapshot`, `JourneyTrailEventSnapshot`, and `TravelDiaryEncounterResolutionSnapshot` after confirming each has no consumer; retain the live domain-record serialization path.
+- [x] Remove the unused Persistence project reference and stale comment from the Domain test project. Do not add a test that merely asserts the serializer, type, or reference is absent.
+- [x] Append dated PS-13 implementation and test dispositions explaining the production call-graph boundary, the full-session path and tests removed, the production behaviors retained, and the unchanged event/cache restoration contracts. Leave ADR-0003, ADR-0028, and ADR-0038 unchanged.
 
 **Expected:** Production persistence exposes only the component/event formats it actually stores, useful behavior coverage remains at repository and codec boundaries, and unsupported whole-session serialization is no longer an alternate test authority.
 
