@@ -357,7 +357,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToArrayAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Load all events for post-snapshot replay and projection-backed read paths.
+        // Load all events for cache validation and projection-backed read paths.
         // After BUNCH-86, LogEntries are derived from the event stream via
         // JournalLogProjector, replacing the legacy log entries table.
         var allStoredEvents = await _dbContext.StoredEvents.AsNoTracking()
@@ -367,15 +367,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ConfigureAwait(false);
 
         var allEvents = _payloadLoader.LoadEvents(allStoredEvents);
-
-        // Post-snapshot events for state replay (subset of allEvents).
-        IReadOnlyList<IDomainEvent> postSnapshotEvents = Array.Empty<IDomainEvent>();
-        if (envelope.SnapshotVersion < envelope.StreamVersion)
-        {
-            postSnapshotEvents = allEvents
-                .Skip((int)envelope.SnapshotVersion)
-                .ToArray();
-        }
 
         var diaryDays = _payloadLoader.LoadDiaryDays(
             diaryDayEntities,
@@ -387,7 +378,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             envelope,
             components,
             diaryDays,
-            postSnapshotEvents,
             allEvents);
     }
 
@@ -495,25 +485,14 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             wantedSuspectPresenceEntries,
             store.TravelDiaryDays);
 
-        // Set the aggregate version so that after any post-snapshot replay the
-        // version equals StreamVersion. Each Apply call inside
-        // ApplyCommittedEvents increments _version by 1, so we start from
-        // SnapshotVersion (the snapshot's version) and replay
-        // (StreamVersion - SnapshotVersion) events, ending at StreamVersion.
-        // When the snapshot is current (SnapshotVersion == StreamVersion), there
-        // are no post-snapshot events and SetVersion(StreamVersion) is correct.
+        // This fast path is reached only for a coherent current snapshot. A
+        // stale snapshot returns through full event replay before ToAggregate.
         // See ADR-0028 §8 (Snapshots as cache) and §7 (Optimistic concurrency).
-        var hasPostSnapshotEvents = store.PostSnapshotEvents.Count > 0;
-        var initialVersion = hasPostSnapshotEvents
-            ? (int)store.Envelope.SnapshotVersion.GetValueOrDefault()
-            : (int)store.Envelope.StreamVersion;
-        session.RestoreVersion(initialVersion);
+        session.RestoreVersion((int)store.Envelope.StreamVersion);
 
         // Set SeedCode from snapshot as a cache. The true source of truth is the
-        // GameStarted event, which will be applied during event replay if there are
-        // post-snapshot events. When the snapshot is current, this restores the
-        // persisted seed code. For setup-phase sessions (no GameStarted yet),
-        // the seed code comes from the PlayerSetupCompleted event. See BUNCH-101.
+        // GameStarted event. For setup-phase sessions (no GameStarted yet), the
+        // SeedCode comes from the PlayerSetupCompleted event. See BUNCH-101.
         var seedCode = store.Envelope.SeedCode;
         if (seedCode is null)
         {
@@ -525,24 +504,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         }
         session.RestoreSeedCode(seedCode);
 
-        // Set StartFlowPhase from the event stream. The Apply methods for
-        // PlayerSetupCompleted, PrologueViewed, and GameStarted set this during
-        // post-snapshot replay. When the snapshot is current (no post-snapshot
-        // events), we derive it from the full event stream.
-        if (!hasPostSnapshotEvents)
-        {
-            var derivedPhase = DeriveStartFlowPhase(store.AllEvents);
-            session.RestoreStartFlowPhase(derivedPhase);
-        }
+        // The phase is event-derived; the complete committed stream is available.
+        session.RestoreStartFlowPhase(DeriveStartFlowPhase(store.AllEvents));
 
-        // Set CurrentActionContext from snapshot. If there are post-snapshot events,
-        // ApplyCommittedEvents will overwrite this via Apply(TownActionContextEntered).
-        // When the snapshot is current, this restores the persisted context.
+        // Restore the current action context from its event-backed snapshot.
         session.RestoreActionContextState(currentActionContext, currentActionContextTownId);
 
-        // Set PendingDevTravelOverride from snapshot. If there are post-snapshot events,
-        // ApplyCommittedEvents will overwrite this via Apply(DevTravelOverrideForced/Cleared/Consumed).
-        // When the snapshot is current, this restores the persisted dev override. See BUNCH-89.
+        // Restore supported developer state from the current snapshot. See BUNCH-89.
         var devOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevTravelOverride, _payloadLoader, store.AllEvents);
         var pendingDevOverride = _serializer.DeserializePendingDevTravelOverride(devOverrideJson);
         if (pendingDevOverride is not null)
@@ -550,18 +518,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             session.RestorePendingDevTravelOverride(pendingDevOverride);
         }
 
-        // Restore the pending dev saloon override from the snapshot. See BUNCH-90, BUNCH-112.
+        // Restore the pending dev saloon override from the current snapshot. See BUNCH-90, BUNCH-112.
         var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevSaloonOverride, _payloadLoader, store.AllEvents);
         var pendingDevSaloonOverride = _serializer.DeserializePendingDevSaloonOverride(devSaloonOverrideJson);
 
         if (pendingDevSaloonOverride is not null)
         {
             session.RestoreBountyLoopState(pendingDevSaloonOverride);
-        }
-
-        if (hasPostSnapshotEvents)
-        {
-            session.ApplyCommittedEvents(store.PostSnapshotEvents);
         }
 
         // Set committed events for projection-backed read paths (BUNCH-86).
@@ -669,6 +632,5 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         GameSessionEntity Envelope,
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
-        IReadOnlyList<IDomainEvent> PostSnapshotEvents,
         IReadOnlyList<IDomainEvent> AllEvents);
 }
