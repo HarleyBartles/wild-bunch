@@ -36,10 +36,10 @@
 
 **Produces:** The first substantive implementation commit advances the single version authority to `0.1.0-dev.28`, retires the completed suspect-presence plan, records verified PR #212 delivery and points row 07 at this plan.
 
-- [ ] Verify PR #212 targets `develop`, its reviewed source is `a4a326497b3ce623c7bf44473456ea873f74df38`, squash merge is `dd004f5153bab3a24d8befeb44ca43b03b6bcc75`, and hosted canonical gate run `37897619049` passed on the source head.
-- [ ] Read the completed-artifact doctrine and assess `.agents/plans/2026-10-09-suspect-presence-cache-recovery.md` against its merged implementation; retain its durable cache-recovery findings in the feature matrix and persistence test follow-up, then remove the completed plan and replace its stale roadmap pointer.
-- [ ] Update row 07 with PR #212's exact source, merge, gate, and `0.1.0-dev.27` delivery facts; identify completed-journey history as the next bounded cache gap and link this plan.
-- [ ] Advance only `Directory.Build.props` from `0.1.0-dev.27` to `0.1.0-dev.28`; do not commit generated web identity output or duplicate the application version elsewhere.
+- [x] Verify PR #212 targets `develop`, its reviewed source is `a4a326497b3ce623c7bf44473456ea873f74df38`, squash merge is `dd004f5153bab3a24d8befeb44ca43b03b6bcc75`, and hosted canonical gate run `37897619049` passed on the source head.
+- [x] Read the completed-artifact doctrine and assess `.agents/plans/2026-10-09-suspect-presence-cache-recovery.md` against its merged implementation; retain its durable cache-recovery findings in the feature matrix and persistence test follow-up, then remove the completed plan and replace its stale roadmap pointer.
+- [x] Update row 07 with PR #212's exact source, merge, gate, and `0.1.0-dev.27` delivery facts; identify completed-journey history as the next bounded cache gap and link this plan.
+- [x] Advance only `Directory.Build.props` from `0.1.0-dev.27` to `0.1.0-dev.28`; do not commit generated web identity output or duplicate the application version elsewhere.
 - [ ] Review and commit this successor-artifact/version diff before adding or changing behavior tests and implementation; let the normal check-only pre-commit hook validate the staged candidate.
 
 ### Task 2: Recover acknowledged journey history through command replay
