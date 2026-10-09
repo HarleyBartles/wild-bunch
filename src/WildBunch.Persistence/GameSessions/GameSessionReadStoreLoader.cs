@@ -132,8 +132,8 @@ public sealed class GameSessionReadStoreLoader
             var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
 
             var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
-            var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
-            var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
+            var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
+            var entropy = _serializer.DeserializeSetup(entropyJson);
             var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
             var townVisitState = player.CurrentTownId is not null
                 ? (townVisitStateJson is null

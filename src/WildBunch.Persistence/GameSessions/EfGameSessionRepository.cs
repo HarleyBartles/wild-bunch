@@ -109,6 +109,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             GameSessionComponentNames.CaseFile,
             GameSessionComponentNames.Clock,
             GameSessionComponentNames.PursuitState,
+            GameSessionComponentNames.Setup,
             GameSessionComponentNames.SaltSource
         };
         var presentComponentCount = await _dbContext.GameSessionComponents.AsNoTracking()
@@ -387,8 +388,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile, _payloadLoader, store.AllEvents));
         var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents));
         var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents));
-        var entropyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
-        var entropy = entropyJson is null ? GameEntropy.Classic : _serializer.DeserializeSetup(entropyJson);
+        var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
+        var entropy = _serializer.DeserializeSetup(entropyJson);
         var saltSourceJson = GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.SaltSource, _payloadLoader, store.AllEvents);
         var saltSource = _serializer.DeserializeSaltSource(saltSourceJson);
         var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);

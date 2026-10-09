@@ -811,6 +811,205 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Theory]
+    [InlineData("missing-row")]
+    [InlineData("null-entropy")]
+    [InlineData("unsupported-entropy")]
+    public async Task ReadModel_CurrentSetupEntropyCacheRecoversFromEvents(string damage)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSessionWithSeedCode("setup-entropy-cache", GameEntropy.Wild);
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        const GameEntropy expectedEntropy = GameEntropy.Wild;
+        string? damagedPayload = null;
+        int? setupComponentVersion = null;
+        (long? SnapshotVersion, long StreamVersion, long? DiaryStreamVersion, int? DiaryDayCount) expectedEnvelope;
+        (long Sequence, Guid EventId, string EventType, string PayloadJson, Guid? CorrelationId, Guid? CausationId, int SchemaVersion)[] expectedEvents;
+        await using (var context = fixture.CreateContext())
+        {
+            var setup = await context.GameSessionComponents.SingleAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "setup");
+            setupComponentVersion = setup.ComponentVersion;
+            if (damage == "missing-row")
+            {
+                context.GameSessionComponents.Remove(setup);
+            }
+            else
+            {
+                var payload = JsonNode.Parse(setup.PayloadJson)!.AsObject();
+                payload["gameEntropy"] = damage == "unsupported-entropy" ? 99 : null;
+                setup.PayloadJson = payload.ToJsonString();
+                damagedPayload = setup.PayloadJson;
+            }
+
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            expectedEnvelope = (
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount);
+            var storedEvents = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new
+                {
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion
+                })
+                .ToArrayAsync();
+            expectedEvents = storedEvents.Select(storedEvent => (
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion))
+                .ToArray();
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = fixture.CreateContext())
+        {
+            var readRepository = new EfGameSessionReadRepository(context, CreateReadStoreLoader());
+            var readModel = await readRepository.GetByIdAsync(session.Id);
+
+            Assert.NotNull(readModel);
+            Assert.Equal(expectedEntropy, readModel!.GameEntropy);
+        }
+
+        var commandRepository = CreateRepository(fixture, out var commandUnitOfWork);
+        var recovered = await commandRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        Assert.Equal(expectedEntropy, recovered!.GameEntropy);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var setup = await context.GameSessionComponents.SingleOrDefaultAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "setup");
+            if (damage == "missing-row")
+            {
+                Assert.Null(setup);
+            }
+            else
+            {
+                Assert.NotNull(setup);
+                Assert.Equal(setupComponentVersion, setup!.ComponentVersion);
+                Assert.True(JsonNode.DeepEquals(JsonNode.Parse(damagedPayload!), JsonNode.Parse(setup!.PayloadJson)));
+            }
+
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            Assert.Equal(expectedEnvelope, (
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount));
+            var storedEvents = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new
+                {
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion
+                })
+                .ToArrayAsync();
+            var actualEvents = storedEvents.Select(storedEvent => (
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion))
+                .ToArray();
+            Assert.Equal(expectedEvents, actualEvents);
+        }
+
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(recovered.World.GetTown(recovered.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(recovered.Purchase(offer, 1).Success);
+        await PersistAsync(commandRepository, commandUnitOfWork, recovered);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var setup = await context.GameSessionComponents.AsNoTracking().SingleAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "setup");
+
+            Assert.Equal(ProjectionVersions.ForComponent("setup"), setup.ComponentVersion);
+            Assert.Equal(expectedEntropy, new GameSessionJsonSerializer().DeserializeSetup(setup.PayloadJson));
+        }
+
+        var freshRepository = CreateRepository(fixture, out _);
+        var repaired = await freshRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(repaired);
+        Assert.Equal(expectedEntropy, repaired!.GameEntropy);
+    }
+
+    [Fact]
+    public async Task InvalidSetupEntropyCacheDoesNotHideUnreplayableHistory()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSessionWithSeedCode("setup-entropy-history", GameEntropy.Wild);
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var setup = await context.GameSessionComponents.SingleAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "setup");
+            var payload = JsonNode.Parse(setup.PayloadJson)!.AsObject();
+            payload["gameEntropy"] = null;
+            setup.PayloadJson = payload.ToJsonString();
+
+            var worldGenerated = await context.StoredEvents.SingleAsync(storedEvent =>
+                storedEvent.StreamId == session.Id.Value && storedEvent.EventType == "WorldGenerated");
+            context.StoredEvents.Remove(worldGenerated);
+            await context.SaveChangesAsync();
+        }
+
+        var commandRepository = CreateRepository(fixture, out _);
+        var commandError = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => commandRepository.GetByIdAsync(session.Id));
+        Assert.Contains("Sequence contains no elements", commandError.Message, StringComparison.Ordinal);
+
+        await using var readContext = fixture.CreateContext();
+        var readRepository = new EfGameSessionReadRepository(readContext, CreateReadStoreLoader());
+        var queryError = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => readRepository.GetByIdAsync(session.Id));
+        Assert.Contains("Sequence contains no elements", queryError.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("player", "wallet")]
     [InlineData("player", "inventory")]
     [InlineData("player", "inventory.items")]

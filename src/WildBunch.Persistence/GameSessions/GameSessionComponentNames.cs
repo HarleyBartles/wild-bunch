@@ -1,4 +1,5 @@
 using WildBunch.Domain.Events;
+using WildBunch.Persistence.Serialization;
 using WildBunch.Persistence.Versioning;
 
 namespace WildBunch.Persistence.GameSessions;
@@ -29,6 +30,14 @@ internal static class GameSessionComponentNames
 
 internal static class GameSessionComponentPayloads
 {
+    internal static string GetRequiredCachePayload(
+        IReadOnlyDictionary<string, GameSessionComponentEntity> components,
+        string componentName,
+        PersistedPayloadLoader payloadLoader,
+        IReadOnlyList<IDomainEvent> events)
+        => payloadLoader.LoadComponentPayload(components, componentName, events)
+            ?? throw new InvalidRequiredComponentCacheShapeException(componentName, "the cache component is missing.");
+
     internal static string GetRequiredPayload(
         IReadOnlyDictionary<string, GameSessionComponentEntity> components,
         string componentName,
