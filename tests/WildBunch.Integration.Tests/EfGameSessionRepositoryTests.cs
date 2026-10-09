@@ -2248,6 +2248,117 @@ public sealed class EfGameSessionRepositoryTests
 
     [Theory]
     [InlineData("missing")]
+    [InlineData("suspect-id")]
+    [InlineData("target-name")]
+    [InlineData("disposition")]
+    [InlineData("outcome")]
+    [InlineData("alive")]
+    [InlineData("secured")]
+    [InlineData("day")]
+    [InlineData("turn")]
+    [InlineData("invented")]
+    [InlineData("reordered")]
+    public async Task CaseFileConfrontationCacheRecoversMutatedFactsFromEvents(string mutation)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSessionWithTwoSettledWantedSuspects(advanceClockBetweenConfrontations: true);
+        var replayedSession = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents);
+        var expectedConfrontations = replayedSession.CaseFile.WantedSuspectConfrontations.ToArray();
+        var confrontationEvents = session.AllEvents.OfType<WantedSuspectConfronted>().ToArray();
+        Assert.Equal(expectedConfrontations, session.CaseFile.WantedSuspectConfrontations);
+        Assert.Equal(2, expectedConfrontations.Length);
+        Assert.Equal(2, confrontationEvents.Length);
+        Assert.Equal(new[] { new SuspectId("suspect-1"), new SuspectId("suspect-3") },
+            expectedConfrontations.Select(state => state.SuspectId));
+        Assert.NotEqual(expectedConfrontations[0].Turn, expectedConfrontations[1].Turn);
+        Assert.All(confrontationEvents, confrontationEvent => Assert.Equal(
+            WantedSuspectConfrontationOutcome.Surrendered,
+            confrontationEvent.Outcome));
+
+        var eventIndices = session.AllEvents
+            .Select((domainEvent, index) => (domainEvent, index))
+            .Where(entry => entry.domainEvent is WantedSuspectConfronted)
+            .Select(entry => entry.index)
+            .ToArray();
+        for (var index = 0; index < eventIndices.Length; index++)
+        {
+            var precedingContext = session.AllEvents
+                .Take(eventIndices[index])
+                .OfType<TownActionContextEntered>()
+                .Last();
+            Assert.Equal(expectedConfrontations[index].Day, precedingContext.Day);
+            Assert.Equal(expectedConfrontations[index].Turn, precedingContext.Turn);
+        }
+
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+        var originalPayload = await ReadCaseFilePayloadAsync(fixture, session.Id);
+        await WriteMutatedConfrontationCacheAsync(fixture, session.Id, originalPayload, mutation);
+        var beforeReads = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+
+        var recoveryRepository = CreateRepository(fixture, out _);
+        var commandRead = await recoveryRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(), CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        Assert.Equal(expectedConfrontations, commandRead!.CaseFile.WantedSuspectConfrontations);
+        Assert.NotNull(playerRead);
+        Assert.Equal(expectedConfrontations, playerRead!.CaseFile.WantedSuspectConfrontations);
+        Assert.NotNull(journalRead);
+
+        var afterReads = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(beforeReads.ComponentVersion, afterReads.ComponentVersion);
+        Assert.Equal(beforeReads.ComponentPayload, afterReads.ComponentPayload);
+        Assert.Equal(beforeReads.SnapshotVersion, afterReads.SnapshotVersion);
+        Assert.Equal(beforeReads.StreamVersion, afterReads.StreamVersion);
+        Assert.Equal(beforeReads.Events, afterReads.Events);
+        Assert.Equal(beforeReads.Diary, afterReads.Diary);
+
+        var finalRepository = CreateRepository(fixture, out var finalUnitOfWork);
+        var recovered = await finalRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        var confrontationEventCount = recovered!.AllEvents.OfType<WantedSuspectConfronted>().Count();
+        Assert.True(recovered.Purchase(new StoreOffer(DomainItemKind.Food, "Food", 2m), 1).Success);
+        await PersistAsync(finalRepository, finalUnitOfWork, recovered);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(expectedConfrontations, fresh!.CaseFile.WantedSuspectConfrontations);
+        Assert.Equal(confrontationEventCount, fresh.AllEvents.OfType<WantedSuspectConfronted>().Count());
+    }
+
+    [Theory]
+    [InlineData("outcome")]
+    [InlineData("secured")]
+    public async Task CaseFileConfrontationCacheRecoveryKeepsFledSuspectIneligibleForTurnIn(string mutation)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSessionWithFledWantedSuspect();
+        var expected = Assert.Single(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, expected.Outcome);
+        Assert.False(expected.IsSecured);
+
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+        var originalPayload = await ReadCaseFilePayloadAsync(fixture, session.Id);
+        await WriteMutatedConfrontationCacheAsync(fixture, session.Id, originalPayload, mutation);
+
+        var recovered = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        Assert.Equal(expected, Assert.Single(recovered!.CaseFile.WantedSuspectConfrontations));
+        var turnIn = recovered.AssessSheriffTurnIn(new SuspectId("suspect-presence-target"), isAlive: true);
+        Assert.False(turnIn.Success);
+        Assert.Contains("not secured", turnIn.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("missing")]
     [InlineData("target-name")]
     [InlineData("disposition")]
     [InlineData("alive")]
@@ -4528,7 +4639,7 @@ public sealed class EfGameSessionRepositoryTests
         return session;
     }
 
-    private static GameSession CreateSessionWithTwoSettledWantedSuspects()
+    private static GameSession CreateSessionWithTwoSettledWantedSuspects(bool advanceClockBetweenConfrontations = false)
     {
         var currentTown = new Town(new TownId("settlement-town"), "Settlement Town");
         var connectedTown = new Town(new TownId("settlement-connected"), "Settlement Connected");
@@ -4566,17 +4677,24 @@ public sealed class EfGameSessionRepositoryTests
         session.SelectStartingTown(currentTown.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
 
+        var confrontationIndex = 0;
         foreach (var (suspectId, warrantId) in new[]
         {
             (firstId, "settlement-warrant-1"), (secondId, "settlement-warrant-3")
         })
         {
+            if (advanceClockBetweenConfrontations && confrontationIndex == 1)
+            {
+                Assert.True(session.EnterActionContext(TownActionContext.Store));
+            }
+
             session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
             session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
             Assert.True(session.LookAroundSaloon().Success);
             var result = session.ConfrontSaloonPersonOfInterest(warrantId);
             Assert.True(result.Success);
             Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Surrendered, result.Outcome);
+            confrontationIndex++;
         }
 
         return session;
@@ -4661,6 +4779,68 @@ public sealed class EfGameSessionRepositoryTests
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(mutation), mutation, "Unknown settlement cache mutation.");
+        }
+
+        await using var context = fixture.CreateContext();
+        var component = await context.GameSessionComponents.SingleAsync(candidate =>
+            candidate.SessionId == sessionId.Value && candidate.ComponentName == "caseFile");
+        component.PayloadJson = payload.ToJsonString();
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task WriteMutatedConfrontationCacheAsync(
+        PostgreSqlPersistenceFixture fixture,
+        GameSessionId sessionId,
+        JsonObject originalPayload,
+        string mutation)
+    {
+        var payload = originalPayload.DeepClone().AsObject();
+        var confrontations = payload["wantedSuspectConfrontations"]!.AsArray();
+        var firstConfrontation = confrontations[0]!.AsObject();
+        switch (mutation)
+        {
+            case "missing":
+                confrontations.RemoveAt(0);
+                break;
+            case "suspect-id":
+                firstConfrontation["suspectId"] = "suspect-2";
+                break;
+            case "target-name":
+                firstConfrontation["targetName"] = "Altered Name";
+                break;
+            case "disposition":
+                firstConfrontation["disposition"] = (int)WarrantDisposition.AliveOnly;
+                break;
+            case "outcome":
+                firstConfrontation["outcome"] = firstConfrontation["outcome"]!.GetValue<int>()
+                    == (int)WantedSuspectConfrontationOutcome.Surrendered
+                        ? (int)WantedSuspectConfrontationOutcome.Fled
+                        : (int)WantedSuspectConfrontationOutcome.Surrendered;
+                break;
+            case "alive":
+                firstConfrontation["isAlive"] = !firstConfrontation["isAlive"]!.GetValue<bool>();
+                break;
+            case "secured":
+                firstConfrontation["isSecured"] = !firstConfrontation["isSecured"]!.GetValue<bool>();
+                break;
+            case "day":
+                firstConfrontation["day"] = firstConfrontation["day"]!.GetValue<int>() + 1;
+                break;
+            case "turn":
+                firstConfrontation["turn"] = firstConfrontation["turn"]!.GetValue<int>() + 1;
+                break;
+            case "invented":
+                var invented = firstConfrontation.DeepClone().AsObject();
+                invented["suspectId"] = "suspect-2";
+                invented["targetName"] = "Reno Pike";
+                confrontations.Add(invented);
+                break;
+            case "reordered":
+                payload["wantedSuspectConfrontations"] = new JsonArray(confrontations.Reverse()
+                    .Select(confrontation => confrontation!.DeepClone()).ToArray());
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(mutation), mutation, "Unknown confrontation cache mutation.");
         }
 
         await using var context = fixture.CreateContext();

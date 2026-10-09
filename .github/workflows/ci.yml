@@ -37,6 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 2
 
       - name: Setup .NET
