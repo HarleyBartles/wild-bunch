@@ -63,13 +63,13 @@
 
 **Produces:** Red behavior proof for command/query recovery, no-writeback and fail-closed history.
 
-- [ ] Start and persist an active Journey through the production aggregate and repository; capture sequence, route endpoints, remaining distance/days, and any pending encounter facts from the accepted Journey event before mutating storage.
-- [ ] Change only the current Journey component's nested `routeProfile` to null while preserving event rows and all unrelated component, envelope and diary data.
-- [ ] Load through fresh command and player-read repository contexts; assert the independently captured in-progress Journey facts rather than a same-cache equality oracle.
-- [ ] Assert both reads leave the damaged Journey payload and component version, event rows, snapshot/stream positions and diary metadata unchanged.
-- [ ] Save after a legal travel command through the existing Unit of Work; assert the persisted Journey row has the current component version and expected event-established state, then load fresh and verify the same result.
-- [ ] Add a negative where the Journey cache is malformed and its required `JourneyStarted` event payload cannot be decoded; assert the event-history error remains visible.
-- [ ] Run the new tests before production changes and observe failure at the original nested-deserialization or wrong-state boundary, not at fixture setup.
+- [x] Start and persist an active Journey through the production aggregate and repository; capture sequence, route endpoints, remaining distance/days, and any pending encounter facts from the accepted Journey event before mutating storage.
+- [x] Change only the current Journey component's nested `routeProfile` to null while preserving event rows and all unrelated component, envelope and diary data.
+- [x] Load through fresh command and player-read repository contexts; assert the independently captured in-progress Journey facts rather than a same-cache equality oracle.
+- [x] Assert both reads leave the damaged Journey payload and component version, event rows, snapshot/stream positions and diary metadata unchanged.
+- [x] Save after a legal travel command through the existing Unit of Work; assert the persisted Journey row has the current component version and expected event-established state, then load fresh and verify the same result.
+- [x] Add a negative where the Journey cache is malformed and its required `JourneyStarted` event payload cannot be decoded; assert the event-history error remains visible.
+- [x] Run the new tests before production changes and observe failure at the original nested-deserialization or wrong-state boundary, not at fixture setup. The first scenario failed with `NullReferenceException` in `TravelRouteProfileSnapshot.ToDomain`; the event-history negative already failed as expected.
 
 ### Task 4: Recover a malformed present Journey cache from events
 
@@ -79,10 +79,10 @@
 
 **Produces:** Exact event-backed Journey state on command and player-read paths, with read-only recovery and normal-save repair.
 
-- [ ] Introduce or extend the narrow typed cache-shape classification so malformed present Journey payloads enter the existing replay fallback without broadening it to event, cancellation or infrastructure failures.
-- [ ] Apply identical classification at command aggregate and player-read model boundaries; keep legitimately absent Journey rows nullable and unchanged.
-- [ ] Preserve cache/event/envelope no-writeback during recovery, allow a later legal save to repair the component, and keep unreplayable event history explicit.
-- [ ] Run focused PostgreSQL red/green cases plus existing Journey round-trip and pending-encounter persistence tests; verify an ordinary no-Journey load still returns no active Journey.
+- [x] Introduce or extend the narrow typed cache-shape classification so malformed present Journey payloads enter the existing replay fallback without broadening it to event, cancellation or infrastructure failures.
+- [x] Apply identical classification at command aggregate and player-read model boundaries; keep legitimately absent Journey rows nullable and unchanged.
+- [x] Preserve cache/event/envelope no-writeback during recovery, allow a later legal save to repair the component, and keep unreplayable event history explicit.
+- [x] Run focused PostgreSQL red/green cases plus existing Journey round-trip and pending-encounter persistence tests; verify an ordinary no-Journey load still returns no active Journey. `Journey|TravelDiary|MalformedJourneyCache` integration filter passed 8/8.
 
 ### Task 5: Update evidence and deliver the bounded recovery slice
 
@@ -92,9 +92,9 @@
 
 **Produces:** A dated PS-04/05 disposition, truthful PLAT-001 assessment, reviewed PR and completed implementation evidence.
 
-- [ ] Record the precise nested Journey cache shape, event-established recovery facts, no-writeback boundaries, legal-save repair, corrupt-history negative and preserved valid-absence behavior; retain original audit findings.
-- [ ] Update PLAT-001 only to the behavior now proven; keep missing optional Journey rows and other malformed or nested components open if not covered.
-- [ ] Confirm ADR-0028 remains truthful; do not edit it because this enforces its existing cache/event-authority decision.
+- [x] Record the precise nested Journey cache shape, event-established recovery facts, no-writeback boundaries, legal-save repair, corrupt-history negative and preserved valid-absence behavior; retain original audit findings.
+- [x] Update PLAT-001 only to the behavior now proven; keep missing optional Journey rows and other malformed or nested components open if not covered.
+- [x] Confirm ADR-0028 remains truthful; do not edit it because this enforces its existing cache/event-authority decision.
 - [ ] Run focused PostgreSQL tests, migration inventory and canonical fail-fast `py -3 tools/run.py ci --check`; confirm generated web identity `0.1.0-dev.23` and no event payload or migration changes unless the plan's bounded evidence finds an explicit necessity.
 - [ ] Complete whole-branch review against this plan, baseline spec, PS-04/05, persistence doctrine, unslop and code-review runbook; resolve every finding and inspect the final head.
 - [ ] Publish and attach a Draft PR to `develop`, verify its exact source head and current body, then mark it ready; verify the canonical hosted gate passes on that exact SHA before merging under active epic authorization, fast-forward `Z:\wild-bunch`, and clean only the verified merged worktree and branch; keep this plan until the next row 07 successor classifies it.

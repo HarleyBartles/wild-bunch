@@ -131,7 +131,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         {
             return ToAggregate(store);
         }
-        catch (InvalidRequiredComponentCacheShapeException)
+        catch (InvalidComponentCacheShapeException)
         {
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }

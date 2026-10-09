@@ -157,7 +157,7 @@ public sealed class GameSessionReadStoreLoader
                 store.TravelDiaryDays,
                 logEntries);
         }
-        catch (InvalidRequiredComponentCacheShapeException)
+        catch (InvalidComponentCacheShapeException)
         {
             return CreateReadStateFromEvents(store, logEntries);
         }

@@ -19,7 +19,21 @@ public sealed partial class GameSessionJsonSerializer
             return null;
         }
 
-        return Deserialize<JourneySnapshot>(json).ToDomain();
+        try
+        {
+            return Deserialize<JourneySnapshot>(json).ToDomain();
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "journey",
+                "'journey' component cache could not be decoded.",
+                exception);
+        }
     }
 
     public string SerializeCompletedJourneyHistory(IReadOnlyList<TravelJourneySnapshot> completedJourneys)
