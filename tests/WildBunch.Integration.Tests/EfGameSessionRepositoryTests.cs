@@ -35,39 +35,146 @@ public sealed class EfGameSessionRepositoryTests
     public async Task LegacyWorldGenerated_LoadsFromPersistedEvents_AndCurrentWritesUseV2()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var repository = CreateRepository(fixture, out var unitOfWork);
-        var session = CreateSession();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSession(includeKnownClue: true);
+        var expectedPlayerName = session.Player.Name;
         var originalCaseFile = session.CaseFile;
-        await PersistAsync(repository, unitOfWork, session);
+        PurchaseFood(session, 1);
+        await PersistAsync(writer, writerUnitOfWork, session);
 
-        await using (var context = fixture.CreateContext())
-        {
-            var worldEvent = await context.StoredEvents.SingleAsync(e =>
-                e.StreamId == session.Id.Value && e.EventType == "WorldGenerated");
-            var payload = System.Text.Json.Nodes.JsonNode.Parse(worldEvent.PayloadJson)!.AsObject();
-            Assert.Equal(2, worldEvent.SchemaVersion);
-            Assert.NotNull(payload["caseFile"]);
-            payload.Remove("caseFile");
-            worldEvent.PayloadJson = payload.ToJsonString();
-            worldEvent.SchemaVersion = 1;
-            await context.SaveChangesAsync();
+        var legacyState = await DowngradeWorldGeneratedAndStalePlayerCacheAsync(fixture, session.Id);
+        Assert.True(legacyState.SnapshotVersion < legacyState.StreamVersion);
+        Assert.Equal("Stale Player Cache", JsonNode.Parse(legacyState.StalePlayerPayloadJson)!["name"]!.GetValue<string>());
 
-            var storedLegacyVersion = await context.StoredEvents
-                .Where(e => e.StreamId == session.Id.Value && e.EventType == "WorldGenerated")
-                .Select(e => e.SchemaVersion).SingleAsync();
-            Assert.Equal(1, storedLegacyVersion);
-        }
-
+        var repository = CreateRepository(fixture, out var unitOfWork);
         var loaded = await repository.GetByIdAsync(session.Id);
         Assert.NotNull(loaded);
+        Assert.Equal(expectedPlayerName, loaded!.Player.Name);
         Assert.Equal(originalCaseFile.TrueCulpritId, loaded!.CaseFile.TrueCulpritId);
         Assert.Equal(originalCaseFile.Suspects.Select(s => s.Id), loaded.CaseFile.Suspects.Select(s => s.Id));
+        Assert.Equal(originalCaseFile.KnownClues.Select(clue => clue.Id), loaded.CaseFile.KnownClues.Select(clue => clue.Id));
 
-        var eventStream = await repository.GetEventStreamAsync(session.Id);
-        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, eventStream);
-        Assert.Equal(originalCaseFile.TrueCulpritId, replayed.CaseFile.TrueCulpritId);
-        Assert.Equal(originalCaseFile.KnownClues.Select(c => c.Id), replayed.CaseFile.KnownClues.Select(c => c.Id));
-        Assert.Contains(await repository.GetByStatusAsync(GameStatus.Active), s => s.Id == session.Id);
+        var worldEventAndCaseFile = await ReadWorldAndCaseFileEventsAsync(fixture, session.Id);
+        Assert.Equal(1, worldEventAndCaseFile.World.SchemaVersion);
+        Assert.Equal(legacyState.LegacyWorldPayloadJson, worldEventAndCaseFile.World.PayloadJson);
+        Assert.True(worldEventAndCaseFile.CaseFile.Sequence > worldEventAndCaseFile.World.Sequence);
+
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(loaded.World.GetTown(loaded.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(loaded.Purchase(offer, 1).Success);
+        var repairedStreamVersion = loaded.Version;
+        Assert.True(repairedStreamVersion > legacyState.StreamVersion);
+        await PersistAsync(repository, unitOfWork, loaded);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(expectedPlayerName, fresh!.Player.Name);
+        Assert.Equal(originalCaseFile.TrueCulpritId, fresh.CaseFile.TrueCulpritId);
+        Assert.Equal(repairedStreamVersion, fresh.Version);
+
+        await using var verificationContext = fixture.CreateContext();
+        var persistedPlayerPayload = await verificationContext.GameSessionComponents.AsNoTracking()
+            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == "player")
+            .Select(component => component.PayloadJson)
+            .SingleAsync();
+        var persistedEnvelope = await verificationContext.GameSessions.AsNoTracking()
+            .Where(envelope => envelope.Id == session.Id.Value)
+            .Select(envelope => new { envelope.SnapshotVersion, envelope.StreamVersion })
+            .SingleAsync();
+        var persistedWorldAndCaseFile = await ReadWorldAndCaseFileEventsAsync(fixture, session.Id);
+        Assert.Equal(expectedPlayerName, JsonNode.Parse(persistedPlayerPayload)!["name"]!.GetValue<string>());
+        Assert.Equal(persistedEnvelope.StreamVersion, persistedEnvelope.SnapshotVersion);
+        Assert.Equal(repairedStreamVersion, persistedEnvelope.StreamVersion);
+        Assert.Equal(legacyState.LegacyWorldPayloadJson, persistedWorldAndCaseFile.World.PayloadJson);
+        Assert.Equal(1, persistedWorldAndCaseFile.World.SchemaVersion);
+        Assert.True(persistedWorldAndCaseFile.CaseFile.Sequence > persistedWorldAndCaseFile.World.Sequence);
+        Assert.Equal("StoreItemPurchased", await verificationContext.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+            .OrderByDescending(storedEvent => storedEvent.Sequence)
+            .Select(storedEvent => storedEvent.EventType)
+            .FirstAsync());
+    }
+
+    [Fact]
+    public async Task ReadModels_LegacyWorldGeneratedEventUpcastsThroughProductionLoaderWithoutWriteback()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateSession(includeKnownClue: true);
+        var expectedPlayerName = session.Player.Name;
+        var expectedOpeningLead = session.CaseFile.OpeningLead.Description;
+        var expectedKnownClueIds = session.CaseFile.KnownClues.Select(clue => clue.Id).ToArray();
+        PurchaseFood(session, 1);
+        await PersistAsync(writer, unitOfWork, session);
+
+        var legacyState = await DowngradeWorldGeneratedAndStalePlayerCacheAsync(fixture, session.Id);
+
+        var playerRead = await new EfGameSessionReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(playerRead);
+        Assert.Equal(expectedPlayerName, playerRead!.Player.Name);
+        Assert.Equal(expectedOpeningLead, playerRead.CaseFile.OpeningLead.Description);
+        Assert.Equal(expectedKnownClueIds, playerRead.CaseFile.KnownClues.Select(clue => clue.Id));
+        Assert.NotNull(journalRead);
+        Assert.Equal(expectedOpeningLead, journalRead!.OpeningLead);
+        Assert.Equal(expectedKnownClueIds, journalRead.KnownClues.Select(clue => clue.Id));
+
+        await using var verificationContext = fixture.CreateContext();
+        var persistedPlayerPayload = await verificationContext.GameSessionComponents.AsNoTracking()
+            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == "player")
+            .Select(component => component.PayloadJson)
+            .SingleAsync();
+        var persistedEnvelope = await verificationContext.GameSessions.AsNoTracking()
+            .Where(envelope => envelope.Id == session.Id.Value)
+            .Select(envelope => new { envelope.SnapshotVersion, envelope.StreamVersion })
+            .SingleAsync();
+        var persistedWorld = await verificationContext.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == session.Id.Value && storedEvent.EventType == "WorldGenerated")
+            .Select(storedEvent => new { storedEvent.PayloadJson, storedEvent.SchemaVersion })
+            .SingleAsync();
+        Assert.Equal(legacyState.StalePlayerPayloadJson, persistedPlayerPayload);
+        Assert.Equal(legacyState.SnapshotVersion, persistedEnvelope.SnapshotVersion);
+        Assert.Equal(legacyState.StreamVersion, persistedEnvelope.StreamVersion);
+        Assert.Equal(legacyState.LegacyWorldPayloadJson, persistedWorld.PayloadJson);
+        Assert.Equal(1, persistedWorld.SchemaVersion);
+    }
+
+    [Fact]
+    public async Task LegacyWorldGenerated_WithoutCaseFileEventFailsClosed()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateSession(includeKnownClue: true);
+        PurchaseFood(session, 1);
+        await PersistAsync(writer, unitOfWork, session);
+
+        await DowngradeWorldGeneratedAndStalePlayerCacheAsync(fixture, session.Id);
+        await using (var context = fixture.CreateContext())
+        {
+            var caseFileEvent = await context.StoredEvents.SingleAsync(storedEvent =>
+                storedEvent.StreamId == session.Id.Value && storedEvent.EventType == "CaseFileGenerated");
+            context.StoredEvents.Remove(caseFileEvent);
+            await context.SaveChangesAsync();
+        }
+
+        const string expectedMessage = "Cannot replay a legacy WorldGenerated event without a CaseFileGenerated event.";
+        var commandException = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => CreateRepository(fixture, out _).GetByIdAsync(session.Id));
+        Assert.Equal(expectedMessage, commandException.Message);
+
+        var readException = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => new EfGameSessionReadRepository(fixture.CreateContext(), CreateReadStoreLoader()).GetByIdAsync(session.Id));
+        Assert.Equal(expectedMessage, readException.Message);
+
+        var journalException = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => new EfGameJournalReadRepository(fixture.CreateContext(), CreateReadStoreLoader()).GetByIdAsync(session.Id));
+        Assert.Equal(expectedMessage, journalException.Message);
     }
 
     [Fact]
@@ -2529,6 +2636,70 @@ public sealed class EfGameSessionRepositoryTests
         return new GameSessionReadStoreLoader(payloadLoader, serializer);
     }
 
+    private sealed record LegacyWorldGeneratedState(
+        string LegacyWorldPayloadJson,
+        string StalePlayerPayloadJson,
+        long SnapshotVersion,
+        long StreamVersion);
+
+    private sealed record StoredEventEvidence(
+        string EventType,
+        long Sequence,
+        string PayloadJson,
+        int SchemaVersion);
+
+    private static async Task<LegacyWorldGeneratedState> DowngradeWorldGeneratedAndStalePlayerCacheAsync(
+        PostgreSqlPersistenceFixture fixture,
+        GameSessionId sessionId)
+    {
+        await using var context = fixture.CreateContext();
+        var worldEvent = await context.StoredEvents.SingleAsync(storedEvent =>
+            storedEvent.StreamId == sessionId.Value && storedEvent.EventType == "WorldGenerated");
+        var legacyPayload = JsonNode.Parse(worldEvent.PayloadJson)!.AsObject();
+        Assert.Equal(2, worldEvent.SchemaVersion);
+        Assert.NotNull(legacyPayload["caseFile"]);
+        legacyPayload.Remove("caseFile");
+        worldEvent.PayloadJson = legacyPayload.ToJsonString();
+        worldEvent.SchemaVersion = 1;
+
+        var playerComponent = await context.GameSessionComponents.SingleAsync(component =>
+            component.SessionId == sessionId.Value && component.ComponentName == "player");
+        var stalePlayer = JsonNode.Parse(playerComponent.PayloadJson)!.AsObject();
+        stalePlayer["name"] = "Stale Player Cache";
+        playerComponent.PayloadJson = stalePlayer.ToJsonString();
+
+        var envelope = await context.GameSessions.SingleAsync(entity => entity.Id == sessionId.Value);
+        envelope.SnapshotVersion = envelope.StreamVersion - 1;
+        await context.SaveChangesAsync();
+        await context.Entry(worldEvent).ReloadAsync();
+        await context.Entry(playerComponent).ReloadAsync();
+        await context.Entry(envelope).ReloadAsync();
+        return new LegacyWorldGeneratedState(
+            worldEvent.PayloadJson,
+            playerComponent.PayloadJson,
+            envelope.SnapshotVersion!.Value,
+            envelope.StreamVersion);
+    }
+
+    private static async Task<(StoredEventEvidence World, StoredEventEvidence CaseFile)> ReadWorldAndCaseFileEventsAsync(
+        PostgreSqlPersistenceFixture fixture,
+        GameSessionId sessionId)
+    {
+        await using var context = fixture.CreateContext();
+        var events = await context.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == sessionId.Value
+                && (storedEvent.EventType == "WorldGenerated" || storedEvent.EventType == "CaseFileGenerated"))
+            .Select(storedEvent => new StoredEventEvidence(
+                storedEvent.EventType,
+                storedEvent.Sequence,
+                storedEvent.PayloadJson,
+                storedEvent.SchemaVersion))
+            .ToArrayAsync();
+        return (
+            events.Single(storedEvent => storedEvent.EventType == "WorldGenerated"),
+            events.Single(storedEvent => storedEvent.EventType == "CaseFileGenerated"));
+    }
+
     private sealed class PauseAfterTwoEnvelopeQueriesInterceptor : DbCommandInterceptor
     {
         private readonly TaskCompletionSource _bothEnvelopeQueriesExecuted = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -2593,6 +2764,14 @@ public sealed class EfGameSessionRepositoryTests
     {
         await repository.StoreAsync(session);
         await unitOfWork.CommitAsync();
+    }
+
+    private static void PurchaseFood(GameSession session, int quantity)
+    {
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(session.Purchase(offer, quantity).Success);
     }
 
     private static GameSession CreateSessionWithSeedCode(string seedCode, GameEntropy gameEntropy = GameEntropy.Classic, SaltSource? saltSource = null)
@@ -2705,7 +2884,7 @@ public sealed class EfGameSessionRepositoryTests
         return session;
     }
 
-    private static GameSession CreateSession()
+    private static GameSession CreateSession(bool includeKnownClue = false)
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale");
         var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
@@ -2732,12 +2911,23 @@ public sealed class EfGameSessionRepositoryTests
                 SuspectStatus.AtLarge)
         };
 
+        var knownClues = includeKnownClue
+            ? new[]
+            {
+                new Clue(
+                    new ClueId("known-legacy-clue"),
+                    ClueKind.Record,
+                    "A known record clue for historical replay.",
+                    new[] { new SuspectId("suspect-1") },
+                    InvestigationTargetKind.TrueCulprit)
+            }
+            : Array.Empty<Clue>();
         var caseFile = new CaseFile(
             null,
             suspects,
             new SuspectId("suspect-1"),
             CaseOpeningLead.Create("A brass buckle bears a cracked star engraving."),
-            Array.Empty<Clue>());
+            knownClues);
         caseFile.DiscoverSuspect(new SuspectId("suspect-1"));
 
         var inventory = new DomainInventory(new[]
