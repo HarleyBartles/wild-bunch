@@ -49,7 +49,22 @@ public sealed partial class GameSessionJsonSerializer
             return Array.Empty<TravelJourneySnapshot>();
         }
 
-        return Deserialize<JourneySnapshot[]>(json).Select(snapshot => snapshot.ToDomain()).ToArray();
+        try
+        {
+            var snapshots = Deserialize<JourneySnapshot[]>(json);
+            return snapshots.Select(snapshot => snapshot.ToDomain()).ToArray();
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "completedJourneyHistory",
+                "Completed journey history component cache could not be decoded.",
+                exception);
+        }
     }
 
     public string SerializeTravelDiaryDay(TravelDiaryDayState day)
