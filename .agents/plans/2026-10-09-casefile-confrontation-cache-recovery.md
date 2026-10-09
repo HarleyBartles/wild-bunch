@@ -37,12 +37,12 @@
 
 **Interfaces:** Consume PR #226 source `0d0bd1e6a566beca6b6042fd9aec16c47f2117e9`, merge `f8a8043ca94f80acf7a357ea826e47e57c7d21c6`, hosted run `37967392268`, and version `0.1.0-dev.41`. Record settlement-cache recovery as delivered and select event-established wanted-suspect confrontation states as the next distinct mutable CaseFile cache boundary.
 
-- [ ] Verify PR #226 is merged to `develop`, its source is `0d0bd1e6a566beca6b6042fd9aec16c47f2117e9`, its merge is `f8a8043ca94f80acf7a357ea826e47e57c7d21c6`, and hosted run `37967392268` succeeded on that exact source.
-- [ ] Compare the completed settlement-recovery plan with its merged implementation, PostgreSQL behavior proof, review, hosted gate, and roadmap scope; classify its whole scope as shipped before removing it.
-- [ ] Record PR #226's source, merge, hosted run, clean review outcome, and `.41` version in row 07 and the persistence follow-up. Record its exact settlement fields, duplicate-payout and casebook behavior, query no-writeback, ordinary-save repair, and no-generation-event compatibility boundary.
-- [ ] Update PLAT-001 with the settlement evidence and state that confrontation-state consistency, later mutable CaseFile history, malformed-event compatibility, and historical migration questions remain open. Keep learned evidence, confrontation outcome, and sheriff settlement as distinct event-derived facts.
-- [ ] Point row 07 at this plan, retain its executing state, retire only the completed settlement plan and stale links, and bump `Directory.Build.props` from `.41` to `.42`.
-- [ ] Stage only the intended successor files, inspect the full staged diff and `git diff --cached --check`, then commit as `docs: plan CaseFile confrontation cache recovery`; let the normal check-only hook validate the staged candidate.
+- [x] Verify PR #226 is merged to `develop`, its source is `0d0bd1e6a566beca6b6042fd9aec16c47f2117e9`, its merge is `f8a8043ca94f80acf7a357ea826e47e57c7d21c6`, and hosted run `37967392268` succeeded on that exact source.
+- [x] Compare the completed settlement-recovery plan with its merged implementation, PostgreSQL behavior proof, review, hosted gate, and roadmap scope; classify its whole scope as shipped before removing it.
+- [x] Record PR #226's source, merge, hosted run, clean review outcome, and `.41` version in row 07 and the persistence follow-up. Record its exact settlement fields, duplicate-payout and casebook behavior, query no-writeback, ordinary-save repair, and no-generation-event compatibility boundary.
+- [x] Update PLAT-001 with the settlement evidence and state that confrontation-state consistency, later mutable CaseFile history, malformed-event compatibility, and historical migration questions remain open. Keep learned evidence, confrontation outcome, and sheriff settlement as distinct event-derived facts.
+- [x] Point row 07 at this plan, retain its executing state, retire only the completed settlement plan and stale links, and bump `Directory.Build.props` from `.41` to `.42`.
+- [x] Stage only the intended successor files, inspect the full staged diff and `git diff --cached --check`, then commit as `docs: plan CaseFile confrontation cache recovery`; let the normal check-only hook validate the staged candidate.
 
 **Expected:** The `.41` slice is recorded against verified delivery evidence, its completed plan is retired in successor history, and row 07 has a bounded `.42` plan for event-established confrontation-state recovery.
 
