@@ -52,13 +52,13 @@
 
 Ruling: A current `SaloonPersonOfInterestSpotted` event with a wanted-suspect identity records the active person; `TownVisitTownStateSnapshot.ToDomain` currently permits `PersonOfInterestKind == WantedSuspect` with a null ID, and the confrontation route branches on the ID, so a missing cache fact can be interpreted as a citizen. Make only this contradictory tagged union invalid and use existing full replay. Do not validate unrelated nested fields in this slice or replay healthy caches on every request.
 
-- [ ] Build a complete started session with one non-culprit suspect, a distinct culprit, deterministic setup, and a normal `LookAroundSaloon` operation that produces a persisted `SaloonPersonOfInterestSpotted` event for the non-culprit; capture its ID, descriptor, and kind independently.
-- [ ] Persist through the production repository, then remove only `activeSaloonPersonOfInterestId` from that town's `townVisitState` entry while retaining its descriptor and `WantedSuspect` kind; keep component version and envelope positions current.
-- [ ] Add command-load and player-read assertions for the original suspect ID, descriptor, kind, and saloon source fact, plus unchanged malformed JSON/component version, event rows, envelope positions, and diary metadata during reads. Strengthen or reuse the deterministic citizen persistence scenario to assert citizen kind and null suspect ID are still valid under the new guard.
-- [ ] Run the focused PostgreSQL test before production changes and confirm it fails because the loaded wanted suspect has no ID; do not accept a test that only checks successful deserialization or cache-shape diagnostics.
-- [ ] Add the narrow nested-shape validation that reports the tagged wanted-suspect-without-ID state as `InvalidComponentCacheShapeException`; verify both loaders then recover from `SaloonPersonOfInterestSpotted` and the existing replay path without cache writeback.
-- [ ] Prove the regression guard is route-sensitive by temporarily bypassing the invalid-shape validation and confirming the focused behavior assertion fails on the null ID; restore the production code and rerun the focused test.
-- [ ] Run `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.ReadModel_MalformedTownVisitWantedSuspectShapeRecoversFromEvents"` after ensuring PostgreSQL with `./tools/postgres-dev.ps1 ensure`.
+- [x] Build a complete started session with one non-culprit suspect, a distinct culprit, deterministic setup, and a normal `LookAroundSaloon` operation that produces a persisted `SaloonPersonOfInterestSpotted` event for the non-culprit; capture its ID, descriptor, and kind independently.
+- [x] Persist through the production repository, then remove only `activeSaloonPersonOfInterestId` from that town's `townVisitState` entry while retaining its descriptor and `WantedSuspect` kind; keep component version and envelope positions current.
+- [x] Add command-load and player-read assertions for the original suspect ID, descriptor, kind, and saloon source fact, plus unchanged malformed JSON/component version, event rows, envelope positions, and diary metadata during reads. Strengthen or reuse the deterministic citizen persistence scenario to assert citizen kind and null suspect ID are still valid under the new guard.
+- [x] Run the focused PostgreSQL test before production changes and confirm it fails because the loaded wanted suspect has no ID; do not accept a test that only checks successful deserialization or cache-shape diagnostics.
+- [x] Add the narrow nested-shape validation that reports the tagged wanted-suspect-without-ID state as `InvalidComponentCacheShapeException`; verify both loaders then recover from `SaloonPersonOfInterestSpotted` and the existing replay path without cache writeback.
+- [x] Prove the regression guard is route-sensitive by temporarily bypassing the invalid-shape validation and confirming the focused behavior assertion fails on the null ID; restore the production code and rerun the focused test.
+- [x] Run `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.ReadModel_MalformedTownVisitWantedSuspectShapeRecoversFromEvents"` after ensuring PostgreSQL with `./tools/postgres-dev.ps1 ensure`.
 - [ ] Commit the passing behavior test and minimal shape validation through the normal check-only hook.
 
 ### Task 3: Record bounded recovery evidence and deliver the slice
@@ -69,10 +69,10 @@ Ruling: A current `SaloonPersonOfInterestSpotted` event with a wanted-suspect id
 
 **Produces:** A precise PLAT-001 and persistence-test disposition for this nested cache shape, with no broader claim about all nested or optional component corruption.
 
-- [ ] Add a dated persistence-test disposition limited to the impossible wanted-suspect-without-ID cache shape, aggregate/player-read reconstruction, query no-writeback, retained citizen absence, and fail-closed invalid event history if covered; keep unrelated component shapes open.
-- [ ] Update PLAT-001 with the exact event-backed recovery behavior and test limits; do not imply general TownVisitState or optional-component compatibility.
-- [ ] Compare the diff with ADR-0028 and the decision-record playbook; leave the ADR unchanged because event authority and cache recovery remain the existing decision.
-- [ ] Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.30`; do not stage generated output. Run the normal check-only hook and canonical `py -3 tools/run.py ci --check` on the implementation candidate.
+- [x] Add a dated persistence-test disposition limited to the impossible wanted-suspect-without-ID cache shape, aggregate/player-read reconstruction, query no-writeback, retained citizen absence, and fail-closed invalid event history; keep unrelated component shapes open.
+- [x] Update PLAT-001 with the exact event-backed recovery behavior and test limits; do not imply general TownVisitState or optional-component compatibility.
+- [x] Compare the diff with ADR-0028 and the decision-record playbook; leave the ADR unchanged because event authority and cache recovery remain the existing decision.
+- [x] Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.30`; do not stage generated output. Run the normal check-only hook and canonical `py -3 tools/run.py ci --check` on the implementation candidate.
 - [ ] Complete a fresh whole-branch review against this plan, the accepted spec, PS-04/05/14, ADR-0028, event-sourcing integrity, selected backend/code-review unslop profiles, feature matrix, and code-review runbook; resolve actionable findings before publication.
 - [ ] Open a Draft PR to `develop`; verify body, base and exact remote head, then mark ready after review and local validation. Require and verify the hosted canonical gate on that exact head.
 - [ ] Merge to `develop`; verify merge and hosted gate, fast-forward the primary checkout, and clean only the verified merged worktree, local/remote branch, and branch-scoped scratch.

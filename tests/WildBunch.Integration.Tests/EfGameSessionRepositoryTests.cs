@@ -1540,6 +1540,132 @@ public sealed class EfGameSessionRepositoryTests
         AssertJourneyFacts(recovered.Journey!.ToSnapshot(), fresh!.Journey!.ToSnapshot());
     }
 
+    [Fact]
+    public async Task ReadModel_MalformedTownVisitWantedSuspectShapeRecoversFromEvents()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSessionWithSaloonSuspect();
+        var expectedSuspectId = new SuspectId("saloon-suspect");
+        Assert.True(session.LookAroundSaloon().Success);
+        var spotted = Assert.Single(session.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.True(
+            expectedSuspectId == spotted.SuspectId,
+            $"Expected the deterministic saloon roll to select {expectedSuspectId.Value}; got {spotted.SuspectId?.Value ?? "no suspect"} at day {session.Clock.Day}, turn {session.Clock.Turn}, visit {session.CurrentTownVisit.CurrentTownState.VisitNumber}.");
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, spotted.PersonOfInterestKind);
+        var expectedDescriptor = spotted.Descriptor;
+        Assert.NotNull(expectedDescriptor);
+
+        await PersistAsync(CreateRepository(fixture, out var unitOfWork), unitOfWork, session);
+
+        async Task<(int ComponentVersion, string ComponentPayload, long? SnapshotVersion, long StreamVersion, long? DiaryStreamVersion, int? DiaryDayCount, (long Sequence, Guid EventId, string EventType, string PayloadJson, int SchemaVersion)[] Events, (int Sequence, string PayloadJson, int SchemaVersion)[] Diary)> CapturePersistedStateAsync()
+        {
+            await using var context = fixture.CreateContext();
+            var component = await context.GameSessionComponents.AsNoTracking().SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            var events = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new
+                {
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.SchemaVersion
+                })
+                .ToArrayAsync();
+            var diaryRows = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .OrderBy(day => day.Sequence)
+                .Select(day => new { day.Sequence, day.PayloadJson, day.SchemaVersion })
+                .ToArrayAsync();
+            return (
+                component.ComponentVersion,
+                component.PayloadJson,
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount,
+                events.Select(storedEvent => (
+                        storedEvent.Sequence,
+                        storedEvent.EventId,
+                        storedEvent.EventType,
+                        storedEvent.PayloadJson,
+                        storedEvent.SchemaVersion))
+                    .ToArray(),
+                diaryRows.Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion)).ToArray());
+        }
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            var townEntry = Assert.Single(payload["townStates"]!.AsArray(), entry =>
+                entry?["townId"]?.GetValue<string>() == session.CurrentTownVisit.CurrentTownId.Value);
+            Assert.Equal((int)SaloonPersonOfInterestKind.WantedSuspect, townEntry!["activeSaloonPersonOfInterestKind"]!.GetValue<int>());
+            Assert.Equal(expectedDescriptor, townEntry["activeSaloonPersonOfInterestDescriptor"]!.GetValue<string>());
+            townEntry.AsObject().Remove("activeSaloonPersonOfInterestId");
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var expectedPersistedState = await CapturePersistedStateAsync();
+
+        void AssertRecoveredTownVisit(TownVisitState? townVisit)
+        {
+            Assert.NotNull(townVisit);
+            Assert.Equal(session.CurrentTownVisit.CurrentTownId, townVisit!.CurrentTownId);
+            Assert.Equal(expectedSuspectId, townVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+            Assert.Equal(expectedDescriptor, townVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
+            Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, townVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
+            Assert.Contains(InvestigationSourceKind.SaloonLookAround, townVisit.SpentInvestigationSources);
+        }
+
+        await using (var context = fixture.CreateContext())
+        {
+            var readRepository = new EfGameSessionReadRepository(context, CreateReadStoreLoader());
+            var readModel = await readRepository.GetByIdAsync(session.Id);
+            Assert.NotNull(readModel);
+            AssertRecoveredTownVisit(readModel!.TownVisitState);
+        }
+
+        var recovered = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        AssertRecoveredTownVisit(recovered!.CurrentTownVisit);
+
+        var actualPersistedState = await CapturePersistedStateAsync();
+        Assert.Equal(expectedPersistedState.ComponentVersion, actualPersistedState.ComponentVersion);
+        Assert.Equal(expectedPersistedState.ComponentPayload, actualPersistedState.ComponentPayload);
+        Assert.Equal(expectedPersistedState.SnapshotVersion, actualPersistedState.SnapshotVersion);
+        Assert.Equal(expectedPersistedState.StreamVersion, actualPersistedState.StreamVersion);
+        Assert.Equal(expectedPersistedState.DiaryStreamVersion, actualPersistedState.DiaryStreamVersion);
+        Assert.Equal(expectedPersistedState.DiaryDayCount, actualPersistedState.DiaryDayCount);
+        Assert.Equal(expectedPersistedState.Events, actualPersistedState.Events);
+        Assert.Equal(expectedPersistedState.Diary, actualPersistedState.Diary);
+
+        var citizenSession = CreateSession();
+        Assert.True(citizenSession.LookAroundSaloon().Success);
+        var citizenSpot = Assert.Single(citizenSession.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.Null(citizenSpot.SuspectId);
+        Assert.Equal(SaloonPersonOfInterestKind.Citizen, citizenSpot.PersonOfInterestKind);
+        await PersistAsync(CreateRepository(fixture, out var citizenUnitOfWork), citizenUnitOfWork, citizenSession);
+        var citizenReload = await CreateRepository(fixture, out _).GetByIdAsync(citizenSession.Id);
+        Assert.NotNull(citizenReload);
+        Assert.Null(citizenReload!.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Equal(SaloonPersonOfInterestKind.Citizen, citizenReload.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
+    }
+
     [Theory]
     [InlineData("missing-row")]
     [InlineData("null-root")]
@@ -1736,11 +1862,12 @@ public sealed class EfGameSessionRepositoryTests
     [Theory]
     [InlineData("missing-row")]
     [InlineData("null-root")]
+    [InlineData("wanted-suspect-without-id")]
     public async Task DamagedTownVisitCacheDoesNotHideInvalidEventHistory(string damage)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var writer = CreateRepository(fixture, out var writerUnitOfWork);
-        var session = CreateSession();
+        var session = damage == "wanted-suspect-without-id" ? CreateSessionWithSaloonSuspect() : CreateSession();
         Assert.True(session.LookAroundSaloon().Success);
         await PersistAsync(writer, writerUnitOfWork, session);
 
@@ -1752,9 +1879,18 @@ public sealed class EfGameSessionRepositoryTests
             {
                 context.GameSessionComponents.Remove(component);
             }
-            else
+            else if (damage == "null-root")
             {
                 component.PayloadJson = "null";
+            }
+            else
+            {
+                var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+                var townEntry = Assert.Single(payload["townStates"]!.AsArray(), entry =>
+                    entry?["townId"]?.GetValue<string>() == session.CurrentTownVisit.CurrentTownId.Value);
+                Assert.Equal((int)SaloonPersonOfInterestKind.WantedSuspect, townEntry!["activeSaloonPersonOfInterestKind"]!.GetValue<int>());
+                townEntry.AsObject().Remove("activeSaloonPersonOfInterestId");
+                component.PayloadJson = payload.ToJsonString();
             }
 
             var gameStarted = await context.StoredEvents.SingleAsync(storedEvent =>
@@ -2881,6 +3017,42 @@ public sealed class EfGameSessionRepositoryTests
         var confrontation = session.ConfrontSaloonPersonOfInterest("warrant-1");
         Assert.True(confrontation.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
+        return session;
+    }
+
+    private static GameSession CreateSessionWithSaloonSuspect()
+    {
+        var startingTown = new Town(new TownId("dustvale"), "Dustvale");
+        var destinationTown = new Town(new TownId("silvercreek"), "Silver Creek");
+        var world = new WildBunch.Domain.World.World(
+            new[] { startingTown, destinationTown },
+            new[] { new Trail(new TrailId("saloon-test-trail"), startingTown.Id, destinationTown.Id, TrailRisk.Low) });
+        var saloonSuspectId = new SuspectId("saloon-suspect");
+        var culpritId = new SuspectId("culprit");
+        var suspects = new[]
+        {
+            new Suspect(saloonSuspectId, "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(culpritId, "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(
+            null,
+            suspects,
+            culpritId,
+            CaseOpeningLead.Create("Look for a recognizable wanted suspect."),
+            Array.Empty<Clue>(),
+            discoveredSuspectIds: new[] { saloonSuspectId });
+
+        var session = GameSession.StartSetup(
+            "Ranger Vale",
+            world,
+            caseFile,
+            GameDifficulty.Standard,
+            GameEntropy.Classic,
+            "saloon-cache-seed",
+            SaltSource.CreateFixed("saloon-14"));
+        session.ViewPrologue("saloon-cache-prologue");
+        session.SelectStartingTown(startingTown.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), new DomainInventory(Array.Empty<DomainInventoryItem>()));
         return session;
     }
 
