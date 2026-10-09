@@ -159,7 +159,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         try
         {
             var aggregate = ToAggregate(store);
-            if (!CaseFileClueCacheRecovery.MatchesEventClueCollections(store.AllEvents, aggregate.CaseFile))
+            if (!CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(store.AllEvents, aggregate.CaseFile))
             {
                 return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
             }
