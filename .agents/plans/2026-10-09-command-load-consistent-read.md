@@ -24,7 +24,6 @@
 
 - A writer commits between command-load queries: the command load must return a coherent pre-write state from its established snapshot, and a fresh load must return the committed post-write state.
 - A test must fail when the command load uses per-query `ReadCommitted` snapshots; a sleep, mocked repository or identical before/after projection is not sufficient.
-- Failure during loading must roll back/dispose the read transaction and preserve the original exception.
 
 ---
 
@@ -49,12 +48,12 @@
 
 **Produces:** A regression test demonstrating one command load sees a coherent pre-append state while a writer commits a purchase, followed by a fresh load observing the complete post-append state.
 
-- [ ] Add a test-only interceptor that counts only `GameSessions` reader queries for the command loader, signals after the second envelope query has returned its reader, waits on an explicit release gate, and always releases the reader in `finally`.
-- [ ] Create and persist a valid session with the production repository; create the reader context with the interceptor and start `GetByIdAsync` until it pauses after the second envelope read.
-- [ ] In an independent context, load the persisted aggregate, resolve the current town's food offer, purchase food, and commit with `EfGameSessionUnitOfWork`; record the writer's resulting cash, food count, event sequence and stream version.
-- [ ] Release the reader and assert its aggregate reflects the complete pre-purchase state and version, not a mixture of the old envelope and new cache/events. Use current source behavior as the expected RED: the reader's later per-query commands can observe the committed purchase while retaining the previously read envelope.
-- [ ] In a fresh context, assert the repository returns the complete post-purchase state and stream version, and verify PostgreSQL contains exactly one new purchase event at the next contiguous sequence.
-- [ ] Run only this test against the current code and observe the intended mixed-cut failure before changing production code.
+- [x] Add a test-only interceptor that counts only `GameSessions` reader queries for the command loader, signals after the second envelope query has returned its reader, waits on an explicit release gate, and always releases the reader in `finally`.
+- [x] Create and persist a valid session with the production repository; create the reader context with the interceptor and start `GetByIdAsync` until it pauses after the second envelope read.
+- [x] In an independent context, load the persisted aggregate, resolve the current town's food offer, purchase food, and commit with `EfGameSessionUnitOfWork`; record the writer's resulting cash, food count, event sequence and stream version.
+- [x] Release the reader and assert its aggregate reflects the complete pre-purchase state and version, not a mixture of the old envelope and new cache/events. Use current source behavior as the expected RED: the reader's later per-query commands can observe the committed purchase while retaining the previously read envelope.
+- [x] In a fresh context, assert the repository returns the complete post-purchase state and stream version, and verify PostgreSQL contains exactly one new purchase event at the next contiguous sequence.
+- [x] Run only this test against the current code and observe the intended mixed-cut failure before changing production code.
 
 Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~CommandLoad_ConcurrentAppendReturnsOneConsistentSnapshot"`; the expected failure must identify inconsistent reader state after the explicitly coordinated writer commit.
 
@@ -66,11 +65,11 @@ Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualified
 
 **Produces:** A command-side load whose first query establishes a repeatable database snapshot retained through either snapshot materialization or event replay.
 
-- [ ] Add a single `IsolationLevel.RepeatableRead` transaction around the whole private command load operation, beginning before its first envelope query and committing after the selected fast-path or replay result is fully materialized.
-- [ ] Keep the existing behavior for missing sessions, stale snapshots, incomplete component sets, invalid Player cache fallback, cancellation and propagated exceptions; all queries participating in each selected load path must use the same context transaction.
-- [ ] Ensure the load transaction is disposed and rolled back on any exception or cancellation, and does not remain active when the aggregate is returned to the application command handler.
-- [ ] Rerun the focused interleaving test and confirm the reader returns the pre-write state while the fresh load returns the post-write state.
-- [ ] Prove the test detects the required behavior by temporarily removing or lowering the command-load isolation, rerun to observe the mixed-cut assertion fail, then restore the implementation and rerun green.
+- [x] Add a single `IsolationLevel.RepeatableRead` transaction around the whole private command load operation, beginning before its first envelope query and committing after the selected fast-path or replay result is fully materialized.
+- [x] Keep the existing behavior for missing sessions, stale snapshots, incomplete component sets, invalid Player cache fallback, cancellation and propagated exceptions; all queries participating in each selected load path must use the same context transaction.
+- [x] Ensure the load transaction is disposed and rolled back on any exception or cancellation, and does not remain active when the aggregate is returned to the application command handler.
+- [x] Rerun the focused interleaving test and confirm the reader returns the pre-write state while the fresh load returns the post-write state.
+- [x] Prove the test detects the required behavior by temporarily removing or lowering the command-load isolation, rerun to observe the mixed-cut assertion fail, then restore the implementation and rerun green.
 
 ### Task 4: Record the bounded PS-07 disposition and deliver
 
@@ -80,11 +79,11 @@ Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualified
 
 **Produces:** A dated PS-07 disposition, current row 07 status, and reviewed PR with matching branch version and hosted gate.
 
-- [ ] Add a dated PS-07 disposition identifying the exact interleaving, pre-write and post-write state assertions, test name and resulting command-load transaction behavior; preserve the original audit finding.
-- [ ] State in the roadmap which command-load consistency case closed and which row 07 persistence gaps remain open; keep the row executing and this plan live through its completing PR.
-- [ ] Compare the change with ADR-0028, event-sourcing integrity doctrine, architecture guardrails, feature matrix, backend-architecture and code-review unslop profiles; leave ADRs and feature matrix unchanged because this work enforces their existing event-history and session-consistency decisions.
-- [ ] Run focused PostgreSQL proof and the canonical fail-fast `py -3 tools/run.py ci --check` gate; confirm generated web identity is `0.1.0-dev.20` and no migration or event payload changed.
-- [ ] Complete whole-branch review against this plan, the baseline spec, PS-07, persistence doctrine and code-review runbook; record the required self-review fallback if independent reviewer dispatch remains unavailable.
+- [x] Add a dated PS-07 disposition identifying the exact interleaving, pre-write and post-write state assertions, test name and resulting command-load transaction behavior; preserve the original audit finding.
+- [x] State in the roadmap which command-load consistency case closed and which row 07 persistence gaps remain open; keep the row executing and this plan live through its completing PR.
+- [x] Compare the change with ADR-0028, event-sourcing integrity doctrine, architecture guardrails, feature matrix, backend-architecture and code-review unslop profiles; leave ADRs and feature matrix unchanged because this work enforces their existing event-history and session-consistency decisions.
+- [x] Run focused PostgreSQL proof and the canonical fail-fast `py -3 tools/run.py ci --check` gate; confirm generated web identity is `0.1.0-dev.20` and no migration or event payload changed.
+- [x] Complete whole-branch review against this plan, the baseline spec, PS-07, persistence doctrine and code-review runbook; record the required self-review fallback if independent reviewer dispatch remains unavailable.
 - [ ] Publish and attach a PR to `develop`, verify exact source head and hosted canonical gate, mark it ready, merge under active epic authorization, fast-forward `Z:\wild-bunch`, and clean only this verified merged worktree and branch; retain this plan until its next row 07 successor classifies it.
 
 The local commit hook runs `py -3 tools/run.py ci --check` against the staged candidate. Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.20`; verify no migration or event payload file changed with `git diff origin/develop -- src/WildBunch.Persistence/Migrations src/WildBunch.Domain/Events`. For publication, the PR head must equal local `HEAD`; hosted validation must pass on that exact SHA before the authorized merge.

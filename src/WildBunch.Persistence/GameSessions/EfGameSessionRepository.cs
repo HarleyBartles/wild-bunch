@@ -67,6 +67,17 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     /// </summary>
     private async Task<GameSession?> LoadAsync(GameSessionId id, CancellationToken cancellationToken)
     {
+        await using var transaction = await _dbContext.Database
+            .BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead, cancellationToken)
+            .ConfigureAwait(false);
+
+        var session = await LoadWithinTransactionAsync(id, cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return session;
+    }
+
+    private async Task<GameSession?> LoadWithinTransactionAsync(GameSessionId id, CancellationToken cancellationToken)
+    {
         // Check if the session exists and whether the snapshot is current.
         var envelope = await _dbContext.GameSessions.AsNoTracking()
             .SingleOrDefaultAsync(session => session.Id == id.Value, cancellationToken)
