@@ -1958,6 +1958,107 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(empty.AllEvents, empty.CaseFile));
     }
 
+    [Theory]
+    [InlineData("culprit")]
+    [InlineData("suspect-order")]
+    [InlineData("suspect-name")]
+    [InlineData("suspect-alias")]
+    [InlineData("suspect-identity-fact")]
+    [InlineData("suspect-traits")]
+    [InlineData("suspect-status")]
+    [InlineData("opening-lead")]
+    [InlineData("release-threshold")]
+    [InlineData("turf-assignment")]
+    [InlineData("turf-order")]
+    public async Task ReadModel_CaseFileCacheSameIdAlteredGeneratedFactsRecoversFromEventsWithoutWritingBack(
+        string alteredFact)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSession(caseFileOverride: CreateGeneratedFactsCaseFile());
+        var generatedCaseFile = Assert.Single(session.AllEvents.OfType<CaseFileGenerated>()).CaseFile;
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            MutateGeneratedCaseFileCache(payload, alteredFact);
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var expectedStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        if (alteredFact == "suspect-status")
+        {
+            Assert.Equal(
+                (int)SuspectStatus.Captured,
+                JsonNode.Parse(expectedStoredState.ComponentPayload)!["suspects"]![0]!["status"]!.GetValue<int>());
+        }
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandRead = await repairRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        AssertGeneratedFactsEqual(generatedCaseFile, commandRead!.CaseFile);
+        Assert.NotNull(playerRead);
+        AssertGeneratedFactsEqual(generatedCaseFile, playerRead!.CaseFile);
+        var playerDto = GameSessionMapper.ToDto(playerRead);
+        Assert.Equal(generatedCaseFile.OpeningLead.Description, playerDto.CaseFile.OpeningLead);
+        Assert.Equal(
+            generatedCaseFile.Suspects.Where(suspect => generatedCaseFile.DiscoveredSuspectIds.Contains(suspect.Id))
+                .Select(suspect => suspect.Name),
+            playerDto.CaseFile.DiscoveredSuspects.Select(suspect => suspect.Name));
+        Assert.NotNull(journalRead);
+        var journalDto = JournalMapper.ToDto(journalRead!);
+        Assert.Equal(generatedCaseFile.OpeningLead.Description, journalDto.CaseFile.OpeningLead);
+        Assert.Equal(
+            generatedCaseFile.Suspects.Where(suspect => generatedCaseFile.DiscoveredSuspectIds.Contains(suspect.Id))
+                .Select(suspect => suspect.Name),
+            journalDto.CaseFile.DiscoveredSuspects.Select(suspect => suspect.Name));
+
+        var playerDtoJson = JsonSerializer.Serialize(playerDto);
+        var journalDtoJson = JsonSerializer.Serialize(journalDto);
+        var hiddenCulprit = generatedCaseFile.Suspects.Single(suspect => suspect.Id == generatedCaseFile.TrueCulpritId);
+        Assert.DoesNotContain(generatedCaseFile.TrueCulpritId, playerDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(generatedCaseFile.TrueCulpritId, journalDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(hiddenCulprit.Name, playerDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(hiddenCulprit.Name, journalDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(hiddenCulprit.Profile.Aliases[0].Name, playerDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(hiddenCulprit.Profile.Aliases[0].Name, journalDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("trueCulpritId", playerDtoJson, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("trueCulpritId", journalDtoJson, StringComparison.OrdinalIgnoreCase);
+
+        var actualStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(expectedStoredState.ComponentVersion, actualStoredState.ComponentVersion);
+        Assert.Equal(expectedStoredState.ComponentPayload, actualStoredState.ComponentPayload);
+        Assert.Equal(expectedStoredState.SnapshotVersion, actualStoredState.SnapshotVersion);
+        Assert.Equal(expectedStoredState.StreamVersion, actualStoredState.StreamVersion);
+        Assert.Equal(expectedStoredState.Events, actualStoredState.Events);
+        Assert.Equal(expectedStoredState.Diary, actualStoredState.Diary);
+
+        var investigationCount = commandRead.AllEvents.OfType<InvestigationPerformed>().Count();
+        Assert.True(commandRead.Purchase(new StoreOffer(DomainItemKind.Food, "Food", 2m), 1).Success);
+        Assert.Equal(investigationCount, commandRead.AllEvents.OfType<InvestigationPerformed>().Count());
+        Assert.Equal(
+            new[] { typeof(TownActionContextEntered), typeof(StoreItemPurchased) },
+            commandRead.UncommittedEvents.Select(domainEvent => domainEvent.GetType()));
+        await PersistAsync(repairRepository, repairUnitOfWork, commandRead);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        AssertGeneratedFactsEqual(generatedCaseFile, fresh!.CaseFile);
+        Assert.Equal(investigationCount, fresh.AllEvents.OfType<InvestigationPerformed>().Count());
+    }
+
     [Fact]
     public async Task ReadModel_CaseFileCacheSameIdAlteredKnownWarrantPayloadRecoversFromEventsWithoutWritingBack()
     {
@@ -4264,7 +4365,8 @@ public sealed class EfGameSessionRepositoryTests
         bool includeKnownClue = false,
         IEnumerable<Clue>? publicClues = null,
         IEnumerable<Warrant>? knownWarrants = null,
-        IEnumerable<Warrant>? publicWarrants = null)
+        IEnumerable<Warrant>? publicWarrants = null,
+        CaseFile? caseFileOverride = null)
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale");
         var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
@@ -4302,7 +4404,7 @@ public sealed class EfGameSessionRepositoryTests
                     InvestigationTargetKind.TrueCulprit)
             }
             : Array.Empty<Clue>();
-        var caseFile = new CaseFile(
+        var caseFile = caseFileOverride ?? new CaseFile(
             null,
             suspects,
             new SuspectId("suspect-1"),
@@ -4332,6 +4434,52 @@ public sealed class EfGameSessionRepositoryTests
         session.SelectStartingTown(dustvale.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
         return session;
+    }
+
+    private static CaseFile CreateGeneratedFactsCaseFile()
+    {
+        var firstSuspect = new Suspect(
+            new SuspectId("suspect-1"),
+            "Ira Flint",
+            new SuspectProfile(
+                new[] { new SuspectAlias("Dust Runner", AliasKind.Nickname) },
+                new[]
+                {
+                    new SuspectIdentityFact(FeatureLanguage.Raw(
+                        "Has a brass star buckle.",
+                        "has a brass star buckle",
+                        "have a brass star buckle"))
+                }),
+            SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate),
+            SuspectStatus.AtLarge);
+        var secondSuspect = new Suspect(
+            new SuspectId("suspect-2"),
+            "Mira Cline",
+            new SuspectProfile(
+                new[] { new SuspectAlias("Red Fox", AliasKind.Nickname) },
+                new[]
+                {
+                    new SuspectIdentityFact(FeatureLanguage.Raw(
+                        "Has a missing left ear.",
+                        "has a missing left ear",
+                        "have a missing left ear"))
+                }),
+            SuspectTraits.FromTags(SuspectTraitTags.Armed),
+            SuspectStatus.AtLarge);
+
+        return new CaseFile(
+            accusation: null,
+            suspects: new[] { firstSuspect, secondSuspect },
+            trueCulpritId: secondSuspect.Id,
+            openingLead: CaseOpeningLead.Create("Find the outlaw with a missing left ear."),
+            knownClues: Array.Empty<Clue>(),
+            discoveredSuspectIds: new[] { firstSuspect.Id },
+            killerReleaseThreshold: 4,
+            suspectTurfAssignments: new[]
+            {
+                new SuspectTurfAssignment(firstSuspect.Id, new TownId("dustvale")),
+                new SuspectTurfAssignment(secondSuspect.Id, new TownId("silvercreek"))
+            });
     }
 
     private static Clue CreateInitialKnownClue()
@@ -4448,6 +4596,83 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(expected.Anchors.Locations, actual.Anchors.Locations);
         Assert.Equal(expected.Anchors.Times, actual.Anchors.Times);
         Assert.Equal(expected.Anchors.Directions, actual.Anchors.Directions);
+    }
+
+    private static void MutateGeneratedCaseFileCache(JsonObject payload, string alteredFact)
+    {
+        var suspects = payload["suspects"]!.AsArray();
+        var turfAssignments = payload["suspectTurfAssignments"]!.AsArray();
+
+        switch (alteredFact)
+        {
+            case "culprit":
+                payload["trueCulpritId"] = "suspect-1";
+                break;
+            case "suspect-order":
+                payload["suspects"] = new JsonArray(suspects.Reverse()
+                    .Select(suspect => suspect!.DeepClone()).ToArray());
+                break;
+            case "suspect-name":
+                suspects[0]!["name"] = "An altered identity";
+                break;
+            case "suspect-alias":
+                suspects[0]!["profile"]!["aliases"]![0]!["name"] = "An invented alias";
+                break;
+            case "suspect-identity-fact":
+                suspects[0]!["profile"]!["identifyingFacts"]![0]!["language"]!["hasForm"] = "Has an invented feature.";
+                break;
+            case "suspect-traits":
+                suspects[0]!["traits"]!["tags"]![0] = "armed";
+                break;
+            case "suspect-status":
+                suspects[0]!["status"] = (int)SuspectStatus.Captured;
+                break;
+            case "opening-lead":
+                payload["openingLead"] = "The cache invents another opening clue.";
+                break;
+            case "release-threshold":
+                payload["killerReleaseThreshold"] = 2;
+                break;
+            case "turf-assignment":
+                turfAssignments[0]!["turfTownId"] = "silvercreek";
+                break;
+            case "turf-order":
+                payload["suspectTurfAssignments"] = new JsonArray(turfAssignments.Reverse()
+                    .Select(assignment => assignment!.DeepClone()).ToArray());
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(alteredFact), alteredFact, "Unknown generated fact.");
+        }
+    }
+
+    private static void AssertGeneratedFactsEqual(CaseFileSnapshot expected, CaseFile actual)
+    {
+        Assert.Equal(expected.TrueCulpritId, actual.TrueCulpritId.Value);
+        Assert.Equal(expected.Suspects.Count, actual.Suspects.Count);
+        for (var index = 0; index < expected.Suspects.Count; index++)
+        {
+            var expectedSuspect = expected.Suspects[index];
+            var actualSuspect = actual.Suspects[index];
+            Assert.Equal(expectedSuspect.Id, actualSuspect.Id.Value);
+            Assert.Equal(expectedSuspect.Name, actualSuspect.Name);
+            Assert.Equal(expectedSuspect.Status, actualSuspect.Status.ToString());
+            Assert.Equal(expectedSuspect.TraitsTags, actualSuspect.Traits.Tags.Select(tag => tag.Value));
+            Assert.Equal(
+                expectedSuspect.Profile.Aliases.Select(alias => (alias.Name, alias.AliasKind)),
+                actualSuspect.Profile.Aliases.Select(alias => (alias.Name, alias.Kind.ToString())));
+            Assert.Equal(
+                expectedSuspect.Profile.IdentifyingFacts.Select(fact =>
+                    (fact.Raw, fact.ThirdPerson, fact.FirstPerson, fact.IsPrimary)),
+                actualSuspect.Profile.IdentifyingFacts.Select(fact =>
+                    (fact.Language.HasForm, fact.Language.WithForm, fact.Language.WhoForm, fact.IsPrimary)));
+        }
+
+        Assert.Equal(expected.OpeningLead.Description, actual.OpeningLead.Description);
+        Assert.Equal(expected.KillerReleaseThreshold, actual.KillerReleaseThreshold);
+        Assert.Equal(
+            expected.SuspectTurfAssignments.Select(assignment => (assignment.SuspectId, assignment.TurfTownId)),
+            actual.SuspectTurfAssignments.Select(assignment =>
+                (assignment.SuspectId.Value, assignment.TurfTownId.Value)));
     }
 
     private static void AssertWarrantPayloadEqual(Warrant expected, Warrant actual)
