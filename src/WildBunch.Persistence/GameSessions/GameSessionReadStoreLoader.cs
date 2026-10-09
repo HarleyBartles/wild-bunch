@@ -127,6 +127,12 @@ public sealed class GameSessionReadStoreLoader
             return CreateReadStateFromEvents(store, logEntries);
         }
 
+        if (!store.Components.ContainsKey(GameSessionComponentNames.Journey)
+            && JourneyCacheRecovery.HasCurrentJourney(store.AllEvents))
+        {
+            return CreateReadStateFromEvents(store, logEntries);
+        }
+
         try
         {
             var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));

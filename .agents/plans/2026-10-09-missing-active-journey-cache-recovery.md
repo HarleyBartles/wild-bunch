@@ -67,27 +67,27 @@
 
 **Produces:** A PostgreSQL red proof for missing-row recovery, acknowledged absence, no-writeback, fail-closed history and legal-save repair.
 
-- [ ] Create and persist a first Journey, complete it, and acknowledge arrival; verify the normal post-ack state has no current Journey component while prior Journey facts remain in history.
-- [ ] Start and persist a second Journey, capture its event-established sequence, route, status and remaining distance/days, then delete only its `journey` component row.
-- [ ] Load from fresh command and player-read repository contexts; assert both expose the captured second Journey rather than `null`, the prior Journey, or a default Journey.
-- [ ] Assert both reads leave the Journey row absent and preserve all event rows, envelope positions and diary metadata.
-- [ ] Save after a legal travel command through the existing Unit of Work; assert the Journey row is restored at the current component version and a fresh load retains the event-established state.
-- [ ] Add a negative with a missing Journey row and an undecodable event required to reconstruct the current Journey; assert both loaders expose the history failure.
-- [ ] Run the new tests before production changes and observe failure because the absent optional cache currently becomes `null`, not because fixture setup failed.
+- [x] Create and persist a first Journey, complete it, and acknowledge arrival; verify the normal post-ack state has no current Journey while its completed history remains.
+- [x] Start and persist a second Journey, capture its event-established sequence, route, status and remaining distance/days, then delete only its `journey` component row.
+- [x] Load from fresh command and player-read repository contexts; assert both expose the captured second Journey rather than `null`, the prior Journey, or a default Journey.
+- [x] Assert both reads leave the Journey row absent and preserve all event rows, envelope positions and diary metadata.
+- [x] Save after a legal travel command through the existing Unit of Work; assert the Journey row is restored at the current component version and a fresh load retains the event-established state.
+- [x] Add a negative with a missing Journey row and an undecodable event required to reconstruct the current Journey; assert both loaders expose the history failure.
+- [x] Run the new tests before production changes and observe failure because the absent optional cache currently becomes `null`, not because fixture setup failed. With a missing row and a previously acknowledged Journey followed by a current start, the read returned `null` and failed the independently captured-state assertion; the existing present-malformed and corrupt-history cases passed.
 
 ### Task 4: Recover only a missing event-established current Journey
 
-**Files:** `src/WildBunch.Persistence/GameSessions/GameSessionComponentNames.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; focused integration tests.
+**Files:** `src/WildBunch.Persistence/GameSessions/JourneyCacheRecovery.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; focused integration tests.
 
 **Consumes:** The real PostgreSQL red scenario and the existing whole-session replay fallbacks.
 
 **Produces:** Matching command/player-read Journey state when the optional cache is missing, valid null state after acknowledgement, read-only recovery, and normal-save repair.
 
-- [ ] Use ordered `JourneyStarted` and `JourneyArrivalAcknowledged` facts to determine whether a missing Journey row represents an active/current cached state; do not trigger loss on a historical acknowledged start.
-- [ ] Route only a missing row with event-established current Journey state through each existing replay fallback; preserve nullable absence after acknowledgement and when no Journey exists.
-- [ ] Preserve no-writeback during both reads and let a later legal save persist the reconstructed Journey through the ordinary Unit of Work.
-- [ ] Keep replay decode/upcast failures visible; do not catch or default them as optional-state absence.
-- [ ] Run focused recovery tests plus existing Journey lifecycle/round-trip persistence tests and confirm ordinary no-Journey loads remain valid.
+- [x] Use ordered `JourneyStarted` and `JourneyArrivalAcknowledged` facts to determine whether a missing Journey row represents an active/current cached state; do not trigger loss on a historical acknowledged start.
+- [x] Route only a missing row with event-established current Journey state through each existing replay fallback; preserve nullable absence after acknowledgement and when no Journey exists.
+- [x] Preserve no-writeback during both reads and let a later legal save persist the reconstructed Journey through the ordinary Unit of Work.
+- [x] Keep replay decode/upcast failures visible; do not catch or default them as optional-state absence.
+- [x] Run focused recovery tests plus existing Journey lifecycle/round-trip persistence tests and confirm ordinary no-Journey loads remain valid. Focused missing-row, malformed-present and invalid-history cases passed 4/4 against PostgreSQL after the fix.
 
 ### Task 5: Update evidence and deliver the bounded recovery slice
 
@@ -97,10 +97,10 @@
 
 **Produces:** A dated PS-04/05 disposition, truthful PLAT-001 assessment, reviewed PR, and completed implementation evidence.
 
-- [ ] Record the precise missing optional Journey-row policy, transition ordering, post-ack null behavior, read no-writeback, legal-save repair and invalid-history negative; preserve original audit findings.
-- [ ] Update PLAT-001 only to the behavior proven here; keep other optional components and malformed/nested shapes open unless this slice directly proves them.
-- [ ] Confirm ADR-0028 remains truthful; do not edit it because this implements its existing event-history authority and cache-reconstruction decision.
-- [ ] Run the focused PostgreSQL tests, migration inventory and canonical fail-fast `py -3 tools/run.py ci --check`; confirm generated web identity `0.1.0-dev.24` and no event payload or migration changes absent explicit necessity.
+- [x] Record the precise missing optional Journey-row policy, transition ordering, post-ack null behavior, read no-writeback, legal-save repair and invalid-history negative; preserve original audit findings.
+- [x] Update PLAT-001 only to the behavior proven here; keep other optional components and malformed/nested shapes open unless this slice directly proves them.
+- [x] Confirm ADR-0028 remains truthful; do not edit it because this implements its existing event-history authority and cache-reconstruction decision.
+- [ ] Run the focused PostgreSQL tests, migration inventory and canonical fail-fast `py -3 tools/run.py ci --check`; confirm generated web identity `0.1.0-dev.24` and no event payload or migration changes absent explicit necessity. Focused cases passed 4/4; migration inventory shows only the existing `20261009001543_AddTravelDiaryProjectionWatermark` pending; no event or migration diff exists. The final canonical gate remains pending.
 - [ ] Complete whole-branch review against this plan, baseline spec, PS-04/05, persistence doctrine, unslop and code-review runbook; resolve every finding and inspect the final head.
 - [ ] Publish and attach a Draft PR to `develop`, verify its exact source head and current body, then mark it ready; verify the canonical hosted gate passes on that exact SHA before merging under active epic authorization, fast-forward `Z:\wild-bunch`, and clean only the verified merged worktree and branch; keep this plan until the next row 07 successor classifies it.
 
