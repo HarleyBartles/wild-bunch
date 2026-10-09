@@ -98,6 +98,12 @@ namespace WildBunch.Persistence.Migrations
                     b.Property<long>("StreamVersion")
                         .HasColumnType("bigint");
 
+                    b.Property<int?>("TravelDiaryProjectionDayCount")
+                        .HasColumnType("integer");
+
+                    b.Property<long?>("TravelDiaryProjectionStreamVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 

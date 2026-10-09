@@ -34,31 +34,27 @@ public sealed class MigrationTests
             await context.GetService<IMigrator>().MigrateAsync(priorMigration);
         }
 
-        var preAlphaSession = CreateSession();
+        var preAlphaSessionId = Guid.NewGuid();
+        var preAlphaCreatedAt = DateTime.UtcNow;
+        const string emptyJson = "{}";
         await using (var context = new WildBunchDbContext(options))
         {
-            var serializer = new GameSessionJsonSerializer();
-            var projector = new TravelDiaryDayProjector();
-            var upcasters = new PayloadUpcasterRegistry([]);
-            var payloadLoader = new PersistedPayloadLoader(
-                upcasters,
-                serializer,
-                projector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
-            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
-
-            await repository.StoreAsync(preAlphaSession);
-            await new EfGameSessionUnitOfWork(context).CommitAsync();
-
-            context.GameSessionDiaryDays.Add(new GameSessionDiaryDayEntity
-            {
-                SessionId = preAlphaSession.Id.Value,
-                Sequence = 1,
-                PayloadJson = "{}",
-                RecordedAtUtc = DateTime.UtcNow,
-                SchemaVersion = 1
-            });
-            await context.SaveChangesAsync();
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessions" ("Id", "CreatedAtUtc", "UpdatedAtUtc", "Status", "GameDifficulty", "SeedCode", "SchemaVersion", "StreamVersion", "SnapshotVersion")
+                VALUES ({preAlphaSessionId}, {preAlphaCreatedAt}, {preAlphaCreatedAt}, 'InProgress', 0, NULL, 1, 1, 0);
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionComponents" ("SessionId", "ComponentName", "PayloadJson", "ComponentVersion", "UpdatedAtUtc")
+                VALUES ({preAlphaSessionId}, 'player', CAST({emptyJson} AS jsonb), 1, {preAlphaCreatedAt});
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionStoredEvents" ("StreamId", "Sequence", "EventId", "OccurredAtUtc", "EventType", "PayloadJson", "CorrelationId", "CausationId", "SchemaVersion")
+                VALUES ({preAlphaSessionId}, 1, {Guid.NewGuid()}, {preAlphaCreatedAt}, 'GameStarted', CAST({emptyJson} AS jsonb), NULL, NULL, 1);
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionTravelDiaryDays" ("SessionId", "Sequence", "PayloadJson", "RecordedAtUtc", "SchemaVersion")
+                VALUES ({preAlphaSessionId}, 1, CAST({emptyJson} AS jsonb), {preAlphaCreatedAt}, 1);
+                """);
 
             Assert.Equal(1, await context.GameSessions.CountAsync());
             Assert.NotEmpty(await context.GameSessionComponents.ToListAsync());
@@ -82,6 +78,7 @@ public sealed class MigrationTests
             var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
             Assert.Contains(priorMigration, appliedMigrations);
             Assert.Contains(discardMigration, appliedMigrations);
+            Assert.Contains("20261009001543_AddTravelDiaryProjectionWatermark", appliedMigrations);
 
             var serializer = new GameSessionJsonSerializer();
             var projector = new TravelDiaryDayProjector();
@@ -100,6 +97,9 @@ public sealed class MigrationTests
             Assert.NotNull(reloaded);
             Assert.Equal(newSession.Player.Name, reloaded!.Player.Name);
             Assert.Equal(1, await context.GameSessions.CountAsync());
+            var envelope = await context.GameSessions.AsNoTracking().SingleAsync(game => game.Id == newSession.Id.Value);
+            Assert.Equal(envelope.StreamVersion, envelope.TravelDiaryProjectionStreamVersion);
+            Assert.Equal(0, envelope.TravelDiaryProjectionDayCount);
 
             await Assert.ThrowsAsync<NotSupportedException>(
                 () => context.GetService<IMigrator>().MigrateAsync(priorMigration));
@@ -184,6 +184,8 @@ public sealed class MigrationTests
         Assert.DoesNotContain("StateJson", columns);
         Assert.Contains("SchemaVersion", columns);
         Assert.Contains("GameDifficulty", columns);
+        Assert.Contains("TravelDiaryProjectionStreamVersion", columns);
+        Assert.Contains("TravelDiaryProjectionDayCount", columns);
     }
 
     private static async Task AssertJsonbColumnTypesAsync(NpgsqlConnection connection)

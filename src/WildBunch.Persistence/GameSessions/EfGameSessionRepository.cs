@@ -158,6 +158,8 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         entity.GameDifficulty = (int)session.GameDifficulty;
         entity.SeedCode = session.SeedCode;
         entity.SchemaVersion = SchemaVersion;
+        entity.TravelDiaryProjectionStreamVersion = session.Version;
+        entity.TravelDiaryProjectionDayCount = session.TravelDiaryDays.Count;
 
         // Append events to the event stream. For new sessions, store the full
         // event stream (AllEvents) so the session is replayable even when
@@ -317,7 +319,12 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 .ToArray();
         }
 
-        var diaryDays = _payloadLoader.LoadDiaryDays(diaryDayEntities, allEvents);
+        var diaryDays = _payloadLoader.LoadDiaryDays(
+            diaryDayEntities,
+            allEvents,
+            envelope.StreamVersion,
+            envelope.TravelDiaryProjectionStreamVersion,
+            envelope.TravelDiaryProjectionDayCount);
         return new GameSessionStore(
             envelope,
             components,
@@ -532,11 +539,23 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var commonCount = Math.Min(existing.Count, travelDiaryDays.Count);
-        for (var index = 0; index < commonCount; index++)
+        var existingBySequence = existing.ToDictionary(day => day.Sequence);
+        for (var sequence = 0; sequence < travelDiaryDays.Count; sequence++)
         {
-            var current = existing[index];
-            var desiredJson = _serializer.SerializeTravelDiaryDay(travelDiaryDays[index]);
+            var desiredJson = _serializer.SerializeTravelDiaryDay(travelDiaryDays[sequence]);
+            if (!existingBySequence.TryGetValue(sequence, out var current))
+            {
+                _dbContext.GameSessionDiaryDays.Add(new GameSessionDiaryDayEntity
+                {
+                    SessionId = sessionId,
+                    Sequence = sequence,
+                    PayloadJson = desiredJson,
+                    RecordedAtUtc = DateTime.UtcNow,
+                    SchemaVersion = ProjectionVersions.DiaryDay
+                });
+                continue;
+            }
+
             if (!string.Equals(current.PayloadJson, desiredJson, StringComparison.Ordinal))
             {
                 current.PayloadJson = desiredJson;
@@ -545,21 +564,9 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             current.SchemaVersion = ProjectionVersions.DiaryDay;
         }
 
-        for (var index = existing.Count; index < travelDiaryDays.Count; index++)
+        foreach (var stale in existing.Where(day => day.Sequence < 0 || day.Sequence >= travelDiaryDays.Count))
         {
-            _dbContext.GameSessionDiaryDays.Add(new GameSessionDiaryDayEntity
-            {
-                SessionId = sessionId,
-                Sequence = index,
-                PayloadJson = _serializer.SerializeTravelDiaryDay(travelDiaryDays[index]),
-                RecordedAtUtc = DateTime.UtcNow,
-                SchemaVersion = ProjectionVersions.DiaryDay
-            });
-        }
-
-        for (var index = travelDiaryDays.Count; index < existing.Count; index++)
-        {
-            _dbContext.GameSessionDiaryDays.Remove(existing[index]);
+            _dbContext.GameSessionDiaryDays.Remove(stale);
         }
     }
 
