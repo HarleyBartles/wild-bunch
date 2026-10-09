@@ -112,6 +112,8 @@ Prefer explicit, bounded Domain restoration/snapshot seams with validation and m
 
 `GetByStatusAsync:41-58` selects every matching session ID and loads each sequentially; even current snapshots deserialize the full event history (`EfGameSessionRepository.cs:304-314`). That history has actual projection consumers, so it is not dead work, but AP-09's global active-session archival multiplies it and couples one setup operation to every active stream. Player ownership requires a bounded indexed lookup in its feature slice. Consider separately loaded/materialized read projections where justified; no measured performance regression or infrastructure sizing claim is made by this audit.
 
+**Dated disposition, 2026-10-10, row 07 PS-15 schema artifacts:** The unused `GameSessionEntity.SchemaVersion` property, its repository writes and EF mapping, and the unique `(StreamId, Sequence)` index were removed from the current model. Forward migration `20261009225627_RetireUnusedSessionSchemaArtifacts` drops that index and column; its Down restores both. Historical migrations are unchanged. `MigrationTests.RemovingUnusedSchemaArtifactsPreservesStoredSession` migrates to the prior schema, stores a real session through `EfGameSessionRepository`, applies the forward migration, then proves a fresh repository load retains player identity, location, stream version and event count. The greenfield migration/save/load behavior remains covered. The existing append-race test continues to exercise sequence uniqueness through the retained primary key, and the EventId collision test retains independent unique-event behavior. The stale assertion that the unused envelope column exists was removed without an absence detector. This closes only the unused envelope version and duplicate sequence index; `SessionRebuilder` cleanup and unbounded status loads remain open. Component, event and diary-day schema versions remain because consumers use them.
+
 ### PS-16: Historical migrations do not preserve all historical playthrough data
 
 **Confirmed migration operations; past intent and affected deployed data unknown.** `ComposedSessionPersistence.Up:15-17` drops `StateJson` before creating empty component tables. Its Down recreates empty snapshot strings, not lost data. `EventStore.Up` creates an empty event table with existing envelopes at stream version zero and no backfill. `DropGameSessionLogEntries.Up` removes prior journal rows; its Down restores only the table. Together these cannot establish lossless upgrades from populated pre-composition/pre-event databases. The rename migration and nullable seed addition are materially different: they preserve data/schema rather than pretending to restore discarded history. The diary version addition correctly tags existing rows v1.
@@ -150,12 +152,12 @@ Paths below are relative to `src/WildBunch.Persistence`. Each row represents a f
 | `GameSessions/GameSessionComponentNames.cs` | Keep component identity/helpers; PS-05 presence semantics. |
 | `GameSessions/GameSessionDiaryDayEntity.cs` | Keep derived cache row. |
 | `GameSessions/GameSessionDiaryDayEntityConfiguration.cs` | Keep mapping; cache completeness belongs to load policy. |
-| `GameSessions/GameSessionEntity.cs` | Keep envelope; PS-15 unused schema-version meaning. |
-| `GameSessions/GameSessionEntityConfiguration.cs` | Keep current envelope mapping; ownership feature remains separate. |
+| `GameSessions/GameSessionEntity.cs` | Keep the remaining session envelope; PS-15 unused schema version removed. |
+| `GameSessions/GameSessionEntityConfiguration.cs` | Keep current remaining envelope mapping; ownership feature remains separate. |
 | `GameSessions/GameSessionReadStoreLoader.cs` | Correct PS-03-07/09 divergent read semantics. |
 | `GameSessions/SessionRebuilder.cs` | Correct phase coverage with AP-01; trim unused argument under PS-15. |
 | `GameSessions/StoredEventEntity.cs` | Keep infrastructure event envelope outside Domain. |
-| `GameSessions/StoredEventEntityConfiguration.cs` | Keep append and event-ID constraints; PS-15 duplicate index. |
+| `GameSessions/StoredEventEntityConfiguration.cs` | Keep append primary key and event-ID uniqueness; PS-15 duplicate index removed. |
 | `Serialization/GameSessionJsonSerializer.Components.cs` | Keep live codecs; PS-01/04/14 validation, defaults and restoration. |
 | `Serialization/GameSessionJsonSerializer.Events.cs` | Correct PS-02 missing supported event; keep fail-closed resolver. |
 | `Serialization/GameSessionJsonSerializer.Log.cs` | Remove unused private codec, PS-13. |

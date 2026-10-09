@@ -13,8 +13,6 @@ namespace WildBunch.Persistence.GameSessions;
 
 public sealed class EfGameSessionRepository : IGameSessionRepository
 {
-    private const int SchemaVersion = 1;
-
     private readonly WildBunchDbContext _dbContext;
     private readonly GameSessionJsonSerializer _serializer;
     private readonly TravelDiaryDayProjector _travelDiaryDayProjector;
@@ -197,7 +195,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             {
                 Id = session.Id.Value,
                 CreatedAtUtc = now,
-                SchemaVersion = SchemaVersion,
                 StreamVersion = 0
             };
             _dbContext.GameSessions.Add(entity);
@@ -215,7 +212,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         entity.Status = session.Status.ToString();
         entity.GameDifficulty = (int)session.GameDifficulty;
         entity.SeedCode = session.SeedCode;
-        entity.SchemaVersion = SchemaVersion;
         entity.TravelDiaryProjectionStreamVersion = session.Version;
         entity.TravelDiaryProjectionDayCount = session.TravelDiaryDays.Count;
 

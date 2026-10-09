@@ -57,11 +57,11 @@
 
 **Files:** Modify `src/WildBunch.Persistence/GameSessions/GameSessionEntity.cs`, `GameSessionEntityConfiguration.cs`, `EfGameSessionRepository.cs`, and `StoredEventEntityConfiguration.cs`.
 
-- [ ] Recheck all repository consumers of `GameSessionEntity.SchemaVersion` and the duplicate `(StreamId, Sequence)` unique index. Confirm other schema versions and both required event constraints have live consumers or behavior.
-- [ ] Remove the envelope version property, mapping and assignments/constant. Remove only the redundant unique-index configuration.
-- [ ] Generate a forward EF migration and inspect its Up/Down operations. It must drop only the old duplicate index and `GameSessions.SchemaVersion` column, and restore those artifacts on Down without rewriting prior migrations.
-- [ ] Update the model snapshot and generated migration designer through EF tooling.
-- [ ] Remove the `Assert.Contains("SchemaVersion", columns)` change-detector assertion from `MigrationTests.MigrationsCreateGameSessionsTableAndRoundTripSession`; retain the actual migration, save, load, player-state and component assertions. Do not add absence checks.
+- [x] Recheck all repository consumers of `GameSessionEntity.SchemaVersion` and the duplicate `(StreamId, Sequence)` unique index. Confirm other schema versions and both required event constraints have live consumers or behavior.
+- [x] Remove the envelope version property, mapping and assignments/constant. Remove only the redundant unique-index configuration.
+- [x] Generate a forward EF migration and inspect its Up/Down operations. It drops only the old duplicate index and `GameSessions.SchemaVersion` column, restores them on Down with the former writer's version `1`, and leaves historical migrations unchanged.
+- [x] Update the model snapshot and generated migration designer through EF tooling.
+- [x] Remove the `Assert.Contains("SchemaVersion", columns)` change-detector assertion from `MigrationTests.MigrationsCreateGameSessionsTableAndRoundTripSession`; retain the actual migration, save, load, player-state and component assertions. Do not add absence checks.
 
 **Expected:** The current EF model has no unused envelope version or duplicate index; event sequence and EventId uniqueness remain protected by their existing constraints.
 
@@ -69,19 +69,19 @@
 
 **Files:** Update `tests/WildBunch.Integration.Tests/MigrationTests.cs` only as required to preserve meaningful behavior coverage; append dated implementation dispositions to the PS-15 entries in `.agents/investigations/stable-0.1.0/2026-10-07-persistence-layer-investigation.md` and `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`.
 
-- [ ] Run the greenfield migration and repository round-trip test against PostgreSQL after ensuring the repository's shared PostgreSQL service.
-- [ ] Run the existing destructive-transition migration scenario through the new migration and prove a fresh session is stored and loaded afterward; retain its pre-migration fixture at the schema version where it belongs.
-- [ ] Run `dotnet tool restore` and `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; verify the new migration is applied in the integration scenario.
-- [ ] Record exactly which PS-15 subfindings this slice closes and which remain open. No new structural tests or receipts.
-- [ ] Recheck applicable ADRs and `docs/features.md`; leave them unchanged if no durable or player-facing truth moved.
+- [x] Run the greenfield migration and repository round-trip test against PostgreSQL after ensuring the repository's shared PostgreSQL service.
+- [x] Run the existing destructive-transition migration scenario through the new migration and prove a fresh session is stored and loaded afterward; retain its pre-migration fixture at the schema version where it belongs.
+- [x] Run `dotnet tool restore` and `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; the integration migration scenario applies the new migration and reloads its stored session.
+- [x] Record exactly which PS-15 subfindings this slice closes and which remain open. No new structural tests or receipts.
+- [x] Recheck applicable ADRs and `docs/features.md`; leave them unchanged because no durable or player-facing truth moved.
 
 **Expected:** Existing data can pass through the additive-history forward migration, and a current session remains usable through the production repository.
 
 ### Task 4: Validate, review and publish to `develop`
 
-- [ ] Run focused migration and repository behavior tests, then the canonical fail-fast `py -3 tools/run.py ci --check` gate on the exact staged/committed candidate.
-- [ ] Inspect the full diff, migration Up/Down, generated model snapshot, test evidence, investigation dispositions, ADRs, feature matrix and unslop profile for the actual changed surface. Record the self-review fallback due to runtime subagent restrictions.
-- [ ] Publish a Draft PR to `develop`; verify the PR head matches local `HEAD` and hosted canonical CI passes on that exact head before making it ready and merging.
+- [x] Run focused migration and repository behavior tests, then the canonical fail-fast `py -3 tools/run.py ci --check` gate on the exact staged/committed candidate.
+- [x] Inspect the full diff, migration Up/Down, generated model snapshot, test evidence, investigation dispositions, ADRs, feature matrix and unslop profile for the actual changed surface. Record the self-review fallback due to runtime subagent restrictions.
+- [ ] Publish a Draft PR to `develop` and verify the PR head matches local `HEAD`. PR jobs run only after the PR is marked ready, so require hosted canonical CI to pass on that exact head before merge.
 - [ ] After merge, verify the develop push gate passes on the merge SHA. Leave the plan and roadmap for the next successor to retire after verifying evidence.
 
 **Expected:** `.47` is merged to `develop` with exact-head review and passing hosted PR and develop gates; the persisted event stream and session repository remain authoritative and usable.
