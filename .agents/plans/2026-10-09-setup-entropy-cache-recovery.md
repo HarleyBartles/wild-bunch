@@ -40,8 +40,8 @@
 
 **Produces:** A committed, executable JIT plan in the fresh row 07 worktree.
 
-- [ ] Save and review this plan, then commit only this plan before any implementation or successor-artifact changes.
-- [ ] Record the plan-only commit in the final PR description and retain the plan through the completing PR.
+- [x] Save and review this plan, then commit only this plan before any implementation or successor-artifact changes.
+- [x] Record plan-only commit `494f35fb` and retain the plan through the completing PR.
 
 ### Task 2: Establish the next row 07 slice and retire its completed predecessor
 
@@ -51,11 +51,11 @@
 
 **Produces:** This plan as row 07's current plan, truthful closure evidence for its predecessor, predecessor retirement and the unique successor development version.
 
-- [ ] Verify PR #206 merged to `develop` from the reviewed exact source, source and merge trees match, and hosted canonical gate passed on that source.
-- [ ] In the first substantive commit, record PR #206's exact source, merge SHA, tree, `0.1.0-dev.21` and hosted gate; summarize current-version required-component null-field recovery; retire the completed predecessor plan and remove stale links.
-- [ ] Set this plan as row 07's current plan and record the newly scoped setup-entropy cache gap without claiming it is fixed.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.21` to `0.1.0-dev.22`; do not hand-edit generated web version output.
-- [ ] Inspect and commit the intended successor-artifact diff before implementation.
+- [x] Verify PR #206 merged to `develop` from reviewed source `72742c0b7c247198e9b02fdb06f8957fe9580158`; source and merge trees both equal `3861462f6888ae226ea7942cda8a8e8c00474fcd`, and hosted canonical run `37874635607` passed on that source.
+- [x] In first substantive commit `257e336d`, record PR #206's exact source, merge SHA, tree, `0.1.0-dev.21` and hosted gate; summarize current-version required-component null-field recovery; retire the completed predecessor plan and remove its stale link.
+- [x] Set this plan as row 07's current plan and record the setup-entropy cache gap before implementation.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.21` to `0.1.0-dev.22`; do not hand-edit generated web version output.
+- [x] Inspect and commit the intended successor-artifact diff before implementation.
 
 ### Task 3: Prove setup entropy loss at the persisted repository boundary
 
@@ -65,14 +65,14 @@
 
 **Produces:** PostgreSQL red tests for current setup-cache loss and authoritative-history failure.
 
-- [ ] Add a real production-event scenario that independently captures a non-`Classic` selected entropy and then removes only the current `setup` component row or nulls/omits its `gameEntropy` field while preserving events and all unrelated persistence metadata.
-- [ ] Exercise fresh command aggregate and player/journal read loads; assert the selected entropy remains exact rather than defaulting to `Classic`.
-- [ ] Assert command and query recovery leave the damaged payload/row, component version, envelope positions, event rows and diary metadata unchanged.
-- [ ] Execute a legal command after recovery, save through the normal unit of work, and assert a fresh load returns the same selected entropy with the setup cache repaired.
-- [ ] Add a negative case that damages the setup cache and removes the required `WorldGenerated` event; assert both command and query loads fail at the authoritative history boundary.
-- [ ] Run the focused PostgreSQL tests against the current implementation and observe failure for the entropy-loss behavior before changing production code.
+- [x] Add a real production-event scenario that independently captures a non-`Classic` selected entropy and then removes only the current `setup` component row or nulls/omits its `gameEntropy` field while preserving events and all unrelated persistence metadata; include an unsupported enum value as an unusable shape.
+- [x] Exercise fresh command aggregate and player read-model loads; assert the selected entropy remains exact rather than defaulting to `Classic`.
+- [x] Assert command and query recovery leave the damaged payload/row, component version, envelope positions, exact event rows and diary metadata unchanged.
+- [x] Execute a legal command after recovery, save through the normal unit of work, and assert a fresh load returns the same selected entropy with the setup cache repaired.
+- [x] Add a negative case that damages the setup cache and removes the required `WorldGenerated` event; assert both command and query loads fail at the authoritative history boundary.
+- [x] Run focused PostgreSQL tests against the current implementation and observe failure before changing production code: missing/null returned `Classic` instead of `Wild`; unsupported enum returned `99`; with corrupt history the loader returned plausible state instead of failing.
 
-Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_CurrentSetupEntropyCacheRecoversFromEvents"`; the expected failure must demonstrate that the cache shortcut returns the wrong entropy or that the recovery path fails while history is intact.
+Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_CurrentSetupEntropyCacheRecoversFromEvents"`; the expected failure must demonstrate that the cache shortcut returns the wrong entropy or that the recovery path fails while history is intact. The legacy compatibility control is `FullyQualifiedName~MissingEntropyInLegacySessionJsonDefaultsToStandard`.
 
 ### Task 4: Recover invalid current setup cache from supported events
 
@@ -82,11 +82,11 @@ Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualified
 
 **Produces:** Exact event-backed setup entropy on command and query loads, without read writeback or changes to legacy whole-session snapshot compatibility.
 
-- [ ] Treat missing/null or otherwise unusable entropy in a present current-version setup component as invalid cache data; keep any decode/shape classification limited to the persisted component path.
-- [ ] Recover event-established setup entropy through the coherent supported replay path in both command and query loaders; preserve truly supported legacy behavior only where the persisted-history boundary proves it applies.
-- [ ] Keep event decode, upcast, replay, cancellation and infrastructure failures outside the cache-damage classification.
-- [ ] Preserve legacy whole-session snapshot compatibility behavior and prove the existing compatibility test still passes; do not broaden this slice into a generic optional-component policy.
-- [ ] Rerun focused PostgreSQL tests and verify the corrupt-history negative fails closed.
+- [x] Treat a missing current setup row and null or unsupported entropy in a present current-version setup component as invalid cache data; keep decode/shape classification limited to the persisted component path.
+- [x] Recover event-established setup entropy through coherent supported replay in both command and query loaders; preserve legacy behavior at its distinct supported boundary.
+- [x] Keep event decode, upcast, replay, cancellation and infrastructure failures outside cache-damage classification.
+- [x] Preserve legacy whole-session snapshot compatibility; `MissingEntropyInLegacySessionJsonDefaultsToStandard` passes. Do not broaden this slice into generic optional-component policy.
+- [x] Rerun focused PostgreSQL tests; corrupt-history negative fails closed.
 
 ### Task 5: Record evidence and deliver the bounded recovery slice
 
@@ -96,9 +96,9 @@ Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualified
 
 **Produces:** Dated PS-04/05 disposition, truthful PLAT-001 assessment, reviewed PR and completed implementation evidence.
 
-- [ ] Record the setup-cache recovery behavior, exact event-established entropy facts, row and metadata preservation, legal-save repair, corrupt-history negative and legacy compatibility boundary; preserve the audit-time findings.
-- [ ] Update PLAT-001 to state the precise setup cache behavior now proven and keep all unrelated optional/nested component gaps open.
-- [ ] Confirm ADR-0028 remains truthful; change or supersede it only if this implementation changes a durable decision rather than enforcing its existing cache/event-authority decision.
+- [x] Record setup-cache recovery behavior, exact event-established entropy facts, row/metadata preservation, legal-save repair, corrupt-history negative and legacy compatibility boundary; preserve audit-time findings.
+- [x] Update PLAT-001 to state the precise setup cache behavior now proven and keep unrelated optional/nested component gaps open.
+- [x] Confirm ADR-0028 remains truthful; unchanged because this enforces its existing cache/event-authority decision.
 - [ ] Run focused PostgreSQL tests, persistence migration inventory and canonical fail-fast `py -3 tools/run.py ci --check`; confirm generated web identity is `0.1.0-dev.22` and no event payload or migration changes were introduced.
 - [ ] Complete whole-branch review against this plan, baseline spec, PS-04/05, persistence doctrine and code-review runbook; apply review fixes and inspect the exact final PR head.
 - [ ] Publish and attach a Draft PR to `develop`, verify its exact source head, then mark it ready so hosted validation runs; verify the canonical gate passes on that exact SHA before merging under active epic authorization, fast-forward `Z:\wild-bunch`, and clean only this verified merged worktree and branch; retain this plan until its next row 07 successor classifies it.
