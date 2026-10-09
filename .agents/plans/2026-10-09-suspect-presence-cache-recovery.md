@@ -81,7 +81,7 @@ Ruling: Missing optional presence is legitimate when no state-changing confronta
 - [x] Route a missing `wantedSuspectPresenceLedger` row through full replay only when history contains a `WantedSuspectConfronted` event with non-Abandoned outcome and choice `Surrendered`, `Fled`, or `Killed`; otherwise preserve the empty optional component on the snapshot path. Keep the classifier narrow to the transitions Domain `Apply` currently records.
 - [x] Wrap JSON-null-root ledger payloads in the existing typed invalid-component-cache exception with component identity `wantedSuspectPresenceLedger`; do not catch event loading or replay failures as cache damage.
 - [x] Re-run the focused cases; assert a subsequent legal game command and ordinary unit-of-work save repair the component, then verify a fresh command load returns the same ledger state.
-- [ ] Run the completion helper for task 3 only after the exact focused PostgreSQL command passes on the completed task commit.
+- [x] Run the completion helper for task 3 only after the exact focused PostgreSQL command passes on the completed task commit.
 
 ### Task 4: Record the bounded result and deliver the slice
 
@@ -91,10 +91,10 @@ Ruling: Missing optional presence is legitimate when no state-changing confronta
 
 **Produces:** A dated narrow presence-cache recovery disposition, reviewed PR and evidence for the committed development version.
 
-- [ ] Record only covered missing/null-root presence recovery, legitimate absent-ledger fast path, query exclusion, read no-writeback, later legal-save repair and unreplayable-history failure; retain direct `AvailableInTown` seeding as a separate unresolved event-authority concern if still present.
-- [ ] Inspect migration, event serializer/upcaster and event payload diffs; confirm no schema or event-contract change.
-- [ ] Run the focused PostgreSQL command, then `py -3 tools/run.py ci --check`; verify generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.27` and ensure evidence belongs to the same committed candidate.
-- [ ] Apply the repository's [implementing runbook](../runbooks/implementing.md), complete the focused behavior test with the local PostgreSQL service available via `./tools/postgres-dev.ps1 ensure`, and use the [code-review runbook](../runbooks/code-review.md) for the fresh whole-branch review.
+- [x] Record only covered missing/null-root presence recovery, legitimate absent-ledger fast path, query exclusion, read no-writeback, later legal-save repair and unreplayable-history failure; retain direct `AvailableInTown` seeding as a separate unresolved event-authority concern if still present.
+- [x] Inspect migration, event serializer/upcaster and event payload diffs; confirm no schema or event-contract change. There is no migration or upcaster diff; the serializer classifies the null ledger cache root for existing recovery, without changing event payloads.
+- [x] Run the focused PostgreSQL command, then `py -3 tools/run.py ci --check`; verify generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.27` and ensure evidence belongs to the same committed candidate. The focused run passed 5/5 and the canonical gate passed on the implementation and documentation candidate at `acc7ffb`; the generated web identity reports `0.1.0-dev.27`.
+- [x] Apply the repository's [implementing runbook](../runbooks/implementing.md), complete the focused behavior test with the local PostgreSQL service available via `./tools/postgres-dev.ps1 ensure`, and use the [code-review runbook](../runbooks/code-review.md) for the fresh whole-branch review.
 - [ ] Complete fresh whole-branch review against this plan, baseline specification, PS-04/05, ADR-0028, event-sourcing doctrine, unslop profile and code-review runbook; resolve actionable findings and inspect the final committed head.
 - [ ] Publish the reviewed implementation PR to `develop`, verify its exact source head/body and hosted canonical gate, mark it ready after review and validation pass, and merge it under the active goal authorization.
 - [ ] Fast-forward the main checkout to merged `develop`; remove only this verified merged worktree and its branch-scoped scratch after checking exact containment and clean Git state.
