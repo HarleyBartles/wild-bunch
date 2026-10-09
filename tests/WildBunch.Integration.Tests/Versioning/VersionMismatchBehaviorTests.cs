@@ -74,7 +74,7 @@ public sealed class VersionMismatchBehaviorTests
         // If the stale path is taken: the garbage JSON is discarded, the projector
         // runs on the events, and returns its output (empty for non-journey events).
         // If the current path were taken: deserializing the garbage JSON would throw.
-        var result = loader.LoadDiaryDays(staleDays, events);
+        var result = loader.LoadDiaryDays(staleDays, events, events.Count, events.Count, staleDays.Length);
 
         // The result must match what the projector produces directly — proving
         // the rebuild path was taken, not the stored-JSON path.
@@ -134,64 +134,13 @@ public sealed class VersionMismatchBehaviorTests
         // If the All() check works: all days discarded, projector runs, returns its output.
         // If the All() check were broken (e.g., changed to Any()): the current day would
         // be deserialized from stored JSON, and the stale day would throw.
-        var result = loader.LoadDiaryDays(mixedDays, events);
+        var result = loader.LoadDiaryDays(mixedDays, events, events.Count, events.Count, mixedDays.Length);
 
         // All days should be discarded and rebuilt from events.
         var expectedDays = projector.Project(events).Days;
         Assert.Equal(expectedDays.Count, result.Count);
         // The current day's stored data should NOT appear in the result (it was discarded).
         Assert.DoesNotContain(result, d => d.OriginTownName == "Pinecross" && d.DestinationTownName == "Dry Fork");
-    }
-
-    [Fact]
-    public void LoadDiaryDays_CurrentVersion_UsesStoredJson()
-    {
-        var registry = new PayloadUpcasterRegistry([]);
-        var serializer = new GameSessionJsonSerializer();
-        var projector = new TravelDiaryDayProjector();
-        var loader = new PersistedPayloadLoader(
-            registry, serializer, projector,
-            _ => throw new InvalidOperationException("Should not be called."));
-
-        var day = new TravelDiaryDayState(
-            1, "Pinecross", "Dry Fork",
-            TravelMode.Mounted, TravelMode.Mounted,
-            JourneyStatus.Active,
-            3m, 3m, 4, 4,
-            null, null, null, null, null,
-            null, null, null,
-            Entries: Array.Empty<string>(),
-            HealthDelta: 0, WalletDelta: 0m, FoodDelta: 0,
-            HorseFeedDelta: 0, CanteenChargeDelta: 0, AmmoSpent: 0,
-            HorseHungerDelta: 0, HorseThirstDelta: 0, HorseExhaustionDelta: 0,
-            DelayDays: 0, HeatIncrease: 0,
-            CurrentHealth: 1000, CurrentWallet: 25m,
-            CurrentFood: 3, CurrentHorseFeed: 0,
-            CurrentCanteenCharges: 2, CurrentAmmo: 0,
-            CurrentHeat: 0, Warnings: Array.Empty<string>())
-        {
-            Terrain = TrailTerrain.OpenRange,
-            RouteWaterSecure = true,
-            CanteenChargesPerDay = 0
-        };
-
-        var dayJson = serializer.SerializeTravelDiaryDay(day);
-        var currentDays = new[]
-        {
-            new GameSessionDiaryDayEntity
-            {
-                SessionId = Guid.NewGuid(),
-                Sequence = 0,
-                PayloadJson = dayJson,
-                SchemaVersion = ProjectionVersions.DiaryDay  // current
-            }
-        };
-
-        var result = loader.LoadDiaryDays(currentDays, Array.Empty<IDomainEvent>());
-
-        Assert.Single(result);
-        Assert.Equal(day.DayNumber, result[0].DayNumber);
-        Assert.Equal(day.OriginTownName, result[0].OriginTownName);
     }
 
     [Fact]

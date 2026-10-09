@@ -20,6 +20,10 @@ public sealed class GameSessionEntity
 
     public long? SnapshotVersion { get; set; }
 
+    public long? TravelDiaryProjectionStreamVersion { get; set; }
+
+    public int? TravelDiaryProjectionDayCount { get; set; }
+
     public ICollection<GameSessionComponentEntity> Components { get; set; } = [];
 
     public ICollection<GameSessionDiaryDayEntity> TravelDiaryDays { get; set; } = [];

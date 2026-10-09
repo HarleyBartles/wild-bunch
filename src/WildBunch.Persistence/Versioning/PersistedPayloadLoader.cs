@@ -94,11 +94,20 @@ public sealed class PersistedPayloadLoader
     /// </summary>
     public IReadOnlyList<TravelDiaryDayState> LoadDiaryDays(
         IReadOnlyList<GameSessionDiaryDayEntity> stored,
-        IReadOnlyList<IDomainEvent> events)
+        IReadOnlyList<IDomainEvent> events,
+        long streamVersion,
+        long? projectionStreamVersion,
+        int? projectionDayCount)
     {
-        if (stored.Count > 0 && stored.All(d => d.SchemaVersion == ProjectionVersions.DiaryDay))
+        var ordered = stored.OrderBy(day => day.Sequence).ToArray();
+        var hasCurrentSchema = ordered.All(day => day.SchemaVersion == ProjectionVersions.DiaryDay);
+        var hasContiguousSequence = ordered.Select(day => day.Sequence).SequenceEqual(Enumerable.Range(0, ordered.Length));
+        if (projectionStreamVersion == streamVersion
+            && projectionDayCount == ordered.Length
+            && hasCurrentSchema
+            && hasContiguousSequence)
         {
-            return stored.Select(d => _serializer.DeserializeTravelDiaryDay(d.PayloadJson)).ToArray();
+            return ordered.Select(d => _serializer.DeserializeTravelDiaryDay(d.PayloadJson)).ToArray();
         }
 
         // Stale or empty: rebuild from events via the projector.

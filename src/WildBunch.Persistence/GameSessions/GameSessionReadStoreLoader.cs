@@ -221,7 +221,12 @@ public sealed class GameSessionReadStoreLoader
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         var domainEvents = _payloadLoader.LoadEvents(storedEvents);
-        var diaryDays = _payloadLoader.LoadDiaryDays(diaryDayEntities, domainEvents);
+        var diaryDays = _payloadLoader.LoadDiaryDays(
+            diaryDayEntities,
+            domainEvents,
+            envelope.StreamVersion,
+            envelope.TravelDiaryProjectionStreamVersion,
+            envelope.TravelDiaryProjectionDayCount);
 
         return new GameSessionStore(
             envelope,
