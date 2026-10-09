@@ -190,7 +190,7 @@ public sealed class GameSessionReadStoreLoader
 
     private GameSessionReadState CreateReadStateFromEvents(GameSessionStore store, IReadOnlyList<GameLogEntry> logEntries)
     {
-        var session = SessionRebuilder.RebuildFromEvents(new GameSessionId(store.Envelope.Id), store.AllEvents, _serializer);
+        var session = SessionRebuilder.RebuildFromEvents(new GameSessionId(store.Envelope.Id), store.AllEvents);
         return new GameSessionReadState(
             session.Status,
             session.GameDifficulty,

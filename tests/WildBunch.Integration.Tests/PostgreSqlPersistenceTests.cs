@@ -310,6 +310,6 @@ public sealed class PostgreSqlPersistenceTests
             new PayloadUpcasterRegistry([]),
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
     }
 }

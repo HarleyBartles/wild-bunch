@@ -45,7 +45,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
                 eventUpcasters,
                 serializer,
                 diaryDayProjector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         });
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();

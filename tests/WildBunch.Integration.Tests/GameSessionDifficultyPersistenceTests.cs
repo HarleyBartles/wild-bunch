@@ -25,7 +25,7 @@ public sealed class GameSessionDifficultyPersistenceTests
             new PayloadUpcasterRegistry([]),
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateSession(GameDifficulty.Easy, GameEntropy.Wild);
@@ -225,7 +225,7 @@ public sealed class GameSessionDifficultyPersistenceTests
             new PayloadUpcasterRegistry([]),
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();
@@ -300,7 +300,7 @@ public sealed class GameSessionDifficultyPersistenceTests
             new PayloadUpcasterRegistry([]),
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         var repository = new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
         var unitOfWork = new EfGameSessionUnitOfWork(context);
         var session = CreateTownVisitSession();

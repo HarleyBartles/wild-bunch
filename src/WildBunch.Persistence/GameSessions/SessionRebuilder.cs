@@ -1,26 +1,21 @@
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.World;
-using WildBunch.Persistence.Serialization;
 
 namespace WildBunch.Persistence.GameSessions;
 
 /// <summary>
-/// Synchronous session rebuild from events. Shared by LoadFromEventsAsync
-/// (Plan C) and PersistedPayloadLoader's component rebuild callback.
-/// Reconstructs the world from the WorldGenerated event, then calls
-/// RehydrateFromEvents. See ADR-0028.
+/// Reconstructs a session from ordered domain events by rebuilding its world
+/// and calling GameSession.RehydrateFromEvents.
 /// </summary>
 internal static class SessionRebuilder
 {
     /// <summary>
-    /// Rebuilds a session from events with a known session id. Used by
-    /// LoadFromEventsAsync, which has the id from the load request.
+    /// Rebuilds a session when its persisted envelope supplied the session ID.
     /// </summary>
     public static GameSession RebuildFromEvents(
         GameSessionId id,
-        IReadOnlyList<IDomainEvent> events,
-        GameSessionJsonSerializer serializer)
+        IReadOnlyList<IDomainEvent> events)
     {
         var worldGenerated = events.OfType<WorldGenerated>().Single();
         var world = worldGenerated.World.ToDomain();
@@ -28,15 +23,9 @@ internal static class SessionRebuilder
     }
 
     /// <summary>
-    /// Rebuilds a session from events without a known session id. Used by
-    /// PersistedPayloadLoader's component rebuild callback, which only
-    /// receives events. The id is not carried by domain events, so a
-    /// placeholder is used — this is safe because the rebuilt session is
-    /// only used to extract component JSON, and no component includes the
-    /// session id in its serialized form.
+    /// Rebuilds a session for the component-cache callback when only events are
+    /// available. Events do not carry the persistence envelope's session ID.
     /// </summary>
-    public static GameSession RebuildFromEvents(
-        IReadOnlyList<IDomainEvent> events,
-        GameSessionJsonSerializer serializer)
-        => RebuildFromEvents(GameSessionId.New(), events, serializer);
+    public static GameSession RebuildForComponentCache(IReadOnlyList<IDomainEvent> events)
+        => RebuildFromEvents(GameSessionId.New(), events);
 }
