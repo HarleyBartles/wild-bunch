@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task.
 
-**Goal:** Recover event-established wanted-suspect presence when its optional cache row is missing or malformed, so a later command does not treat a confronted suspect as never encountered.
+**Goal:** Recover event-established wanted-suspect presence when its optional cache row is missing or has a JSON-null root, so a later command does not treat a confronted suspect as never encountered.
 
 **Architecture:** `WantedSuspectConfronted` records the outcome and choice that update the wanted-suspect presence ledger. The `wantedSuspectPresenceLedger` component is a cache. Command loading must replay the ordered event history when a missing row follows an event that establishes ledger state, or when a present row has an invalid cache shape. A history with no state-establishing confrontation may legitimately produce an empty ledger. In particular, this slice does not claim that `AvailableInTown` is event-backed; the existing saloon setup path seeds that state directly and its broader event-sourcing contract remains outside this cache-recovery change. Reads never write repaired cache rows; a later ordinary unit-of-work save may repair them.
 
@@ -26,8 +26,7 @@
 
 ## Review Focus
 
-- Removing the ledger after a persisted non-abandoned confrontation must restore the event-established `GoneToGround`, `SecuredAlive` or `SecuredDead` state through command replay.
-- Missing state before any state-establishing confrontation must not conjure an entry from an unrelated event or cached state.
+- Removing the ledger after a persisted `Fled` confrontation must restore event-established `GoneToGround` state through command replay.
 - JSON `null` is syntactically valid but not a valid ledger cache shape; it must use typed cache recovery without rewriting storage during reads.
 - An undecodable authoritative `WantedSuspectConfronted` event must fail closed when the cache is missing or malformed.
 - A later legal command save must repair the cache through the normal repository/unit-of-work path.
@@ -41,10 +40,10 @@
 
 **Consumes:** Refreshed `origin/develop` at PR #211 merge `4918530154f161e39329a2deebfcbd13a5a9f647`.
 
-**Produces:** A committed plan for missing and malformed wanted-suspect-presence cache recovery, before changing predecessor artifacts, version identity, tests or implementation.
+**Produces:** A committed plan for missing and JSON-null-root wanted-suspect-presence cache recovery, before changing predecessor artifacts, version identity, tests or implementation.
 
 - [x] Confirm the presence transitions in `BountyLoop.Apply(WantedSuspectConfronted)`, ordered event replay, command loading and the production PostgreSQL fixture. Keep the direct `AvailableInTown` seed distinction explicit.
-- [ ] Commit only this plan as the first branch commit; record its SHA in this plan after commit.
+- [x] Commit only this plan as the first branch commit; plan-only commit: `847c3a0fd4010134dceed08dc80359a741a664fb`. This SHA is recorded in the following substantive commit.
 
 ### Task 2: Retire the completed predecessor and record verified delivery
 
@@ -62,7 +61,7 @@
 
 ### Task 3: Recover event-established presence through command replay
 
-**Files:** `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.WantedSuspectPresence.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`; add a narrowly scoped classifier only if ordered event inspection shows it is needed.
+**Files:** `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.WantedSuspectPresence.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`.
 
 **Consumes:** A normally started persisted session, a real `WantedSuspectConfronted` event with a state-changing outcome, production event decoding, and the PostgreSQL fixture.
 
@@ -70,13 +69,14 @@
 
 Ruling: Keep the failing behavior test and production fallback in one plan task because committing the intentional red state would leave the canonical gate failing; witness pre-fix failures first, then implement and commit only after focused PostgreSQL behavior is green.
 
-- [ ] Add a PostgreSQL behavior test that creates a deterministic saloon suspect confrontation, persists its real event, and captures the target, choice, outcome, resulting presence state, ordered event rows, component version/payload, envelope positions and diary rows before damage.
-- [ ] Cover missing-row and JSON-null-root cache cases. Assert replay restores the event-established presence state and that storage, event rows and envelope/diary metadata are unchanged by the load.
+- [ ] Add `CommandLoad_WantedSuspectPresenceCacheRecoversFromEventsWithoutWritingBack` in `EfGameSessionRepositoryTests.cs`; create a deterministic saloon confrontation with a real `Fled` outcome, persist its `WantedSuspectConfronted` event, and capture the target, choice, outcome, resulting `GoneToGround` state, ordered event rows, component version/payload, envelope positions and diary rows before damage.
+- [ ] Cover `missing-row` and `null-root` cases. Assert replay restores `GoneToGround` and that storage, event rows and envelope/diary metadata are unchanged by the load. Keep test-only direct seeding of `AvailableInTown` clearly outside the recovery claim.
 - [ ] Keep `AvailableInTown` direct seeding clearly outside this recovery claim. Existing replay semantics leave the ledger empty when no state-establishing event exists; do not add a test that repeats the optional-component default without proving replay ran.
-- [ ] Add a fail-closed negative that damages the ledger cache and makes its authoritative confrontation event undecodable; command loading must surface the replay error.
+- [ ] Add `DamagedWantedSuspectPresenceCacheDoesNotHideInvalidEventHistory`; damage the ledger cache and make its authoritative confrontation event undecodable, then assert command loading surfaces the replay error.
+- [ ] Run focused PostgreSQL proof with `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.CommandLoad_WantedSuspectPresenceCacheRecoversFromEventsWithoutWritingBack|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.DamagedWantedSuspectPresenceCacheDoesNotHideInvalidEventHistory"` after `./tools/postgres-dev.ps1 ensure`.
 - [ ] Run the focused PostgreSQL tests before production changes and record the observed wrong result or exception; prove the new assertions fail for the intended behavior, not a fixture/setup error.
 - [ ] Route any missing `wantedSuspectPresenceLedger` row through full replay, matching the missing-`currentActionContext` approach: replay restores event-established transitions and naturally produces an empty ledger when no event establishes one. Do not add a presence-event classifier; it duplicates domain replay semantics and risks drifting from `Apply`.
-- [ ] Wrap null-root and other specifically exercised invalid ledger payload shapes in the existing typed invalid-component-cache exception with component identity `wantedSuspectPresenceLedger`; do not catch event loading or replay failures as cache damage.
+- [ ] Wrap JSON-null-root ledger payloads in the existing typed invalid-component-cache exception with component identity `wantedSuspectPresenceLedger`; do not catch event loading or replay failures as cache damage.
 - [ ] Re-run the focused cases; assert a subsequent legal game command and ordinary unit-of-work save repair the component, then verify a fresh command load returns the same ledger state.
 - [ ] Run the completion helper for task 3 only after the exact focused PostgreSQL command passes on the completed task commit.
 
@@ -88,7 +88,7 @@ Ruling: Keep the failing behavior test and production fallback in one plan task 
 
 **Produces:** A dated narrow presence-cache recovery disposition, reviewed PR and evidence for the committed development version.
 
-- [ ] Record only covered missing/null-root presence recovery, legitimate absence, query exclusion, read no-writeback, later legal-save repair and unreplayable-history failure; retain direct `AvailableInTown` seeding as a separate unresolved event-authority concern if still present.
+- [ ] Record only covered missing/null-root presence recovery, query exclusion, read no-writeback, later legal-save repair and unreplayable-history failure; retain direct `AvailableInTown` seeding as a separate unresolved event-authority concern if still present.
 - [ ] Inspect migration, event serializer/upcaster and event payload diffs; confirm no schema or event-contract change.
 - [ ] Run the focused PostgreSQL command, then `py -3 tools/run.py ci --check`; verify generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.27` and ensure evidence belongs to the same committed candidate.
 - [ ] Apply the repository's [implementing runbook](../runbooks/implementing.md), complete the focused behavior test with the local PostgreSQL service available via `./tools/postgres-dev.ps1 ensure`, and use the [code-review runbook](../runbooks/code-review.md) for the fresh whole-branch review.
