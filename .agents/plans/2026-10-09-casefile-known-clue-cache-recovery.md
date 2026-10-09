@@ -16,7 +16,7 @@
 
 - Preserve immutable event authority, strict CQRS, one coherent replay per invalid-cache load, query no-writeback, and cache repair only through a later legal write.
 - Compare only player-known clue identity; do not expose public pool contents or hidden case truth through player or journal projections.
-- The exact expected known-clue ID set is the `CaseFileGenerated.CaseFile.KnownClues` IDs plus `InvestigationPerformed.ClueId` values present in that generated case's `PublicClues`. If the stream has no `CaseFileGenerated`, leave this check inapplicable rather than inventing an expected set.
+- The exact expected known-clue ID set is the `CaseFileGenerated.CaseFile.Clues` IDs plus `InvestigationPerformed.ClueId` values present in that generated case's `PublicClues`. If the stream has no `CaseFileGenerated`, leave this check inapplicable rather than inventing an expected set.
 - Limit this slice to the valid-but-incomplete or contradictory `knownClues` field in the current `caseFile` cache. Do not broaden into warrants, suspect state, every CaseFile invariant, malformed event facts, migrations, upcasters, or unrelated component recovery.
 - Read paths must leave the malformed cache, component version, envelope positions, events, and diary projection untouched; a later legal command save may repair it through the ordinary unit of work.
 - Do not change ADR-0028 or event/schema versions; this implements its existing event-authority and rebuildable-cache decision.
@@ -43,13 +43,13 @@
 
 **Steps:**
 
-- [ ] Run `git status --short --branch`, confirm this branch is a clean worktree from `develop`, and verify `Directory.Build.props` still declares `0.1.0-dev.33`.
-- [ ] Read the predecessor plan beside PR #218's merged source, feature evidence, and current roadmap. Classify its full scope: absent/null current-cache `publicClues`, null authoritative `CaseFileGenerated.PublicClues`, command/read recovery, no-writeback, legal-save repair, and hidden-clue projection safety are all delivered; future CaseFile contradictions remain live in the roadmap.
-- [ ] Update row 07 with PR #218's source, merge, tree, hosted gate, review, and `.33` evidence. Remove links to the retired plan and its stale future-tense public-clue gap. Identify valid-but-incomplete event-established `knownClues` as this successor's bounded current slice, with other CaseFile contradictions still open.
-- [ ] Update PLAT-001 and the persistence test follow-up to include PR #218's evidence, state its exact limits, and route the remaining known-clue consistency gap to this plan/row 07 without claiming broader CaseFile consistency.
-- [ ] Remove the predecessor plan only after the complete-scope classification and its durable knowledge are represented in current owners. Do not move it to a tracked archive.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.34`; inspect the staged diff for generated or duplicated version fields.
-- [ ] Inspect the complete staged diff and `git diff --cached --check`, then commit as `docs: prepare known clue cache recovery slice`; the check-only staged-candidate hook is the canonical gate for this exact candidate, so do not rerun the same full gate manually.
+- [x] Run `git status --short --branch`, confirm this branch is a clean worktree from `develop`, and verify `Directory.Build.props` still declares `0.1.0-dev.33`.
+- [x] Read the predecessor plan beside PR #218's merged source, feature evidence, and current roadmap. Classify its full scope: absent/null current-cache `publicClues`, null authoritative `CaseFileGenerated.PublicClues`, command/read recovery, no-writeback, legal-save repair, and hidden-clue projection safety are all delivered; future CaseFile contradictions remain live in the roadmap.
+- [x] Update row 07 with PR #218's source, merge, tree, hosted gate, review, and `.33` evidence. Remove links to the retired plan and its stale future-tense public-clue gap. Identify valid-but-incomplete event-established `knownClues` as this successor's bounded current slice, with other CaseFile contradictions still open.
+- [x] Update PLAT-001 and the persistence test follow-up to include PR #218's evidence, state its exact limits, and route the remaining known-clue consistency gap to this plan/row 07 without claiming broader CaseFile consistency.
+- [x] Remove the predecessor plan only after the complete-scope classification and its durable knowledge are represented in current owners. Do not move it to a tracked archive.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.34`; inspect the staged diff for generated or duplicated version fields.
+- [x] Inspect the complete staged diff and `git diff --cached --check`, then commit as `docs: prepare known clue cache recovery slice`; the check-only staged-candidate hook is the canonical gate for this exact candidate, so do not rerun the same full gate manually.
 
 **Expected:** Planning history shows PR #218 as delivered and the known-clue discrepancy as active; no stale plan link remains; only the canonical authored version advances to `.34`; the staged-candidate gate passes.
 
@@ -63,13 +63,13 @@
 
 **Steps:**
 
-1. Add a focused PostgreSQL test that starts a real session, legally reveals a public clue, saves its `InvestigationPerformed`, then removes that exact clue from `caseFile.knownClues` while preserving the other cache fields. Assert the command reload and player/journal reads each contain the exact event-established clue; run the test to witness the intended RED because the pre-fix cache path omits it.
-2. Add an internal cache-consistency helper that derives expected IDs from the generated CaseFile's initial known clues and the valid public clue IDs referenced by later `InvestigationPerformed` events. Compare with the loaded cache's known-clue IDs; absent `CaseFileGenerated` leaves the check inapplicable. Keep the check read-only and do not reconstruct random state or use hidden truth.
-3. Integrate the mismatch with the command loader's existing full-replay fallback and the read loader's existing event-derived read-state fallback. Preserve ordinary cache deserialization, empty-known-clue validity, and the current healthy-cache path.
-4. Extend the PostgreSQL test to prove recovered command, player, and journal state contains the exact clue and that query reads preserve cache JSON/version, snapshot and stream positions, event rows, and diary projection metadata.
-5. Save a later legal command through the existing unit of work, fresh-load the session, and prove the known clue is retained with no extra clue-reveal event. Add a negative case where history establishes no known clues and the explicit empty cache remains on the cache path; use observable state or a focused load seam that fails if full replay is forced.
-6. Run the focused PostgreSQL selection. Temporarily bypass the event/cache mismatch guard and rerun the positive regression to prove it fails for the missing clue; restore the guard and verify the test passes. Ensure the negative case fails if empty state is treated as corruption.
-7. Append dated evidence and limits to PLAT-001 and the persistence test follow-up. State that this closes only event-derived `knownClues` completeness/equality, not all CaseFile semantics or event compatibility. Keep ADR-0028 unchanged because its existing rule is implemented.
-8. Run `py -3 tools/run.py ci --check` on the staged candidate, inspect the complete diff, and commit as `fix: recover missing known clues from event history`.
+- [x] Add a focused PostgreSQL test that starts a real session, legally reveals a public clue, saves its `InvestigationPerformed`, then removes that exact clue from `caseFile.knownClues` while preserving the other cache fields. Assert the command reload and player/journal reads each contain the exact event-established clue; run the test to witness the intended RED because the pre-fix cache path omits it.
+- [x] Add an internal cache-consistency helper that derives expected IDs from `CaseFileGenerated.CaseFile.Clues` (the event snapshot field for initial known clues) and the valid public clue IDs referenced by later `InvestigationPerformed` events. Compare with the loaded cache's known-clue IDs; absent `CaseFileGenerated` leaves the check inapplicable. Keep the check read-only and do not reconstruct random state or use hidden truth.
+- [x] Integrate the mismatch with the command loader's existing full-replay fallback and the read loader's existing event-derived read-state fallback. Preserve ordinary cache deserialization, empty-known-clue validity, and the current healthy-cache path.
+- [x] Extend the PostgreSQL test to prove recovered command, player, and journal state contains the exact clue and that query reads preserve cache JSON/version, snapshot and stream positions, event rows, and diary projection metadata.
+- [x] Save a later legal command through the existing unit of work, fresh-load the session, and prove the known clue is retained with no extra clue-reveal event. Add a focused consistency negative where `CaseFileGenerated.CaseFile.Clues` is empty, `PublicClues` contains an unrevealed clue, and cached `KnownClues` remains empty; require that this cache matches rather than triggering recovery.
+- [x] Run the focused PostgreSQL selection. Temporarily bypass the event/cache mismatch guard and rerun the positive regression to prove it fails for the missing clue; restore the guard and verify the test passes. Ensure the focused consistency negative fails if empty state is treated as corruption.
+- [x] Append dated evidence and limits to PLAT-001 and the persistence test follow-up. State that this closes only event-derived `knownClues` completeness/equality, not all CaseFile semantics or event compatibility. Keep ADR-0028 unchanged because its existing rule is implemented.
+- [x] Inspect the complete staged diff and commit as `fix: recover missing known clues from event history`; the check-only staged-candidate hook is the canonical gate for this exact candidate, so do not rerun the same full gate manually.
 
 **Expected:** A cache with an empty or incomplete known-clue list cannot hide a committed reveal; a truly empty history remains a valid empty cache; the read recovery writes nothing; a normal subsequent save repairs the cache; all focused and canonical checks pass.
