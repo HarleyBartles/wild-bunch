@@ -13,19 +13,28 @@ using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 
 namespace WildBunch.Persistence.Serialization;
 
-internal sealed class InvalidRequiredComponentCacheShapeException : InvalidOperationException
+internal class InvalidComponentCacheShapeException : InvalidOperationException
 {
-    public InvalidRequiredComponentCacheShapeException(string componentName, string message)
-        : base($"Required '{componentName}' component cache is invalid: {message}")
+    public InvalidComponentCacheShapeException(string componentName, string message, Exception? innerException = null)
+        : base(message, innerException)
     {
         ComponentName = componentName;
     }
 
-    public InvalidRequiredComponentCacheShapeException(string componentName, Exception innerException)
-        : base($"Required '{componentName}' component cache could not be decoded.", innerException)
-        => ComponentName = componentName;
-
     public string ComponentName { get; }
+}
+
+internal sealed class InvalidRequiredComponentCacheShapeException : InvalidComponentCacheShapeException
+{
+    public InvalidRequiredComponentCacheShapeException(string componentName, string message)
+        : base(componentName, $"Required '{componentName}' component cache is invalid: {message}")
+    {
+    }
+
+    public InvalidRequiredComponentCacheShapeException(string componentName, Exception innerException)
+        : base(componentName, $"Required '{componentName}' component cache could not be decoded.", innerException)
+    {
+    }
 }
 
 public sealed partial class GameSessionJsonSerializer
@@ -149,7 +158,7 @@ public sealed partial class GameSessionJsonSerializer
             ArgumentException.ThrowIfNullOrWhiteSpace(json);
             return decode();
         }
-        catch (InvalidRequiredComponentCacheShapeException)
+        catch (InvalidComponentCacheShapeException)
         {
             throw;
         }

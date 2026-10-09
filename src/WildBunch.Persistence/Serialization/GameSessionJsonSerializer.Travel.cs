@@ -19,7 +19,21 @@ public sealed partial class GameSessionJsonSerializer
             return null;
         }
 
-        return Deserialize<JourneySnapshot>(json).ToDomain();
+        try
+        {
+            return Deserialize<JourneySnapshot>(json).ToDomain();
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "journey",
+                "'journey' component cache could not be decoded.",
+                exception);
+        }
     }
 
     public string SerializeCompletedJourneyHistory(IReadOnlyList<TravelJourneySnapshot> completedJourneys)
@@ -57,7 +71,7 @@ public sealed partial class GameSessionJsonSerializer
         public string DestinationTownId { get; set; } = string.Empty;
         public string OriginTownName { get; set; } = string.Empty;
         public string DestinationTownName { get; set; } = string.Empty;
-        public TravelRouteProfileSnapshot RouteProfile { get; set; } = new();
+        public TravelRouteProfileSnapshot? RouteProfile { get; set; }
         public TravelMode TravelMode { get; set; }
         public JourneyStatus Status { get; set; }
         public bool MountedTravelAvailable { get; set; }
@@ -127,7 +141,7 @@ public sealed partial class GameSessionJsonSerializer
                 new TownId(DestinationTownId),
                 OriginTownName,
                 DestinationTownName,
-                RouteProfile.ToDomain(),
+                RouteProfile?.ToDomain() ?? throw new InvalidOperationException("Journey snapshot must contain a route profile."),
                 TravelMode,
                 Status,
                 MountedTravelAvailable,
