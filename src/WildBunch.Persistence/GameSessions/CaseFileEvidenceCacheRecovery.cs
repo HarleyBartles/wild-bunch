@@ -32,8 +32,64 @@ internal static class CaseFileEvidenceCacheRecovery
             || MatchesClueCollections(events, generatedCaseFile, generatedCaseFileIndex, cachedCaseFile);
         var warrantsMatch = generatedCaseFile.KnownWarrants is null || generatedCaseFile.PublicWarrants is null
             || MatchesWarrantCollections(events, generatedCaseFile, generatedCaseFileIndex, cachedCaseFile);
+        var discoveredSuspectsMatch = MatchesDiscoveredSuspectIds(
+            events,
+            generatedCaseFile,
+            generatedCaseFileIndex,
+            cachedCaseFile);
 
-        return cluesMatch && warrantsMatch;
+        return cluesMatch && warrantsMatch && discoveredSuspectsMatch;
+    }
+
+    private static bool MatchesDiscoveredSuspectIds(
+        IReadOnlyList<IDomainEvent> events,
+        CaseFileSnapshot generatedCaseFile,
+        int generatedCaseFileIndex,
+        CaseFile cachedCaseFile)
+    {
+        if (generatedCaseFile.DiscoveredSuspectIds is null
+            || generatedCaseFile.Suspects is null
+            || generatedCaseFile.Clues is null
+            || generatedCaseFile.PublicClues is null)
+        {
+            return false;
+        }
+
+        var expectedDiscoveredSuspectIds = generatedCaseFile.DiscoveredSuspectIds
+            .ToHashSet(StringComparer.Ordinal);
+        var generatedSuspectIds = generatedCaseFile.Suspects
+            .Select(suspect => suspect.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        var expectedKnownClueIds = generatedCaseFile.Clues
+            .Select(clue => clue.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        var generatedPublicClues = generatedCaseFile.PublicClues
+            .GroupBy(clue => clue.Id, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        foreach (var investigation in events.Skip(generatedCaseFileIndex + 1).OfType<InvestigationPerformed>())
+        {
+            if (investigation.ClueId is null
+                || !generatedPublicClues.TryGetValue(investigation.ClueId.Value.Value, out var clue)
+                || !expectedKnownClueIds.Add(clue.Id))
+            {
+                continue;
+            }
+
+            foreach (var suspectId in clue.LinkedSuspectIds)
+            {
+                if (generatedSuspectIds.Contains(suspectId))
+                {
+                    expectedDiscoveredSuspectIds.Add(suspectId);
+                }
+            }
+        }
+
+        var actualDiscoveredSuspectIds = cachedCaseFile.DiscoveredSuspectIds
+            .Select(suspectId => suspectId.Value)
+            .ToHashSet(StringComparer.Ordinal);
+        return expectedDiscoveredSuspectIds.Count == cachedCaseFile.DiscoveredSuspectIds.Count
+            && expectedDiscoveredSuspectIds.SetEquals(actualDiscoveredSuspectIds);
     }
 
     private static bool MatchesClueCollections(

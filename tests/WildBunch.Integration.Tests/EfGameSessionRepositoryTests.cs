@@ -1958,6 +1958,116 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(empty.AllEvents, empty.CaseFile));
     }
 
+    [Fact]
+    public void CaseFileEvidenceCacheMatchesDiscoveredSuspectIdsAsSet()
+    {
+        var session = CreateSession(caseFileOverride: CreateDiscoveredSuspectMembershipCaseFile());
+        Assert.True(session.GatherLocalGossip().Success);
+        Assert.Equal("membership-public-gossip-clue",
+            Assert.Single(session.AllEvents.OfType<InvestigationPerformed>()).ClueId?.Value);
+        Assert.Equal(new[] { "suspect-1", "suspect-2" },
+            session.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
+
+        var reorderedIds = session.CaseFile.DiscoveredSuspectIds.Reverse().ToArray();
+        var reorderedCaseFile = CaseFileSnapshot.FromDomain(session.CaseFile) with
+        {
+            DiscoveredSuspectIds = reorderedIds.Select(id => id.Value).ToArray()
+        };
+
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(
+            session.AllEvents,
+            reorderedCaseFile.ToDomain()));
+    }
+
+    [Theory]
+    [InlineData("remove-clue-discovered-suspect")]
+    [InlineData("add-hidden-culprit")]
+    public async Task ReadModel_CaseFileCacheSameIdAlteredDiscoveredSuspectsRecoversFromEventsWithoutWritingBack(
+        string alteration)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSession(caseFileOverride: CreateDiscoveredSuspectMembershipCaseFile());
+        Assert.True(session.GatherLocalGossip().Success);
+        var generatedCaseFile = Assert.Single(session.AllEvents.OfType<CaseFileGenerated>()).CaseFile;
+        Assert.Equal(new[] { "suspect-1" }, generatedCaseFile.DiscoveredSuspectIds);
+        Assert.Equal(new[] { "suspect-2" }, generatedCaseFile.PublicClues.Single().LinkedSuspectIds);
+        Assert.Equal("membership-public-gossip-clue",
+            Assert.Single(session.AllEvents.OfType<InvestigationPerformed>()).ClueId?.Value);
+        var expectedDiscoveredIds = new[] { "suspect-1", "suspect-2" };
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            var discoveredIds = payload["discoveredSuspectIds"]!.AsArray();
+            if (alteration == "remove-clue-discovered-suspect")
+            {
+                payload["discoveredSuspectIds"] = new JsonArray(
+                    discoveredIds.Where(id => id!.GetValue<string>() != "suspect-2")
+                        .Select(id => id!.DeepClone()).ToArray());
+            }
+            else
+            {
+                discoveredIds.Add("suspect-3");
+            }
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var expectedStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandRead = await repairRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        Assert.Equal(expectedDiscoveredIds, commandRead!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
+        Assert.NotNull(playerRead);
+        Assert.Equal(expectedDiscoveredIds, playerRead!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
+        Assert.NotNull(journalRead);
+        Assert.Equal(expectedDiscoveredIds, journalRead!.DiscoveredSuspects.Select(suspect => suspect.Id.Value));
+        var playerDtoJson = JsonSerializer.Serialize(GameSessionMapper.ToDto(playerRead));
+        var journalDtoJson = JsonSerializer.Serialize(JournalMapper.ToDto(journalRead));
+        Assert.Contains("Ira Flint", playerDtoJson, StringComparison.Ordinal);
+        Assert.Contains("Mira Cline", playerDtoJson, StringComparison.Ordinal);
+        Assert.Contains("Ira Flint", journalDtoJson, StringComparison.Ordinal);
+        Assert.Contains("Mira Cline", journalDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("suspect-3", playerDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("suspect-3", journalDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("Reno Pike", playerDtoJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("Reno Pike", journalDtoJson, StringComparison.Ordinal);
+
+        var actualStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(expectedStoredState.ComponentVersion, actualStoredState.ComponentVersion);
+        Assert.Equal(expectedStoredState.ComponentPayload, actualStoredState.ComponentPayload);
+        Assert.Equal(expectedStoredState.SnapshotVersion, actualStoredState.SnapshotVersion);
+        Assert.Equal(expectedStoredState.StreamVersion, actualStoredState.StreamVersion);
+        Assert.Equal(expectedStoredState.Events, actualStoredState.Events);
+        Assert.Equal(expectedStoredState.Diary, actualStoredState.Diary);
+
+        var investigationCount = commandRead.AllEvents.OfType<InvestigationPerformed>().Count();
+        Assert.True(commandRead.Purchase(new StoreOffer(DomainItemKind.Food, "Food", 2m), 1).Success);
+        Assert.Equal(investigationCount, commandRead.AllEvents.OfType<InvestigationPerformed>().Count());
+        Assert.Equal(
+            new[] { typeof(TownActionContextEntered), typeof(StoreItemPurchased) },
+            commandRead.UncommittedEvents.Select(domainEvent => domainEvent.GetType()));
+        await PersistAsync(repairRepository, repairUnitOfWork, commandRead);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(expectedDiscoveredIds, fresh!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
+        Assert.Equal(investigationCount, fresh.AllEvents.OfType<InvestigationPerformed>().Count());
+    }
+
     [Theory]
     [InlineData("culprit")]
     [InlineData("suspect-order")]
@@ -4480,6 +4590,38 @@ public sealed class EfGameSessionRepositoryTests
                 new SuspectTurfAssignment(firstSuspect.Id, new TownId("dustvale")),
                 new SuspectTurfAssignment(secondSuspect.Id, new TownId("silvercreek"))
             });
+    }
+
+    private static CaseFile CreateDiscoveredSuspectMembershipCaseFile()
+    {
+        var firstSuspectId = new SuspectId("suspect-1");
+        var clueSuspectId = new SuspectId("suspect-2");
+        var culpritId = new SuspectId("suspect-3");
+        var clue = new Clue(
+            new ClueId("membership-public-gossip-clue"),
+            ClueKind.Whereabouts,
+            "A witness saw Mira Cline leaving town by the north road.",
+            new[] { clueSuspectId },
+            InvestigationTargetKind.GangMember,
+            InvestigationSourceKind.LocalGossip,
+            anchors: new ClueAnchors(subjects: new[]
+            {
+                new ClueSubjectAnchor("Mira Cline", SuspectId: clueSuspectId, Feature: "a red scarf")
+            }));
+
+        return new CaseFile(
+            accusation: null,
+            suspects: new[]
+            {
+                new Suspect(firstSuspectId, "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
+                new Suspect(clueSuspectId, "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+                new Suspect(culpritId, "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            },
+            trueCulpritId: culpritId,
+            openingLead: CaseOpeningLead.Create("Find the outlaw who fled north."),
+            knownClues: Array.Empty<Clue>(),
+            discoveredSuspectIds: new[] { firstSuspectId },
+            publicClues: new[] { clue });
     }
 
     private static Clue CreateInitialKnownClue()
