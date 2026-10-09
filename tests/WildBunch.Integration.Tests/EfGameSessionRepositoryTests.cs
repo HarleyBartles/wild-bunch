@@ -2246,6 +2246,89 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(investigationCount, fresh.AllEvents.OfType<InvestigationPerformed>().Count());
     }
 
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("target-name")]
+    [InlineData("disposition")]
+    [InlineData("alive")]
+    [InlineData("bounty")]
+    [InlineData("day")]
+    [InlineData("turn")]
+    [InlineData("invented")]
+    [InlineData("reordered")]
+    public async Task CaseFileSettlementCacheRecoversMutatedFactsFromEvents(string mutation)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSessionWithTwoSettledWantedSuspects();
+        var expectedSettlements = session.AllEvents.OfType<SheriffTurnInSettled>()
+            .Select(ToSettlementState)
+            .ToArray();
+        Assert.Equal(2, expectedSettlements.Length);
+        Assert.Equal(new[] { new SuspectId("suspect-1"), new SuspectId("suspect-3") },
+            expectedSettlements.Select(settlement => settlement.SuspectId));
+        Assert.Equal(expectedSettlements, session.CaseFile.SheriffTurnInSettlements);
+
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+        var originalPayload = await ReadCaseFilePayloadAsync(fixture, session.Id);
+
+        await WriteMutatedSettlementCacheAsync(fixture, session.Id, originalPayload, mutation);
+        var beforeReads = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+
+        var recoveryRepository = CreateRepository(fixture, out _);
+        var commandRead = await recoveryRepository.GetByIdAsync(session.Id);
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(), CreateReadStoreLoader()).GetByIdAsync(session.Id);
+
+        Assert.NotNull(commandRead);
+        Assert.Equal(expectedSettlements, commandRead!.CaseFile.SheriffTurnInSettlements);
+        Assert.NotNull(playerRead);
+        Assert.Equal(expectedSettlements, playerRead!.CaseFile.SheriffTurnInSettlements);
+        Assert.NotNull(journalRead);
+        Assert.Equal(expectedSettlements, journalRead!.SheriffTurnInSettlements);
+        Assert.Equal(session.CaseFile.KnownWarrants.Select(warrant => warrant.Id),
+            commandRead.CaseFile.KnownWarrants.Select(warrant => warrant.Id));
+        Assert.Equal(expectedSettlements[0].BountyAmount + expectedSettlements[1].BountyAmount + 25m,
+            commandRead.Player.Wallet.Cash);
+
+        var caseBoard = GameSessionMapper.ToDto(playerRead).CaseFile.CaseBoard;
+        Assert.All(expectedSettlements, settlement => Assert.Contains(caseBoard.NamedRecords,
+            record => record.DisplayName == settlement.TargetName && record.Status == CaseIdentityStatus.Captured));
+
+        var afterReads = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
+        Assert.Equal(beforeReads.ComponentVersion, afterReads.ComponentVersion);
+        Assert.Equal(beforeReads.ComponentPayload, afterReads.ComponentPayload);
+        Assert.Equal(beforeReads.SnapshotVersion, afterReads.SnapshotVersion);
+        Assert.Equal(beforeReads.StreamVersion, afterReads.StreamVersion);
+        Assert.Equal(beforeReads.Events, afterReads.Events);
+        Assert.Equal(beforeReads.Diary, afterReads.Diary);
+
+        if (mutation == "missing")
+        {
+            var repeat = commandRead.SettleSheriffTurnIn(expectedSettlements[0].SuspectId, expectedSettlements[0].IsAlive);
+            Assert.False(repeat.Success);
+            Assert.Contains("already been paid", repeat.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(2, commandRead.AllEvents.OfType<SheriffTurnInSettled>().Count());
+        }
+
+        var finalRepository = CreateRepository(fixture, out var finalUnitOfWork);
+        var recovered = await finalRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        var settlementEventCount = recovered!.AllEvents.OfType<SheriffTurnInSettled>().Count();
+        Assert.True(recovered.Purchase(new StoreOffer(DomainItemKind.Food, "Food", 2m), 1).Success);
+        await PersistAsync(finalRepository, finalUnitOfWork, recovered);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(expectedSettlements, fresh!.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(settlementEventCount, fresh.AllEvents.OfType<SheriffTurnInSettled>().Count());
+    }
+
     [Fact]
     public async Task ReadModel_CaseFileCacheReorderedPublicWarrantsRecoversFromEvents()
     {
@@ -4443,6 +4526,148 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(confrontation.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
         return session;
+    }
+
+    private static GameSession CreateSessionWithTwoSettledWantedSuspects()
+    {
+        var currentTown = new Town(new TownId("settlement-town"), "Settlement Town");
+        var connectedTown = new Town(new TownId("settlement-connected"), "Settlement Connected");
+        var world = new WildBunch.Domain.World.World(
+            new[] { currentTown, connectedTown },
+            new[] { new Trail(new TrailId("settlement-trail"), currentTown.Id, connectedTown.Id, TrailRisk.Low) });
+        var firstId = new SuspectId("suspect-1");
+        var culpritId = new SuspectId("suspect-2");
+        var secondId = new SuspectId("suspect-3");
+        var caseFile = new CaseFile(
+            accusation: null,
+            new[]
+            {
+                new Suspect(firstId, "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+                new Suspect(culpritId, "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge),
+                new Suspect(secondId, "Vance Bell", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            },
+            trueCulpritId: culpritId,
+            openingLead: CaseOpeningLead.Create("Find the wanted outlaws."),
+            knownClues: Array.Empty<Clue>(),
+            knownWarrants: new[]
+            {
+                CreateSettlementWarrant("settlement-warrant-1", "Mira Cline", 250m),
+                CreateSettlementWarrant("settlement-warrant-3", "Vance Bell", 450m)
+            });
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Revolver, 1),
+            new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
+        });
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic,
+            "settlement-recovery-seed", DeterministicSaltSource);
+        session.ViewPrologue("settlement-recovery-prologue");
+        session.SelectStartingTown(currentTown.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+
+        foreach (var (suspectId, warrantId) in new[]
+        {
+            (firstId, "settlement-warrant-1"), (secondId, "settlement-warrant-3")
+        })
+        {
+            session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+            Assert.True(session.LookAroundSaloon().Success);
+            var result = session.ConfrontSaloonPersonOfInterest(warrantId);
+            Assert.True(result.Success);
+            Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Surrendered, result.Outcome);
+        }
+
+        return session;
+    }
+
+    private static Warrant CreateSettlementWarrant(string id, string name, decimal bounty)
+        => new(
+            new WarrantId(id),
+            name,
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                bounty,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                "Settlement Town Sheriff",
+                InvestigationTargetKind.GangMember,
+                Array.Empty<OutlawGangId>(),
+                null),
+            $"Wanted for robbery by {name}.");
+
+    private static SheriffTurnInSettlementState ToSettlementState(SheriffTurnInSettled turnIn)
+        => new(
+            turnIn.TargetSuspectId,
+            turnIn.TargetName,
+            turnIn.Disposition,
+            turnIn.IsAlive,
+            turnIn.BountyAmount,
+            turnIn.Day,
+            turnIn.Turn);
+
+    private static async Task<JsonObject> ReadCaseFilePayloadAsync(PostgreSqlPersistenceFixture fixture, GameSessionId sessionId)
+    {
+        await using var context = fixture.CreateContext();
+        var payloadJson = await context.GameSessionComponents.AsNoTracking()
+            .Where(component => component.SessionId == sessionId.Value && component.ComponentName == "caseFile")
+            .Select(component => component.PayloadJson)
+            .SingleAsync();
+        return JsonNode.Parse(payloadJson)!.AsObject();
+    }
+
+    private static async Task WriteMutatedSettlementCacheAsync(
+        PostgreSqlPersistenceFixture fixture,
+        GameSessionId sessionId,
+        JsonObject originalPayload,
+        string mutation)
+    {
+        var payload = originalPayload.DeepClone().AsObject();
+        var settlements = payload["sheriffTurnInSettlements"]!.AsArray();
+        var firstSettlement = settlements[0]!.AsObject();
+        switch (mutation)
+        {
+            case "missing":
+                payload["sheriffTurnInSettlements"] = new JsonArray();
+                break;
+            case "target-name":
+                firstSettlement["targetName"] = "Altered Name";
+                break;
+            case "disposition":
+                firstSettlement["disposition"] = (int)WarrantDisposition.AliveOnly;
+                break;
+            case "alive":
+                firstSettlement["isAlive"] = false;
+                break;
+            case "bounty":
+                firstSettlement["bountyAmount"] = 1m;
+                break;
+            case "day":
+                firstSettlement["day"] = firstSettlement["day"]!.GetValue<int>() + 1;
+                break;
+            case "turn":
+                firstSettlement["turn"] = firstSettlement["turn"]!.GetValue<int>() + 1;
+                break;
+            case "invented":
+                var invented = firstSettlement.DeepClone().AsObject();
+                invented["suspectId"] = "suspect-2";
+                invented["targetName"] = "Reno Pike";
+                settlements.Add(invented);
+                break;
+            case "reordered":
+                payload["sheriffTurnInSettlements"] = new JsonArray(settlements.Reverse()
+                    .Select(settlement => settlement!.DeepClone()).ToArray());
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(mutation), mutation, "Unknown settlement cache mutation.");
+        }
+
+        await using var context = fixture.CreateContext();
+        var component = await context.GameSessionComponents.SingleAsync(candidate =>
+            candidate.SessionId == sessionId.Value && candidate.ComponentName == "caseFile");
+        component.PayloadJson = payload.ToJsonString();
+        await context.SaveChangesAsync();
     }
 
     private static GameSession CreateSessionWithSaloonSuspect()
