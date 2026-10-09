@@ -534,6 +534,7 @@ public sealed class EfGameSessionRepositoryTests
     [Theory]
     [InlineData("missing-row")]
     [InlineData("null-root")]
+    [InlineData("empty-array")]
     public async Task CommandLoad_CompletedJourneyHistoryCacheRecoversFromEventsWithoutWritingBack(string damage)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
@@ -575,7 +576,7 @@ public sealed class EfGameSessionRepositoryTests
             }
             else
             {
-                component.PayloadJson = "null";
+                component.PayloadJson = damage == "null-root" ? "null" : "[]";
                 damagedPayload = component.PayloadJson;
             }
 

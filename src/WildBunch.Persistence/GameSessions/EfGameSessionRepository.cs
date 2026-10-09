@@ -158,7 +158,16 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         try
         {
-            return ToAggregate(store);
+            var aggregate = ToAggregate(store);
+            if (!CompletedJourneyHistoryCacheRecovery.MatchesAcknowledgedHistory(
+                    store.AllEvents,
+                    aggregate.CompletedJourneyHistory,
+                    _serializer))
+            {
+                return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+            }
+
+            return aggregate;
         }
         catch (InvalidComponentCacheShapeException)
         {

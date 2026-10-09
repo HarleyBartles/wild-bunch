@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task inline under the active Stable 0.1.0 goal.
 
-**Goal:** Restore event-established completed-journey history when its persisted cache is missing or invalid, so command loads retain exact journey history and the next journey receives the correct sequence.
+**Goal:** Restore event-established completed-journey history when its persisted cache is missing, invalid or incomplete, so command loads retain exact journey history and the next journey receives the correct sequence.
 
-**Architecture:** `JourneyArrivalAcknowledged` events already contain the completed journey snapshot and `JourneyLoop.Apply` rebuilds the history during replay. The command loader will replay when an acknowledgement proves a missing or invalid history cache would omit established state. With no acknowledgement, a missing or invalid optional history cache means empty history and must preserve unrelated snapshot-only state. Query repositories, event contracts, database schema, and journey rules remain unchanged.
+**Architecture:** `JourneyArrivalAcknowledged` events already contain the completed journey snapshot and `JourneyLoop.Apply` rebuilds the history during replay. The command loader will replay when an acknowledgement proves the cached history is missing, invalid or differs from the ordered acknowledged snapshots. With no acknowledgement, a missing or invalid optional history cache means empty history and must preserve unrelated snapshot-only state. Query repositories, event contracts, database schema, and journey rules remain unchanged.
 
 **Tech Stack:** C#/.NET 10, EF Core, PostgreSQL, xUnit integration tests, repository command bus.
 
@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - Preserve the settled event-sourced cache policy: events record facts; caches are derived and recover from ordered history; replay does not reroll randomness.
-- Missing and invalid completed-history caches trigger replay only when an ordered `JourneyArrivalAcknowledged` event establishes completed history; without one, history is empty and the snapshot fast path must preserve unrelated snapshot-only state.
+- Missing, invalid and event-inconsistent completed-history caches trigger replay only when an ordered `JourneyArrivalAcknowledged` event establishes completed history; the decoded cache must match every acknowledged snapshot. Without an acknowledgement, an invalid cache means empty history and the snapshot fast path must preserve unrelated snapshot-only state.
 - The first public baseline remains `0.1.0`; this PR advances the develop identity once to `0.1.0-dev.28` in `Directory.Build.props`.
 - No database migration, event type/payload/version change, query mutation, direct aggregate mutation, new compatibility path, or unrelated journey behavior is in scope.
 - Keep the active plan in `.agents/plans/` through this PR; the next successor slice retires this plan after reconciling its delivered facts.
@@ -23,7 +23,7 @@
 ## Review Focus
 
 - A missing history cache after acknowledgement must restore the acknowledged journey and preserve sequence 2 for the next journey.
-- An invalid present history cache with an acknowledgement must enter full event replay; a damaged authoritative acknowledgement event must still fail closed.
+- An invalid or incomplete present history cache with an acknowledgement must enter full event replay; a damaged authoritative acknowledgement event must still fail closed.
 - Missing or invalid history caches without an acknowledgement must not trigger unrelated full replay or discard snapshot-only state.
 
 ---
@@ -48,15 +48,15 @@
 
 **Consumes:** `JourneyArrivalAcknowledged` with its production `JourneySnapshot`; `CreateJourneyHistorySession`, `CreateJourneyPreview`, `PersistAsync`, and the PostgreSQL integration fixture.
 
-**Produces:** A behavior-first proof that missing and JSON-null `completedJourneyHistory` caches reconstruct acknowledged history, preserve the next journey sequence, remain untouched by reads, repair on the next legal save, and fail closed when authoritative history is undecodable, while an invalid no-ack cache preserves snapshot-only state.
+**Produces:** A behavior-first proof that missing, JSON-null and valid-but-incomplete `completedJourneyHistory` caches reconstruct acknowledged history, preserve the next journey sequence, remain untouched by reads, repair on the next legal save, and fail closed when authoritative history is undecodable, while an invalid no-ack cache preserves snapshot-only state.
 
 Ruling: Keep the behavior test and implementation in one plan task because committing the intentionally failing recovery test alone would leave the canonical commit gate red. Observe the pre-fix failures first, then commit the test and minimum production recovery together once the focused proof is green.
 
-The red run observed missing-row history as empty and JSON-null as an `InvalidOperationException`; the missing-row behavior assertion reported next journey sequence 1 instead of 2. Temporarily disabling the acknowledgement classifier reproduced sequence 1 for both damage forms. Temporarily allowing the invalid no-acknowledgement cache to use the outer replay fallback made the pending-foe test fail because hidden pressure changed from 1 to 0. Restoring the classifier and no-acknowledgement empty-history handling returned all focused cases to green. The final focused rerun passed all five selected PostgreSQL cases.
+The original red run observed missing-row history as empty and JSON-null as an `InvalidOperationException`; the missing-row behavior assertion reported next journey sequence 1 instead of 2. Independent review then found that a valid empty array also bypassed replay despite an acknowledgement. The empty-array case passed with event-consistency recovery and failed when that check was temporarily disabled, reporting next journey sequence 1 instead of 2. Temporarily allowing the invalid no-acknowledgement cache to use the outer replay fallback made the pending-foe test fail because hidden pressure changed from 1 to 0. Restoring the event check and no-acknowledgement empty-history handling returned the focused cases to green.
 
-- [x] Add `CommandLoad_CompletedJourneyHistoryCacheRecoversFromEventsWithoutWritingBack` as a PostgreSQL theory for `missing-row` and `null-root`. Complete and acknowledge a one-day journey through the public game flow, persist it through the repository/unit of work, capture its `JourneyArrivalAcknowledged` event and cache/envelope/diary metadata, then damage only the `completedJourneyHistory` component.
+- [x] Add `CommandLoad_CompletedJourneyHistoryCacheRecoversFromEventsWithoutWritingBack` as a PostgreSQL theory for `missing-row`, `null-root` and `empty-array`. Complete and acknowledge a one-day journey through the public game flow, persist it through the repository/unit of work, capture its `JourneyArrivalAcknowledged` event and cache/envelope/diary metadata, then damage only the `completedJourneyHistory` component.
 - [x] Before production changes, run the focused cases and record that the missing row currently reloads empty history and causes the next journey to start at sequence 1 instead of 2, while a JSON-null root fails during deserialization; prove the fixture contains a persisted acknowledgement before attributing either failure to recovery.
-- [x] Implement `CompletedJourneyHistoryCacheRecovery` narrowly over ordered events: a missing history row requires full replay when history contains `JourneyArrivalAcknowledged`; with no acknowledgement, preserve the absent-empty fast path. Do not infer acknowledgement from a `JourneyStarted`, `JourneyCompleted`, diary row, or snapshot.
+- [x] Implement `CompletedJourneyHistoryCacheRecovery` narrowly over ordered events: a missing history row or a decoded cache that differs from the ordered `JourneyArrivalAcknowledged` snapshots requires full replay; with no acknowledgement, preserve the absent-empty fast path. Do not infer acknowledgement from a `JourneyStarted`, `JourneyCompleted`, diary row, or snapshot.
 - [x] Wrap malformed/null completed-history cache decoding in `InvalidComponentCacheShapeException` with component identity `completedJourneyHistory`. If that component alone is invalid and no acknowledgement exists, treat history as empty without replaying unrelated state; if an acknowledgement exists, use full replay. Do not catch event loading or replay errors as cache damage.
 - [x] Assert the recovered aggregate has no active journey and contains the exact completed sequence, route endpoints, and `Completed` status. Confirm the missing/null cache, envelope positions, ordered event rows, and diary metadata remain unchanged during the recovery read.
 - [x] Start the next legal journey from the recovered aggregate and assert sequence 2 before saving. Persist through the normal unit of work, then fresh-load and verify the history remains sequence 1, the active journey is sequence 2, and the repaired component uses the current projection version.
@@ -73,7 +73,7 @@ The red run observed missing-row history as empty and JSON-null as an `InvalidOp
 
 **Produces:** An accurately bounded feature/test disposition and a reviewed implementation PR to `develop`, with merged `0.1.0-dev.28` delivery evidence.
 
-- [x] Add a dated PS-04/PS-05 and PLAT-001 disposition limited to missing-row and JSON-null completed-history recovery, the no-ack absent-empty fast path, read no-writeback, next-save repair, correct next-sequence behavior, and fail-closed event decoding. State explicitly that this does not prove recovery for every malformed history payload or every optional component.
+- [x] Add a dated PS-04/PS-05 and PLAT-001 disposition limited to missing-row, JSON-null and valid-but-incomplete empty-array completed-history recovery, the no-ack invalid-cache fast path, read no-writeback, next-save repair, correct next-sequence behavior, and fail-closed event decoding. State explicitly that this does not prove recovery for every malformed history payload or every optional component.
 - [x] Update PLAT-001 in `docs/features.md` to include the recovered acknowledgement history and next-journey sequence behavior while preserving all previously delivered row 07 facts and open gaps.
 - [x] Compare the diff with ADR-0028 and relevant doctrine. Confirm there is no schema migration, event serializer/upcaster contract, event payload/version, query repository, or durable architecture change; do not modify the ADR when its decision remains true.
 - [x] Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.28`; do not stage or commit generated build output. The normal hooked commit runs `py -3 tools/run.py ci --check` on its staged candidate and must pass.
