@@ -39,11 +39,11 @@
 
 **Produces:** Current owners describe the exact warrant payload/order recovery and its limits, the completed warrant plan is retired, the row 07 active-plan pointer names this plan, and only `Directory.Build.props` advances to `.38`.
 
-- [ ] Record PR #222's source, merge, matching tree, exact-head hosted gate, review outcome, bounded behavior and `.37` identity in the roadmap, PLAT-001, and persistence follow-up.
-- [ ] Classify the entire warrant plan against its completed Task 1 and Task 2, committed code/tests, focused PostgreSQL proof, mutation proof, review, and hosted gate; preserve the warranted payload/order scope and open town-circulation/other CaseFile/history gaps in current evidence owners, then remove the completed plan and stale links.
-- [ ] Update the row 07 active-plan pointer and target version to this generated-facts plan and `.38`; preserve row 07 as executing because additional persistence work remains.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.38`; do not commit generated web identity output or duplicate version fields.
-- [ ] Inspect the complete staged successor disposition and `git diff --cached --check`, then commit it as `docs: retire warrant cache plan and record delivery`; let the normal check-only hook validate the staged candidate.
+- [x] Record PR #222's source, merge, matching tree, exact-head hosted gate, review outcome, bounded behavior and `.37` identity in the roadmap, PLAT-001, and persistence follow-up.
+- [x] Classify the entire warrant plan against its completed Task 1 and Task 2, committed code/tests, focused PostgreSQL proof, mutation proof, review, and hosted gate; preserve the warranted payload/order scope and open town-circulation/other CaseFile/history gaps in current evidence owners, then remove the completed plan and stale links.
+- [x] Update the row 07 active-plan pointer and target version to this generated-facts plan and `.38`; preserve row 07 as executing because additional persistence work remains.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.38`; do not commit generated web identity output or duplicate version fields.
+- [x] Inspect the complete staged successor disposition and `git diff --cached --check`, then commit it as `docs: retire warrant cache plan and record delivery`; let the normal check-only hook validate the staged candidate.
 
 **Expected:** PR #222's complete, narrowly bounded delivery is durably recorded, its completed plan is retired only after promotion, row 07 points at this plan, and the sole authored version advances once.
 
