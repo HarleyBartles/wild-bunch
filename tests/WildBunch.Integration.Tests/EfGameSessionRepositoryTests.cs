@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using WildBunch.Application.Games.Commands;
+using WildBunch.Application.Games.Models;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Projections;
@@ -1664,6 +1665,163 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(citizenReload);
         Assert.Null(citizenReload!.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, citizenReload.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
+    }
+
+    [Fact]
+    public async Task ReadModel_CaseFileCacheMissingDiscoveredSuspectsRecoversFromEventsWithoutWritingBack()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSession(includeKnownClue: true);
+        var expectedDiscoveredSuspectIds = session.CaseFile.DiscoveredSuspectIds.Select(id => id.Value).ToArray();
+        var caseFileGenerated = Assert.Single(session.AllEvents.OfType<CaseFileGenerated>());
+        Assert.Contains(expectedDiscoveredSuspectIds[0], caseFileGenerated.CaseFile.DiscoveredSuspectIds);
+        await PersistAsync(CreateRepository(fixture, out var unitOfWork), unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            Assert.NotNull(payload["discoveredSuspectIds"]);
+            payload.Remove("discoveredSuspectIds");
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        async Task<(int ComponentVersion, string ComponentPayload, long? SnapshotVersion, long StreamVersion, long? DiaryStreamVersion, int? DiaryDayCount, (long Sequence, Guid EventId, string EventType, string PayloadJson, int SchemaVersion)[] Events, (int Sequence, string PayloadJson, int SchemaVersion)[] Diary)> CapturePersistedStateAsync()
+        {
+            await using var context = fixture.CreateContext();
+            var component = await context.GameSessionComponents.AsNoTracking().SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            var events = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new
+                {
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.SchemaVersion
+                })
+                .ToArrayAsync();
+            var diaryRows = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .OrderBy(day => day.Sequence)
+                .Select(day => new { day.Sequence, day.PayloadJson, day.SchemaVersion })
+                .ToArrayAsync();
+            return (
+                component.ComponentVersion,
+                component.PayloadJson,
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount,
+                events.Select(storedEvent => (
+                        storedEvent.Sequence,
+                        storedEvent.EventId,
+                        storedEvent.EventType,
+                        storedEvent.PayloadJson,
+                        storedEvent.SchemaVersion))
+                    .ToArray(),
+                diaryRows.Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion)).ToArray());
+        }
+
+        var expectedPersistedState = await CapturePersistedStateAsync();
+        GameSessionReadModel? playerRead;
+        await using (var context = fixture.CreateContext())
+        {
+            playerRead = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        }
+        var journalRead = await new EfGameJournalReadRepository(
+            fixture.CreateContext(),
+            CreateReadStoreLoader()).GetByIdAsync(session.Id);
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandRead = await repairRepository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(playerRead);
+        Assert.Equal(expectedDiscoveredSuspectIds, playerRead!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
+        Assert.NotNull(journalRead);
+        Assert.Equal(expectedDiscoveredSuspectIds, journalRead!.DiscoveredSuspects.Select(suspect => suspect.Id.Value));
+        Assert.NotNull(commandRead);
+        Assert.Equal(expectedDiscoveredSuspectIds, commandRead!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
+
+        var actualPersistedState = await CapturePersistedStateAsync();
+        Assert.Equal(expectedPersistedState.ComponentVersion, actualPersistedState.ComponentVersion);
+        Assert.Equal(expectedPersistedState.ComponentPayload, actualPersistedState.ComponentPayload);
+        Assert.Equal(expectedPersistedState.SnapshotVersion, actualPersistedState.SnapshotVersion);
+        Assert.Equal(expectedPersistedState.StreamVersion, actualPersistedState.StreamVersion);
+        Assert.Equal(expectedPersistedState.DiaryStreamVersion, actualPersistedState.DiaryStreamVersion);
+        Assert.Equal(expectedPersistedState.DiaryDayCount, actualPersistedState.DiaryDayCount);
+        Assert.Equal(expectedPersistedState.Events, actualPersistedState.Events);
+        Assert.Equal(expectedPersistedState.Diary, actualPersistedState.Diary);
+
+        PurchaseFood(commandRead!, 1);
+        await PersistAsync(repairRepository, repairUnitOfWork, commandRead!);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var repairedComponent = await context.GameSessionComponents.AsNoTracking().SingleAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "caseFile");
+            Assert.Equal(ProjectionVersions.ForComponent("caseFile"), repairedComponent.ComponentVersion);
+            Assert.Equal(
+                expectedDiscoveredSuspectIds,
+                JsonNode.Parse(repairedComponent.PayloadJson)!["discoveredSuspectIds"]!.AsArray().Select(id => id!.GetValue<string>()));
+        }
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(expectedDiscoveredSuspectIds, fresh!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
+    }
+
+    [Fact]
+    public async Task DamagedCaseFileCacheDoesNotHideMissingDiscoveredSuspectsInCaseFileGeneratedEvent()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSession(includeKnownClue: true);
+        await PersistAsync(CreateRepository(fixture, out var unitOfWork), unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var componentPayload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            componentPayload.Remove("discoveredSuspectIds");
+            component.PayloadJson = componentPayload.ToJsonString();
+
+            var caseFileEvent = await context.StoredEvents.SingleAsync(storedEvent =>
+                storedEvent.StreamId == session.Id.Value && storedEvent.EventType == "CaseFileGenerated");
+            var eventPayload = JsonNode.Parse(caseFileEvent.PayloadJson)!.AsObject();
+            eventPayload["caseFile"]!.AsObject().Remove("discoveredSuspectIds");
+            caseFileEvent.PayloadJson = eventPayload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var commandException = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => CreateRepository(fixture, out _).GetByIdAsync(session.Id));
+        Assert.Contains("recorded discovered suspect ids", commandException.Message, StringComparison.Ordinal);
+
+        await using (var context = fixture.CreateContext())
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id));
+        }
+
+        await using (var context = fixture.CreateContext())
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => new EfGameJournalReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id));
+        }
     }
 
     [Theory]

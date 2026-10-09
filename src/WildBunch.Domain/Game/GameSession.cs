@@ -1031,6 +1031,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     private void Apply(CaseFileGenerated e)
     {
+        if (e.CaseFile.DiscoveredSuspectIds is null)
+        {
+            throw new InvalidOperationException("Cannot apply CaseFileGenerated without recorded discovered suspect ids.");
+        }
+
         CaseFile = e.CaseFile.ToDomain();
         _version++;
     }

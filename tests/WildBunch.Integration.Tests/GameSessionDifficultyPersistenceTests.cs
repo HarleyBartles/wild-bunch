@@ -137,6 +137,19 @@ public sealed class GameSessionDifficultyPersistenceTests
     }
 
     [Fact]
+    public void CaseFileWithExplicitEmptyDiscoveredSuspectsRemainsValid()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var payload = JsonNode.Parse(serializer.SerializeCaseFile(CreateGangAwareCaseFile()))!.AsObject();
+
+        Assert.Empty(payload["discoveredSuspectIds"]!.AsArray());
+
+        var reloaded = serializer.DeserializeCaseFile(payload.ToJsonString());
+
+        Assert.Empty(reloaded.DiscoveredSuspectIds);
+    }
+
+    [Fact]
     public void CaseFileWantedSuspectConfrontationStateRoundTripsThroughJsonPersistence()
     {
         var serializer = new GameSessionJsonSerializer();

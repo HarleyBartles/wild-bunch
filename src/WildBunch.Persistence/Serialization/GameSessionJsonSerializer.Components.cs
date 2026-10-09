@@ -87,11 +87,14 @@ public sealed partial class GameSessionJsonSerializer
         => DeserializeRequiredComponent("caseFile", json, () =>
         {
             var snapshot = Deserialize<CaseFileSnapshot>(json);
-            if (snapshot.Suspects is null || snapshot.KnownClues is null || string.IsNullOrWhiteSpace(snapshot.TrueCulpritId))
+            if (snapshot.Suspects is null
+                || snapshot.DiscoveredSuspectIds is null
+                || snapshot.KnownClues is null
+                || string.IsNullOrWhiteSpace(snapshot.TrueCulpritId))
             {
                 throw new InvalidRequiredComponentCacheShapeException(
                     "caseFile",
-                    "suspects, known clues, and the true culprit id are required.");
+                    "suspects, discovered suspect ids, known clues, and the true culprit id are required.");
             }
 
             return CaseFileSnapshot.ToDomain(snapshot);

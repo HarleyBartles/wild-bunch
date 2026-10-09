@@ -38,35 +38,36 @@
 
 **Produces:** The first substantive commit records PR #215's exact delivery evidence, retires its completed plan, points row 07 at this successor, advances the single product version to `.31`, and narrows the next PLAT-001 risk to an omitted current-cache discovery field.
 
-- [ ] Verify PR #215 is merged to `develop`, the reviewed source and merge/tree evidence match the roadmap receipt, and hosted run `37911946265` passed on the reviewed source.
-- [ ] Assess the predecessor plan against the actual merged source, feature-matrix/test-follow-up promotion, fresh whole-branch no-finding review, and hosted result; retire it only after confirming the entire bounded saloon cache scope shipped.
-- [ ] Update row 07 with PR #215's source, merge, matching tree, hosted run, review and `0.1.0-dev.30` evidence; point to this plan and state that other recovery shapes remain open.
-- [ ] Update PLAT-001 with the exact saloon tagged-cache behavior and its limits, then record this next gap without claiming its recovery before tests prove it.
-- [ ] Advance only `Directory.Build.props` to `0.1.0-dev.31`; do not commit generated web identity output or introduce another authored version.
-- [ ] Stage and commit the plan/version/successor-evidence change before modifying behavior tests or production code; the normal check-only hook validates the staged candidate.
+- [x] Verify PR #215 is merged to `develop`, the reviewed source and merge/tree evidence match the roadmap receipt, and hosted run `37911946265` passed on the reviewed source.
+- [x] Assess the predecessor plan against the actual merged source, feature-matrix/test-follow-up promotion, fresh whole-branch no-finding review, and hosted result; retire it only after confirming the entire bounded saloon cache scope shipped.
+- [x] Update row 07 with PR #215's source, merge, matching tree, hosted run, review and `0.1.0-dev.30` evidence; point to this plan and state that other recovery shapes remain open.
+- [x] Update PLAT-001 with the exact saloon tagged-cache behavior and its limits, then record this next gap without claiming its recovery before tests prove it.
+- [x] Advance only `Directory.Build.props` to `0.1.0-dev.31`; do not commit generated web identity output or introduce another authored version.
+- [x] Stage and commit the plan/version/successor-evidence change before modifying behavior tests or production code; the normal check-only hook validates the staged candidate.
 
 ### Task 2: Recover omitted discovered-suspect identity from event history
 
-**Files:** `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs` only if the focused behavior test proves the missing-field guard is absent.
+**Files:** `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`; `tests/WildBunch.Integration.Tests/GameSessionDifficultyPersistenceTests.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`; `src/WildBunch.Domain/Game/GameSession.cs` only if authoritative event validation is needed for the fail-closed test.
 
 **Consumes:** `CaseFileSnapshot` and `CaseFileGenerated`; `InvestigationPerformed` event application; `DeserializeCaseFile`; `GameSessionComponentPayloads`; `PersistedPayloadLoader`; aggregate, player-read and journal-read loaders; existing PostgreSQL test helpers.
 
 **Produces:** PostgreSQL proof that a current-version casebook cache missing `discoveredSuspectIds` recovers the exact discovered identities from replay in each path that consumes the case file, preserves storage during reads, and remains repairable through an ordinary legal command.
 
-Ruling: The current component deserializer converts an omitted `DiscoveredSuspectIds` payload property into an empty list, which is then valid domain state and suppresses reconstruction. Current component JSON and legacy whole-session snapshots use separate deserialization routes, so keep the guard scoped to `DeserializeCaseFile`; do not remove independently tested legacy snapshot defaults. Current event-backed case generation places discovery state in `CaseFileGenerated`, and subsequent clue discoveries are replayed from `InvestigationPerformed`. Never manufacture an empty fact when history is invalid.
+Ruling: `DeserializeCaseFile` currently converts an omitted `DiscoveredSuspectIds` payload property into an empty list, which suppresses reconstruction. Current component JSON and legacy whole-session snapshots use separate deserialization routes, so the cache guard stays scoped to `DeserializeCaseFile`; independently tested snapshot defaults remain unchanged. Case generation records discovery state in `CaseFileGenerated`, and later clue discoveries replay from `InvestigationPerformed`. `GameSession.Apply(CaseFileGenerated)` explicitly rejects a missing discovery list so malformed history fails with a descriptive invalid-operation error. If this guard were omitted, the current incidental `ArgumentNullException` would still fail closed but obscure the invalid event field and leave rejection dependent on LINQ internals. Never manufacture an empty fact when history is invalid.
 
-- [ ] Persist a real started session with an independently captured discovered suspect, using the fixture's casefile-known identity and event stream; assert the generated event itself carries that discovered ID before damaging the cache.
-- [ ] Remove only `discoveredSuspectIds` from the persisted current `caseFile` component JSON while retaining the row, component version, envelope positions, events, and diary rows.
-- [ ] Add a PostgreSQL test that loads via the production command repository and player/journal read repositories, then asserts the exact discovered suspect ID/name (and any casebook field needed to make the assertion player-visible) is present.
-- [ ] Capture and compare the missing-field payload, component version, snapshot/stream positions, ordered event payloads/metadata, and diary rows before and after all read paths to prove reads do not write back.
-- [ ] Run the focused PostgreSQL test before production changes and confirm it fails specifically because the loaded casebook lacks the discovered identity; reject failures caused by setup or event decoding.
-- [ ] Add the minimal current-component shape validation for absent/null `discoveredSuspectIds`; explicitly present empty arrays remain valid. Confirm normal command and player/journal paths use existing typed invalid-cache recovery and full replay.
-- [ ] Prove the positive test is sensitive by temporarily bypassing the guard and confirming it fails on the absent identity; restore the implementation and rerun.
-- [ ] Perform a legal purchase or other settled legal command after recovery, save normally, then verify a fresh aggregate load sees the repaired current component and exact discovered identity.
-- [ ] Damage the authoritative `CaseFileGenerated` payload's discovered-ID field while the component cache is malformed and prove command/player/journal loads fail closed instead of returning an empty or invented casebook.
-- [ ] Preserve the existing legacy whole-session snapshot defaults and prove an explicitly present empty discovery list still deserializes as empty; do not expand the change into general case-file validation.
-- [ ] Run focused integration coverage with `.\tools\postgres-dev.ps1 ensure` and `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.<new-test-name>"`.
-- [ ] Commit the behavior proof and minimal production guard through the normal check-only hook.
+- [x] Persist a real started session with an independently captured discovered suspect, using the fixture's casefile-known identity and event stream; assert the generated event itself carries that discovered ID before damaging the cache.
+- [x] Remove only `discoveredSuspectIds` from the persisted current `caseFile` component JSON while retaining the row, component version, envelope positions, events, and diary rows.
+- [x] Add a PostgreSQL test that loads via the production command repository and player/journal read repositories, then asserts the exact discovered suspect ID/name (and any casebook field needed to make the assertion player-visible) is present.
+- [x] Capture and compare the missing-field payload, component version, snapshot/stream positions, ordered event payloads/metadata, and diary rows before and after all read paths to prove reads do not write back.
+- [x] Run the focused PostgreSQL test before production changes and confirm it fails specifically because the loaded casebook lacks the discovered identity; reject failures caused by setup or event decoding.
+- [x] Add the minimal current-component shape validation for absent/null `discoveredSuspectIds`; explicitly present empty arrays remain valid. Confirm normal command and player/journal paths use existing typed invalid-cache recovery and full replay.
+- [x] Add explicit validation in `GameSession.Apply(CaseFileGenerated)` only if the malformed authoritative-event test otherwise fails with an incidental null collection error; retain legacy whole-session snapshot behavior and the original event JSON/schema version.
+- [x] Prove the positive test is sensitive by temporarily bypassing the guard and confirming it fails on the absent identity; restore the implementation and rerun.
+- [x] Perform a legal purchase or other settled legal command after recovery, save normally, then verify a fresh aggregate load sees the repaired current component and exact discovered identity.
+- [x] Damage the authoritative `CaseFileGenerated` payload's discovered-ID field while the component cache is malformed and prove command/player/journal loads fail closed instead of returning an empty or invented casebook.
+- [x] Preserve the existing legacy whole-session snapshot defaults and prove an explicitly present empty discovery list still deserializes as empty; do not expand the change into general case-file validation.
+- [x] Run focused integration coverage with `.\tools\postgres-dev.ps1 ensure` and `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.<new-test-name>"`.
+- [x] Commit the behavior proof and minimal production guard through the normal check-only hook.
 
 ### Task 3: Record bounded evidence and deliver the slice
 
@@ -76,9 +77,9 @@ Ruling: The current component deserializer converts an omitted `DiscoveredSuspec
 
 **Produces:** A precise PLAT-001 assessment for the omitted discovered-identity cache field and its exercised read/replay/repair/fail-closed boundaries, followed by a reviewed develop PR.
 
-- [ ] Add a dated persistence-test disposition limited to omitted/null current-cache `discoveredSuspectIds`, event-backed discovery restoration, all tested command/player/journal paths, read no-writeback, legal-save repair, explicit-empty validity, and fail-closed invalid history.
-- [ ] Update PLAT-001 with the verified behavior and clear limits; other CaseFile fields and optional/nested cache recovery remain open unless directly tested.
-- [ ] Compare the final diff with ADR-0028 and the decision-record playbook; leave the ADR unchanged if this remains implementation of its existing event-authority/cache-recovery decision.
+- [x] Add a dated persistence-test disposition limited to omitted/null current-cache `discoveredSuspectIds`, event-backed discovery restoration, all tested command/player/journal paths, read no-writeback, legal-save repair, explicit-empty validity, and fail-closed invalid history.
+- [x] Update PLAT-001 with the verified behavior and clear limits; other CaseFile fields and optional/nested cache recovery remain open unless directly tested.
+- [x] Compare the final diff with ADR-0028 and the decision-record playbook; leave the ADR unchanged if this remains implementation of its existing event-authority/cache-recovery decision.
 - [ ] Confirm generated web identity reports `0.1.0-dev.31` without staging it, then run the canonical `py -3 tools/run.py ci --check` on the implementation candidate if the normal staged hook has not already validated that exact candidate.
 - [ ] Complete a fresh whole-branch review against the plan, accepted specification, PLAT-001, relevant persistence findings, ADR-0028, event-sourcing integrity, selected backend/code-review unslop profiles, feature matrix and code-review runbook; resolve actionable findings before publication.
 - [ ] Open a Draft PR to `develop`; verify body, base and exact remote head, mark ready after review and local validation, and require the hosted canonical gate on that exact head.
