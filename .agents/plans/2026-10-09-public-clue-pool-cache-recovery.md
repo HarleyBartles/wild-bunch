@@ -62,7 +62,7 @@
 - [x] Add `DamagedCaseFileCacheDoesNotHideMissingPublicCluesInCaseFileGeneratedEvent`: remove the cache field and set the persisted event pool to null; require command, player-read, and journal-read replay paths to fail with the same clear `InvalidOperationException` identifying missing recorded public clues.
 - [x] Validate absent/null `publicClues` as invalid current component shape and add the explicit null-pool guard to `GameSession.Apply(CaseFileGenerated)`; keep explicit empty arrays valid and preserve all event shapes/versions.
 - [x] Run both focused PostgreSQL tests and the adjacent CaseFile serializer/event reconstruction tests; temporarily bypass each new guard and confirm the positive recovery test and authoritative-event negative fail for their intended reasons, then restore the guards and confirm GREEN.
-- [ ] Commit the behavior tests and minimal guards through the normal check-only hook; do not change schemas, migrations, upcasters, clue generation, projections, or other CaseFile cache fields.
+- [x] Commit the behavior tests and minimal guards through the normal check-only hook; do not change schemas, migrations, upcasters, clue generation, projections, or other CaseFile cache fields. Commit `f57083f7` passed the full canonical staged-candidate gate.
 
 ### Task 3: Record evidence and deliver the slice
 
@@ -72,9 +72,9 @@
 
 **Produces:** Precise evidence that only absent/null current-cache public clue pools recover, missing authoritative event data fails explicitly, read paths preserve damaged storage and player-knowledge boundaries, and a later legal save repairs the cache; a reviewed PR to `develop` at `.33`.
 
-- [ ] Record the dated persistence disposition for exact pool recovery, gossip event outcome, read preservation, knowledge-safe player/journal projections, legal-save repair, and the malformed-event negative; leave other CaseFile cache contradictions open.
-- [ ] Update PLAT-001 with verified behavior and limits while preserving its existing feature promise; compare the diff against ADR-0028 and leave the ADR unchanged because this enforces its existing event-authority/cache decision.
-- [ ] Verify generated web identity reports `0.1.0-dev.33` without staging it and run the canonical fail-fast `py -3 tools\run.py ci --check` on the final candidate before publication.
+- [x] Record the dated persistence disposition for exact pool recovery, gossip event outcome, read preservation, knowledge-safe player/journal projections, legal-save repair, and the malformed-event negative; leave other CaseFile cache contradictions open.
+- [x] Update PLAT-001 with verified behavior and limits while preserving its existing feature promise; compare the diff against ADR-0028 and leave the ADR unchanged because this enforces its existing event-authority/cache decision.
+- [x] Verify generated web identity reports `0.1.0-dev.33` without staging it and run the canonical fail-fast `py -3 tools\run.py ci --check` on the final candidate before publication. The generated `src/WildBunch.Web/dist/version.json` reports `.33` and remains untracked; the normal staged-candidate hook will run the full canonical gate on this final evidence update before it can be committed.
 - [ ] Complete a fresh whole-branch review against this plan, the accepted specification, PLAT-001, persistence findings, ADR-0028, event-sourcing doctrine, selected unslop profiles, feature-matrix playbook, and review runbook; resolve actionable findings before publication.
 - [ ] Publish a Draft PR to `develop`; verify its title, body, base, exact head, and review evidence; mark it ready only after local validation; require the hosted canonical gate on that exact head.
 - [ ] Merge to `develop`; verify merge, source/merge tree, and hosted gate evidence; fast-forward the primary checkout; archive only this verified merged worktree, delete its local/remote branch, and remove only this branch-scoped scratch.
