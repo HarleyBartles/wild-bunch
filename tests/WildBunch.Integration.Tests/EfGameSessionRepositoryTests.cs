@@ -2316,6 +2316,10 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(commandRead);
         Assert.Equal(expectedConfrontations, commandRead!.CaseFile.WantedSuspectConfrontations);
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive,
+            commandRead.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive,
+            commandRead.GetWantedSuspectPresenceState(new SuspectId("suspect-3")));
         Assert.NotNull(playerRead);
         Assert.Equal(expectedConfrontations, playerRead!.CaseFile.WantedSuspectConfrontations);
         Assert.NotNull(journalRead);
