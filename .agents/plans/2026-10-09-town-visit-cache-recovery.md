@@ -69,27 +69,27 @@ Plan-only commit: `498bedc8847cfee503b6cdf076bfadaba9c96b28`.
 
 **Produces:** Falsifiable missing-row and malformed-cache cases proving both load paths restore event-established town visit state without read-time writeback.
 
-- [ ] Add a PostgreSQL theory for `TownVisitState` cache damage cases `missing-row` and `null-root` using a real started session after `LookAroundSaloon()` has emitted `SaloonPersonOfInterestSpotted`.
-- [ ] Before damaging the cache, independently capture the current town id, visit number, saloon-source-spent state, active person id/descriptor/kind from the aggregate, and the corresponding facts from the typed event stream.
-- [ ] In the `missing-row` case delete only the `townVisitState` component; in the `null-root` case replace only its payload with JSON `null` while retaining its component version.
-- [ ] Run fresh player-read and command repository loads and assert the current town, visit number, spent saloon source and active person facts match the event-established values; do not compare only two loader results.
-- [ ] During both reads assert the cache remains absent or byte-for-byte unchanged and its version remains unchanged when present; also preserve envelope versions, ordered stored events and travel-diary rows.
-- [ ] Add a negative case where the TownVisit cache is damaged and required event history cannot reconstruct the session; assert the replay failure escapes rather than becoming empty/default town state.
-- [ ] Run the new cases before the production fix and observe the current missing-row loss or malformed-cache exception for the intended assertions.
+- [x] Add a PostgreSQL theory for `TownVisitState` cache damage cases `missing-row` and `null-root` using a real started session after `LookAroundSaloon()` has emitted `SaloonPersonOfInterestSpotted`.
+- [x] Before damaging the cache, independently capture the current town id, visit number, saloon-source-spent state, active person id/descriptor/kind from the aggregate, and verify those facts against the typed event.
+- [x] In the `missing-row` case delete only the `townVisitState` component; in the `null-root` case replace only its payload with JSON `null` while retaining its component version.
+- [x] Run fresh player-read and command repository loads and assert the current town, visit number, spent saloon source and active person facts match the event-established values; do not compare only two loader results.
+- [x] During both reads assert the cache remains absent or byte-for-byte unchanged and its version remains unchanged when present; also preserve envelope versions, ordered stored events and travel-diary rows.
+- [x] Add a negative case where the TownVisit cache is damaged and required event history cannot reconstruct the session; assert the replay failure escapes rather than becoming empty/default town state.
+- [x] Run the new recovery cases before the production fix; missing-row lost the spent saloon source and JSON `null` escaped as an unhandled decode failure. The unreplayable-history cases passed before and after the fix.
 
 ### Task 4: Rebuild only event-established TownVisit state
 
-**Files:** `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`; focused integration tests.
+**Files:** `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; `src/WildBunch.Persistence/GameSessions/TownVisitCacheRecovery.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`; focused integration tests.
 
 **Consumes:** The PostgreSQL red tests, `GameSession.RehydrateFromEvents`, `SessionRebuilder`, and the existing typed invalid-component cache fallback.
 
 **Produces:** Equivalent event-established TownVisit state for command and player-read paths, while preserving valid setup-phase absence, read-only recovery and fail-closed history.
 
-- [ ] Treat an absent `townVisitState` component as a replay trigger only when ordered events include the `GameStarted` fact that establishes a current town; do not reinterpret setup-only sessions as having a current town.
-- [ ] Wrap undecodable `TownVisitState` cache shapes in the existing typed invalid-component-cache exception so both loaders use their existing full-replay fallback.
-- [ ] Preserve valid `TownVisitState` fast-path behavior, and leave all event decoding/upcasting/reconstruction exceptions uncaught by the cache-shape fallback.
-- [ ] Run the new PostgreSQL damage cases and existing setup-phase persistence tests; prove both loaders recover the captured facts and neither writes back during reads.
-- [ ] Extend the case through one legal follow-up command and normal unit-of-work save; assert the component returns at the current version and a fresh load preserves the same event-established facts.
+- [x] Treat an absent `townVisitState` component as a replay trigger only when ordered events include the `GameStarted` fact that establishes a current town; do not reinterpret setup-only sessions as having a current town.
+- [x] Wrap undecodable `TownVisitState` cache shapes in the existing typed invalid-component-cache exception so both loaders use their existing full-replay fallback.
+- [x] Preserve valid `TownVisitState` fast-path behavior, and leave all event decoding/upcasting/reconstruction exceptions uncaught by the cache-shape fallback.
+- [x] Run the new PostgreSQL damage cases and existing setup-phase persistence test; prove both loaders recover the captured facts and neither writes back during reads.
+- [x] Extend the case through one legal follow-up purchase command and normal unit-of-work save; assert the component returns at the current version and a fresh load preserves the same event-established facts.
 
 ### Task 5: Record the bounded result and deliver the slice
 
@@ -101,7 +101,7 @@ Plan-only commit: `498bedc8847cfee503b6cdf076bfadaba9c96b28`.
 
 - [ ] Record the exact `TownVisitState` missing/null-root recovery behavior, event-established facts, valid setup-phase absence, read no-writeback, legal-save repair, and unrecoverable-history negative in PS-04/05; retain the original audit findings.
 - [ ] Update PLAT-001 only with the behavior proven in this plan; leave other optional components, other malformed shapes and remaining projection recovery open.
-- [ ] Run focused PostgreSQL tests, migration inventory and `py -3 tools/run.py ci --check`; confirm generated web identity reports `0.1.0-dev.25` and there is no event or migration diff.
+- [x] Run focused PostgreSQL tests, migration inventory and `py -3 tools/run.py ci --check`; confirm generated web identity reports `0.1.0-dev.25` and there is no event or migration diff.
 - [ ] Complete whole-branch review against this plan, baseline specification, PS-04/05, ADR-0028, event-sourcing doctrine, unslop and code-review runbook; resolve every actionable finding and inspect the final committed head.
 - [ ] Publish and attach a Draft PR to `develop`, verify its exact source head and body, mark it ready after review and local validation pass, and verify the hosted canonical gate on that exact SHA before merging under the active epic authorization.
 - [ ] Verify merge to `develop`, fast-forward `Z:\wild-bunch`, and clean only the verified merged worktree and branch; retain this plan through its completing PR so successor-slice retirement occurs in the next row 07 plan.
