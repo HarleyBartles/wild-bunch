@@ -42,8 +42,8 @@
 
 **Produces:** A committed JIT plan for the missing optional active-Journey cache gap.
 
-- [ ] Confirm this plan against current source and repository planning guidance; commit only this plan before changing successor artifacts, versions, tests, or implementation.
-- [ ] Record the plan-only commit and retain this plan through its completing PR.
+- [x] Confirm this plan against current source and repository planning guidance; commit only this plan before changing successor artifacts, versions, tests, or implementation.
+- [x] Record plan-only commit `ef65003d7a65ec33cd1181ccd2f67592a8997fce` and retain this plan through its completing PR.
 
 ### Task 2: Retire the completed Journey-shape predecessor and advance row 07
 
@@ -53,11 +53,11 @@
 
 **Produces:** This plan as the current row 07 plan, truthful closure of the prior nested-shape slice, the PR #208 delivery evidence, and development identity `0.1.0-dev.24`.
 
-- [ ] Verify PR #208 merged to `develop` from source `a4e49d4425ee3515e31b8fd726456637ba940e20`, merge `58ee5b2a33d788c16f1463532012453cd1ce422a`, matching tree, and hosted canonical run `37881645016` passing on that exact source.
-- [ ] In the first substantive commit, record PR #208's exact source, merge, tree and gate evidence; summarize the now-proven omitted/null `routeProfile` recovery and its still-open missing-row gap; retire `.agents/plans/2026-10-09-journey-cache-shape-recovery.md` and remove its stale link.
-- [ ] Set this plan as the current row 07 plan; retain other optional-component and projection gaps as open.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.23` to `0.1.0-dev.24`; do not hand-edit generated web version output.
-- [ ] Inspect and commit the intended successor-artifact diff before implementation.
+- [x] Verify PR #208 merged to `develop` from source `a4e49d4425ee3515e31b8fd726456637ba940e20`, merge `58ee5b2a33d788c16f1463532012453cd1ce422a`, matching tree `21b99841f9e80edf6948012413fed9b6ea19a078`, and hosted canonical run `37881645016` passing on that exact source.
+- [x] In the first substantive commit, record PR #208's exact source, merge, tree and gate evidence; summarize the now-proven omitted `routeProfile` recovery and its still-open missing-row gap; retire `.agents/plans/2026-10-09-journey-cache-shape-recovery.md` and remove its stale link.
+- [x] Set this plan as the current row 07 plan; retain other optional-component and projection gaps as open.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.23` to `0.1.0-dev.24`; do not hand-edit generated web version output.
+- [x] Inspect and commit the intended successor-artifact diff before implementation.
 
 ### Task 3: Prove missing Journey behavior at PostgreSQL boundaries
 
