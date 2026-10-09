@@ -38,10 +38,10 @@
 
 **Produces:** This plan as row 07's current plan, truthful command-load disposition, completed predecessor retirement and the next authored development version in the first substantive commit.
 
-- [ ] Verify PR #205 merged to `develop` from reviewed source `fedac9b935dda22c9300a3b429bfae53221a5403`, the source and merge trees match, and hosted canonical gate run `37870893847` passed.
-- [ ] In the first substantive commit, set this plan as row 07's current plan, record PR #205's merge SHA, tree, `0.1.0-dev.20` and hosted gate, summarize command-load `RepeatableRead` behavior, and retire the completed predecessor plan.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.20` to `0.1.0-dev.21`; do not hand-edit generated web version output.
-- [ ] Keep this plan-only commit first; inspect its path and content before committing.
+- [x] Verify PR #205 merged to `develop` from reviewed source `fedac9b935dda22c9300a3b429bfae53221a5403`, the source and merge trees match, and hosted canonical gate run `37870893847` passed.
+- [x] In the first substantive commit, set this plan as row 07's current plan, record PR #205's merge SHA, tree, `0.1.0-dev.20` and hosted gate, summarize command-load `RepeatableRead` behavior, and retire the completed predecessor plan.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.20` to `0.1.0-dev.21`; do not hand-edit generated web version output.
+- [x] Keep this plan-only commit first; inspect its path and content before committing.
 
 ### Task 2: Prove recovery from malformed required component caches
 
@@ -51,15 +51,15 @@
 
 **Produces:** PostgreSQL integration tests for representative parseable malformed non-Player required component payloads across the command aggregate and query read-model paths.
 
-- [ ] Extend the production-loader scenario for a required non-Player component whose current-version JSON is syntactically valid but omits or nulls a domain-required fact; choose concrete shapes from the current `WorldSnapshot` and `CaseFileSnapshot` codecs and record the chosen mutations in the test name or local helper.
-- [ ] Capture expected state before directly mutating only the selected component payload in PostgreSQL; preserve its component version, envelope versions, event rows and diary metadata.
-- [ ] Assert fresh command aggregate, player read and journal read return the independently captured event-established facts rather than throwing, defaulting or silently losing the facts.
-- [ ] Assert each read leaves the damaged JSON, component version, stream/snapshot positions, diary metadata and event count unchanged.
-- [ ] Execute a legal command after recovery, save through the existing unit of work, then fresh-load and assert the repaired component yields the complete expected state.
-- [ ] Add a negative control that damages the same required cache and removes a required authoritative event; assert command and query recovery surface the replay failure rather than returning the cached or plausible default state.
-- [ ] Run the focused PostgreSQL scenarios against the current implementation and observe the malformed-cache path fail before changing production code.
+- [x] Extend the production-loader scenario for a required non-Player component whose current-version JSON is syntactically valid but omits or nulls a domain-required fact; choose concrete shapes from the current `WorldSnapshot` and `CaseFileSnapshot` codecs and record the chosen mutations in the test name or local helper.
+- [x] Capture expected state before directly mutating only the selected component payload in PostgreSQL; preserve its component version, envelope versions, event rows and diary metadata.
+- [x] Assert fresh command aggregate, player read and journal read return the independently captured event-established facts rather than throwing, defaulting or silently losing the facts.
+- [x] Assert each read leaves the damaged JSON, component version, stream/snapshot positions, diary metadata and event count unchanged.
+- [x] Execute a legal command after recovery, save through the existing unit of work, then fresh-load and assert the repaired component yields the complete expected state.
+- [x] Add a negative control that damages the same required cache and removes a required authoritative event; assert command recovery surfaces the replay failure for every tested required component, and query recovery does so for each required component it consumes. Salt-source remains command-side because the player query does not consume it.
+- [x] Run the focused PostgreSQL scenarios against the current implementation and observe the malformed-cache path fail before changing production code.
 
-Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_RequiredComponentCacheShapeRebuildsFromEvents"`; the expected failure must identify decode/materialization failure or incorrect recovered facts while event history is intact.
+Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~ReadModel_CurrentRequiredComponentCacheShapeRebuildsFromEvents"`; the expected failure must identify decode/materialization failure or incorrect recovered facts while event history is intact.
 
 ### Task 3: Classify component decode failures and fall back to supported replay
 
@@ -69,12 +69,12 @@ Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualified
 
 **Produces:** A narrow typed invalid-cache boundary for required component decoding and full event replay when that boundary is reached.
 
-- [ ] Introduce a persistence-owned invalid required-component cache exception with the component identity and original decode/shape cause; preserve the existing Player recovery behavior through the same classification.
-- [ ] Validate required fields/collections before constructing usable `World`, `CaseFile`, `GameClock`, `PursuitState` and `SaltSource` values. Reject null or missing required shape; retain existing defaults only where the current persisted format explicitly treats a field as optional.
-- [ ] Keep exception classification scoped to component JSON decoding and domain conversion; do not catch event upcast, event decode, replay, projection or unrelated infrastructure exceptions as cache damage.
-- [ ] Route classified required-component shape failures from both command aggregate and query read-model materialization into the coherent full replay path.
-- [ ] Preserve current behavior for a missing row, stale component-version rebuild, optional component absence, current legal payload, unsupported history and cancellation.
-- [ ] Rerun the focused PostgreSQL cases and prove the invalid-history negative remains failing at the authoritative history boundary.
+- [x] Introduce a persistence-owned invalid required-component cache exception with the component identity and original decode/shape cause; preserve the existing Player recovery behavior through the same classification.
+- [x] Validate required fields/collections before constructing usable `World`, `CaseFile`, `GameClock`, `PursuitState` and `SaltSource` values. Reject null or missing required shape; retain existing defaults only where the current persisted format explicitly treats a field as optional.
+- [x] Keep exception classification scoped to component JSON decoding and domain conversion; do not catch event upcast, event decode, replay, projection or unrelated infrastructure exceptions as cache damage.
+- [x] Route classified required-component shape failures from both command aggregate and query read-model materialization into the coherent full replay path.
+- [x] Preserve current behavior for a missing row, stale component-version rebuild, optional component absence, current legal payload, unsupported history and cancellation.
+- [x] Rerun the focused PostgreSQL cases and prove the invalid-history negative remains failing at the authoritative history boundary.
 
 ### Task 4: Record the bounded PS-04 disposition and deliver
 
@@ -84,7 +84,7 @@ Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualified
 
 **Produces:** Dated PS-04 disposition, truthful row 07 remaining scope and reviewed PR.
 
-- [ ] Add a dated PS-04 disposition listing the exact required component shapes, production adapters, preservation assertions, later legal-save repair and corrupt-history negative; preserve the original audit finding.
+- [x] Add a dated PS-04 disposition listing the exact required component shapes, production adapters, preservation assertions, later legal-save repair and corrupt-history negative; preserve the original audit finding.
 - [ ] State precisely which non-Player required component cases are closed and which optional, nested, or other malformed component forms remain open; keep row 07 executing and this plan live through its completing PR.
 - [ ] Compare the change with ADR-0028, event-sourcing integrity doctrine, architecture guardrails, feature matrix, backend-architecture and code-review unslop profiles; leave the ADR and feature matrix unchanged because the implementation enforces their existing cache and event-authority decisions.
 - [ ] Run focused PostgreSQL proof, persistence migration inventory and canonical fail-fast `py -3 tools/run.py ci --check`; confirm generated web identity is `0.1.0-dev.21` and no schema or event payload changes were introduced.
