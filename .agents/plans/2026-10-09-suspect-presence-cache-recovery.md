@@ -53,11 +53,11 @@
 
 **Produces:** A truthful PR #211 delivery record, a narrow completion disposition for the retired predecessor, an honest remaining row 07 gap list, and `0.1.0-dev.27`.
 
-- [ ] In the first substantive implementation commit, record PR #211's target, source head, merge commit and exact-head hosted gate result in row 07; record the delivered missing/null-root `currentActionContext` behavior and retire `.agents/plans/2026-10-09-current-action-context-cache-recovery.md` with stale links removed.
-- [ ] Update the row 07 investigation and PLAT-001 only with behavior this slice proves; preserve the finding that direct `AvailableInTown` seeding is not event-established and leave unrelated cache gaps open.
-- [ ] Confirm ADR-0028 remains truthful because this slice applies its existing event-history authority and rebuildable-cache choice; do not create or alter an ADR unless the implementation changes that boundary.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.26` to `0.1.0-dev.27`; do not edit generated web identity output.
-- [ ] Inspect and commit the intended successor-artifact and version diff before adding or changing tests and implementation.
+- [x] In the first substantive implementation commit, record PR #211's target, source head, merge commit and exact-head hosted gate result in row 07; record the delivered missing/null-root `currentActionContext` behavior and retire `.agents/plans/2026-10-09-current-action-context-cache-recovery.md` with stale links removed.
+- [x] Update the row 07 investigation; verify PLAT-001 already reflects PR #211 and preserve the finding that direct `AvailableInTown` seeding is not event-established, leaving unrelated cache gaps open.
+- [x] Confirm ADR-0028 remains truthful because this slice applies its existing event-history authority and rebuildable-cache choice; do not create or alter an ADR unless the implementation changes that boundary.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.26` to `0.1.0-dev.27`; do not edit generated web identity output.
+- [x] Inspect and commit the intended successor-artifact and version diff before adding or changing tests and implementation.
 
 ### Task 3: Recover event-established presence through command replay
 
