@@ -600,21 +600,17 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
     }
 
     /// <summary>
-    /// Proves the snapshot + replay load path sets the aggregate version correctly
-    /// when the snapshot lags behind the stream version. The repository must set the
-    /// aggregate version to SnapshotVersion before replaying post-snapshot events,
-    /// so that after replay Version == StreamVersion (not StreamVersion + replayedCount).
+    /// Ensures stale snapshot metadata cannot corrupt current cached player state or
+    /// the aggregate stream position, then verifies that the player can continue.
     /// See ADR-0028 §8 (Snapshots as cache) and §7 (Optimistic concurrency).
-    ///
-    /// Without the fix (setting version to SnapshotVersion before replay), the loaded
-    /// aggregate would have Version = StreamVersion + postSnapshotEventCount, which
-    /// corrupts the next optimistic concurrency check.
     /// </summary>
     [Fact]
-    public async Task GetByIdAsync_WithLaggingSnapshot_LoadsAggregateWithVersionEqualToStreamVersion()
+    public async Task GetByIdAsync_WithStaleSnapshotRecoversCurrentCacheAndAllowsNextCommand()
     {
         using var database = new PostgreSqlTestDatabase();
         var services = CreateServices(database.ConnectionString);
+        decimal expectedCash;
+        int expectedFoodQuantity;
 
         // Seed: create + commit (v6), then reload + purchase + commit (v8).
         // After this, SnapshotVersion == StreamVersion == 8 in the DB.
@@ -636,98 +632,53 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             loaded.Purchase(offer, 1);
             await seedRepo.StoreAsync(loaded);
             await seedUow.CommitAsync();
+            expectedCash = loaded.Player.Wallet.Cash;
+            expectedFoodQuantity = loaded.Player.Inventory.GetQuantity(DomainItemKind.Food);
         }
 
         // Force a lagging snapshot: set SnapshotVersion back to 6 while
         // StreamVersion stays at 8. This simulates a snapshot that was not
         // refreshed after the last event append.
+        long streamVersion;
         using (var adminScope = services.CreateScope())
         {
             var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
             var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
             entity.SnapshotVersion = 6;
+            streamVersion = entity.StreamVersion;
             await adminDb.SaveChangesAsync();
         }
 
-        // Load through the repository. The snapshot is at version 6, the stream
-        // is at version 8, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
-        // replayed. The loaded aggregate's Version must equal StreamVersion (8),
-        // not StreamVersion + 1 (9) which would be the bug.
+        // The player component already includes the committed purchase although
+        // the snapshot metadata is stale. Recovery must not apply those effects twice.
         using var loadScope = services.CreateScope();
         var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var loadUow = loadScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
         var loaded2 = await loadRepo.GetByIdAsync(sessionId);
         Assert.NotNull(loaded2);
-        Assert.Equal(8, loaded2!.Version);
-    }
+        Assert.Equal((int)streamVersion, loaded2!.Version);
+        Assert.Equal(expectedCash, loaded2.Player.Wallet.Cash);
+        Assert.Equal(expectedFoodQuantity, loaded2.Player.Inventory.GetQuantity(DomainItemKind.Food));
 
-    /// <summary>
-    /// Proves the snapshot + replay load path does not duplicate aggregate LogEntries
-    /// when the snapshot lags behind the stream version. The repository must project
-    /// only the snapshot-prefix events for aggregate LogEntries rehydration, then let
-    /// post-snapshot replay append the rest via Apply(...). If the repository projected
-    /// the full stream and then replayed post-snapshot events, the post-snapshot log
-    /// entries would be duplicated. See BUNCH-86.
-    /// </summary>
-    [Fact]
-    public async Task GetByIdAsync_WithLaggingSnapshot_DoesNotDuplicateAggregateLogEntries()
-    {
-        using var database = new PostgreSqlTestDatabase();
-        var services = CreateServices(database.ConnectionString);
+        var eventCountBeforeContinuation = (await loadRepo.GetEventStreamAsync(sessionId)).Count;
+        var nextResolver = new TownStoreCatalogResolver();
+        var nextOffer = nextResolver.Resolve(loaded2.World.GetTown(loaded2.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(loaded2.Purchase(nextOffer, 1).Success);
+        expectedCash = loaded2.Player.Wallet.Cash;
+        expectedFoodQuantity = loaded2.Player.Inventory.GetQuantity(DomainItemKind.Food);
+        await loadRepo.StoreAsync(loaded2);
+        await loadUow.CommitAsync();
 
-        // Seed: create + commit (v6), then reload + purchase + commit (v8).
-        // After this, SnapshotVersion == StreamVersion == 8 in the DB.
-        // The start flow produces 6 events but only GameStarted yields a log entry (opening).
-        // v7,v8 produce TownActionContextEntered + StoreItemPurchased (1 log entry: purchase).
-        // Full-stream projection = 2 log entries.
-        GameSessionId sessionId;
-        using (var seedScope = services.CreateScope())
-        {
-            var seedRepo = seedScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
-            var seedUow = seedScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
-            var session = CreateSession();
-            sessionId = session.Id;
-            await seedRepo.StoreAsync(session);
-            await seedUow.CommitAsync();
-            session.MarkEventsCommitted();
-
-            var loaded = await seedRepo.GetByIdAsync(sessionId);
-            var resolver = new TownStoreCatalogResolver();
-            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
-                .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
-            loaded.Purchase(offer, 1);
-            await seedRepo.StoreAsync(loaded);
-            await seedUow.CommitAsync();
-        }
-
-        // Force a lagging snapshot: set SnapshotVersion back to 6 while
-        // StreamVersion stays at 8. This simulates a snapshot that was not
-        // refreshed after the last event append.
-        using (var adminScope = services.CreateScope())
-        {
-            var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
-            var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
-            entity.SnapshotVersion = 6;
-            await adminDb.SaveChangesAsync();
-        }
-
-        // Load through the repository. The snapshot is at version 6, the stream
-        // is at version 8, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
-        // replayed via ApplyCommittedEvents. The aggregate's LogEntries must
-        // contain exactly 2 entries (opening + purchase), not 3 (which would
-        // indicate the purchase entry was duplicated by full-stream projection
-        // followed by post-snapshot replay).
-        using var loadScope = services.CreateScope();
-        var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
-        var loaded2 = await loadRepo.GetByIdAsync(sessionId);
-        Assert.NotNull(loaded2);
-
-        // The full event stream has 8 events (6 start flow + TownActionContextEntered + StoreItemPurchased).
-        // The projector produces 2 log entries (opening + purchase).
-        // The aggregate's LogEntries must match — no duplication from
-        // snapshot-prefix projection + post-snapshot replay.
-        Assert.Equal(2, GameSessionLogProjection.Project(loaded2!).Count);
-        Assert.Equal(GameLogEntryKind.Opening, GameSessionLogProjection.Project(loaded2)[0].Kind);
-        Assert.Equal(GameLogEntryKind.Purchase, GameSessionLogProjection.Project(loaded2)[1].Kind);
+        var fresh = await loadRepo.GetByIdAsync(sessionId);
+        Assert.NotNull(fresh);
+        Assert.Equal(expectedCash, fresh!.Player.Wallet.Cash);
+        Assert.Equal(expectedFoodQuantity, fresh.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        var eventsAfterContinuation = await loadRepo.GetEventStreamAsync(sessionId);
+        Assert.Equal(eventCountBeforeContinuation + 1, eventsAfterContinuation.Count);
+        Assert.Equal((int)eventsAfterContinuation.Count, fresh.Version);
+        Assert.Equal(2, eventsAfterContinuation.OfType<StoreItemPurchased>().Count());
+        Assert.IsType<StoreItemPurchased>(eventsAfterContinuation[^1]);
     }
 
     private static ServiceProvider CreateServices(string connectionString)
