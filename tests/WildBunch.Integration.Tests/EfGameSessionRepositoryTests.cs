@@ -960,6 +960,15 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(recovered.Purchase(offer, 1).Success);
         await PersistAsync(commandRepository, commandUnitOfWork, recovered);
 
+        await using (var context = fixture.CreateContext())
+        {
+            var setup = await context.GameSessionComponents.AsNoTracking().SingleAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "setup");
+
+            Assert.Equal(ProjectionVersions.ForComponent("setup"), setup.ComponentVersion);
+            Assert.Equal(expectedEntropy, new GameSessionJsonSerializer().DeserializeSetup(setup.PayloadJson));
+        }
+
         var freshRepository = CreateRepository(fixture, out _);
         var repaired = await freshRepository.GetByIdAsync(session.Id);
         Assert.NotNull(repaired);

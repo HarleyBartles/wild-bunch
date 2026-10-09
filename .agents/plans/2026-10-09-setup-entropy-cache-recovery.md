@@ -68,7 +68,7 @@
 - [x] Add a real production-event scenario that independently captures a non-`Classic` selected entropy and then removes only the current `setup` component row or nulls/omits its `gameEntropy` field while preserving events and all unrelated persistence metadata; include an unsupported enum value as an unusable shape.
 - [x] Exercise fresh command aggregate and player read-model loads; assert the selected entropy remains exact rather than defaulting to `Classic`.
 - [x] Assert command and query recovery leave the damaged payload/row, component version, envelope positions, exact event rows and diary metadata unchanged.
-- [x] Execute a legal command after recovery, save through the normal unit of work, and assert a fresh load returns the same selected entropy with the setup cache repaired.
+- [x] Execute a legal command after recovery, save through the normal unit of work, and assert the persisted setup row has the current component version and exact selected entropy, then assert a fresh load returns the same entropy; suppressing missing-row repair makes the assertion fail.
 - [x] Add a negative case that damages the setup cache and removes the required `WorldGenerated` event; assert both command and query loads fail at the authoritative history boundary.
 - [x] Run focused PostgreSQL tests against the current implementation and observe failure before changing production code: missing/null returned `Classic` instead of `Wild`; unsupported enum returned `99`; with corrupt history the loader returned plausible state instead of failing.
 
@@ -99,8 +99,8 @@ Run RED with `py -3 tools/run.py dotnet-test --check -- --filter "FullyQualified
 - [x] Record setup-cache recovery behavior, exact event-established entropy facts, row/metadata preservation, legal-save repair, corrupt-history negative and legacy compatibility boundary; preserve audit-time findings.
 - [x] Update PLAT-001 to state the precise setup cache behavior now proven and keep unrelated optional/nested component gaps open.
 - [x] Confirm ADR-0028 remains truthful; unchanged because this enforces its existing cache/event-authority decision.
-- [ ] Run focused PostgreSQL tests, persistence migration inventory and canonical fail-fast `py -3 tools/run.py ci --check`; confirm generated web identity is `0.1.0-dev.22` and no event payload or migration changes were introduced.
-- [ ] Complete whole-branch review against this plan, baseline spec, PS-04/05, persistence doctrine and code-review runbook; apply review fixes and inspect the exact final PR head.
+- [x] Run focused PostgreSQL tests (5 passed), persistence migration inventory and canonical fail-fast `py -3 tools/run.py ci --check`; generated web identity is `0.1.0-dev.22`, and no event payload or migration changes were introduced.
+- [x] Complete whole-branch review against this plan, baseline spec, PS-04/05, persistence doctrine and code-review runbook; resolve the review's minor repair-proof finding in `1b9f2c9f`, prove the assertion fails when repair is suppressed, and recheck the final test delta.
 - [ ] Publish and attach a Draft PR to `develop`, verify its exact source head, then mark it ready so hosted validation runs; verify the canonical gate passes on that exact SHA before merging under active epic authorization, fast-forward `Z:\wild-bunch`, and clean only this verified merged worktree and branch; retain this plan until its next row 07 successor classifies it.
 
 The local commit hook runs `py -3 tools/run.py ci --check` against the staged candidate. Confirm generated `src/WildBunch.Web/dist/version.json` reports `0.1.0-dev.22`; verify no migration or event payload file changed with `git diff origin/develop -- src/WildBunch.Persistence/Migrations src/WildBunch.Domain/Events`. For publication, the PR head must equal local `HEAD`; hosted validation must pass on that exact SHA before the authorized merge.
