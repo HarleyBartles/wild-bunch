@@ -811,10 +811,17 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Theory]
-    [InlineData("wallet")]
-    [InlineData("inventory")]
-    [InlineData("inventory.items")]
-    public async Task ReadModel_CurrentPlayerCacheShapeRebuildsFromEvents(string missingProperty)
+    [InlineData("player", "wallet")]
+    [InlineData("player", "inventory")]
+    [InlineData("player", "inventory.items")]
+    [InlineData("world", "towns")]
+    [InlineData("caseFile", "suspects")]
+    [InlineData("clock", "day")]
+    [InlineData("clock", "turn")]
+    [InlineData("pursuitState", "heat")]
+    [InlineData("saltSource", "salt")]
+    [InlineData("saltSource", "mode")]
+    public async Task ReadModel_CurrentRequiredComponentCacheShapeRebuildsFromEvents(string componentName, string missingProperty)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var commandRepository = CreateRepository(fixture, out var unitOfWork);
@@ -832,17 +839,23 @@ public sealed class EfGameSessionRepositoryTests
         var expectedName = purchased.Player.Name;
         var expectedCash = purchased.Player.Wallet.Cash;
         var expectedFood = purchased.Player.Inventory.GetQuantity(DomainItemKind.Food);
+        var expectedTownIds = purchased.World.Towns.Select(town => town.Id.Value).ToArray();
+        var expectedCulpritId = purchased.CaseFile.TrueCulpritId.Value;
+        var expectedOpeningLead = purchased.CaseFile.OpeningLead.Description;
+        var expectedCurrentTownName = purchased.World.GetTown(purchased.Player.CurrentTownId!.Value).Name;
         string malformedPayload;
-        int playerComponentVersion;
+        int componentVersion;
         long snapshotVersion;
         long streamVersion;
+        long? diaryProjectionStreamVersion;
+        int? diaryProjectionDayCount;
         int storedEventCount;
         await using (var context = fixture.CreateContext())
         {
-            var playerComponent = await context.GameSessionComponents.SingleAsync(component =>
-                component.SessionId == session.Id.Value && component.ComponentName == "player");
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == componentName);
             var envelope = await context.GameSessions.SingleAsync(entity => entity.Id == session.Id.Value);
-            var payload = JsonNode.Parse(playerComponent.PayloadJson)!.AsObject();
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
             if (missingProperty == "inventory.items")
             {
                 payload["inventory"]!["items"] = null;
@@ -852,16 +865,18 @@ public sealed class EfGameSessionRepositoryTests
                 payload[missingProperty] = null;
             }
             malformedPayload = payload.ToJsonString();
-            playerComponent.PayloadJson = malformedPayload;
-            playerComponentVersion = playerComponent.ComponentVersion;
+            component.PayloadJson = malformedPayload;
+            componentVersion = component.ComponentVersion;
             snapshotVersion = envelope.SnapshotVersion!.Value;
             streamVersion = envelope.StreamVersion;
+            diaryProjectionStreamVersion = envelope.TravelDiaryProjectionStreamVersion;
+            diaryProjectionDayCount = envelope.TravelDiaryProjectionDayCount;
             storedEventCount = await context.StoredEvents.CountAsync(storedEvent => storedEvent.StreamId == session.Id.Value);
             await context.SaveChangesAsync();
         }
 
         Assert.Equal(snapshotVersion, streamVersion);
-        Assert.Equal(ProjectionVersions.ForComponent("player"), playerComponentVersion);
+        Assert.Equal(ProjectionVersions.ForComponent(componentName), componentVersion);
 
         await using (var context = fixture.CreateContext())
         {
@@ -872,6 +887,8 @@ public sealed class EfGameSessionRepositoryTests
             Assert.Equal(expectedName, readModel!.Player.Name);
             Assert.Equal(expectedCash, readModel.Player.Wallet.Cash);
             Assert.Equal(expectedFood, readModel.Player.Inventory.GetQuantity(DomainItemKind.Food));
+            Assert.Equal(expectedTownIds, readModel.World.Towns.Select(town => town.Id.Value));
+            Assert.Equal(expectedCulpritId, readModel.CaseFile.TrueCulpritId.Value);
         }
 
         await using (var context = fixture.CreateContext())
@@ -882,6 +899,8 @@ public sealed class EfGameSessionRepositoryTests
             Assert.NotNull(journal);
             Assert.Contains(journal!.LogEntries, entry =>
                 entry.Kind == GameLogEntryKind.Purchase && entry.Message.Contains("Purchased 2 Food", StringComparison.Ordinal));
+            Assert.Equal(expectedOpeningLead, journal.OpeningLead);
+            Assert.Equal(expectedCurrentTownName, journal.CurrentTownName);
         }
 
         var aggregateRepository = CreateRepository(fixture, out var aggregateUnitOfWork);
@@ -890,22 +909,32 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(expectedName, aggregate!.Player.Name);
         Assert.Equal(expectedCash, aggregate.Player.Wallet.Cash);
         Assert.Equal(expectedFood, aggregate.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(expectedTownIds, aggregate.World.Towns.Select(town => town.Id.Value));
+        Assert.Equal(expectedCulpritId, aggregate.CaseFile.TrueCulpritId.Value);
 
         await using var verificationContext = fixture.CreateContext();
         var persistedComponent = await verificationContext.GameSessionComponents.AsNoTracking()
-            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == "player")
+            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == componentName)
             .Select(component => new { component.PayloadJson, component.ComponentVersion })
             .SingleAsync();
         var persistedEnvelope = await verificationContext.GameSessions.AsNoTracking()
             .Where(entity => entity.Id == session.Id.Value)
-            .Select(entity => new { entity.SnapshotVersion, entity.StreamVersion })
+            .Select(entity => new
+            {
+                entity.SnapshotVersion,
+                entity.StreamVersion,
+                entity.TravelDiaryProjectionStreamVersion,
+                entity.TravelDiaryProjectionDayCount
+            })
             .SingleAsync();
         var persistedEventCount = await verificationContext.StoredEvents.CountAsync(storedEvent => storedEvent.StreamId == session.Id.Value);
 
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(malformedPayload), JsonNode.Parse(persistedComponent.PayloadJson)));
-        Assert.Equal(playerComponentVersion, persistedComponent.ComponentVersion);
+        Assert.Equal(componentVersion, persistedComponent.ComponentVersion);
         Assert.Equal(snapshotVersion, persistedEnvelope.SnapshotVersion);
         Assert.Equal(streamVersion, persistedEnvelope.StreamVersion);
+        Assert.Equal(diaryProjectionStreamVersion, persistedEnvelope.TravelDiaryProjectionStreamVersion);
+        Assert.Equal(diaryProjectionDayCount, persistedEnvelope.TravelDiaryProjectionDayCount);
         Assert.Equal(storedEventCount, persistedEventCount);
 
         var resumedOffer = new TownStoreCatalogResolver()
@@ -921,20 +950,34 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(freshlyLoaded);
         Assert.Equal(resumedCash, freshlyLoaded!.Player.Wallet.Cash);
         Assert.Equal(resumedFood, freshlyLoaded.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(expectedTownIds, freshlyLoaded.World.Towns.Select(town => town.Id.Value));
+        Assert.Equal(expectedCulpritId, freshlyLoaded.CaseFile.TrueCulpritId.Value);
 
         await using var repairedContext = fixture.CreateContext();
         var repairedPayload = await repairedContext.GameSessionComponents.AsNoTracking()
-            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == "player")
+            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == componentName)
             .Select(component => component.PayloadJson)
             .SingleAsync();
-        var repairedPlayer = JsonNode.Parse(repairedPayload)!.AsObject();
-        Assert.NotNull(repairedPlayer["wallet"]);
-        Assert.NotNull(repairedPlayer["inventory"]);
-        Assert.NotNull(repairedPlayer["inventory"]!["items"]);
+        var repairedComponent = JsonNode.Parse(repairedPayload)!.AsObject();
+        if (missingProperty == "inventory.items")
+        {
+            Assert.NotNull(repairedComponent["inventory"]);
+            Assert.NotNull(repairedComponent["inventory"]!["items"]);
+        }
+        else
+        {
+            Assert.NotNull(repairedComponent[missingProperty]);
+        }
     }
 
-    [Fact]
-    public async Task ReadModel_InvalidPlayerCacheDoesNotHideUnreplayableHistory()
+    [Theory]
+    [InlineData("player", "wallet")]
+    [InlineData("world", "towns")]
+    [InlineData("caseFile", "suspects")]
+    [InlineData("clock", "day")]
+    [InlineData("pursuitState", "heat")]
+    [InlineData("saltSource", "salt")]
+    public async Task InvalidRequiredComponentCacheDoesNotHideUnreplayableHistory(string componentName, string missingProperty)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var commandRepository = CreateRepository(fixture, out var unitOfWork);
@@ -943,11 +986,11 @@ public sealed class EfGameSessionRepositoryTests
 
         await using (var context = fixture.CreateContext())
         {
-            var playerComponent = await context.GameSessionComponents.SingleAsync(component =>
-                component.SessionId == session.Id.Value && component.ComponentName == "player");
-            var payload = JsonNode.Parse(playerComponent.PayloadJson)!.AsObject();
-            payload["wallet"] = null;
-            playerComponent.PayloadJson = payload.ToJsonString();
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == componentName);
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            payload[missingProperty] = null;
+            component.PayloadJson = payload.ToJsonString();
 
             var worldGenerated = await context.StoredEvents.SingleAsync(storedEvent =>
                 storedEvent.StreamId == session.Id.Value && storedEvent.EventType == "WorldGenerated");
@@ -960,11 +1003,14 @@ public sealed class EfGameSessionRepositoryTests
             () => aggregateRepository.GetByIdAsync(session.Id));
         Assert.Contains("Sequence contains no elements", aggregateError.Message, StringComparison.Ordinal);
 
-        await using var readContext = fixture.CreateContext();
-        var readRepository = new EfGameSessionReadRepository(readContext, CreateReadStoreLoader());
-        var readError = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => readRepository.GetByIdAsync(session.Id));
-        Assert.Contains("Sequence contains no elements", readError.Message, StringComparison.Ordinal);
+        if (componentName != "saltSource")
+        {
+            await using var readContext = fixture.CreateContext();
+            var readRepository = new EfGameSessionReadRepository(readContext, CreateReadStoreLoader());
+            var readError = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => readRepository.GetByIdAsync(session.Id));
+            Assert.Contains("Sequence contains no elements", readError.Message, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
