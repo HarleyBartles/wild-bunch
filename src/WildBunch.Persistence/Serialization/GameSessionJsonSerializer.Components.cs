@@ -90,11 +90,12 @@ public sealed partial class GameSessionJsonSerializer
             if (snapshot.Suspects is null
                 || snapshot.DiscoveredSuspectIds is null
                 || snapshot.KnownClues is null
-                || string.IsNullOrWhiteSpace(snapshot.TrueCulpritId))
+                || string.IsNullOrWhiteSpace(snapshot.TrueCulpritId)
+                || string.IsNullOrWhiteSpace(snapshot.OpeningLead))
             {
                 throw new InvalidRequiredComponentCacheShapeException(
                     "caseFile",
-                    "suspects, discovered suspect ids, known clues, and the true culprit id are required.");
+                    "suspects, discovered suspect ids, known clues, the true culprit id, and the opening lead are required.");
             }
 
             return CaseFileSnapshot.ToDomain(snapshot);
@@ -340,7 +341,7 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.AccusationId is null ? null : new SuspectId(snapshot.AccusationId),
                 snapshot.Suspects.Select(SuspectSnapshot.ToDomain),
                 new SuspectId(snapshot.TrueCulpritId),
-                CaseOpeningLead.Create(snapshot.OpeningLead ?? "Follow the public leads and look for a signature mark."),
+                CaseOpeningLead.Create(snapshot.OpeningLead!),
                 snapshot.KnownClues.Select(ClueSnapshot.ToDomain),
                 (snapshot.DiscoveredSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)),
                 snapshot.PublicClues?.Select(ClueSnapshot.ToDomain),
