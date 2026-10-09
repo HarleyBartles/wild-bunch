@@ -43,13 +43,13 @@
 
 **Steps:**
 
-1. Run `git status --short --branch`, confirm this branch is a clean worktree from `develop`, and verify `Directory.Build.props` still declares `0.1.0-dev.33`.
-2. Read the predecessor plan beside PR #218's merged source, feature evidence, and current roadmap. Classify its full scope: absent/null current-cache `publicClues`, null authoritative `CaseFileGenerated.PublicClues`, command/read recovery, no-writeback, legal-save repair, and hidden-clue projection safety are all delivered; future CaseFile contradictions remain live in the roadmap.
-3. Update row 07 with PR #218's source, merge, tree, hosted gate, review, and `.33` evidence. Remove links to the retired plan and its stale future-tense public-clue gap. Identify valid-but-incomplete event-established `knownClues` as this successor's bounded current slice, with other CaseFile contradictions still open.
-4. Update PLAT-001 and the persistence test follow-up to include PR #218's evidence, state its exact limits, and route the remaining known-clue consistency gap to this plan/row 07 without claiming broader CaseFile consistency.
-5. Remove the predecessor plan only after the complete-scope classification and its durable knowledge are represented in current owners. Do not move it to a tracked archive.
-6. Change only `Directory.Build.props` to `0.1.0-dev.34`; inspect the staged diff for generated or duplicated version fields.
-7. Run `py -3 tools/run.py ci --check` on the staged candidate, inspect `git diff --cached --check` and the complete staged diff, then commit as `docs: prepare known clue cache recovery slice`.
+- [ ] Run `git status --short --branch`, confirm this branch is a clean worktree from `develop`, and verify `Directory.Build.props` still declares `0.1.0-dev.33`.
+- [ ] Read the predecessor plan beside PR #218's merged source, feature evidence, and current roadmap. Classify its full scope: absent/null current-cache `publicClues`, null authoritative `CaseFileGenerated.PublicClues`, command/read recovery, no-writeback, legal-save repair, and hidden-clue projection safety are all delivered; future CaseFile contradictions remain live in the roadmap.
+- [ ] Update row 07 with PR #218's source, merge, tree, hosted gate, review, and `.33` evidence. Remove links to the retired plan and its stale future-tense public-clue gap. Identify valid-but-incomplete event-established `knownClues` as this successor's bounded current slice, with other CaseFile contradictions still open.
+- [ ] Update PLAT-001 and the persistence test follow-up to include PR #218's evidence, state its exact limits, and route the remaining known-clue consistency gap to this plan/row 07 without claiming broader CaseFile consistency.
+- [ ] Remove the predecessor plan only after the complete-scope classification and its durable knowledge are represented in current owners. Do not move it to a tracked archive.
+- [ ] Change only `Directory.Build.props` to `0.1.0-dev.34`; inspect the staged diff for generated or duplicated version fields.
+- [ ] Inspect the complete staged diff and `git diff --cached --check`, then commit as `docs: prepare known clue cache recovery slice`; the check-only staged-candidate hook is the canonical gate for this exact candidate, so do not rerun the same full gate manually.
 
 **Expected:** Planning history shows PR #218 as delivered and the known-clue discrepancy as active; no stale plan link remains; only the canonical authored version advances to `.34`; the staged-candidate gate passes.
 
