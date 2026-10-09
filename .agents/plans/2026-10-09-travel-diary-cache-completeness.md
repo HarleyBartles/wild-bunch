@@ -35,10 +35,10 @@
 
 **Files:** this plan; `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; `.agents/plans/2026-10-09-player-cache-shape-recovery.md`; `Directory.Build.props`.
 
-- [ ] Verify PR #202 merged to `develop` at `11a87a61be2676d1991b6bce79fea2f6baa6b681`, source `010ddce1b9f6dc5ab812fa3aa7ec71f150ce7355` has the same tree as the squash merge, and hosted canonical run `37861616672` passed on that source.
-- [ ] In the first substantive implementation commit, make this the row 07 current-plan link, record PR #202's source, merge, version and hosted gate facts, summarize the Player-cache recovery evidence, and retire the completed Player-cache plan.
-- [ ] Advance `Directory.Build.props` exactly once from `0.1.0-dev.17` to `0.1.0-dev.18` in that same first substantive implementation commit; do not hand-edit generated web version output.
-- [ ] Keep the plan-only commit separate and first; inspect the staged roadmap, prior-plan retirement and version diff before the normal check-only commit hook.
+- [x] Verify PR #202 merged to `develop` at `11a87a61be2676d1991b6bce79fea2f6baa6b681`, source `010ddce1b9f6dc5ab812fa3aa7ec71f150ce7355` has the same tree as the squash merge, and hosted canonical run `37861616672` passed on that source.
+- [x] In the first substantive implementation commit, make this the row 07 current-plan link, record PR #202's source, merge, version and hosted gate facts, summarize the Player-cache recovery evidence, and retire the completed Player-cache plan.
+- [x] Advance `Directory.Build.props` exactly once from `0.1.0-dev.17` to `0.1.0-dev.18` in that same first substantive implementation commit; do not hand-edit generated web version output.
+- [x] Keep the plan-only commit separate and first; inspect the staged roadmap, prior-plan retirement and version diff before the normal check-only commit hook.
 
 ### Task 2: Reproduce partial current-version diary loss at PostgreSQL boundaries
 
