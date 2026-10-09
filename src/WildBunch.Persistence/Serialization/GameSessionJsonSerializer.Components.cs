@@ -801,7 +801,15 @@ public sealed partial class GameSessionJsonSerializer
                 townState.ActiveSaloonCitizenRole);
 
         public TownVisitTownState ToDomain()
-            => new(
+        {
+            if (ActiveSaloonPersonOfInterestKind == SaloonPersonOfInterestKind.WantedSuspect
+                && ActiveSaloonPersonOfInterestId is null)
+            {
+                throw new InvalidOperationException(
+                    "A wanted saloon person of interest must have a suspect ID.");
+            }
+
+            return new TownVisitTownState(
                 new TownId(TownId),
                 VisitNumber,
                 SourceStates?.Select(snapshot => snapshot.ToDomain()),
@@ -810,6 +818,7 @@ public sealed partial class GameSessionJsonSerializer
                 activeSaloonPersonOfInterestDescriptor: ActiveSaloonPersonOfInterestDescriptor,
                 activeSaloonPersonOfInterestKind: ActiveSaloonPersonOfInterestKind,
                 activeSaloonCitizenRole: ActiveSaloonCitizenRole);
+        }
     }
 
     private sealed record TownSourceVisitStateSnapshot(
