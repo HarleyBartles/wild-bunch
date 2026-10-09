@@ -146,6 +146,16 @@ public sealed class GameSessionReadStoreLoader
             var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
             var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
             var entropy = _serializer.DeserializeSetup(entropyJson);
+            var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(
+                store.Components,
+                GameSessionComponentNames.CaseFile,
+                _payloadLoader,
+                store.AllEvents));
+            if (!CaseFileKnownClueCacheRecovery.MatchesEventKnownClues(store.AllEvents, caseFile))
+            {
+                return CreateReadStateFromEvents(store, logEntries);
+            }
+
             var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
             var townVisitState = player.CurrentTownId is not null
                 ? (townVisitStateJson is null
@@ -161,7 +171,7 @@ public sealed class GameSessionReadStoreLoader
                 DeriveStartFlowPhase(store.AllEvents),
                 player,
                 world,
-                _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile, _payloadLoader, store.AllEvents)),
+                caseFile,
                 _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents)),
                 _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents)),
                 townVisitState,
