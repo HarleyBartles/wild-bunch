@@ -139,6 +139,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
+        if (!store.Components.ContainsKey(GameSessionComponentNames.CurrentActionContext))
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
         try
         {
             return ToAggregate(store);

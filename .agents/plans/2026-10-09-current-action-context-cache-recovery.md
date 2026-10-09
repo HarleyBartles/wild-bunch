@@ -59,40 +59,33 @@
 - [x] Advance `Directory.Build.props` once from `0.1.0-dev.25` to `0.1.0-dev.26`; do not edit generated web identity output.
 - [x] Inspect and commit the intended successor-artifact and version diff before adding or changing tests and implementation.
 
-### Task 3: Witness action-context cache loss at PostgreSQL boundaries
+### Task 3: Recover damaged current-action-context cache through event replay
 
-**Files:** `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs` and only directly required fixtures.
+**Files:** `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`; `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`.
 
 **Consumes:** A normally started session, a real `TownActionContextEntered` event, the production command repository and PostgreSQL fixture.
 
-**Produces:** Falsifiable missing-row and null-root cases proving that command loads restore context and clock from committed history without reading from a fake database seam or writing back.
+**Produces:** A single committed TDD change that restores current context and clock from committed history for missing/null-root caches, without writeback or hidden replay failures.
 
-- [ ] Add a PostgreSQL theory for `currentActionContext` damage cases `missing-row` and `null-root`; enter `TownActionContext.Saloon` in a live session, persist it, and independently capture context town, day, turn, time of day, pursuit heat and ordered event rows.
-- [ ] Name the theory `CommandLoad_CurrentActionContextCacheRecoversFromEventsWithoutWritingBack` and the negative case `DamagedCurrentActionContextCacheDoesNotHideInvalidEventHistory` in `EfGameSessionRepositoryTests.cs`.
-- [ ] Delete only the component row for `missing-row`; replace only its JSON payload with `null` and retain its component version for `null-root`.
-- [ ] With a fresh command repository, reload the aggregate and assert the context and town equal the event-established values, then call `EnterActionContext(TownActionContext.Saloon)` and prove it returns false without changing clock/heat or appending a `TownActionContextEntered` event.
-- [ ] Assert read-only recovery leaves the component absent or byte-for-byte unchanged, keeps its version when present, and preserves envelope versions, event identifiers/payloads/versions and diary rows.
-- [ ] Add a negative case that damages the context cache and makes the persisted `TownActionContextEntered` event undecodable; assert command load exposes the event error instead of returning `None` or plausible cached state.
-- [ ] Run the new damage and negative cases before the production fix; record the observed wrong extra turn or decode failure and the exact intended negative result.
-- [ ] Run the focused PostgreSQL cases with `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.CommandLoad_CurrentActionContextCacheRecoversFromEventsWithoutWritingBack|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.DamagedCurrentActionContextCacheDoesNotHideInvalidEventHistory"`.
+Ruling: Keep the red test and its production fallback in one plan task because committing the intentional red state would leave the canonical commit gate failing; first witness the pre-fix failures, then implement and commit only after the focused behavior is green.
 
-### Task 4: Route damaged context cache through event replay
+- [x] Add a PostgreSQL theory for `currentActionContext` damage cases `missing-row` and `null-root`; enter `TownActionContext.Saloon` in a live session, persist it, and independently capture context town, day, turn, time of day, pursuit heat and ordered event rows.
+- [x] Name the theory `CommandLoad_CurrentActionContextCacheRecoversFromEventsWithoutWritingBack` and the negative case `DamagedCurrentActionContextCacheDoesNotHideInvalidEventHistory` in `EfGameSessionRepositoryTests.cs`.
+- [x] Delete only the component row for `missing-row`; replace only its JSON payload with `null` and retain its component version for `null-root`.
+- [x] With a fresh command repository, reload the aggregate and assert the context and town equal the event-established values, then call `EnterActionContext(TownActionContext.Saloon)` and prove it returns false without changing clock/heat or appending a `TownActionContextEntered` event.
+- [x] Assert read-only recovery leaves the component absent or byte-for-byte unchanged, keeps its version when present, and preserves envelope versions, event identifiers/payloads/versions and diary rows.
+- [x] Add a negative case that damages the context cache and makes the persisted `TownActionContextEntered` event undecodable; assert command load exposes the event error instead of returning `None` or plausible cached state.
+- [x] Run the new damage and negative cases before the production fix; record the observed wrong extra turn or decode failure and the exact intended negative result.
+- [x] Run the focused PostgreSQL cases before production code with `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.CommandLoad_CurrentActionContextCacheRecoversFromEventsWithoutWritingBack|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.DamagedCurrentActionContextCacheDoesNotHideInvalidEventHistory"`; expected red: missing-row loads `None` rather than Saloon and null-root fails cache decoding, while the invalid-history negative fails closed. Observed pre-fix result: missing-row expected Saloon/actual None; null-root raised `InvalidOperationException`; invalid-history negative passed with `JsonException`.
+- [x] When `currentActionContext` is absent, route command loading through the existing full-replay path; replay yields the authoritative context or legitimate `None`, so no separate event classifier is needed.
+- [x] Wrap null-root and other undecodable context cache payloads in the existing typed invalid-component-cache exception with component identity `currentActionContext`; leave event upcasting, replay and reconstruction exceptions uncaught by cache recovery.
+- [x] Re-run the focused command; expected green: both damage cases restore event context and clock, invalid event history still surfaces, and command loads do not mutate storage.
+- [x] Extend each damage case through a later legal context change and ordinary unit-of-work save; assert the current-version component is repaired and a fresh command load retains the context and clock facts.
+- [ ] Complete the task with `bash C:\Users\hbart\.codex\plugins\cache\agent-asset-marketplace\superpowers-plus\6.4.1\skills\executing-plans\scripts\task-done .agents/plans/2026-10-09-current-action-context-cache-recovery.md 3 664040579b8f64dc80d914e865fd9637cfbf6685 -- py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.CommandLoad_CurrentActionContextCacheRecoversFromEventsWithoutWritingBack|FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.DamagedCurrentActionContextCacheDoesNotHideInvalidEventHistory"`.
 
-**Files:** `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Components.cs`; focused integration tests.
+### Task 4: Record the bounded result and deliver the slice
 
-**Consumes:** The PostgreSQL red cases, existing full replay fallback, `GameSession.RehydrateFromEvents` and typed invalid-component-cache handling.
-
-**Produces:** Correct command aggregate context after a missing or malformed cache, with event failures remaining visible and no read-time persistence mutation.
-
-- [ ] When `currentActionContext` is absent, use the existing full-replay path; replay is valid for both an actual context and the legitimate `None` value, so do not add a second event classifier.
-- [ ] Wrap undecodable or null-root context cache shapes in the existing typed invalid-component-cache exception with the `currentActionContext` component identity so the existing full-replay fallback handles them.
-- [ ] Leave a valid current cache on the fast path and leave event upcasting, replay and reconstruction exceptions uncaught by the cache-shape fallback.
-- [ ] Run the missing/null-root tests before and after the fix, plus the unreplayable-event negative; prove no cache writeback occurs during command load.
-- [ ] Extend the scenario through a later legal command and ordinary unit-of-work save; verify the current context component is restored at the current version and a fresh command load has the same context and clock facts.
-
-### Task 5: Record the bounded result and deliver the slice
-
-**Files:** `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`; `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; this plan; changed source and tests.
+**Files:** `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`; `docs/features.md`; this plan; changed source and tests.
 
 **Consumes:** Focused PostgreSQL proof, the baseline specification, ADR-0028, event-sourcing doctrine, and the decision-record, feature-matrix, unslop and code-review playbooks.
 

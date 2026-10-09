@@ -201,10 +201,24 @@ public sealed partial class GameSessionJsonSerializer
 
     internal (TownActionContext context, TownId? townId) DeserializeCurrentActionContext(string json)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<CurrentActionContextSnapshot>(json);
-        TownId? townId = snapshot.TownId is null ? null : new TownId(snapshot.TownId);
-        return (snapshot.Context, townId);
+        try
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(json);
+            var snapshot = Deserialize<CurrentActionContextSnapshot>(json);
+            TownId? townId = snapshot.TownId is null ? null : new TownId(snapshot.TownId);
+            return (snapshot.Context, townId);
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "currentActionContext",
+                "CurrentActionContext component cache could not be decoded.",
+                exception);
+        }
     }
 
     private sealed record CurrentActionContextSnapshot(TownActionContext Context, string? TownId);

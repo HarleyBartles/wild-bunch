@@ -1436,6 +1436,199 @@ public sealed class EfGameSessionRepositoryTests
 
     [Theory]
     [InlineData("missing-row")]
+    [InlineData("null-root")]
+    public async Task CommandLoad_CurrentActionContextCacheRecoversFromEventsWithoutWritingBack(string damage)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSession();
+        Assert.True(session.EnterActionContext(TownActionContext.Saloon));
+        var contextEvent = Assert.Single(session.AllEvents.OfType<TownActionContextEntered>());
+        var expectedContext = session.CurrentActionContext;
+        var expectedTownId = session.CurrentActionContextTownId;
+        var expectedClock = (session.Clock.Day, session.Clock.Turn, session.Clock.TimeOfDay, session.PursuitState.Heat);
+        Assert.Equal(expectedContext, contextEvent.Context);
+        Assert.Equal(expectedTownId, contextEvent.TownId);
+        Assert.Equal(expectedClock, (contextEvent.Day, contextEvent.Turn, contextEvent.TimeOfDay, contextEvent.PursuitHeat));
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        int originalComponentVersion;
+        string? damagedPayload = null;
+        (long? SnapshotVersion, long StreamVersion, long? DiaryStreamVersion, int? DiaryDayCount) expectedEnvelope;
+        (long Sequence, Guid EventId, string EventType, string PayloadJson, Guid? CorrelationId, Guid? CausationId, int SchemaVersion)[] expectedEvents;
+        (int Sequence, string PayloadJson, int SchemaVersion)[] expectedDiaryRows;
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "currentActionContext");
+            originalComponentVersion = component.ComponentVersion;
+            if (damage == "missing-row")
+            {
+                context.GameSessionComponents.Remove(component);
+            }
+            else
+            {
+                component.PayloadJson = "null";
+                damagedPayload = component.PayloadJson;
+            }
+
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            expectedEnvelope = (
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount);
+            var eventRows = await context.StoredEvents.AsNoTracking()
+                    .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                    .OrderBy(storedEvent => storedEvent.Sequence)
+                    .Select(storedEvent => new
+                    {
+                        storedEvent.Sequence,
+                        storedEvent.EventId,
+                        storedEvent.EventType,
+                        storedEvent.PayloadJson,
+                        storedEvent.CorrelationId,
+                        storedEvent.CausationId,
+                        storedEvent.SchemaVersion
+                    })
+                    .ToArrayAsync();
+            expectedEvents = eventRows.Select(storedEvent => (
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion))
+                .ToArray();
+            expectedDiaryRows = (await context.GameSessionDiaryDays.AsNoTracking()
+                    .Where(day => day.SessionId == session.Id.Value)
+                    .OrderBy(day => day.Sequence)
+                    .Select(day => new { day.Sequence, day.PayloadJson, day.SchemaVersion })
+                    .ToArrayAsync())
+                .Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion))
+                .ToArray();
+            await context.SaveChangesAsync();
+        }
+
+        var commandRepository = CreateRepository(fixture, out var commandUnitOfWork);
+        var recovered = await commandRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        Assert.Equal(expectedContext, recovered!.CurrentActionContext);
+        Assert.Equal(expectedTownId, recovered.CurrentActionContextTownId);
+        Assert.Equal(expectedClock, (recovered.Clock.Day, recovered.Clock.Turn, recovered.Clock.TimeOfDay, recovered.PursuitState.Heat));
+        Assert.False(recovered.EnterActionContext(TownActionContext.Saloon));
+        Assert.Equal(expectedClock, (recovered.Clock.Day, recovered.Clock.Turn, recovered.Clock.TimeOfDay, recovered.PursuitState.Heat));
+        Assert.Single(recovered.AllEvents.OfType<TownActionContextEntered>());
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.AsNoTracking().SingleOrDefaultAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "currentActionContext");
+            if (damage == "missing-row")
+            {
+                Assert.Null(component);
+            }
+            else
+            {
+                Assert.NotNull(component);
+                Assert.Equal(originalComponentVersion, component!.ComponentVersion);
+                Assert.Equal(damagedPayload, component.PayloadJson);
+            }
+
+            var envelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new
+                {
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount
+                })
+                .SingleAsync();
+            Assert.Equal(expectedEnvelope, (
+                envelope.SnapshotVersion,
+                envelope.StreamVersion,
+                envelope.TravelDiaryProjectionStreamVersion,
+                envelope.TravelDiaryProjectionDayCount));
+            var events = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new
+                {
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.CorrelationId,
+                    storedEvent.CausationId,
+                    storedEvent.SchemaVersion
+                })
+                .ToArrayAsync();
+            Assert.Equal(expectedEvents, events.Select(storedEvent => (
+                storedEvent.Sequence,
+                storedEvent.EventId,
+                storedEvent.EventType,
+                storedEvent.PayloadJson,
+                storedEvent.CorrelationId,
+                storedEvent.CausationId,
+                storedEvent.SchemaVersion)).ToArray());
+            var diaryRows = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .OrderBy(day => day.Sequence)
+                .Select(day => new { day.Sequence, day.PayloadJson, day.SchemaVersion })
+                .ToArrayAsync();
+            Assert.Equal(expectedDiaryRows, diaryRows.Select(day => (day.Sequence, day.PayloadJson, day.SchemaVersion)).ToArray());
+        }
+
+        Assert.True(recovered.EnterActionContext(TownActionContext.Store));
+        await PersistAsync(commandRepository, commandUnitOfWork, recovered);
+        var freshRepository = CreateRepository(fixture, out _);
+        var fresh = await freshRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(TownActionContext.Store, fresh!.CurrentActionContext);
+        Assert.Equal(expectedTownId, fresh.CurrentActionContextTownId);
+        await using var repairedContext = fixture.CreateContext();
+        var repairedComponent = await repairedContext.GameSessionComponents.AsNoTracking().SingleAsync(candidate =>
+            candidate.SessionId == session.Id.Value && candidate.ComponentName == "currentActionContext");
+        Assert.Equal(ProjectionVersions.ForComponent("currentActionContext"), repairedComponent.ComponentVersion);
+    }
+
+    [Fact]
+    public async Task DamagedCurrentActionContextCacheDoesNotHideInvalidEventHistory()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSession();
+        Assert.True(session.EnterActionContext(TownActionContext.Saloon));
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "currentActionContext");
+            context.GameSessionComponents.Remove(component);
+            var contextEvent = await context.StoredEvents.SingleAsync(storedEvent =>
+                storedEvent.StreamId == session.Id.Value && storedEvent.EventType == nameof(TownActionContextEntered));
+            contextEvent.PayloadJson = "{}";
+            await context.SaveChangesAsync();
+        }
+
+        var commandRepository = CreateRepository(fixture, out _);
+        await Assert.ThrowsAsync<System.Text.Json.JsonException>(() => commandRepository.GetByIdAsync(session.Id));
+    }
+
+    [Theory]
+    [InlineData("missing-row")]
     [InlineData("malformed-cache")]
     public async Task DamagedJourneyCacheDoesNotHideInvalidJourneyStartedEvent(string damage)
     {
