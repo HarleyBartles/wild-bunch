@@ -38,8 +38,8 @@
 
 **Produces:** A committed JIT plan for one row 07 restoration gap.
 
-- [ ] Read this plan against the live source seam and repository planning guidance; commit only this plan before successor-artifact changes or implementation.
-- [ ] Record plan-only commit `PENDING` and retain the plan through its completing PR.
+- [x] Read this plan against the live source seam and repository planning guidance; commit only this plan before successor-artifact changes or implementation.
+- [x] Record plan-only commit `e0e053c5` and retain the plan through its completing PR.
 
 ### Task 2: Retire the completed setup-entropy predecessor and advance the slice
 
@@ -49,11 +49,11 @@
 
 **Produces:** This plan as row 07's current plan, truthful closure of the prior setup-cache slice, and development identity `0.1.0-dev.23`.
 
-- [ ] Verify PR #207 merged to `develop` from reviewed source `2d21aadd4ebc8cdacf3a0dee558ae94b2c55b31e`, merge `012dedebc4bc9c11cb162c6aaa2dc6e16a27d977`, and hosted canonical run `37878390267` passed on that exact source.
-- [ ] In the first substantive commit, record PR #207's exact source, merge and gate evidence; summarize the now-proven setup-cache recovery; retire its completed predecessor plan and remove its stale link.
-- [ ] Set this plan as the current row 07 plan and preserve the remaining nested and optional-component gaps as open.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.22` to `0.1.0-dev.23`; do not hand-edit generated web version output.
-- [ ] Inspect and commit the intended successor-artifact diff before implementation.
+- [x] Verify PR #207 merged to `develop` from reviewed source `2d21aadd4ebc8cdacf3a0dee558ae94b2c55b31e`, merge `012dedebc4bc9c11cb162c6aaa2dc6e16a27d977`, and hosted canonical run `37878390267` passed on that exact source.
+- [x] In the first substantive commit, record PR #207's exact source, merge and gate evidence; summarize the now-proven setup-cache recovery; retire its completed predecessor plan and remove its stale link.
+- [x] Set this plan as the current row 07 plan and preserve the remaining nested and optional-component gaps as open.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.22` to `0.1.0-dev.23`; do not hand-edit generated web version output.
+- [x] Inspect and commit the intended successor-artifact diff before implementation.
 
 ### Task 3: Prove malformed active Journey cache behavior at PostgreSQL boundaries
 
