@@ -40,8 +40,8 @@
 
 **Produces:** A committed plan for the missing and malformed `TownVisitState` cache gap, before changing predecessor artifacts, version identity, tests, or implementation.
 
-- [ ] Confirm the exact event-established current-town boundary from `GameSession.Apply(GameStarted)`, `GameSession.RehydrateFromEvents`, command loading, read loading and current PostgreSQL fixtures.
-- [ ] Commit only this plan as the first branch commit; record its SHA in the plan after commit.
+- [x] Confirm the exact event-established current-town boundary from `GameSession.Apply(GameStarted)`, `GameSession.RehydrateFromEvents`, command loading, read loading and current PostgreSQL fixtures.
+- [x] Commit only this plan as the first branch commit; record its SHA in the plan after commit.
 
 Plan-only commit: `498bedc8847cfee503b6cdf076bfadaba9c96b28`.
 
@@ -53,13 +53,13 @@ Plan-only commit: `498bedc8847cfee503b6cdf076bfadaba9c96b28`.
 
 **Produces:** A truthful PR #209 delivery record, this plan as the current row 07 plan, the explicit optional-component recovery scope, and `0.1.0-dev.25`.
 
-- [ ] Verify PR #209 merged to `develop` from source `abe034db6a924b80d5d459de47ea4375b0509f42`, merge `91596e35c44c7bbc0debeaa06abb94cfd4b6dde7`, matching tree `dcd74a324d7f316a2606dcdaca1bbbd6dd0f536a`, and hosted canonical gate run `37885001280` passed on that exact source.
-- [ ] In the first substantive commit, record those exact facts and the missing active-Journey result in row 07; retire `.agents/plans/2026-10-09-missing-active-journey-cache-recovery.md` and remove its stale link.
-- [ ] Set this plan as the current row 07 plan and leave row 07 executing because additional nested and optional component recovery remains open.
-- [ ] Update PLAT-001 and the persistence test follow-up to say missing active Journey recovery is closed while TownVisit recovery remains open; do not claim broader optional-component recovery.
-- [ ] Confirm ADR-0028 remains truthful; the implementation follows its current rebuildable-cache decision and does not require an ADR change.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.24` to `0.1.0-dev.25`; do not edit generated web identity output.
-- [ ] Inspect and commit the intended successor-artifact diff before adding or changing tests and implementation.
+- [x] Verify PR #209 merged to `develop` from source `abe034db6a924b80d5d459de47ea4375b0509f42`, merge `91596e35c44c7bbc0debeaa06abb94cfd4b6dde7`, matching tree `dcd74a324d7f316a2606dcdaca1bbbd6dd0f536a`, and hosted canonical gate run `37885001280` passed on that exact source.
+- [x] In the first substantive commit, record those exact facts and the missing active-Journey result in row 07; retire `.agents/plans/2026-10-09-missing-active-journey-cache-recovery.md` and remove its stale link.
+- [x] Set this plan as the current row 07 plan and leave row 07 executing because additional nested and optional component recovery remains open.
+- [x] Update PLAT-001 and the persistence test follow-up to say missing active Journey recovery is closed while TownVisit recovery remains open; do not claim broader optional-component recovery.
+- [x] Confirm ADR-0028 remains truthful; the selected recovery preserves its rebuildable-cache decision and introduces no new architectural decision.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.24` to `0.1.0-dev.25`; do not edit generated web identity output.
+- [x] Inspect and commit the intended successor-artifact diff before adding or changing tests and implementation.
 
 ### Task 3: Witness TownVisit cache loss at PostgreSQL boundaries
 
