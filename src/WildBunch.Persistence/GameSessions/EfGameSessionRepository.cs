@@ -127,6 +127,12 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return null;
         }
 
+        if (!store.Components.ContainsKey(GameSessionComponentNames.Journey)
+            && JourneyCacheRecovery.HasCurrentJourney(store.AllEvents))
+        {
+            return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
+        }
+
         try
         {
             return ToAggregate(store);

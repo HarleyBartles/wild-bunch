@@ -975,8 +975,10 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(expectedEntropy, repaired!.GameEntropy);
     }
 
-    [Fact]
-    public async Task ReadModel_MalformedActiveJourneyCacheRecoversWithoutWritingBack()
+    [Theory]
+    [InlineData("missing-row")]
+    [InlineData("missing-route-profile")]
+    public async Task ReadModel_DamagedActiveJourneyCacheRecoversWithoutWritingBack(string damage)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var initialRepository = CreateRepository(fixture, out var initialUnitOfWork);
@@ -992,17 +994,43 @@ public sealed class EfGameSessionRepositoryTests
         }
 
         var repository = CreateRepository(fixture, out var unitOfWork);
+        var firstJourney = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(firstJourney);
+        Assert.True(firstJourney!.StartJourney(CreateJourneyPreview(
+            firstJourney.Player.CurrentTownId!.Value,
+            new TownId("openpass"),
+            "Pinecross",
+            "Open Pass")).Success);
+        firstJourney.Journey!.MarkCompleted();
+        Assert.True(firstJourney.AcknowledgeJourneyArrival().Success);
+        await PersistAsync(repository, unitOfWork, firstJourney);
+
+        var acknowledgedRepository = CreateRepository(fixture, out _);
+        var acknowledged = await acknowledgedRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(acknowledged);
+        Assert.Null(acknowledged!.Journey);
+        Assert.Single(acknowledged.CompletedJourneyHistory);
+        Assert.False(JourneyCacheRecovery.HasCurrentJourney(acknowledged.AllEvents));
+        await using (var context = fixture.CreateContext())
+        {
+            Assert.False(await context.GameSessionComponents.AnyAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "journey"));
+        }
+
+        repository = CreateRepository(fixture, out unitOfWork);
         var active = await repository.GetByIdAsync(session.Id);
         Assert.NotNull(active);
         Assert.True(active!.StartJourney(CreateJourneyPreview(
             active.Player.CurrentTownId!.Value,
-            new TownId("openpass"),
-            "Pinecross",
-            "Open Pass")).Success);
+            new TownId("dryfork"),
+            "Open Pass",
+            "Dry Fork")).Success);
         var expectedJourney = active.Journey!.ToSnapshot();
+        Assert.Equal(2, expectedJourney.JourneySequence);
+        Assert.True(JourneyCacheRecovery.HasCurrentJourney(active.AllEvents));
         await PersistAsync(repository, unitOfWork, active);
 
-        string damagedPayload;
+        string? damagedPayload = null;
         int componentVersion;
         (long? SnapshotVersion, long StreamVersion, long? DiaryStreamVersion, int? DiaryDayCount) expectedEnvelope;
         (long Sequence, Guid EventId, string EventType, string PayloadJson, Guid? CorrelationId, Guid? CausationId, int SchemaVersion)[] expectedEvents;
@@ -1012,10 +1040,17 @@ public sealed class EfGameSessionRepositoryTests
             var journey = await context.GameSessionComponents.SingleAsync(component =>
                 component.SessionId == session.Id.Value && component.ComponentName == "journey");
             componentVersion = journey.ComponentVersion;
-            var payload = JsonNode.Parse(journey.PayloadJson)!.AsObject();
-            payload.Remove("routeProfile");
-            journey.PayloadJson = payload.ToJsonString();
-            damagedPayload = journey.PayloadJson;
+            if (damage == "missing-row")
+            {
+                context.GameSessionComponents.Remove(journey);
+            }
+            else
+            {
+                var payload = JsonNode.Parse(journey.PayloadJson)!.AsObject();
+                payload.Remove("routeProfile");
+                journey.PayloadJson = payload.ToJsonString();
+                damagedPayload = journey.PayloadJson;
+            }
 
             var envelope = await context.GameSessions.AsNoTracking()
                 .Where(entity => entity.Id == session.Id.Value)
@@ -1090,10 +1125,18 @@ public sealed class EfGameSessionRepositoryTests
 
         await using (var context = fixture.CreateContext())
         {
-            var journey = await context.GameSessionComponents.AsNoTracking().SingleAsync(component =>
+            var journey = await context.GameSessionComponents.AsNoTracking().SingleOrDefaultAsync(component =>
                 component.SessionId == session.Id.Value && component.ComponentName == "journey");
-            Assert.Equal(componentVersion, journey.ComponentVersion);
-            Assert.True(JsonNode.DeepEquals(JsonNode.Parse(damagedPayload), JsonNode.Parse(journey.PayloadJson)));
+            if (damage == "missing-row")
+            {
+                Assert.Null(journey);
+            }
+            else
+            {
+                Assert.NotNull(journey);
+                Assert.Equal(componentVersion, journey!.ComponentVersion);
+                Assert.True(JsonNode.DeepEquals(JsonNode.Parse(damagedPayload!), JsonNode.Parse(journey.PayloadJson)));
+            }
 
             var envelope = await context.GameSessions.AsNoTracking()
                 .Where(entity => entity.Id == session.Id.Value)
@@ -1158,8 +1201,10 @@ public sealed class EfGameSessionRepositoryTests
         AssertJourneyFacts(recovered.Journey!.ToSnapshot(), fresh!.Journey!.ToSnapshot());
     }
 
-    [Fact]
-    public async Task MalformedJourneyCacheDoesNotHideInvalidJourneyStartedEvent()
+    [Theory]
+    [InlineData("missing-row")]
+    [InlineData("malformed-cache")]
+    public async Task DamagedJourneyCacheDoesNotHideInvalidJourneyStartedEvent(string damage)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var repository = CreateRepository(fixture, out var unitOfWork);
@@ -1178,9 +1223,16 @@ public sealed class EfGameSessionRepositoryTests
         {
             var journey = await context.GameSessionComponents.SingleAsync(component =>
                 component.SessionId == session.Id.Value && component.ComponentName == "journey");
-            var journeyPayload = JsonNode.Parse(journey.PayloadJson)!.AsObject();
-            journeyPayload["routeProfile"] = null;
-            journey.PayloadJson = journeyPayload.ToJsonString();
+            if (damage == "missing-row")
+            {
+                context.GameSessionComponents.Remove(journey);
+            }
+            else
+            {
+                var journeyPayload = JsonNode.Parse(journey.PayloadJson)!.AsObject();
+                journeyPayload["routeProfile"] = null;
+                journey.PayloadJson = journeyPayload.ToJsonString();
+            }
 
             var journeyStarted = await context.StoredEvents.SingleAsync(storedEvent =>
                 storedEvent.StreamId == session.Id.Value && storedEvent.EventType == nameof(JourneyStarted));
