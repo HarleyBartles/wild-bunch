@@ -99,10 +99,10 @@ Plan-only commit: `498bedc8847cfee503b6cdf076bfadaba9c96b28`.
 
 **Produces:** A dated, narrow TownVisit recovery disposition, updated PLAT-001 assessment, reviewed PR, and evidence for the committed development version.
 
-- [ ] Record the exact `TownVisitState` missing/null-root recovery behavior, event-established facts, valid setup-phase absence, read no-writeback, legal-save repair, and unrecoverable-history negative in PS-04/05; retain the original audit findings.
-- [ ] Update PLAT-001 only with the behavior proven in this plan; leave other optional components, other malformed shapes and remaining projection recovery open.
+- [x] Record the exact `TownVisitState` missing/null-root recovery behavior, event-established facts, valid setup-phase absence, read no-writeback, legal-save repair, and unrecoverable-history negative in PS-04/05; retain the original audit findings.
+- [x] Update PLAT-001 only with the behavior proven in this plan; leave other optional components, other malformed shapes and remaining projection recovery open.
 - [x] Run focused PostgreSQL tests, migration inventory and `py -3 tools/run.py ci --check`; confirm generated web identity reports `0.1.0-dev.25` and there is no event or migration diff.
-- [ ] Complete whole-branch review against this plan, baseline specification, PS-04/05, ADR-0028, event-sourcing doctrine, unslop and code-review runbook; resolve every actionable finding and inspect the final committed head.
+- [x] Complete whole-branch review against this plan, baseline specification, PS-04/05, ADR-0028, event-sourcing doctrine, unslop and code-review runbook; resolve every actionable finding and inspect the final committed head.
 - [ ] Publish and attach a Draft PR to `develop`, verify its exact source head and body, mark it ready after review and local validation pass, and verify the hosted canonical gate on that exact SHA before merging under the active epic authorization.
 - [ ] Verify merge to `develop`, fast-forward `Z:\wild-bunch`, and clean only the verified merged worktree and branch; retain this plan through its completing PR so successor-slice retirement occurs in the next row 07 plan.
 
