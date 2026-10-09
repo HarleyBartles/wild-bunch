@@ -120,7 +120,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             return await LoadFromEventsAsync(id, cancellationToken).ConfigureAwait(false);
         }
 
-        // Fast path: snapshot is current. Load from snapshot + replay post-snapshot events.
+        // Fast path: snapshot is current. Load its components and event-backed context.
         var store = await LoadStoreAsync(id, cancellationToken).ConfigureAwait(false);
         if (store is null)
         {
