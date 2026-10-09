@@ -90,12 +90,13 @@ public sealed partial class GameSessionJsonSerializer
             if (snapshot.Suspects is null
                 || snapshot.DiscoveredSuspectIds is null
                 || snapshot.KnownClues is null
+                || snapshot.PublicClues is null
                 || string.IsNullOrWhiteSpace(snapshot.TrueCulpritId)
                 || string.IsNullOrWhiteSpace(snapshot.OpeningLead))
             {
                 throw new InvalidRequiredComponentCacheShapeException(
                     "caseFile",
-                    "suspects, discovered suspect ids, known clues, the true culprit id, and the opening lead are required.");
+                    "suspects, discovered suspect ids, known clues, public clues, the true culprit id, and the opening lead are required.");
             }
 
             return CaseFileSnapshot.ToDomain(snapshot);
