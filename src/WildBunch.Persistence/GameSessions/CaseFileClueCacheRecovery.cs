@@ -3,9 +3,9 @@ using WildBunch.Domain.Events;
 
 namespace WildBunch.Persistence.GameSessions;
 
-internal static class CaseFileKnownClueCacheRecovery
+internal static class CaseFileClueCacheRecovery
 {
-    internal static bool MatchesEventKnownClues(
+    internal static bool MatchesEventClueCollections(
         IReadOnlyList<IDomainEvent> events,
         CaseFile cachedCaseFile)
     {
@@ -37,6 +37,11 @@ internal static class CaseFileKnownClueCacheRecovery
         var generatedPublicClues = generatedCaseFile.PublicClues
             .GroupBy(clue => clue.Id, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        var expectedPublicClues = generatedCaseFile.PublicClues
+            .GroupBy(clue => clue.Id, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .Where(clue => !expectedKnownClueIds.Contains(clue.Id))
+            .ToList();
 
         foreach (var investigation in events
                      .Skip(generatedCaseFileIndex + 1)
@@ -47,16 +52,26 @@ internal static class CaseFileKnownClueCacheRecovery
                 && expectedKnownClueIds.Add(clue.Id))
             {
                 expectedKnownClues.Add(clue);
+                expectedPublicClues.RemoveAll(publicClue => publicClue.Id == clue.Id);
             }
         }
 
         var actualKnownClues = cachedCaseFile.KnownClues
             .Select(ClueSnapshot.FromDomain)
             .ToArray();
+        var actualPublicClues = cachedCaseFile.PublicClues
+            .Select(ClueSnapshot.FromDomain)
+            .ToArray();
+        var expectedKnownClueSnapshots = expectedKnownClues.ToArray();
+        var expectedPublicClueSnapshots = expectedPublicClues.ToArray();
 
-        return expectedKnownClues.Count == actualKnownClues.Length
-            && expectedKnownClues.Zip(actualKnownClues).All(pair => SameCluePayload(pair.First, pair.Second));
+        return SameClueSequence(expectedKnownClueSnapshots, actualKnownClues)
+            && SameClueSequence(expectedPublicClueSnapshots, actualPublicClues);
     }
+
+    private static bool SameClueSequence(IReadOnlyList<ClueSnapshot> expected, IReadOnlyList<ClueSnapshot> actual)
+        => expected.Count == actual.Count
+            && expected.Zip(actual).All(pair => SameCluePayload(pair.First, pair.Second));
 
     private static bool SameCluePayload(ClueSnapshot expected, ClueSnapshot actual)
         => expected.Id == actual.Id
