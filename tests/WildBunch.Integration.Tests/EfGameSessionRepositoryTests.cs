@@ -511,11 +511,19 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
+        var expectedDiaryDay = Assert.Single(loaded.TravelDiaryDays);
+        var expectedTerrain = expectedDiaryDay.Terrain;
+        var expectedRouteWaterSecure = expectedDiaryDay.RouteWaterSecure;
+        var expectedCanteenChargesPerDay = expectedDiaryDay.CanteenChargesPerDay;
 
         await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
+        var restoredDiaryDay = Assert.Single(reloaded!.TravelDiaryDays);
+        Assert.Equal(expectedTerrain, restoredDiaryDay.Terrain);
+        Assert.Equal(expectedRouteWaterSecure, restoredDiaryDay.RouteWaterSecure);
+        Assert.Equal(expectedCanteenChargesPerDay, restoredDiaryDay.CanteenChargesPerDay);
         var dto = GameSessionMapper.ToDto(reloaded!);
         Assert.NotNull(dto.TravelDiary);
         var diaryDay = Assert.Single(dto.TravelDiary!.Days);
@@ -5473,7 +5481,7 @@ public sealed class EfGameSessionRepositoryTests
             new[] { pinecross, openpass },
             new[]
             {
-                new Trail(new TrailId("trail-diary"), pinecross.Id, openpass.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.None, 3m)
+                new Trail(new TrailId("trail-diary"), pinecross.Id, openpass.Id, TrailRisk.Low, TrailTerrain.Hills, WaterFeature.River, 3m)
             });
 
         var caseFile = CreateCaseFile();

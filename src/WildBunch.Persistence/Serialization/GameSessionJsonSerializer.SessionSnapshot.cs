@@ -63,7 +63,7 @@ public sealed partial class GameSessionJsonSerializer
             var clock = GameClockSnapshot.ToDomain(Clock);
             var journey = Journey is null ? null : TravelJourney.FromSnapshot(Journey.ToDomain());
             var townVisit = CurrentTownVisit?.ToDomain();
-            var session = GameSessionRehydrator.Create(
+            var session = GameSession.RestoreFromSnapshot(
                 new GameSessionId(Id),
                 player,
                 world,
@@ -81,15 +81,15 @@ public sealed partial class GameSessionJsonSerializer
                 (WantedSuspectPresenceLedger ?? Array.Empty<WantedSuspectPresenceSnapshot>()).Select(snapshot => snapshot.ToDomain()).ToArray());
 
             TownId? contextTownId = CurrentActionContextTownId is null ? null : new TownId(CurrentActionContextTownId);
-            GameSessionRehydrator.RestoreActionContextState(session, CurrentActionContext, contextTownId);
+            session.RestoreActionContextState(CurrentActionContext, contextTownId);
 
             // Set SeedCode from snapshot as a cache. The true source of truth is the
             // GameStarted event, which will be applied during event replay if there are
             // post-snapshot events. When the snapshot is current, this restores the
             // persisted seed code. See BUNCH-101.
-            GameSessionRehydrator.SetBackingField(session, "<SeedCode>k__BackingField", SeedCode);
+            session.RestoreSeedCode(SeedCode);
 
-            GameSessionRehydrator.ReplaceTravelDiaryDays(session, TravelDiaryDays);
+            session.ReplaceTravelDiaryDays(TravelDiaryDays);
             if (PendingDevTravelOverride is not null)
             {
                 session.RestorePendingDevTravelOverride(PendingDevTravelOverride);

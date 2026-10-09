@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Reflection;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
@@ -540,14 +539,14 @@ public sealed partial class GameSessionJsonSerializer
                 CurrentAmmo = day.CurrentAmmo,
                 CurrentHeat = day.CurrentHeat,
                 Warnings = day.Warnings.ToArray(),
-                Terrain = GetInternalProperty<TrailTerrain>(day, "Terrain"),
-                RouteWaterSecure = GetInternalProperty<bool>(day, "RouteWaterSecure"),
-                CanteenChargesPerDay = GetInternalProperty<int>(day, "CanteenChargesPerDay")
+                Terrain = day.Terrain,
+                RouteWaterSecure = day.RouteWaterSecure,
+                CanteenChargesPerDay = day.CanteenChargesPerDay
             };
 
         public TravelDiaryDayState ToDomain()
         {
-            var day = new TravelDiaryDayState(
+            return new TravelDiaryDayState(
                 DayNumber,
                 OriginTownName,
                 DestinationTownName,
@@ -585,28 +584,12 @@ public sealed partial class GameSessionJsonSerializer
                 CurrentCanteenCharges,
                 CurrentAmmo,
                 CurrentHeat,
-                Warnings.ToArray());
-
-            SetInternalProperty(day, "Terrain", Terrain);
-            SetInternalProperty(day, "RouteWaterSecure", RouteWaterSecure);
-            SetInternalProperty(day, "CanteenChargesPerDay", CanteenChargesPerDay);
-            return day;
+                Warnings.ToArray())
+            {
+                Terrain = Terrain,
+                RouteWaterSecure = RouteWaterSecure,
+                CanteenChargesPerDay = CanteenChargesPerDay
+            };
         }
-    }
-
-    private static TProperty GetInternalProperty<TProperty>(object target, string propertyName)
-    {
-        var property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException($"Unable to access property {propertyName} on {target.GetType().Name}.");
-
-        return (TProperty)(property.GetValue(target) ?? throw new InvalidOperationException($"Property {propertyName} on {target.GetType().Name} was null."));
-    }
-
-    private static void SetInternalProperty<TProperty>(object target, string propertyName, TProperty value)
-    {
-        var property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException($"Unable to access property {propertyName} on {target.GetType().Name}.");
-
-        property.SetValue(target, value);
     }
 }
