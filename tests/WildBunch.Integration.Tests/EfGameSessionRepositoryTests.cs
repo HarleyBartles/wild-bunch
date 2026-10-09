@@ -1010,6 +1010,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(acknowledged);
         Assert.Null(acknowledged!.Journey);
         Assert.Single(acknowledged.CompletedJourneyHistory);
+        Assert.False(JourneyCacheRecovery.HasCurrentJourney(acknowledged.AllEvents));
         await using (var context = fixture.CreateContext())
         {
             Assert.False(await context.GameSessionComponents.AnyAsync(component =>
@@ -1026,6 +1027,7 @@ public sealed class EfGameSessionRepositoryTests
             "Dry Fork")).Success);
         var expectedJourney = active.Journey!.ToSnapshot();
         Assert.Equal(2, expectedJourney.JourneySequence);
+        Assert.True(JourneyCacheRecovery.HasCurrentJourney(active.AllEvents));
         await PersistAsync(repository, unitOfWork, active);
 
         string? damagedPayload = null;
