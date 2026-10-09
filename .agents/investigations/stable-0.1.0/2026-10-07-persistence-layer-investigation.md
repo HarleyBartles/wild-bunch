@@ -90,6 +90,8 @@ A shared version is not inherently wrong, and a per-component registry is not au
 
 The actual event chain rejects duplicates, gaps and future event versions. `WorldGeneratedV1ToV2Upcaster` preserves existing `caseFile` and adds null only when absent. Keep this real compatibility machinery. Small fragment tests alone do not establish that a complete historical saved stream can load and replay.
 
+**Dated disposition, 2026-10-09, PS-12:** The registry now accepts only `IEventUpcaster` and keys chains by event payload type; `PayloadKind` and the unused projection-upcaster extension are removed. Constructor validation still rejects duplicate transitions and gaps, and persisted event version lookup, ordered transforms, future-version failure and production `WorldGenerated` v1-to-v2 compatibility remain. Projection components and diary rows continue through `ProjectionVersions` rebuild. No event, schema, migration or ADR contract changed.
+
 ### PS-13: Dead codecs and a test-only whole-session restore path obscure production persistence
 
 **Confirmed repository call graph, external consumers not established.** `GameSessionJsonSerializer.Log.cs` has only a private unused log snapshot. `Travel.cs:293-375` contains unused `JourneyTrailEventSnapshot` and `TravelDiaryEncounterResolutionSnapshot`; the live diary snapshot stores the domain records directly. `GameSessionRehydrator.RestoreDevLayoutSalts:93-102` has no callers. The whole-session `Serialize`/`Deserialize` and `SessionSnapshot` have callers in tests only; production writes component rows and uses `Rehydration.cs`. The whole-session restoration omits the repository's event-derived start phase/version handling.

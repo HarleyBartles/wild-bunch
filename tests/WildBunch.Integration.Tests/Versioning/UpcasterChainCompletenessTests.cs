@@ -34,11 +34,10 @@ public sealed class UpcasterChainCompletenessTests
             Assert.Contains(upcasterTypeInAssembly, registeredTypes);
         }
 
-        // If there are upcasters, verify the registry accepts them (chain validation).
+        // Constructing the registry validates the complete registered event chains.
         if (allUpcastersInAssembly.Count > 0)
         {
-            var registry = new PayloadUpcasterRegistry(registeredUpcasters);
-            Assert.NotEmpty(registry.RegisteredPayloadTypes);
+            _ = new PayloadUpcasterRegistry(registeredUpcasters);
         }
     }
 
