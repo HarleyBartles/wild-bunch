@@ -38,12 +38,13 @@
 
 **Produces:** Row 07 records PR #217's verified opening-lead delivery and points to this plan; PLAT-001 and the persistence test follow-up record PR #217 and identify the remaining public-clue-pool gap; the completed opening-lead plan is retired only after its full scope is confirmed delivered; the authored version is `.33`.
 
-- [ ] Verify PR #217's merged state, exact source/merge/tree identities, hosted run, review evidence, and that this worktree starts at the current `develop` head.
-- [ ] Compare the predecessor plan's complete scope with PR #217, current source, test follow-up, feature matrix, and review/gate evidence; retire it only after confirming recovery, malformed-event failure, read no-writeback, and legal-save repair all shipped.
-- [ ] Update row 07 with PR #217's source, merge, matching tree, hosted gate, review, and `.32` evidence; point the row at this plan and describe the bounded `publicClues` gap without closing broader CaseFile recovery.
-- [ ] Update PLAT-001 and the dated persistence follow-up with PR #217 delivery evidence and the observed defect: missing current-cache `publicClues` is accepted as an empty pool, so later gossip can no longer surface the recorded clue.
-- [ ] Advance only `Directory.Build.props` to `0.1.0-dev.33`; leave generated web identity untracked.
-- [ ] Stage the plan, evidence updates, predecessor retirement, and version; commit before editing tests or production behavior, letting the check-only staged-candidate hook validate the candidate.
+- [x] Verify PR #217's merged state, exact source/merge/tree identities, hosted run, review evidence, and that this worktree starts at the current `develop` head.
+- [x] Compare the predecessor plan's complete scope with PR #217, current source, test follow-up, feature matrix, and review/gate evidence; retire it only after confirming recovery, malformed-event failure, read no-writeback, and legal-save repair all shipped.
+- [x] Commit this JIT plan before execution as `bc4d26848b79184e89c643df733357b17f58666c`; the current branch starts from merged develop commit `60149bdd2b34b3e2b8cb0803bfd4c3e653c4bfaf`.
+- [x] Update row 07 with PR #217's source, merge, matching tree, hosted gate, review, and `.32` evidence; point the row at this plan and describe the bounded `publicClues` gap without closing broader CaseFile recovery.
+- [x] Update PLAT-001 and the dated persistence follow-up with PR #217 delivery evidence and the observed defect: missing current-cache `publicClues` is accepted as an empty pool, so later gossip can no longer surface the recorded clue.
+- [x] Advance only `Directory.Build.props` to `0.1.0-dev.33`; leave generated web identity untracked.
+- [ ] With plan commit `bc4d26848b79184e89c643df733357b17f58666c` already in history, stage the evidence updates, predecessor retirement, and `.33` version; commit this substantive Task 1 before editing tests or production behavior, letting the check-only staged-candidate hook validate it.
 
 ### Task 2: Restore public clues and fail closed on incomplete event history
 
@@ -55,7 +56,7 @@
 
 - [ ] Add `ReadModel_CaseFileCacheMissingPublicCluesRecoversFromEventsWithoutWritingBack` before production edits. Persist a real started session containing a known `LocalGossip` clue only in `PublicClues`; independently capture its ID and payload from the sole `CaseFileGenerated` event; remove only `publicClues` from the current component; and prove the pre-fix command reload has an empty pool and cannot emit the expected clue.
 - [ ] In that test, capture component payload/version, snapshot and stream positions, ordered event identifiers/payloads/schema versions, and diary rows before reads; load player and journal projections; assert they remain player-known-only and do not contain the unlearned clue; assert the damaged storage and all captured history metadata are unchanged after reads.
-- [ ] Start PostgreSQL with `.	oolspostgres-dev.ps1 ensure` and run the focused test with `py -3 toolsun.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.ReadModel_CaseFileCacheMissingPublicCluesRecoversFromEventsWithoutWritingBack"`; confirm RED is the empty recovered pool / absent gossip event, not fixture setup or a database failure.
+- [ ] Start PostgreSQL with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure` and run the focused test with `py -3 tools/run.py dotnet-test --check --verbose -- --filter "FullyQualifiedName~WildBunch.Integration.Tests.EfGameSessionRepositoryTests.ReadModel_CaseFileCacheMissingPublicCluesRecoversFromEventsWithoutWritingBack"`; confirm RED is the empty recovered pool / absent gossip event, not fixture setup or a database failure.
 - [ ] Require the command loader to restore the exact ordered clue IDs and clue data recorded in `CaseFileGenerated`; call `GatherLocalGossip`, assert its `InvestigationPerformed` event names the expected clue and `KnownClues` gains it, then save through the ordinary repository/unit of work and prove a fresh load retains the full unconsumed pool plus the newly known clue.
 - [ ] Extend the same test's persistence capture to prove reads alone preserve the malformed component and that the legal save repairs `publicClues` at the current component version; do not use a query-triggered writeback or a test-only repair API.
 - [ ] Add `DamagedCaseFileCacheDoesNotHideMissingPublicCluesInCaseFileGeneratedEvent`: remove the cache field and set the persisted event pool to null; require command, player-read, and journal-read replay paths to fail with the same clear `InvalidOperationException` identifying missing recorded public clues.
