@@ -73,6 +73,6 @@
 - [x] Update PLAT-001 with verified opening-lead behavior and limits; keep the feature promise unchanged because this slice corrects persistence of an existing player-facing fact.
 - [x] Compare the final diff with ADR-0028 and the decision-record playbook; leave the ADR unchanged because this implements its existing event-authority and rebuildable-cache decision.
 - [x] Confirm generated web identity reports `0.1.0-dev.32` without staging it; let the normal staged-candidate hook run the canonical fail-fast gate on the implementation candidate.
-- [ ] Complete a fresh whole-branch review against this plan, the accepted specification, PLAT-001, persistence findings, ADR-0028, event-sourcing integrity, selected unslop profiles, feature matrix and review runbook; resolve actionable findings before publication.
+- [x] Complete a fresh whole-branch review against this plan, the accepted specification, PLAT-001, persistence findings, ADR-0028, event-sourcing integrity, selected unslop profiles, feature matrix and review runbook; resolve actionable findings before publication.
 - [ ] Publish a Draft PR to `develop`, verify its title/body/base/exact head and review evidence, mark it ready after local validation, and require the hosted canonical gate on that exact head.
 - [ ] Merge to `develop`; verify merge, tree and hosted-gate evidence, fast-forward the primary checkout, and clean only the verified merged worktree, local/remote branch and branch-scoped scratch.
