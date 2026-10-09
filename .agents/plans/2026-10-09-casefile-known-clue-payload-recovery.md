@@ -47,13 +47,13 @@
 
 **Steps:**
 
-- [ ] Confirm the clean branch is based on `develop` PR #219, that `origin/develop` is still `e1a73159bab8a1a9c132ab9e455e98444389bc7d`, and that `Directory.Build.props` declares `0.1.0-dev.34`.
-- [ ] Read the complete predecessor plan and compare all of its acceptance criteria with PR #219's merged source, exact-tree and hosted-gate evidence, focused PostgreSQL test, negative test, mutation evidence, and independent review report. Classify command/read recovery, no-writeback, empty-set validity, legal-save repair, and private unrevealed clues as delivered; retain same-ID payload/order contradictions as the sole selected successor gap.
-- [ ] Update row 07 with PR #219's merge, source, tree, hosted gate, review and `.34` evidence; replace the stale known-clue ID-set successor wording with this payload/order slice while keeping other CaseFile and event-compatibility gaps open.
-- [ ] Update PLAT-001 and the persistence test follow-up with PR #219's exact bounded implementation evidence and the remaining same-ID payload/order gap. State that ADR-0028 remains unchanged because the implementation preserves its decision.
-- [ ] Remove the predecessor plan only after its whole scope and durable evidence are represented in the current owners; remove its stale links and do not move it into a tracked archive.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.35`; inspect the staged diff for generated or duplicated version values.
-- [ ] Inspect the full staged diff and `git diff --cached --check`, then commit as `docs: prepare clue payload cache recovery`; rely on the check-only staged-candidate hook for the exact candidate and do not rerun its complete gate manually.
+- [x] Confirm the clean branch is based on `develop` PR #219, that `origin/develop` is still `e1a73159bab8a1a9c132ab9e455e98444389bc7d`, and that `Directory.Build.props` declares `0.1.0-dev.34`.
+- [x] Read the complete predecessor plan and compare all of its acceptance criteria with PR #219's merged source, exact-tree and hosted-gate evidence, focused PostgreSQL test, negative test, mutation evidence, and independent review report. Classify command/read recovery, no-writeback, empty-set validity, legal-save repair, and private unrevealed clues as delivered; retain same-ID payload/order contradictions as the sole selected successor gap.
+- [x] Update row 07 with PR #219's merge, source, tree, hosted gate, review and `.34` evidence; replace the stale known-clue ID-set successor wording with this payload/order slice while keeping other CaseFile and event-compatibility gaps open.
+- [x] Update PLAT-001 and the persistence test follow-up with PR #219's exact bounded implementation evidence and the remaining same-ID payload/order gap. State that ADR-0028 remains unchanged because the implementation preserves its decision.
+- [x] Remove the predecessor plan only after its whole scope and durable evidence are represented in the current owners; remove its stale links and do not move it into a tracked archive.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.35`; inspect the staged diff for generated or duplicated version values.
+- [x] Inspect the full staged diff and `git diff --cached --check`, then commit as `docs: prepare clue payload cache recovery`; rely on the check-only staged-candidate hook for the exact candidate and do not rerun its complete gate manually.
 
 **Expected:** The prior ID-set recovery is recorded as delivered at `.34`; this plan owns only full known-clue payload/order consistency; no stale plan link remains; only the authored version advances; the staged-candidate gate passes.
 
