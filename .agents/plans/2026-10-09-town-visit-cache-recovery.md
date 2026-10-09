@@ -43,6 +43,8 @@
 - [ ] Confirm the exact event-established current-town boundary from `GameSession.Apply(GameStarted)`, `GameSession.RehydrateFromEvents`, command loading, read loading and current PostgreSQL fixtures.
 - [ ] Commit only this plan as the first branch commit; record its SHA in the plan after commit.
 
+Plan-only commit: `498bedc8847cfee503b6cdf076bfadaba9c96b28`.
+
 ### Task 2: Retire the completed Journey predecessor and advance row 07
 
 **Files:** `.agents/plans/2026-10-09-missing-active-journey-cache-recovery.md`; `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; `.agents/investigations/stable-0.1.0/2026-10-07-persistence-test-followup.md`; `docs/features.md`; `Directory.Build.props`.
