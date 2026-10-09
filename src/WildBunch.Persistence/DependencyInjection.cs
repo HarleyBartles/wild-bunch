@@ -37,7 +37,7 @@ public static class DependencyInjection
                 eventUpcasters,
                 serializer,
                 diaryDayProjector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         });
 
         services.AddSingleton<GameSessionReadStoreLoader>();

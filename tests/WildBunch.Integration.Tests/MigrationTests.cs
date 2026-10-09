@@ -87,7 +87,7 @@ public sealed class MigrationTests
                 upcasters,
                 serializer,
                 projector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
             var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
 
             await repository.StoreAsync(newSession);
@@ -133,7 +133,7 @@ public sealed class MigrationTests
             new PayloadUpcasterRegistry([]),
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         var repository = new EfGameSessionRepository(commandContext, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
         var unitOfWork = new EfGameSessionUnitOfWork(commandContext);
         var session = CreateSession();
@@ -209,7 +209,7 @@ public sealed class MigrationTests
                 upcasters,
                 serializer,
                 projector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
             var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
 
             await repository.StoreAsync(session);
@@ -227,7 +227,7 @@ public sealed class MigrationTests
                 upcasters,
                 serializer,
                 projector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
             var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
             var reloaded = await repository.GetByIdAsync(session.Id);
 

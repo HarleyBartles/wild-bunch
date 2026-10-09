@@ -51,7 +51,7 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
                 eventUpcasters,
                 serializer,
                 diaryDayProjector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         });
         var provider = services.BuildServiceProvider();
 

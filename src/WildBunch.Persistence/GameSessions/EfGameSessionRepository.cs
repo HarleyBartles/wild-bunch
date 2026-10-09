@@ -401,7 +401,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         // Rehydrate the aggregate from the full event stream via the shared
         // SessionRebuilder (also used by PersistedPayloadLoader's rebuild callback).
-        var session = SessionRebuilder.RebuildFromEvents(id, events, _serializer);
+        var session = SessionRebuilder.RebuildFromEvents(id, events);
 
         // Rebuild diary days via the projector.
         var diaryProjection = _travelDiaryDayProjector.Project(events);

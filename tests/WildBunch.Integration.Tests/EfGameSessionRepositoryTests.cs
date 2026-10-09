@@ -4387,7 +4387,7 @@ public sealed class EfGameSessionRepositoryTests
             registry,
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         return new EfGameSessionRepository(context, serializer, new TravelDiaryDayProjector(), registry, payloadLoader);
     }
 
@@ -4399,7 +4399,7 @@ public sealed class EfGameSessionRepositoryTests
             registry,
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         return new GameSessionReadStoreLoader(payloadLoader, serializer);
     }
 

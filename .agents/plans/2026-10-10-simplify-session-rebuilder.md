@@ -58,20 +58,22 @@
 
 **Files:** Modify `src/WildBunch.Persistence/GameSessions/SessionRebuilder.cs`, `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`, `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`, `src/WildBunch.Persistence/DependencyInjection.cs`, and call sites in `tests/WildBunch.Integration.Tests`; remove only the helper identity test from `tests/WildBunch.Integration.Tests/Versioning/VersionMismatchBehaviorTests.cs`; append dated PS-15/PS-17 dispositions to the persistence investigation and PS-15 test follow-up.
 
-- [ ] Recheck every `SessionRebuilder.RebuildFromEvents` caller and the `PersistedPayloadLoader` callback type. Distinguish calls with a real envelope ID from the event-only component-cache callback.
-- [ ] Remove the unused serializer parameter and its now-unused namespace import. Preserve the callback's serializer dependency on `PersistedPayloadLoader` itself.
-- [ ] Replace event-only forwarding lambdas with the rebuilder callback method group where the delegate signature resolves the one-argument overload. Update known-ID callers to pass only the ID and events.
-- [ ] Remove the stale “Plan C” comment and clarify the current event reconstruction/callback boundary without making claims about a product identity.
-- [ ] Remove only `SessionRebuilder_ComponentJson_IsIndependentOfSessionId`. Preserve `LoadComponentPayload_StaleVersion_TriggersRebuildFromEvents`, missing-history failure behavior, repository cache recovery, and full replay tests. Do not add source/API absence detectors.
-- [ ] Append dated investigation/test dispositions stating why the five-component identity test was retired, which actual behavior proof remains, and that this change does not alter event or cache semantics.
-- [ ] Recheck the decision catalogue and `docs/features.md`; leave them unchanged because no durable or player-facing truth moved.
+- [x] Recheck every `SessionRebuilder.RebuildFromEvents` caller and the `PersistedPayloadLoader` callback type. Distinguish calls with a real envelope ID from the event-only component-cache callback.
+- [x] Remove the unused serializer parameter and its now-unused namespace import. Preserve the callback's serializer dependency on `PersistedPayloadLoader` itself.
+- [x] Replace event-only forwarding lambdas with the `RebuildForComponentCache` method group. Update known-ID callers to pass only the ID and events.
+- [x] Remove the stale “Plan C” comment and clarify the current event reconstruction/callback boundary without making claims about a product identity.
+- [x] Remove only `SessionRebuilder_ComponentJson_IsIndependentOfSessionId`. Preserve `LoadComponentPayload_StaleVersion_TriggersRebuildFromEvents`, missing-history failure behavior, repository cache recovery, and full replay tests. Do not add source/API absence detectors.
+- [x] Append dated investigation/test dispositions stating why the five-component identity test was retired, which actual behavior proof remains, and that this change does not alter event or cache semantics.
+- [x] Recheck the decision catalogue and `docs/features.md`; leave them unchanged because no durable or player-facing truth moved.
 
 **Expected:** Reconstruction has no unused dependency or obsolete planning language, real cache rebuild remains behaviorally covered, and the unsupported test no longer freezes an incidental helper shape.
 
 ### Task 3: Validate, review and publish to `develop`
 
-- [ ] Run the focused stale-component version recovery test and related event replay tests, then the canonical fail-fast `py -3 tools/run.py ci --check` gate on the exact staged candidate.
-- [ ] Inspect the whole branch diff, all changed call sites, helper comments, removed test, retained behavior tests, investigation dispositions, applicable ADRs, feature matrix and unslop profile. Record the self-review fallback due to runtime reviewer-agent restrictions.
+- [x] Run the focused stale-component version recovery test and related event replay tests; 10 integration tests passed.
+- [x] Run the canonical fail-fast `py -3 tools/run.py ci --check` gate on the exact staged candidate; it passed on the implementation candidate. The commit hook will rerun it against the final staged plan update.
+- [x] Inspect the whole branch diff, all changed call sites, helper comments, removed test, retained behavior tests, investigation dispositions, applicable ADRs, feature matrix and unslop profile. Record the self-review fallback due to runtime reviewer-agent restrictions.
+- Self-review outcome: no actionable findings. A separately dispatched reviewer was unavailable in this runtime; the author reviewed the full branch diff and disclosed this fallback for PR review.
 - [ ] Publish a Draft PR to `develop` and verify the PR head matches local `HEAD`. PR jobs run only after the PR is marked ready, so require hosted canonical CI to pass on that exact head before merge.
 - [ ] After merge, verify the develop push gate passes on the merge SHA. Leave the plan and roadmap for the next successor to retire after verifying evidence.
 
