@@ -40,10 +40,10 @@
 
 **Produces:** The roadmap and evidence documents record PR #221's exact public-clue payload/order scope at `0.1.0-dev.36`, the plan is retired, the row 07 active-plan pointer names this warrant slice, and only `Directory.Build.props` advances to `.37`.
 
-- [ ] Record PR #221's merged source, merge commit, matching tree, hosted gate and bounded result in the roadmap, PLAT-001 and persistence follow-up; state that only public-clue payload/order consistency closed and warrant cache semantics remain open.
-- [ ] Remove the completed public-clue plan and stale links to it; preserve this plan and the live row 07 roadmap.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.37`; do not author or commit generated web identity output or duplicate version fields.
-- [ ] Inspect the complete staged diff and `git diff --cached --check`, then commit the successor disposition as a substantive Task 1 commit; the check-only staged-candidate hook validates the exact candidate.
+- [x] Record PR #221's merged source, merge commit, matching tree, hosted gate and bounded result in the roadmap, PLAT-001 and persistence follow-up; state that only public-clue payload/order consistency closed and warrant cache semantics remain open.
+- [x] Remove the completed public-clue plan and stale links to it; preserve this plan and the live row 07 roadmap.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.37`; do not author or commit generated web identity output or duplicate version fields.
+- [x] Inspect the complete staged diff and `git diff --cached --check`, then commit the successor disposition as a substantive Task 1 commit; the check-only staged-candidate hook validates the exact candidate.
 
 **Expected:** PR #221's delivery is durably recorded, its completed plan is retired only after that evidence is promoted, the roadmap points to the warrant recovery slice, and the sole authored version advances once.
 
