@@ -1303,6 +1303,144 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Fact]
+    public async Task ReadModel_MalformedDiaryDayCacheRebuildsFromEventsWithoutWritingBack()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var commandRepository = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateJourneyHistorySession();
+        await PersistAsync(commandRepository, unitOfWork, session);
+
+        var active = await commandRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(active);
+        var preview = CreateJourneyPreview(active!.Player.CurrentTownId!.Value, new TownId("openpass"), "Pinecross", "Open Pass");
+        preview = preview with
+        {
+            RideDayDistance = 4m,
+            RemainingRideDayDistance = 4m,
+            BaselineRideDays = 4,
+            ExpectedDays = 4,
+            RemainingDays = 4,
+            RouteProfile = preview.RouteProfile with { RideDayDistance = 4m }
+        };
+        Assert.True(active.StartJourney(preview).Success);
+
+        for (var day = 0; day < 3; day++)
+        {
+            active.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+            Assert.True(active.AdvanceJourneyDay().Success);
+            await PersistAsync(commandRepository, unitOfWork, active);
+            active = await commandRepository.GetByIdAsync(session.Id);
+            Assert.NotNull(active);
+        }
+
+        var originalEventStream = await commandRepository.GetEventStreamAsync(session.Id);
+        var expectedProjection = new TravelDiaryDayProjector().Project(originalEventStream).Days;
+        Assert.Equal(3, expectedProjection.Count);
+
+        long streamVersion;
+        long? snapshotVersion;
+        int eventCount;
+        Dictionary<long, (Guid EventId, string EventType, string PayloadJson, int SchemaVersion)> originalEvents;
+        Dictionary<int, (string Payload, int SchemaVersion)> damagedRows;
+        await using (var context = fixture.CreateContext())
+        {
+            var middleDay = await context.GameSessionDiaryDays.SingleAsync(day =>
+                day.SessionId == session.Id.Value && day.Sequence == 1);
+            middleDay.PayloadJson = "{\"entries\":null}";
+
+            var envelope = await context.GameSessions.SingleAsync(game => game.Id == session.Id.Value);
+            streamVersion = envelope.StreamVersion;
+            snapshotVersion = envelope.SnapshotVersion;
+            eventCount = await context.StoredEvents.CountAsync(gameEvent => gameEvent.StreamId == session.Id.Value);
+            originalEvents = await context.StoredEvents.AsNoTracking()
+                .Where(gameEvent => gameEvent.StreamId == session.Id.Value)
+                .ToDictionaryAsync(
+                    gameEvent => gameEvent.Sequence,
+                    gameEvent => (gameEvent.EventId, gameEvent.EventType, gameEvent.PayloadJson, gameEvent.SchemaVersion));
+            await context.SaveChangesAsync();
+
+            damagedRows = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .ToDictionaryAsync(day => day.Sequence, day => (day.PayloadJson, day.SchemaVersion));
+        }
+
+        var readStoreLoader = CreateReadStoreLoader();
+        var recovered = await new EfGameSessionReadRepository(fixture.CreateContext(), readStoreLoader).GetByIdAsync(session.Id);
+        var journal = await new EfGameJournalReadRepository(fixture.CreateContext(), readStoreLoader).GetByIdAsync(session.Id);
+
+        Assert.NotNull(recovered);
+        Assert.Equal(expectedProjection.Select(day => day.DayNumber), recovered!.TravelDiaryDays.Select(day => day.DayNumber));
+        Assert.NotNull(journal);
+
+        await using (var verificationContext = fixture.CreateContext())
+        {
+            var persistedRows = await verificationContext.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .ToDictionaryAsync(day => day.Sequence, day => (day.PayloadJson, day.SchemaVersion));
+            Assert.Equal(damagedRows, persistedRows);
+
+            var envelope = await verificationContext.GameSessions.AsNoTracking().SingleAsync(game => game.Id == session.Id.Value);
+            Assert.Equal(streamVersion, envelope.StreamVersion);
+            Assert.Equal(snapshotVersion, envelope.SnapshotVersion);
+            Assert.Equal(streamVersion, envelope.TravelDiaryProjectionStreamVersion);
+            Assert.Equal(expectedProjection.Count, envelope.TravelDiaryProjectionDayCount);
+            Assert.Equal(eventCount, await verificationContext.StoredEvents.CountAsync(gameEvent => gameEvent.StreamId == session.Id.Value));
+            var persistedEvents = await verificationContext.StoredEvents.AsNoTracking()
+                .Where(gameEvent => gameEvent.StreamId == session.Id.Value)
+                .ToDictionaryAsync(
+                    gameEvent => gameEvent.Sequence,
+                    gameEvent => (gameEvent.EventId, gameEvent.EventType, gameEvent.PayloadJson, gameEvent.SchemaVersion));
+            Assert.Equal(originalEvents, persistedEvents);
+        }
+
+        int originalEventSchemaVersion;
+        await using (var context = fixture.CreateContext())
+        {
+            var firstEvent = await context.StoredEvents
+                .Where(gameEvent => gameEvent.StreamId == session.Id.Value)
+                .OrderBy(gameEvent => gameEvent.Sequence)
+                .FirstAsync();
+            originalEventSchemaVersion = firstEvent.SchemaVersion;
+            firstEvent.SchemaVersion = 999;
+            await context.SaveChangesAsync();
+        }
+
+        var historyException = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => new EfGameSessionReadRepository(fixture.CreateContext(), readStoreLoader).GetByIdAsync(session.Id));
+        Assert.Contains("Code is older than the data", historyException.Message, StringComparison.Ordinal);
+        await using (var context = fixture.CreateContext())
+        {
+            var firstEvent = await context.StoredEvents
+                .Where(gameEvent => gameEvent.StreamId == session.Id.Value)
+                .OrderBy(gameEvent => gameEvent.Sequence)
+                .FirstAsync();
+            firstEvent.SchemaVersion = originalEventSchemaVersion;
+            await context.SaveChangesAsync();
+        }
+
+        var repairRepository = CreateRepository(fixture, out var repairUnitOfWork);
+        var commandLoad = await repairRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(commandLoad);
+        Assert.Equal(expectedProjection.Select(day => day.DayNumber), commandLoad!.TravelDiaryDays.Select(day => day.DayNumber));
+        commandLoad.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+        Assert.True(commandLoad.AdvanceJourneyDay().Success);
+        await PersistAsync(repairRepository, repairUnitOfWork, commandLoad);
+
+        var repairedEvents = await repairRepository.GetEventStreamAsync(session.Id);
+        var repairedProjection = new TravelDiaryDayProjector().Project(repairedEvents).Days;
+        await using var repairedContext = fixture.CreateContext();
+        var repairedRows = await repairedContext.GameSessionDiaryDays.AsNoTracking()
+            .Where(day => day.SessionId == session.Id.Value)
+            .OrderBy(day => day.Sequence)
+            .ToArrayAsync();
+        Assert.Equal(Enumerable.Range(0, repairedProjection.Count), repairedRows.Select(day => day.Sequence));
+        Assert.Equal(repairedProjection.Select(day => day.DayNumber), repairedRows.Select(day => JsonDocument.Parse(day.PayloadJson).RootElement.GetProperty("dayNumber").GetInt32()));
+        var repairedRead = await new EfGameSessionReadRepository(fixture.CreateContext(), readStoreLoader).GetByIdAsync(session.Id);
+        Assert.NotNull(repairedRead);
+        Assert.Equal(repairedProjection.Select(day => day.DayNumber), repairedRead!.TravelDiaryDays.Select(day => day.DayNumber));
+    }
+
+    [Fact]
     public async Task ReadModel_StaleSnapshotRebuildsPlayerAndJournalFromEvents()
     {
         using var fixture = new PostgreSqlPersistenceFixture();

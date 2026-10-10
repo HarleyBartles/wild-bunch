@@ -75,7 +75,22 @@ public sealed partial class GameSessionJsonSerializer
     internal TravelDiaryDayState DeserializeTravelDiaryDay(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        return Deserialize<TravelDiaryDaySnapshot>(json).ToDomain();
+
+        try
+        {
+            return Deserialize<TravelDiaryDaySnapshot>(json).ToDomain();
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "travelDiaryDay",
+                "Travel diary day cache could not be decoded.",
+                exception);
+        }
     }
 
     private sealed class JourneySnapshot
