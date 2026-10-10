@@ -8,7 +8,7 @@ using WildBunch.Domain.Journal;
 
 namespace WildBunch.Application.Tests.TestDoubles;
 
-public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGameSessionReadRepository, IGameJournalReadRepository, IGameSessionUnitOfWork
+public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGameSessionReadRepository, IGameSessionEventReadRepository, IGameJournalReadRepository, IGameSessionUnitOfWork
 {
     private readonly Dictionary<GameSessionId, GameSession> _sessions = new();
     private readonly Dictionary<GameSessionId, GameSession> _pendingSessions = new();
@@ -111,6 +111,18 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             return Task.FromResult<IReadOnlyList<IDomainEvent>>(Array.Empty<IDomainEvent>());
         }
         return Task.FromResult<IReadOnlyList<IDomainEvent>>(stream.Skip((int)fromVersion).ToArray());
+    }
+
+    Task<IReadOnlyList<IDomainEvent>?> IGameSessionEventReadRepository.GetEventStreamAsync(
+        GameSessionId id,
+        CancellationToken cancellationToken)
+    {
+        if (!_sessions.TryGetValue(id, out var session))
+        {
+            return Task.FromResult<IReadOnlyList<IDomainEvent>?>(null);
+        }
+
+        return Task.FromResult<IReadOnlyList<IDomainEvent>?>(session.AllEvents.ToArray());
     }
 
     public async Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default)

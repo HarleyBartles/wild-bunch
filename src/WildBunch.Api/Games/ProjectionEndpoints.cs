@@ -1,7 +1,6 @@
-using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Projections;
-using WildBunch.Domain.Events;
-using WildBunch.Domain.Game;
 
 namespace WildBunch.Api.Games;
 
@@ -27,24 +26,18 @@ public static class ProjectionEndpoints
 
     private static async Task<IResult> GetHudProjectionAsync(
         Guid id,
-        IGameSessionRepository repository,
-        HudProjector projector,
+        GetHudProjectionHandler handler,
         CancellationToken cancellationToken)
     {
-        var sessionId = new GameSessionId(id);
-        var session = await repository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
-        if (session is null)
+        try
+        {
+            var projection = await handler.HandleAsync(new GetHudProjectionQuery(id), cancellationToken)
+                .ConfigureAwait(false);
+            return projection is null ? Results.NoContent() : Results.Ok(projection);
+        }
+        catch (GameSessionNotFoundException)
         {
             return Results.NotFound();
         }
-
-        var events = await repository.GetEventStreamAsync(sessionId, 0, cancellationToken).ConfigureAwait(false);
-        if (!events.OfType<GameStarted>().Any())
-        {
-            return Results.NoContent();
-        }
-
-        var projection = projector.Project(events);
-        return Results.Ok(projection with { SessionId = id });
     }
 }
