@@ -141,16 +141,14 @@ public sealed class GameSessionReadStoreLoader
 
         try
         {
-            var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
+            var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Player));
 
-            var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
-            var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
+            var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.World));
+            var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.Setup);
             var entropy = _serializer.DeserializeSetup(entropyJson);
             var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(
-                store.Components,
-                GameSessionComponentNames.CaseFile,
-                _payloadLoader,
-                store.AllEvents));
+                store.ComponentPayloads,
+                GameSessionComponentNames.CaseFile));
             if (!CaseFileGenerationCacheRecovery.MatchesEventGeneratedFacts(store.AllEvents, caseFile)
                 || !CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(store.AllEvents, caseFile)
                 || !CaseFileConfrontationCacheRecovery.MatchesEventConfrontations(store.AllEvents, caseFile)
@@ -159,13 +157,13 @@ public sealed class GameSessionReadStoreLoader
                 return CreateReadStateFromEvents(store, logEntries);
             }
 
-            var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
+            var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.TownVisitState);
             var townVisitState = player.CurrentTownId is not null
                 ? (townVisitStateJson is null
                     ? new TownVisitState(player.CurrentTownId.Value)
                     : _serializer.DeserializeTownVisitState(townVisitStateJson))
                 : null;
-            var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey, _payloadLoader, store.AllEvents);
+            var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.Journey);
 
             return new GameSessionReadState(
                 Enum.Parse<GameStatus>(store.Envelope.Status, ignoreCase: false),
@@ -175,8 +173,8 @@ public sealed class GameSessionReadStoreLoader
                 player,
                 world,
                 caseFile,
-                _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents)),
-                _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents)),
+                _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Clock)),
+                _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.PursuitState)),
                 townVisitState,
                 journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson),
                 store.TravelDiaryDays,
@@ -251,19 +249,22 @@ public sealed class GameSessionReadStoreLoader
             envelope.StreamVersion,
             envelope.TravelDiaryProjectionStreamVersion,
             envelope.TravelDiaryProjectionDayCount);
+        var componentPayloads = _payloadLoader.CreateComponentPayloadReadScope(components, domainEvents);
 
         return new GameSessionStore(
             envelope,
             components,
             diaryDays,
-            domainEvents);
+            domainEvents,
+            componentPayloads);
     }
 
     private sealed record GameSessionStore(
         GameSessionEntity Envelope,
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
-        IReadOnlyList<IDomainEvent> AllEvents);
+        IReadOnlyList<IDomainEvent> AllEvents,
+        PersistedPayloadLoader.ComponentPayloadReadScope ComponentPayloads);
 
     private sealed record GameSessionReadState(
         GameStatus Status,

@@ -72,18 +72,52 @@ public sealed class PersistedPayloadLoader
         IReadOnlyDictionary<string, GameSessionComponentEntity> components,
         string componentName,
         IReadOnlyList<IDomainEvent> events)
+        => CreateComponentPayloadReadScope(components, events).GetPayload(componentName);
+
+    /// <summary>
+    /// Creates request-local component access for one coherent store load. If
+    /// more than one component is stale, all recovered payloads come from the
+    /// same event-derived aggregate reconstruction.
+    /// </summary>
+    internal ComponentPayloadReadScope CreateComponentPayloadReadScope(
+        IReadOnlyDictionary<string, GameSessionComponentEntity> components,
+        IReadOnlyList<IDomainEvent> events)
+        => new(this, components, events);
+
+    internal sealed class ComponentPayloadReadScope
     {
-        if (!components.TryGetValue(componentName, out var entity))
-            return null;
+        private readonly PersistedPayloadLoader _owner;
+        private readonly IReadOnlyDictionary<string, GameSessionComponentEntity> _components;
+        private readonly IReadOnlyList<IDomainEvent> _events;
+        private readonly Dictionary<string, string> _recoveredPayloads = new(StringComparer.Ordinal);
+        private GameSession? _rebuiltSession;
 
-        if (entity.ComponentVersion == ProjectionVersions.ForComponent(componentName))
-            return entity.PayloadJson;
+        internal ComponentPayloadReadScope(
+            PersistedPayloadLoader owner,
+            IReadOnlyDictionary<string, GameSessionComponentEntity> components,
+            IReadOnlyList<IDomainEvent> events)
+        {
+            _owner = owner;
+            _components = components;
+            _events = events;
+        }
 
-        // Stale: rebuild from events. Rehydrate the session and extract
-        // the component, then serialize it back to JSON. This is expensive
-        // but only triggers on version mismatch (never in greenfield).
-        var session = _rebuildSessionFromEvents(events);
-        return SerializeComponentByName(session, componentName);
+        internal string? GetPayload(string componentName)
+        {
+            if (!_components.TryGetValue(componentName, out var entity))
+                return null;
+
+            if (entity.ComponentVersion == ProjectionVersions.ForComponent(componentName))
+                return entity.PayloadJson;
+
+            if (_recoveredPayloads.TryGetValue(componentName, out var payload))
+                return payload;
+
+            _rebuiltSession ??= _owner._rebuildSessionFromEvents(_events);
+            payload = _owner.SerializeComponentByName(_rebuiltSession, componentName);
+            _recoveredPayloads.Add(componentName, payload);
+            return payload;
+        }
     }
 
     /// <summary>
