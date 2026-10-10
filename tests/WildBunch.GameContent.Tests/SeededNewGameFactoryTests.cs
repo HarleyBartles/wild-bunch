@@ -1,3 +1,4 @@
+using System.Text.Json;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
@@ -148,6 +149,27 @@ public sealed class SeededNewGameFactoryTests
         Assert.All(session.CaseFile.PublicWarrants, warrant => Assert.Contains(
             session.CaseFile.Suspects,
             suspect => suspect.Name == warrant.TargetName));
+    }
+
+    [Fact]
+    public void GeneratedPublicWarrantsKeepTheirRosterIdentityInTheCaseSnapshot()
+    {
+        var factory = new SeededNewGameFactory();
+        var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
+        var snapshot = CaseFileSnapshot.FromDomain(session.CaseFile);
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
+        var warrants = json.RootElement.GetProperty("publicWarrants").EnumerateArray().ToArray();
+
+        Assert.Equal(session.CaseFile.Suspects.Count, warrants.Length);
+        for (var index = 0; index < warrants.Length; index++)
+        {
+            Assert.True(warrants[index].TryGetProperty("targetSuspectId", out var targetSuspectId),
+                "Each generated public warrant must retain its roster suspect identity.");
+            Assert.Equal($"suspect-{index + 1}", targetSuspectId.GetString());
+        }
     }
 
     [Fact]

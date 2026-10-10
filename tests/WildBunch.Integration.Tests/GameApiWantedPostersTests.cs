@@ -35,7 +35,7 @@ public sealed class GameApiWantedPostersTests
         Assert.True(actionResult!.Success);
         Assert.Equal(1, actionResult.CurrentJournal.Clock.Turn);
         Assert.Equal(2, actionResult.CurrentJournal.LogEntries.Count);
-        Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Equal(2, actionResult.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Single(actionResult.CurrentJournal.CaseFile.KnownWarrants);
@@ -50,7 +50,7 @@ public sealed class GameApiWantedPostersTests
 
         var actionPayload = await actionResponse.Content.ReadAsStringAsync();
         Assert.Contains("\"discoveredSuspects\"", actionPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("suspect-1", actionPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"wantedPosters\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", actionPayload, StringComparison.OrdinalIgnoreCase);
@@ -69,14 +69,14 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(2, journal!.CaseFile.KnownClues.Count);
         Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
-        Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Single(journal.CaseFile.WantedPosters);
         Assert.Equal("Sundance Kid", journal.CaseFile.WantedPosters[0].TargetDisplayName);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
 
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
         Assert.Contains("\"discoveredSuspects\"", journalPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("suspect-1", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"wantedPosters\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
@@ -94,7 +94,7 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(2, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Single(secondRead.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Single(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Single(secondRead.WantedPosters);
         Assert.Equal("Sundance Kid", secondRead.WantedPosters[0].TargetDisplayName);
 

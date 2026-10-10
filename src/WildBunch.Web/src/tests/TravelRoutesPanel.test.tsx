@@ -62,11 +62,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         statusText: "",
       },
       discoveredSuspects: [],
-      caseBoard: {
-        namedRecords: [],
-        looseLeads: [],
-        evidenceItems: [],
-      },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {

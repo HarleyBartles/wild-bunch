@@ -1,5 +1,4 @@
 using WildBunch.Application.Games.Mapping;
-using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
@@ -16,218 +15,74 @@ namespace WildBunch.Application.Tests.Mappers;
 public sealed class CaseBoardMapperTests
 {
     [Fact]
-    public void WantedPosterResolvesLooseKnownNameLeadIntoNamedRecord()
+    public void EqualNameWarrantsRemainDistinctAndSettlementAppliesOnlyToExplicitIdentity()
     {
         var board = CaseBoardMapper.ToDto(
+            Array.Empty<Clue>(),
             new[]
             {
-                new Clue(
-                    new ClueId("clue-alias"),
-                    ClueKind.Alias,
-                    "A poster links the alias Grey Jay to a rider in the county line files.",
-                    Array.Empty<SuspectId>(),
-                    InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffWarrants,
-                    source: "wanted poster",
-                    context: "Public notice",
-                    anchors: new ClueAnchors(
-                        subjects: new[]
-                        {
-                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
-                        }))
+                CreateWarrant("warrant-one", "Mira Cline", "suspect-1"),
+                CreateWarrant("warrant-two", "Mira Cline", "suspect-2")
             },
-            new[]
-            {
-                new Warrant(
-                    new WarrantId("warrant-butch"),
-                    "Butch Cassidy",
-                    new WarrantTerms(
-                        WarrantDisposition.DeadOrAlive,
-                        2500m,
-                        new[] { "Grey Jay" },
-                        new[] { "red hat" },
-                        "County marshal",
-                        InvestigationTargetKind.TrueCulprit,
-                        Array.Empty<OutlawGangId>(),
-                        null,
-                        InvestigationSourceKind.SheriffWarrants),
-                    "Wanted for a string of robberies near the county line.")
-            });
+            new[] { CreateSettlement("suspect-1", "Mira Cline") });
 
-        var namedRecord = Assert.Single(board.NamedRecords, record => record.DisplayName == "Butch Cassidy");
-        Assert.Equal(CaseIdentityKind.WarrantTarget, namedRecord.Kind);
-        Assert.Equal(CaseIdentityStatus.Resolved, namedRecord.Status);
-        Assert.Contains("Grey Jay", namedRecord.KnownAliases);
-        Assert.Contains("red hat", namedRecord.DistinguishingFeatures);
-        Assert.Equal(WarrantDisposition.DeadOrAlive, namedRecord.WarrantDisposition);
-        Assert.Equal(2500m, namedRecord.BountyAmount);
-        Assert.Equal("County marshal", namedRecord.IssuingAuthority);
-        Assert.Contains("Wanted for a string of robberies near the county line.", namedRecord.CrimeSummary);
-        Assert.Contains(namedRecord.SummaryLines, line => line.Contains("Dead or alive warrant", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains("Grey Jay", namedRecord.RelatedLabels);
-        Assert.Contains("red hat", namedRecord.RelatedLabels);
-        Assert.Contains(namedRecord.SummaryLines, line => line.Contains("County marshal", StringComparison.OrdinalIgnoreCase));
-        Assert.Empty(board.LooseLeads);
+        Assert.Equal(2, board.Warrants.Count);
+        var settled = Assert.Single(board.Warrants, warrant => warrant.Id == "warrant-one");
+        Assert.Equal("Mira Cline", settled.TargetName);
+        Assert.NotNull(settled.Settlement);
+        Assert.True(settled.Settlement!.IsAlive);
+        Assert.Equal(250m, settled.Settlement.BountyAmount);
+        Assert.Equal(3, settled.Settlement.Day);
+        Assert.Equal(1, settled.Settlement.Turn);
+
+        var otherIdentity = Assert.Single(board.Warrants, warrant => warrant.Id == "warrant-two");
+        Assert.Equal("Mira Cline", otherIdentity.TargetName);
+        Assert.Null(otherIdentity.Settlement);
     }
 
     [Fact]
-    public void KnownNameLeadWithoutNamedEvidenceStaysLoose()
+    public void UnnamedFeatureObservationAndWantedRecordRemainSeparatePlayerKnownFacts()
     {
-        var board = CaseBoardMapper.ToDto(
-            new[]
-            {
-                new Clue(
-                    new ClueId("clue-alias"),
-                    ClueKind.Alias,
-                    "A poster links the alias Grey Jay to a rider in the county line files.",
-                    Array.Empty<SuspectId>(),
-                    InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffWarrants,
-                    source: "wanted poster",
-                    context: "Public notice",
-                    anchors: new ClueAnchors(
-                        subjects: new[]
-                        {
-                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay")
-                        }))
-            },
-            Array.Empty<Warrant>());
+        var clue = new Clue(
+            new ClueId("clue-unnamed-rider"),
+            ClueKind.Whereabouts,
+            "A man with a red neckerchief was seen leaving Bulletville headed east.",
+            Array.Empty<SuspectId>(),
+            InvestigationTargetKind.Suspected,
+            InvestigationSourceKind.LocalGossip,
+            source: "saloon keeper",
+            context: "Seen two days ago",
+            anchors: new ClueAnchors(
+                subjects: new[] { new ClueSubjectAnchor("a man with a red neckerchief", Feature: "red neckerchief") },
+                locations: new[] { new ClueLocationAnchor("Bulletville", TownId: null, Place: "Bulletville") },
+                times: new[] { new ClueTimeAnchor(ClueRecency.Old) }));
+        var warrant = CreateWarrant("warrant-elzy", "Elzy Lay", "suspect-1", "red neckerchief");
 
-        var looseLead = Assert.Single(board.LooseLeads, record => record.DisplayName == "Grey Jay");
-        Assert.Equal(CaseIdentityKind.Alias, looseLead.Kind);
-        Assert.Equal(CaseIdentityStatus.Unresolved, looseLead.Status);
-        Assert.Contains(looseLead.SummaryLines, line => line.Contains("Grey Jay", StringComparison.OrdinalIgnoreCase));
-        Assert.Empty(board.NamedRecords);
+        var board = CaseBoardMapper.ToDto(new[] { clue }, new[] { warrant });
+
+        var wantedRecord = Assert.Single(board.Warrants);
+        Assert.Equal("Elzy Lay", wantedRecord.TargetName);
+        Assert.Equal("warrant-elzy", wantedRecord.Id);
+        Assert.Equal(new[] { "red neckerchief" }, wantedRecord.KnownFeatures);
+
+        var observation = Assert.Single(board.Clues);
+        Assert.Equal("clue-unnamed-rider", observation.Id);
+        Assert.Equal(ClueKind.Whereabouts, observation.Kind);
+        Assert.Equal("A man with a red neckerchief was seen leaving Bulletville headed east.", observation.Description);
+        Assert.Equal(InvestigationSourceKind.LocalGossip, observation.SourceKind);
+        Assert.Equal("saloon keeper", observation.Source);
+        Assert.Equal("Seen two days ago", observation.Context);
+        Assert.Equal("red neckerchief", Assert.Single(observation.Anchors.Subjects).Feature);
+        Assert.Equal("Bulletville", Assert.Single(observation.Anchors.Locations).Place);
+        Assert.Equal(ClueRecency.Old, Assert.Single(observation.Anchors.Times).Recency);
     }
 
     [Fact]
-    public void RouteOnlyObservationCreatesRouteLead()
-    {
-        var board = CaseBoardMapper.ToDto(
-            new[]
-            {
-                new Clue(
-                    new ClueId("clue-color"),
-                    ClueKind.Whereabouts,
-                    "A rider turned north at dusk.",
-                    Array.Empty<SuspectId>(),
-                    InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.LocalGossip,
-                    source: "saloon talk",
-                    context: "Town gossip",
-                    anchors: new ClueAnchors(
-                        locations: new[]
-                        {
-                            new ClueLocationAnchor("North road", Place: "North road", Route: "North road")
-                        },
-                        times: new[]
-                        {
-                            new ClueTimeAnchor(ClueRecency.Yesterday, Day: 2)
-                        },
-                        directions: new[]
-                        {
-                            new ClueDirectionAnchor("north", Movement: "turned north", Route: "North road")
-                        }))
-            },
-            Array.Empty<Warrant>());
-
-        Assert.Empty(board.NamedRecords);
-        var looseLead = Assert.Single(board.LooseLeads);
-        Assert.Equal("Rider on North road", looseLead.DisplayName);
-        Assert.Equal(CaseIdentityKind.RouteLed, looseLead.Kind);
-        Assert.Single(board.EvidenceItems);
-        Assert.True(board.EvidenceItems[0].IdentityBearing);
-        Assert.Single(board.EvidenceItems[0].HandleIds);
-        Assert.Equal("North road", board.EvidenceItems[0].Anchors.Locations[0].Route);
-    }
-
-    [Fact]
-    public void FeatureAndRouteClueYieldsOneFeatureLeadWithRouteEvidence()
-    {
-        var board = CaseBoardMapper.ToDto(
-            new[]
-            {
-                new Clue(
-                    new ClueId("clue-feature-route"),
-                    ClueKind.Whereabouts,
-                    "Local gossip says the rider with no eyebrows kept to the rail spur after dark.",
-                    Array.Empty<SuspectId>(),
-                    InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.LocalGossip,
-                    source: "saloon talk",
-                    context: "Town gossip",
-                    anchors: new ClueAnchors(
-                        subjects: new[]
-                        {
-                            new ClueSubjectAnchor("Has no eyebrows", Feature: "Has no eyebrows", Fact: "opening lead")
-                        },
-                        locations: new[]
-                        {
-                            new ClueLocationAnchor("Red Mesa road", Place: "Red Mesa road", Route: "rail spur")
-                        },
-                        directions: new[]
-                        {
-                            new ClueDirectionAnchor("kept to the rail spur after dark", Movement: "kept to the rail spur after dark", Route: "rail spur")
-                        }))
-            },
-            Array.Empty<Warrant>());
-
-        var looseLead = Assert.Single(board.LooseLeads);
-        Assert.Equal("Rider with no eyebrows", looseLead.DisplayName);
-        Assert.Equal(CaseIdentityKind.FeatureLed, looseLead.Kind);
-        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName == "Rider on rail spur");
-        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName.Contains("opening lead", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName.Contains("identity match", StringComparison.OrdinalIgnoreCase));
-        Assert.Single(board.EvidenceItems);
-        Assert.True(board.EvidenceItems[0].IdentityBearing);
-        Assert.Single(board.EvidenceItems[0].HandleIds);
-        Assert.Equal("rail spur", board.EvidenceItems[0].Anchors.Locations[0].Route);
-    }
-
-    [Fact]
-    public void NameAndFeatureClueYieldsOneKnownNameLeadWithFeatureEvidence()
-    {
-        var board = CaseBoardMapper.ToDto(
-            new[]
-            {
-                new Clue(
-                    new ClueId("clue-name-feature"),
-                    ClueKind.Alias,
-                    "A poster links Grey Jay to a rider who has no eyebrows.",
-                    Array.Empty<SuspectId>(),
-                    InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.SheriffWarrants,
-                    source: "wanted poster",
-                    context: "Public notice",
-                    anchors: new ClueAnchors(
-                        subjects: new[]
-                        {
-                            new ClueSubjectAnchor("Grey Jay", Alias: "Grey Jay", Feature: "Has no eyebrows")
-                        },
-                        locations: new[]
-                        {
-                            new ClueLocationAnchor("Red Mesa road", Place: "Red Mesa road", Route: "rail spur")
-                        }))
-            },
-            Array.Empty<Warrant>());
-
-        var looseLead = Assert.Single(board.LooseLeads);
-        Assert.Equal("Grey Jay", looseLead.DisplayName);
-        Assert.Equal(CaseIdentityKind.Alias, looseLead.Kind);
-        Assert.DoesNotContain(board.LooseLeads, lead => lead.DisplayName == "Rider with no eyebrows");
-        Assert.Single(board.EvidenceItems);
-        Assert.True(board.EvidenceItems[0].IdentityBearing);
-        Assert.Single(board.EvidenceItems[0].HandleIds);
-        Assert.Equal("Has no eyebrows", board.EvidenceItems[0].Anchors.Subjects[0].Feature);
-    }
-
-    [Fact]
-    public void CapturedWantedTurnInMarksTheWantedRecordAndCollapsesItsIdentityEvidence()
+    public void CapturingWantedPersonKeepsPreviouslyLearnedCluesAndWarrantDetails()
     {
         var session = CreateArmedWantedSessionWithIdentityEvidence();
         var capturedSuspectId = new SuspectId("suspect-1");
         session.SetWantedSuspectPresenceState(capturedSuspectId, WantedSuspectPresenceState.AvailableInTown);
-
         session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(capturedSuspectId));
         session.MarkEventsCommitted();
 
@@ -239,24 +94,69 @@ public sealed class CaseBoardMapperTests
         Assert.True(turnIn.Success);
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
 
-        var capturedRecord = Assert.Single(caseFile.CaseBoard.NamedRecords, record => record.DisplayName == "Mira Cline");
-        Assert.Equal(CaseIdentityStatus.Captured, capturedRecord.Status);
-        Assert.Contains(capturedRecord.SummaryLines, line => line.Contains("captured", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(WarrantDisposition.DeadOrAlive, capturedRecord.WarrantDisposition);
-        Assert.Equal(2500m, capturedRecord.BountyAmount);
-        Assert.Contains("Red Wren", capturedRecord.KnownAliases);
-        Assert.Contains("Raven-feather pin", capturedRecord.DistinguishingFeatures);
+        var capturedWarrant = Assert.Single(caseFile.CaseBoard.Warrants, warrant => warrant.Id == "warrant-mira");
+        Assert.Equal("Mira Cline", capturedWarrant.TargetName);
+        Assert.Equal("Wanted for a stage robbery.", capturedWarrant.Summary);
+        Assert.Equal(new[] { "Red Wren" }, capturedWarrant.KnownAliases);
+        Assert.Equal(new[] { "Raven-feather pin" }, capturedWarrant.KnownFeatures);
+        Assert.NotNull(capturedWarrant.Settlement);
+        Assert.True(capturedWarrant.Settlement!.IsAlive);
+        Assert.Equal(capturedWarrant.BountyAmount, capturedWarrant.Settlement.BountyAmount);
 
-        Assert.Contains(caseFile.KnownClues, clue => clue.Id == "clue-mira-alias");
-        Assert.Contains(caseFile.KnownClues, clue => clue.Id == "clue-mira-feature");
-        Assert.Contains(session.CaseFile.KnownWarrants, warrant => warrant.Id.Value == "warrant-mira");
-        Assert.DoesNotContain(caseFile.CaseBoard.EvidenceItems, evidence => evidence.Id == "clue-mira-alias");
-        Assert.DoesNotContain(caseFile.CaseBoard.EvidenceItems, evidence => evidence.Id == "clue-mira-feature");
+        var remainingWarrant = Assert.Single(caseFile.CaseBoard.Warrants, warrant => warrant.Id == "warrant-reno");
+        Assert.Null(remainingWarrant.Settlement);
 
-        var activeRecord = Assert.Single(caseFile.CaseBoard.NamedRecords, record => record.DisplayName == "Reno Pike");
-        Assert.Equal(CaseIdentityStatus.Resolved, activeRecord.Status);
-        Assert.Contains(caseFile.CaseBoard.EvidenceItems, evidence => evidence.Id == "clue-reno-feature");
+        var aliasClue = Assert.Single(caseFile.CaseBoard.Clues, clue => clue.Id == "clue-mira-alias");
+        Assert.Equal("wanted poster", aliasClue.Source);
+        Assert.Contains("Red Wren", aliasClue.Description);
+        var featureClue = Assert.Single(caseFile.CaseBoard.Clues, clue => clue.Id == "clue-mira-feature");
+        Assert.Equal("saloon talk", featureClue.Source);
+        Assert.Contains("Raven-feather pin", featureClue.Description);
+        Assert.Contains(caseFile.CaseBoard.Clues, clue => clue.Id == "clue-reno-feature");
     }
+
+    [Fact]
+    public void LegacyWarrantWithoutIdentityIsNotSettledByMatchingDisplayName()
+    {
+        var warrant = CreateWarrant("legacy-warrant", "Mira Cline", targetSuspectId: null);
+
+        var board = CaseBoardMapper.ToDto(
+            Array.Empty<Clue>(),
+            new[] { warrant },
+            new[] { CreateSettlement("suspect-1", "Mira Cline") });
+
+        Assert.Null(Assert.Single(board.Warrants).Settlement);
+    }
+
+    private static Warrant CreateWarrant(
+        string warrantId,
+        string targetName,
+        string? targetSuspectId,
+        string feature = "Raven-feather pin")
+        => new(
+            new WarrantId(warrantId),
+            targetName,
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                250m,
+                new[] { "Red Wren" },
+                new[] { feature },
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                Array.Empty<OutlawGangId>(),
+                null),
+            $"Wanted for a stage robbery.",
+            targetSuspectId is null ? null : new SuspectId(targetSuspectId));
+
+    private static SheriffTurnInSettlementState CreateSettlement(string suspectId, string targetName)
+        => new(
+            new SuspectId(suspectId),
+            targetName,
+            WarrantDisposition.DeadOrAlive,
+            IsAlive: true,
+            BountyAmount: 250m,
+            Day: 3,
+            Turn: 1);
 
     private static GameSession CreateArmedWantedSessionWithIdentityEvidence()
     {
@@ -283,11 +183,7 @@ public sealed class CaseBoardMapperTests
                 InvestigationSourceKind.SheriffWarrants,
                 source: "wanted poster",
                 context: "Public notice",
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor("Red Wren", Alias: "Red Wren")
-                    })),
+                anchors: new ClueAnchors(subjects: new[] { new ClueSubjectAnchor("Red Wren", Alias: "Red Wren") })),
             new Clue(
                 new ClueId("clue-mira-feature"),
                 ClueKind.IdentityFact,
@@ -297,11 +193,7 @@ public sealed class CaseBoardMapperTests
                 InvestigationSourceKind.LocalGossip,
                 source: "saloon talk",
                 context: "Identity rumor",
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor("Raven-feather pin", Feature: "Raven-feather pin")
-                    })),
+                anchors: new ClueAnchors(subjects: new[] { new ClueSubjectAnchor("Raven-feather pin", Feature: "Raven-feather pin") })),
             new Clue(
                 new ClueId("clue-reno-feature"),
                 ClueKind.IdentityFact,
@@ -311,11 +203,7 @@ public sealed class CaseBoardMapperTests
                 InvestigationSourceKind.LocalRecords,
                 source: "sheriff record",
                 context: "Open warrant",
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor("Mismatched spurs", Feature: "Mismatched spurs")
-                    }))
+                anchors: new ClueAnchors(subjects: new[] { new ClueSubjectAnchor("Mismatched spurs", Feature: "Mismatched spurs") }))
         };
 
         var caseFile = new CaseFile(
@@ -326,40 +214,15 @@ public sealed class CaseBoardMapperTests
             knownClues: knownClues,
             knownWarrants: new[]
             {
-                new Warrant(
-                    new WarrantId("warrant-mira"),
-                    "Mira Cline",
-                    new WarrantTerms(
-                        WarrantDisposition.DeadOrAlive,
-                        2500m,
-                        new[] { "Red Wren" },
-                        new[] { "Raven-feather pin" },
-                        "Dodge City Marshal",
-                        InvestigationTargetKind.GangMember,
-                        Array.Empty<OutlawGangId>(),
-                        null),
-                    "Wanted for a stage robbery."),
-                new Warrant(
-                    new WarrantId("warrant-reno"),
-                    "Reno Pike",
-                    new WarrantTerms(
-                        WarrantDisposition.AliveOnly,
-                        300m,
-                        new[] { "The Magpie" },
-                        new[] { "Mismatched spurs" },
-                        "Dodge City Marshal",
-                        InvestigationTargetKind.TrueCulprit,
-                        Array.Empty<OutlawGangId>(),
-                        null),
-                    "Wanted as a member of the Wild Bunch.")
+                CreateWarrant("warrant-mira", "Mira Cline", "suspect-1", "Raven-feather pin"),
+                CreateWarrant("warrant-reno", "Reno Pike", "suspect-2", "Mismatched spurs")
             });
 
-        var inventory = new DomainInventory(
-            new[]
-            {
-                new InventoryItem(ItemKind.Revolver, 1),
-                new InventoryItem(ItemKind.RevolverAmmo, 2)
-            });
+        var inventory = new DomainInventory(new[]
+        {
+            new InventoryItem(ItemKind.Revolver, 1),
+            new InventoryItem(ItemKind.RevolverAmmo, 2)
+        });
 
         var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
         session.ViewPrologue("test-prologue-descriptor");

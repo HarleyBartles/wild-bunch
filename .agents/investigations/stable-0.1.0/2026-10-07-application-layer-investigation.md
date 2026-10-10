@@ -318,3 +318,9 @@ The following tables preserve the exhaustive assessment. `Keep` means justified 
 | `src/WildBunch.Application/Projections/TravelDiaryDayProjection.cs` | Keep | Replayable travel-day result. |
 | `src/WildBunch.Application/Projections/TravelDiaryDayProjector.cs` | Keep | Used by persistence rebuild; `CreateAndStoreDiaryDay` silently returning when baseline is absent (`:217-219`) merits a fail-closed review for malformed streams. |
 | `src/WildBunch.Application/WildBunch.Application.csproj` | Keep | Inward Domain/GameContent references; no adapter dependency. |
+
+## Dated row 08 dispositions, 2026-10-10
+
+**AP-16:** Source search confirmed no production consumer, so `CaseFileViewProjector` and `CaseFileViewProjection` were removed. Their projector-only/source-shape tests were retired; the live journal, HUD, full-audit and travel-day projectors remain. The journal and game-session mappers continue to own player case reads.
+
+**AP-17:** Generated public warrants now carry their exact roster `SuspectId` as internal association metadata through the `CaseFileGenerated` v3 event snapshot and current component cache. The v2-to-v3 upcaster explicitly leaves historical warrants unassociated; equal display names are never used to repair that unknown. Application maps each learned warrant and clue independently, attaches turn-in facts only by exact ID equality, retains all learned clues and warrant details after capture, and filters active lists by stable ID while keeping unknown associations active. Player DTOs omit internal suspect IDs. Focused mapper and PostgreSQL cache/replay/HTTP behaviors passed. This settles AP-17's identity and retention questions without changing its historical observation.

@@ -216,21 +216,24 @@ public sealed record WarrantSnapshot(
     string Id,
     string TargetName,
     WarrantTermsSnapshot Terms,
-    string Summary)
+    string Summary,
+    string? TargetSuspectId = null)
 {
     public static WarrantSnapshot FromDomain(Warrant warrant)
         => new(
             warrant.Id.Value,
             warrant.TargetName,
             WarrantTermsSnapshot.FromDomain(warrant.Terms),
-            warrant.Summary);
+            warrant.Summary,
+            warrant.TargetSuspectId?.Value);
 
     public Warrant ToDomain()
         => new(
             new WarrantId(Id),
             TargetName,
             Terms.ToDomain(),
-            Summary);
+            Summary,
+            TargetSuspectId is null ? null : new SuspectId(TargetSuspectId));
 }
 
 public sealed record WarrantTermsSnapshot(

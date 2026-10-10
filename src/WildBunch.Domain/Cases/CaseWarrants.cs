@@ -71,7 +71,7 @@ public sealed record Warrant
     {
     }
 
-    public Warrant(WarrantId id, string targetName, WarrantTerms terms, string summary)
+    public Warrant(WarrantId id, string targetName, WarrantTerms terms, string summary, SuspectId? targetSuspectId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetName);
         ArgumentNullException.ThrowIfNull(terms);
@@ -80,6 +80,7 @@ public sealed record Warrant
         TargetName = targetName.Trim();
         Terms = terms;
         Summary = summary?.Trim() ?? string.Empty;
+        TargetSuspectId = targetSuspectId;
     }
 
     public WarrantId Id { get; }
@@ -89,4 +90,6 @@ public sealed record Warrant
     public WarrantTerms Terms { get; }
 
     public string Summary { get; }
+
+    public SuspectId? TargetSuspectId { get; }
 }

@@ -1,3 +1,8 @@
+using System.Text.Json.Nodes;
+using WildBunch.Domain.Cases;
+using WildBunch.Domain.Events;
+using WildBunch.Persistence;
+using WildBunch.Persistence.Serialization;
 using WildBunch.Persistence.Versioning;
 
 namespace WildBunch.Integration.Tests.Versioning;
@@ -40,6 +45,68 @@ public sealed class UpcasterCorrectnessTests
         // v2 payload has newField
         Assert.Contains("\"newField\":\"added\"", v2Json);
         Assert.Contains("\"existingField\":\"value\"", v2Json);
+    }
+
+    [Fact]
+    public void CaseFileGeneratedV2Payload_KeepsEqualNameWarrantsUnassociated()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var warrantTerms = new WarrantTerms(
+            WarrantDisposition.DeadOrAlive,
+            100m,
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            "Sheriff",
+            InvestigationTargetKind.GangMember,
+            Array.Empty<OutlawGangId>(),
+            null);
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[]
+            {
+                new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            publicWarrants: new[]
+            {
+                new Warrant(new WarrantId("warrant-1"), "Mira Cline", warrantTerms),
+                new Warrant(new WarrantId("warrant-2"), "Mira Cline", warrantTerms)
+            });
+        var eventJson = serializer.SerializeEvent(new CaseFileGenerated
+        {
+            CaseFile = CaseFileSnapshot.FromDomain(caseFile)
+        });
+        var legacyPayload = JsonNode.Parse(eventJson)!.AsObject();
+        legacyPayload.Remove("occurredAt");
+        var legacyCaseFile = legacyPayload["caseFile"]!.AsObject();
+        foreach (var collectionName in new[] { "knownWarrants", "publicWarrants" })
+        {
+            foreach (var warrant in legacyCaseFile[collectionName]!.AsArray().Select(node => node!.AsObject()))
+            {
+                warrant.Remove("targetSuspectId");
+            }
+        }
+
+        var registry = new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters());
+        var upgradedJson = registry.Upcast("CaseFileGenerated", storedVersion: 2, legacyPayload.ToJsonString());
+        var upgradedWarrants = JsonNode.Parse(upgradedJson)!["caseFile"]!["publicWarrants"]!.AsArray();
+        Assert.All(upgradedWarrants, warrant =>
+        {
+            Assert.True(warrant!.AsObject().TryGetPropertyValue("targetSuspectId", out var targetSuspectId),
+                "The v2-to-v3 upcaster must explicitly add the unknown identity field.");
+            Assert.Null(targetSuspectId);
+        });
+
+        var upgradedEvent = Assert.IsType<CaseFileGenerated>(serializer.DeserializeEvent(nameof(CaseFileGenerated), upgradedJson));
+        var reconstructed = upgradedEvent.CaseFile.ToDomain();
+
+        Assert.Equal(2, reconstructed.PublicWarrants.Count);
+        Assert.Equal("Mira Cline", reconstructed.PublicWarrants[0].TargetName);
+        Assert.Equal("Mira Cline", reconstructed.PublicWarrants[1].TargetName);
+        Assert.All(reconstructed.PublicWarrants, warrant => Assert.Null(warrant.TargetSuspectId));
     }
 
     [Fact]

@@ -1,5 +1,5 @@
+using System.Text.Json;
 using WildBunch.Application.Games.Mapping;
-using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
@@ -10,7 +10,7 @@ namespace WildBunch.Application.Tests.Mappers;
 public sealed class JournalMapperTests
 {
     [Fact]
-    public void CapturedWantedRecordIsCompactAndRemovedFromActiveJournalWarrants()
+    public void CapturedWarrantLeavesActivePosterListByIdentityWhileCasebookRetainsAllKnownRecords()
     {
         var snapshot = new JournalSnapshot(
             Guid.Parse("11111111-1111-1111-1111-111111111111"),
@@ -27,8 +27,9 @@ public sealed class JournalMapperTests
             Array.Empty<Clue>(),
             new[]
             {
-                CreateWarrant("warrant-mira", "Mira Cline", "Red Wren", "Raven-feather pin", 2500m),
-                CreateWarrant("warrant-reno", "Reno Pike", "The Magpie", "Mismatched spurs", 300m)
+                CreateWarrant("warrant-captured", "suspect-1"),
+                CreateWarrant("warrant-same-name", "suspect-2"),
+                CreateWarrant("warrant-legacy", targetSuspectId: null)
             },
             new[]
             {
@@ -45,32 +46,36 @@ public sealed class JournalMapperTests
 
         var dto = JournalMapper.ToDto(snapshot);
 
-        var capturedRecord = Assert.Single(dto.CaseFile.CaseBoard.NamedRecords, record => record.DisplayName == "Mira Cline");
-        Assert.Equal(CaseIdentityStatus.Captured, capturedRecord.Status);
-        Assert.Contains(capturedRecord.SummaryLines, line => line.Contains("Captured alive", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(dto.CaseFile.KnownWarrants, warrant => warrant.TargetName == "Mira Cline");
-        Assert.DoesNotContain(dto.CaseFile.WantedPosters, poster => poster.TargetDisplayName == "Mira Cline");
-        Assert.Contains(dto.CaseFile.KnownWarrants, warrant => warrant.TargetName == "Reno Pike");
-        Assert.Contains(dto.CaseFile.WantedPosters, poster => poster.TargetDisplayName == "Reno Pike");
+        Assert.Equal(3, dto.CaseFile.CaseBoard.Warrants.Count);
+        Assert.NotNull(Assert.Single(dto.CaseFile.CaseBoard.Warrants, warrant => warrant.Id == "warrant-captured").Settlement);
+        Assert.Null(Assert.Single(dto.CaseFile.CaseBoard.Warrants, warrant => warrant.Id == "warrant-same-name").Settlement);
+        Assert.Null(Assert.Single(dto.CaseFile.CaseBoard.Warrants, warrant => warrant.Id == "warrant-legacy").Settlement);
+
+        Assert.Equal(2, dto.CaseFile.KnownWarrants.Count);
+        Assert.All(dto.CaseFile.KnownWarrants, warrant => Assert.Equal("Mira Cline", warrant.TargetName));
+        Assert.Equal(2, dto.CaseFile.WantedPosters.Count);
+        Assert.Equal(
+            new[] { "warrant-legacy", "warrant-same-name" },
+            dto.CaseFile.WantedPosters.Select(poster => poster.PosterId).Order(StringComparer.Ordinal));
+
+        var serializedCaseBoard = JsonSerializer.Serialize(dto.CaseFile.CaseBoard, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        Assert.DoesNotContain("suspect-1", serializedCaseBoard, StringComparison.Ordinal);
+        Assert.DoesNotContain("suspect-2", serializedCaseBoard, StringComparison.Ordinal);
     }
 
-    private static Warrant CreateWarrant(
-        string id,
-        string targetName,
-        string alias,
-        string feature,
-        decimal bounty)
+    private static Warrant CreateWarrant(string warrantId, string? targetSuspectId)
         => new(
-            new WarrantId(id),
-            targetName,
+            new WarrantId(warrantId),
+            "Mira Cline",
             new WarrantTerms(
                 WarrantDisposition.DeadOrAlive,
-                bounty,
-                new[] { alias },
-                new[] { feature },
+                2500m,
+                new[] { "Red Wren" },
+                new[] { "Raven-feather pin" },
                 "County marshal",
                 InvestigationTargetKind.GangMember,
                 Array.Empty<OutlawGangId>(),
                 null),
-            $"Wanted notice for {targetName}.");
+            "Wanted notice for Mira Cline.",
+            targetSuspectId is null ? null : new SuspectId(targetSuspectId));
 }

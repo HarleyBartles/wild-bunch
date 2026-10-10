@@ -155,38 +155,6 @@ export function formatClueKind(kind: number) {
   }
 }
 
-export function formatCaseIdentityKind(kind: number) {
-  switch (kind) {
-    case 0:
-      return "Known name";
-    case 1:
-      return "Known name";
-    case 2:
-      return "Feature lead";
-    case 3:
-      return "Route lead";
-    case 4:
-      return "Wanted target";
-    default:
-      return `Identity ${kind}`;
-  }
-}
-
-export function formatCaseIdentityStatus(status: number) {
-  switch (status) {
-    case 0:
-      return "Unresolved";
-    case 1:
-      return "Possible match";
-    case 2:
-      return "Resolved";
-    case 3:
-      return "Captured";
-    default:
-      return `Status ${status}`;
-  }
-}
-
 export function formatSuspectStatus(status: number) {
   switch (status) {
     case 0:

@@ -122,7 +122,7 @@ function createSession(): GameSessionDto {
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -164,7 +164,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -363,9 +363,7 @@ describe("AppShell", () => {
     await user.click(screen.getByRole("button", { name: /^case file$/i }));
 
     expect(await screen.findByRole("heading", { name: /^case file$/i })).toBeInTheDocument();
-    expect(
-      screen.getByText(/player-known facts and does not guess at hidden truth/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/opening lead:/i)).toBeInTheDocument();
   });
 
   it("opens the Journal overlay and renders the journal surface", async () => {

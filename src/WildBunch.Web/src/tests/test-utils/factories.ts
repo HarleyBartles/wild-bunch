@@ -28,7 +28,7 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -74,7 +74,7 @@ export function createJournal(overrides: Partial<JournalDto> = {}): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],

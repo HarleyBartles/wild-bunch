@@ -33,49 +33,32 @@ public sealed record ClueDirectionAnchorDto(
     string? Movement,
     string? Route);
 
-public enum CaseIdentityKind
-{
-    KnownName = 0,
-    Alias = 1,
-    FeatureLed = 2,
-    RouteLed = 3,
-    WarrantTarget = 4
-}
-
-public enum CaseIdentityStatus
-{
-    Unresolved = 0,
-    PossibleMatch = 1,
-    Resolved = 2,
-    Captured = 3
-}
-
 public sealed record CaseBoardDto(
-    IReadOnlyList<CaseIdentityHandleDto> NamedRecords,
-    IReadOnlyList<CaseIdentityHandleDto> LooseLeads,
-    IReadOnlyList<CaseEvidenceItemDto> EvidenceItems);
+    IReadOnlyList<CaseWarrantRecordDto> Warrants,
+    IReadOnlyList<CaseClueDto> Clues);
 
-public sealed record CaseIdentityHandleDto(
+public sealed record CaseWarrantRecordDto(
     string Id,
-    string DisplayName,
-    CaseIdentityKind Kind,
-    CaseIdentityStatus Status,
-    string? ResolvedToDisplayName,
-    IReadOnlyList<string> EvidenceIds,
-    IReadOnlyList<string> SummaryLines,
-    IReadOnlyList<string> RelatedLabels,
+    string TargetName,
+    WarrantDisposition Disposition,
+    decimal BountyAmount,
     IReadOnlyList<string> KnownAliases,
-    IReadOnlyList<string> DistinguishingFeatures,
-    WarrantDisposition? WarrantDisposition,
-    decimal? BountyAmount,
-    string? IssuingAuthority,
-    string? CrimeSummary);
-
-public sealed record CaseEvidenceItemDto(
-    string Id,
-    string KindLabel,
-    string SourceLabel,
+    IReadOnlyList<string> KnownFeatures,
+    string IssuingSource,
     string Summary,
-    bool IdentityBearing,
-    ClueAnchorsDto Anchors,
-    IReadOnlyList<string> HandleIds);
+    SheriffTurnInSettlementDto? Settlement);
+
+public sealed record SheriffTurnInSettlementDto(
+    bool IsAlive,
+    decimal BountyAmount,
+    int Day,
+    int Turn);
+
+public sealed record CaseClueDto(
+    string Id,
+    ClueKind Kind,
+    string Description,
+    InvestigationSourceKind? SourceKind,
+    string? Source,
+    string? Context,
+    ClueAnchorsDto Anchors);

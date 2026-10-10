@@ -84,3 +84,7 @@ All assertions and skip behavior above were inspected statically. No test pass, 
 The normal PostgreSQL API factory does not explicitly select Development, while the denial factory selects Production. The acceptance client's `Test` Authorization header is not authentication under the current environment-only guard. When developer workflows are activated, choose the host environment explicitly and prove actual access semantics; do not infer authorization from fixture names.
 
 Fixed `[Fact(Skip=...)]` tests remain inert even with healthy PostgreSQL. Replace obsolete payload fields and invalid seed scaffolding before enabling retained scenarios. Configure required CI dependencies explicitly; do not convert a required test lane into passing skips. Keep optional local dependency limits truthful.
+
+## Dated row 08 disposition, 2026-10-10, AP-16/AP-17
+
+AP-16's incomplete no-caller projector and its archive IL-shape test were removed. AP-17's old captured-evidence disappearance behavior was replaced by mapper tests proving same-name records remain distinct, exact identity alone receives settlement, known clues survive capture, and legacy null associations stay active. PostgreSQL cache recovery and HTTP response tests cover persisted/replayed identity and the player serialization boundary. The new and changed tests have independent failure oracles; none checks file presence or a source-code shape.

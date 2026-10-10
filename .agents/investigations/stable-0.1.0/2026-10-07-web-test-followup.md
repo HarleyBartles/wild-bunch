@@ -114,3 +114,7 @@ Paths below are relative to `src/WildBunch.Web/src`. These rows supplement the e
 | [tests/useDevSurfaceSync.test.tsx](../../../src/WildBunch.Web/src/tests/useDevSurfaceSync.test.tsx) | Retain meaningful route/phase mapping within playtest; actual shell composition remains separate proof. |
 | [tests/usePhaseRouteSync.test.tsx](../../../src/WildBunch.Web/src/tests/usePhaseRouteSync.test.tsx) | Retain supported redirects/pending deep links; settle reads/effects before no-redirect claims and add explicit error policy. |
 | [tests/wildBunchApi.test.ts](../../../src/WildBunch.Web/src/tests/wildBunchApi.test.ts) | Retain preview path contract under selected base URL; extend real transport/status/JSON/header/cancellation boundaries. |
+
+## Dated row 08 disposition, 2026-10-10, WB-20
+
+Added a rendered `CaseFileSurface` behavior test with an unnamed clue, authored source/context/anchors, and two same-name warrant records where only one has a settlement. It proves the clue stays independent, both records and the settled outcome remain visible, and the old resolved-to inference is absent. `AppShell` retains overlay behavior without requiring retired deduction copy. No repository browser/e2e harness exists for a real API-backed journey; the Web command-bus gate passed all 303 Vitest tests and the production build.
