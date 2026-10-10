@@ -1,5 +1,4 @@
 using WildBunch.Application.Games.Commands;
-using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
@@ -30,8 +29,7 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
         var existingSession = CreateActiveSession("Ranger Vale");
         existingSession.MarkEventsCommitted();
         repository.Seed(existingSession);
-        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector());
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository);
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -77,8 +75,7 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
         var secondExisting = CreateActiveSession("Trail Hand");
         secondExisting.MarkEventsCommitted();
         repository.Seed(secondExisting);
-        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector());
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository);
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -121,8 +118,7 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector());
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository);
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {

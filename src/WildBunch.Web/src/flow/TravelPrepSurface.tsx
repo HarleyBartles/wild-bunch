@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
-import { TravelMode } from "../api/types";
+import { StartFlowPhase, TravelMode } from "../api/types";
 import { getWorldMap, previewTravel } from "../api/wildBunchApi";
 import { useGameSession } from "../state/useGameSession";
 import { InventoryPanel } from "../components/InventoryPanel";
@@ -53,6 +53,9 @@ interface ConnectedDestination {
 
 function connectedDestinations(session: GameSessionDto) {
   const currentTownId = session.player.currentTownId;
+  if (currentTownId === null) {
+    return [];
+  }
   const townMap = new Map(session.world.towns.map((town) => [town.id, town]));
   const destinations = new Map<string, ConnectedDestination>();
 
@@ -116,7 +119,11 @@ export function TravelPrepSurface() {
     };
   }, [gameId, selectedDestId]);
 
-  if (!session) {
+  if (
+    !session ||
+    session.startFlowPhase !== StartFlowPhase.GameStarted ||
+    session.player.currentTownId === null
+  ) {
     return null;
   }
 

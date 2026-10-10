@@ -32,7 +32,7 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(1, result.CurrentSession.Clock.Day);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
@@ -63,7 +63,7 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.Equal(0, result.CurrentSession.PursuitState.Heat);
     }
@@ -84,7 +84,7 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(1, result.CurrentSession.Clock.Day);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);

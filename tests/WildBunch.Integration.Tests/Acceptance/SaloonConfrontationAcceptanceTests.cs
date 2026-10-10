@@ -137,7 +137,7 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.Equal(0m, result.WalletAfter);
         Assert.Equal("an unfamiliar face", result.TargetName);
         Assert.Null(result.CurrentSession.ActiveSaloonPersonOfInterest);
-        Assert.Equal(0m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(0m, result.CurrentSession.Inventory!.Wallet.Cash);
 
         var reloadedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
         Assert.Equal(0m, reloadedSession.Player.Wallet.Cash);

@@ -30,14 +30,14 @@ public sealed class StorePurchaseAcceptanceTests
         Assert.NotNull(result);
         Assert.True(result!.Success);
         Assert.Equal("Purchased 2 Food for $4.00.", result.Message);
-        Assert.Equal(21m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(6, result.CurrentSession.Inventory.Items.Single(item => item.Kind == ItemKind.Food).Quantity);
+        Assert.Equal(21m, result.CurrentSession.Inventory!.Wallet.Cash);
+        Assert.Equal(6, result.CurrentSession.Inventory!.Items.Single(item => item.Kind == ItemKind.Food).Quantity);
         Assert.Equal(GameLogEntryKind.Purchase, result.CurrentSession.LogEntries.Last().Kind);
         Assert.Equal(createdSession.LogEntries.Count + 1, result.CurrentSession.LogEntries.Count);
 
         var persistedSession = await factory.LoadSessionAsync(createdSession.Id);
-        Assert.Equal(21m, persistedSession.Inventory.Wallet.Cash);
-        Assert.Equal(6, persistedSession.Inventory.Items.Single(item => item.Kind == ItemKind.Food).Quantity);
+        Assert.Equal(21m, persistedSession.Inventory!.Wallet.Cash);
+        Assert.Equal(6, persistedSession.Inventory!.Items.Single(item => item.Kind == ItemKind.Food).Quantity);
         Assert.Equal(GameLogEntryKind.Purchase, persistedSession.LogEntries.Last().Kind);
     }
 }

@@ -38,9 +38,9 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal("Purchased 2 Food for $6.00.", result.Message);
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
-        Assert.Equal(19m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(2, result.CurrentSession.Inventory.Items.Count);
-        Assert.Equal(3, result.CurrentSession.Inventory.Items.Single(item => item.Kind == DomainItemKind.Food).Quantity);
+        Assert.Equal(19m, result.CurrentSession.Inventory!.Wallet.Cash);
+        Assert.Equal(2, result.CurrentSession.Inventory!.Items.Count);
+        Assert.Equal(3, result.CurrentSession.Inventory!.Items.Single(item => item.Kind == DomainItemKind.Food).Quantity);
         Assert.Equal(2, result.CurrentSession.LogEntries.Count);
     }
 
@@ -65,7 +65,7 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Equal("pinecross", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Single(result.CurrentSession.LogEntries);
     }
 
@@ -90,7 +90,7 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal("That item is not offered at this store.", result.Message);
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Single(result.CurrentSession.LogEntries);
     }
 
@@ -137,7 +137,7 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal("Finish the current journey before taking that action.", result.Message);
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(JourneyStatus.Active, result.CurrentSession.Journey!.Status);
         Assert.Equal(2, result.CurrentSession.LogEntries.Count);

@@ -14,10 +14,14 @@ const ItemDetailLine = styled.p`
 `;
 
 interface InventoryPanelProps {
-  inventory: InventoryDto;
+  inventory: InventoryDto | null;
 }
 
 export function InventoryPanel({ inventory }: InventoryPanelProps) {
+  if (inventory === null) {
+    return null;
+  }
+
   return (
     <StatusCard>
       <h3>Inventory</h3>

@@ -186,16 +186,21 @@ public sealed class ProjectionTests
     }
 
     [Fact]
-    public void HudProjector_EmptyEventStream_ProducesDefaultProjection()
+    public void HudProjector_ThrowsWhenStreamHasNotStartedGame()
     {
         var projector = new HudProjector();
-        var events = Array.Empty<IDomainEvent>();
+        var events = new IDomainEvent[]
+        {
+            new PlayerSetupCompleted
+            {
+                PlayerName = "Ranger Vale",
+                GameDifficulty = GameDifficulty.Standard,
+                GameEntropy = GameEntropy.Classic,
+                SeedCode = "00000000-0000-0000-0000-000000000000"
+            }
+        };
 
-        var hud = projector.Project(events);
-
-        Assert.Equal(GameStatus.Active, hud.Status);
-        Assert.Equal(0m, hud.WalletCash);
-        Assert.Empty(hud.InventoryItems);
+        Assert.Throws<InvalidOperationException>(() => projector.Project(events));
     }
 
     // --- BUNCH-80: Bounty/Saloon event projection tests ---

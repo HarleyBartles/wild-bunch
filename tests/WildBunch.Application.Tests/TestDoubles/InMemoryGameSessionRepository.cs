@@ -29,6 +29,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
     public void Seed(GameSession session)
     {
         _sessions[session.Id] = session;
+        _eventStreams[session.Id] = session.CommittedEvents.ToList();
     }
 
     public Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)

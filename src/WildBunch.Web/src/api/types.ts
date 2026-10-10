@@ -298,8 +298,8 @@ export interface TravelDiaryDto {
 
 export interface PlayerDto {
   name: string;
-  currentTownId: string;
-  health: number;
+  currentTownId: string | null;
+  health: number | null;
 }
 
 export type TownProsperity = 0 | 1 | 2 | 3;
@@ -562,7 +562,7 @@ export interface GameSessionDto {
   player: PlayerDto;
   world: WorldDto;
   caseFile: CaseFileDto;
-  inventory: InventoryDto;
+  inventory: InventoryDto | null;
   clock: GameClockDto;
   pursuitState: PursuitStateDto;
   journey: TravelJourneyDto | null;
