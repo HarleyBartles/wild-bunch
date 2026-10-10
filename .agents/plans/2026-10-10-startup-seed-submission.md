@@ -87,7 +87,7 @@
 
 - [x] Confirm this corrects submitted start facts and session-bound prologue truth without changing archive semantics, ownership or product feature dependencies; compare ADR-0014, ADR-0028 and ADR-0039 and retain them unchanged because the slice implements their existing CQRS, event-replay and settled-prologue decisions. Update PG-001 evidence to distinguish rendered UI behavior tests from browser-backed journey evidence.
 - [x] Add a dated finding disposition only for behavior actually corrected, preserving the investigation's historical observation.
-- [ ] Run focused behavior tests then `py -3 tools/run.py ci --check`; commit source through the canonical check-only hook. Obtain an independent whole-branch review and resolve any actionable findings with focused behavior proof.
+- [x] Run focused behavior tests then `py -3 tools/run.py ci --check`; commit source through the canonical check-only hook. Obtain an independent whole-branch review and resolve any actionable findings with focused behavior proof.
 - [ ] Publish the reviewed PR to `develop`, verify the hosted gate passes on the exact source SHA, merge it, and verify develop-push CI passes on the merge SHA. Keep this plan in-tree through its PR; its successor records evidence and retires it in the successor's first substantive commit.
 
 ## Acceptance
