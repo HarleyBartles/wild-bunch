@@ -1,3 +1,5 @@
+using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
@@ -18,7 +20,12 @@ public sealed class PreviewTravelHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateMountedSession();
         repository.Seed(session);
-        var handler = new PreviewTravelHandler(repository, new TravelResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new PreviewTravelHandler(readRepository, new TravelResolver());
+        var eventCount = session.AllEvents.Count;
+        var turn = session.Clock.Turn;
+        var food = session.Player.GetQuantity(ItemKind.Food);
+        var canteenCharges = session.Player.GetQuantity(ItemKind.Canteen);
 
         var result = await handler.HandleAsync(new PreviewTravelQuery(session.Id.Value, "dryfork"));
 
@@ -46,6 +53,20 @@ public sealed class PreviewTravelHandlerTests
         Assert.Equal(0.75m, result.Preview.RouteProfile.FootRideDayProgress);
         Assert.Contains(result.Preview.RouteProfile.Warnings, warning => warning.Contains("water", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(result.Preview.Warnings, warning => warning.Contains("exactly covers the base trail", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(eventCount, session.AllEvents.Count);
+        Assert.Equal(turn, session.Clock.Turn);
+        Assert.Equal(food, session.Player.GetQuantity(ItemKind.Food));
+        Assert.Equal(canteenCharges, session.Player.GetQuantity(ItemKind.Canteen));
+    }
+
+    [Fact]
+    public async Task HandleAsyncThrowsWhenGameIsMissing()
+    {
+        IGameSessionReadRepository repository = new InMemoryGameSessionRepository();
+        var handler = new PreviewTravelHandler(repository, new TravelResolver());
+
+        await Assert.ThrowsAsync<GameSessionNotFoundException>(() =>
+            handler.HandleAsync(new PreviewTravelQuery(Guid.NewGuid(), "dryfork")));
     }
 
     private static GameSession CreateMountedSession()
