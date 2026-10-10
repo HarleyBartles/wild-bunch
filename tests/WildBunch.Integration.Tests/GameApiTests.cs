@@ -4,6 +4,7 @@ using WildBunch.Api;
 using WildBunch.Api.Games;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
@@ -196,16 +197,16 @@ public sealed class GameApiTests
             Assert.Equal(startingHorseFeed, advance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
             Assert.Equal(startingCanteenCharges - (canteenChargesPerDay * day), advance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
-            // The first advance opens the travel diary with the journey's opening narration.
+            // The departure record stays in the one shared journey journal.
             if (day == 1)
             {
                 Assert.NotNull(advance.TravelDiary);
-                var openingDay = Assert.Single(advance.TravelDiary!.Days);
-                Assert.NotNull(openingDay.OpeningNarration);
-                Assert.Contains($"I set out for {destinationTownName}", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains($"{preview.Preview.BaselineRideDays}-day", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("by mounted travel", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
-                Assert.DoesNotContain("without a horse", openingDay.OpeningNarration, StringComparison.OrdinalIgnoreCase);
+                var departure = Assert.Single(
+                    advance.TravelDiary!.JourneyEntries,
+                    entry => entry.Message.Contains($"toward {destinationTownName}", StringComparison.OrdinalIgnoreCase));
+                Assert.Contains($"{preview.Preview.BaselineRideDays} day(s)", departure.Message, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("by mounted travel", departure.Message, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("without a horse", departure.Message, StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -354,6 +355,8 @@ public sealed class GameApiTests
         Assert.NotNull(firstDestinationTravel);
         Assert.True(firstDestinationTravel!.Success);
         Assert.Equal(JourneyStatus.Active, firstDestinationTravel.JourneyStatus);
+        var firstJourneyDeparture = Assert.Single(firstDestinationTravel.CurrentSession.TravelDiary!.JourneyEntries);
+        Assert.Equal(GameLogEntryKind.Travel, firstJourneyDeparture.Kind);
 
         var completeLowRisk = await AdvanceUntilTownAsync(client, createdSession.Id, firstDestination);
 
@@ -433,6 +436,9 @@ public sealed class GameApiTests
         Assert.NotNull(secondDestinationTravel.Journey);
         Assert.Null(secondDestinationTravel.Journey!.PendingEncounter);
         Assert.Equal(0, secondDestinationTravel.CurrentSession.Journey!.DaysTravelled);
+        var secondJourneyDeparture = Assert.Single(secondDestinationTravel.CurrentSession.TravelDiary!.JourneyEntries);
+        Assert.Equal(GameLogEntryKind.Travel, secondJourneyDeparture.Kind);
+        Assert.NotEqual(firstJourneyDeparture.Message, secondJourneyDeparture.Message);
 
         // Force a hostile encounter so interruption behavior is independent of generated rolls.
         await client.PostAsJsonAsync(
@@ -500,6 +506,37 @@ public sealed class GameApiTests
         Assert.Equal(0, resumeAdvance.CurrentSession.Clock.Turn);
 
         scenario.Fixture.AssertHighRiskFoeInterruptRoute(createdSession!, secondDestinationTravel!, blockedAdvance!, resolved!, resumeAdvance!);
+
+        var reloadedSessionResponse = await client.GetAsync($"/api/games/{createdSession.Id}");
+        Assert.Equal(HttpStatusCode.OK, reloadedSessionResponse.StatusCode);
+        var reloadedSession = await reloadedSessionResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(reloadedSession);
+        var journeyEntry = Assert.Single(
+            reloadedSession!.TravelDiary!.JourneyEntries,
+            entry => entry.Message == secondJourneyDeparture.Message);
+        Assert.Equal(secondJourneyDeparture.Day, journeyEntry.Day);
+        Assert.Equal(secondJourneyDeparture.Turn, journeyEntry.Turn);
+        Assert.DoesNotContain(
+            reloadedSession.TravelDiary.JourneyEntries,
+            entry => entry.Message == firstJourneyDeparture.Message);
+
+        var fullJournalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
+        Assert.Equal(HttpStatusCode.OK, fullJournalResponse.StatusCode);
+        var fullJournal = await fullJournalResponse.Content.ReadFromJsonAsync<JournalDto>();
+        Assert.NotNull(fullJournal);
+        var firstJourneyIndex = fullJournal!.LogEntries
+            .Select((entry, index) => new { entry, index })
+            .Single(item => item.entry.Message == firstJourneyDeparture.Message)
+            .index;
+        var secondJourneyEntry = Assert.Single(
+            fullJournal.LogEntries,
+            entry => entry.Message == secondJourneyDeparture.Message);
+        var secondJourneyIndex = fullJournal.LogEntries
+            .Select((entry, index) => new { entry, index })
+            .Single(item => item.entry == secondJourneyEntry)
+            .index;
+        Assert.True(firstJourneyIndex < secondJourneyIndex);
+        Assert.Equal(journeyEntry, secondJourneyEntry);
     }
 
     [Fact]

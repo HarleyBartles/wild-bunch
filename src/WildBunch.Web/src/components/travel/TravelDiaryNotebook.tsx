@@ -1,6 +1,7 @@
 import type { GameSessionDto } from "../../api/types";
 import { Card, SectionHeader } from "./travelShared";
 import { TravelDiaryDayCard } from "./TravelDiaryDayCard";
+import { JournalEntryTimeline } from "../journal/JournalEntryTimeline";
 import styled from "styled-components";
 
 interface TravelDiaryNotebookProps {
@@ -16,18 +17,31 @@ export function TravelDiaryNotebook({ travelDiary, refreshing }: TravelDiaryNote
         <span>
           {refreshing
             ? "Refreshing..."
-            : travelDiary?.days.length
-              ? `${travelDiary.days.length} entries`
-              : "Blank pages"}
+            : travelDiary?.journeyEntries.length
+              ? `${travelDiary.journeyEntries.length} entries`
+              : travelDiary?.days.length
+                ? `${travelDiary.days.length} travel days`
+                : "Blank pages"}
         </span>
       </SectionHeader>
 
       {travelDiary?.days.length ? (
-        <DiaryStack>
-          {travelDiary.days.map((day) => (
-            <TravelDiaryDayCard key={day.dayNumber} day={day} />
-          ))}
-        </DiaryStack>
+        <>
+          <JournalEntryTimeline
+            entries={travelDiary.journeyEntries}
+            emptyMessage="This journey has no journal entries yet."
+          />
+          <DiaryStack>
+            {travelDiary.days.map((day) => (
+              <TravelDiaryDayCard key={day.dayNumber} day={day} />
+            ))}
+          </DiaryStack>
+        </>
+      ) : travelDiary?.journeyEntries.length ? (
+        <JournalEntryTimeline
+          entries={travelDiary.journeyEntries}
+          emptyMessage="This journey has no journal entries yet."
+        />
       ) : (
         <MutedNote>The notebook is waiting for the next mile of road.</MutedNote>
       )}

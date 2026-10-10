@@ -135,6 +135,20 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       },
     },
     travelDiary: {
+      journeyEntries: [
+        {
+          kind: 1,
+          message: "I set out for Dust Fork on a 3-day badlands trail by mounted travel.",
+          day: 1,
+          turn: 0,
+        },
+        {
+          kind: 1,
+          message: "The first light caught the dust behind us, and the road stayed open.",
+          day: 2,
+          turn: 0,
+        },
+      ],
       days: [
         {
           dayNumber: 1,
@@ -170,10 +184,6 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
           currentCanteenCharges: 2,
           currentAmmo: 0,
           currentHeat: 1,
-          openingNarration: "I set out for Dust Fork on a 3-day badlands trail by mounted travel.",
-          journeyBeat: "I cross the open range with the horse moving steady under me.",
-          resourceBeat: null,
-          entries: ["The first light caught the dust behind us, and the road stayed open."],
           warnings: [],
         },
       ],
@@ -199,6 +209,7 @@ function createNoHorseSession(overrides: Partial<GameSessionDto> = {}): GameSess
       horseState: null,
     },
     travelDiary: {
+      journeyEntries: session.travelDiary!.journeyEntries,
       days: [
         {
           ...session.travelDiary!.days[0],
@@ -279,6 +290,7 @@ describe("TravelPanel", () => {
         warnings: ["Keep an eye on the ridge line."],
       },
       travelDiary: {
+        journeyEntries: [],
         days: [
           {
             ...createSession().travelDiary!.days[0],
@@ -299,6 +311,7 @@ describe("TravelPanel", () => {
   it("hides horse-only travel diary fields when the journey has no horse", async () => {
     const session = createNoHorseSession({
       travelDiary: {
+        journeyEntries: [],
         days: [
           {
             ...createSession().travelDiary!.days[0],
@@ -548,9 +561,11 @@ describe("TravelPanel", () => {
     });
   });
 
-  it("renders encounter resolution prose without debug wording", async () => {
+  it("renders the recorded encounter message without inventing a fight outcome", async () => {
+    const recordedMessage = "I spent 3 round(s), but the rider kept coming.";
     const session = createSession({
       travelDiary: {
+        journeyEntries: [{ kind: 1, message: recordedMessage, day: 2, turn: 0 }],
         days: [
           {
             ...createSession().travelDiary!.days[0],
@@ -559,7 +574,7 @@ describe("TravelPanel", () => {
               choiceLabel: "Fight",
               healthDelta: -5,
               walletDelta: 0,
-              ammoSpent: 1,
+              ammoSpent: 3,
               heatIncrease: 1,
               horseExhaustionDelta: 0,
               continuedOnFoot: false,
@@ -573,7 +588,12 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session);
 
-    expect(await screen.findByText(/I stand and fight/i)).toBeInTheDocument();
+    expect(await screen.findByText(recordedMessage)).toBeInTheDocument();
+    expect(screen.getByText(/Ammo spent 3/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/one round to force the rider off the trail/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/I stand and fight/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Choice .* shifted/i)).not.toBeInTheDocument();
   });
 });

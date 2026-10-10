@@ -238,6 +238,7 @@ public sealed record JourneyTrailEventDto(
     int HeatIncrease);
 
 public sealed record TravelDiaryDto(
+    IReadOnlyList<GameLogEntryDto> JourneyEntries,
     IReadOnlyList<TravelDiaryDayDto> Days);
 
 public sealed record TrailBeatSlotDto(
@@ -263,9 +264,6 @@ public sealed record TravelDiaryDayDto(
     JourneyTrailEventDto? TrailEvent,
     JourneyEncounterDto? PendingEncounter,
     TravelDiaryEncounterResolutionDto? EncounterResolution,
-    string? OpeningNarration,
-    string? JourneyBeat,
-    string? ResourceBeat,
     int HealthDelta,
     decimal WalletDelta,
     int FoodDelta,
@@ -284,7 +282,6 @@ public sealed record TravelDiaryDayDto(
     int CurrentCanteenCharges,
     int CurrentAmmo,
     int CurrentHeat,
-    IReadOnlyList<string> Entries,
     IReadOnlyList<string> Warnings,
     IReadOnlyList<TrailBeatSlotDto> BeatSlots);
 

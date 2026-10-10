@@ -145,6 +145,8 @@ There is no evidence that every file must move to a new vertical-slice tree. The
 
 **Proposed correction:** Prefer authoritative authored entries; constrain fallback wording to facts that the diary state establishes. Simplify unused parameters with the renderer's actual consumers. Do not remove all fallback presentation or relocate rendering into gameplay mutation merely because it contains authored copy.
 
+**Dated disposition, 2026-10-10:** Superseded by the settled single-journal design. `TravelDiaryTextRenderer` and its renderer-specific tests are retired; production now projects travel narration once through `JournalLogProjector`, then filters the same entries by recorded `JourneySequence` for the journey view. Structured `TravelDiaryDay` effects remain. `JournalLogProjectorTests` proves sequence ownership across two journeys, handler tests consume event-projected entries, and the persisted two-journey API scenario proves the same entry in both views after reload. The projector also avoids repeating a horse-loss occurrence when the event's main diary message already contains it.
+
 ### AP-20: Shared rendering DTO is owned by the developer slice
 
 **Classification:** Confirmed ownership mismatch, not a demonstrated hidden-truth leak. `Games/Models/TownLayoutDto.cs:1,21-22` and `Games/Mapping/TownLayoutMapper.cs:34-41` use `Dev.Models.TownLayoutSaltsDto` in the ordinary world response. The browser consumes the salts to render deterministic scenery, so these fields are not simply unused developer detail.

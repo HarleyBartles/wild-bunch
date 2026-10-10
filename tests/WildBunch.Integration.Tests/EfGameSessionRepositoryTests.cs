@@ -622,9 +622,8 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(expectedJourneyHorseState, reloaded.Journey!.HorseState);
         var dto = GameSessionMapper.ToDto(reloaded!);
         Assert.NotNull(dto.TravelDiary);
-        var diaryDay = Assert.Single(dto.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.StartsWith("I ", StringComparison.Ordinal));
-        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+        var departureEntry = Assert.Single(dto.TravelDiary!.JourneyEntries, entry => entry.Message.StartsWith("You set out from Pinecross toward Open Pass", StringComparison.Ordinal));
+        Assert.Contains(dto.LogEntries, entry => entry == departureEntry);
     }
 
     [Fact]

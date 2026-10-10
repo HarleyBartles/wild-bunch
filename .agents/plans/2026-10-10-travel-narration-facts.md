@@ -44,54 +44,55 @@
 
 **Files:** `.agents/plans/2026-10-10-casebook-knowledge-without-inference.md`, this plan, `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`, and `Directory.Build.props`.
 
-- [ ] Verify PR #246 merged exact source `5c8ec5eff34eaaf252e0a0e5e407dbee9ac136fd` as `c68dc49b579ea29da4e346e4c4527a1e86a8b8ee`; exact-head gate `38052106105` and develop-push gate `38052474044` passed.
-- [ ] Retire the completed `.61` plan in this successor, preserving it in Git history.
-- [ ] Update row 08 with PR #246 source/merge identities and gate IDs, point its active-plan link to this plan, and describe the `.62` shared-journal journey slice while leaving later read-boundary work active.
-- [ ] Set the sole authored application version to `0.1.0-dev.62`.
-- [ ] Commit this plan handoff before changing implementation source; rely on Git history for the commit, not a committed development receipt.
+- [x] Verify PR #246 merged exact source `5c8ec5eff34eaaf252e0a0e5e407dbee9ac136fd` as `c68dc49b579ea29da4e346e4c4527a1e86a8b8ee`; exact-head gate `38052106105` and develop-push gate `38052474044` passed.
+- [x] Retire the completed `.61` plan in this successor, preserving it in Git history.
+- [x] Update row 08 with PR #246 source/merge identities and gate IDs, point its active-plan link to this plan, and describe the `.62` shared-journal journey slice while leaving later read-boundary work active.
+- [x] Set the sole authored application version to `0.1.0-dev.62`.
+- [x] Commit this plan handoff before changing implementation source; rely on Git history for the commit, not a committed development receipt.
 
 ## Task 2: Associate projected travel entries with recorded journeys
 
 **Files:** `src/WildBunch.Domain/Game/GameLogEntry.cs`, `src/WildBunch.Application/Projections/JournalLogProjector.cs`, and `tests/WildBunch.Application.Tests/Projections/JournalLogProjectorTests.cs`.
 
-- [ ] Add a focused projection behavior test with travel events from two distinct `JourneySequence` values; require each projected travel entry to retain the sequence from its event snapshot and non-travel entries to remain unassociated.
-- [ ] Run the focused test and verify RED because projected entries currently discard journey identity.
-- [ ] Add optional internal projection metadata to `GameLogEntry` and tag every travel entry from `JourneyStarted`, `TravelDayAdvanced`, `TrailEventApplied`, `JourneyEncounterResolved`, `JourneyCompleted`, and `JourneyArrivalAcknowledged` using that event's snapshot/sequence.
-- [ ] Preserve existing entry wording, game-day/turn assignment, ordering and all non-travel projection behavior.
-- [ ] Run the focused `JournalLogProjectorTests` lane and compare all expected output.
+- [x] Add a focused projection behavior test with travel events from two distinct `JourneySequence` values; require each projected travel entry to retain the sequence from its event snapshot and non-travel entries to remain unassociated.
+- [x] Run the focused test and verify RED because projected entries currently discard journey identity.
+- [x] Add optional internal projection metadata to `GameLogEntry` and tag every travel entry from `JourneyStarted`, `TravelDayAdvanced`, `TrailEventApplied`, `JourneyEncounterResolved`, `JourneyCompleted`, and `JourneyArrivalAcknowledged` using that event's snapshot/sequence.
+- [x] Preserve existing entry wording, game-day/turn assignment, ordering and all non-travel projection behavior.
+- [x] Run the focused `JournalLogProjectorTests` lane and compare all expected output.
 
 ## Task 3: Supply one shared history and a recorded-identity journey subset
 
 **Files:** `src/WildBunch.Application/Games/Models/GameDtos.cs`, `src/WildBunch.Application/Games/Mapping/GameSessionMapper.cs`, `src/WildBunch.Application/Games/Mapping/JournalMapper.cs`, `src/WildBunch.Web/src/api/types.ts`, and the relevant Application mapper tests.
 
-- [ ] Add a mapper behavior test whose full history contains two journeys with overlapping day/message values; require the journey response to include all and only the latest sequence while full history retains both.
-- [ ] Run the test and witness RED because `TravelDiaryDto` currently has no shared journal-entry subset.
-- [ ] Add a journey-entry collection to `TravelDiaryDto`, populated from the already projected full history by the maximum recorded travel sequence; return no journey entry collection when no travel entries exist.
-- [ ] Remove narrative-only `TravelDiaryDayDto` fields that are replaced by shared journal entries (`OpeningNarration`, `JourneyBeat`, `ResourceBeat`, and `Entries`); retain structured travel state, outcome, warnings, and beat-slot detail that the player surface uses.
-- [ ] Ensure `JourneySequence` remains internal and is absent from JSON serialization; use the public DTO contract to expose only kind/message/day/turn.
-- [ ] Update TypeScript API types and focused mapper/API serialization tests to reflect the player response contract.
+- [x] Add a mapper behavior test whose full history contains two journeys with overlapping day/message values; require the journey response to include all and only the latest sequence while full history retains both.
+- [x] Run the test and witness RED because `TravelDiaryDto` currently has no shared journal-entry subset.
+- [x] Add a journey-entry collection to `TravelDiaryDto`, populated from the already projected full history by the maximum recorded travel sequence; return no journey entry collection when no travel entries exist.
+- [x] Remove narrative-only `TravelDiaryDayDto` fields that are replaced by shared journal entries (`OpeningNarration`, `JourneyBeat`, `ResourceBeat`, and `Entries`); retain structured travel state, outcome, warnings, and beat-slot detail that the player surface uses.
+- [x] Ensure `JourneySequence` remains internal and is absent from JSON serialization; use the public DTO contract to expose only kind/message/day/turn.
+- [x] Update TypeScript API types and focused mapper/API serialization tests to reflect the player response contract.
 
 ## Task 4: Render the same journal entries in both player views
 
-**Files:** `src/WildBunch.Web/src/components/JournalSurface.tsx`, a focused shared journal-entry component under `src/WildBunch.Web/src/components/journal/`, `src/WildBunch.Web/src/components/travel/TravelDiaryNotebook.tsx`, `src/WildBunch.Web/src/components/travel/TravelDiaryDayCard.tsx`, and `src/WildBunch.Web/src/tests/TravelPanel.test.tsx` plus relevant journal tests.
+**Files:** `src/WildBunch.Web/src/components/JournalSurface.tsx`, a focused shared journal-entry component under `src/WildBunch.Web/src/components/journal/`, `src/WildBunch.Web/src/components/travel/TravelDiaryNotebook.tsx`, `src/WildBunch.Web/src/components/travel/TravelDiaryDayCard.tsx`, `src/WildBunch.Application/Games/Mapping/TravelDiaryTextRenderer.cs`, `tests/WildBunch.Application.Tests/Renderers/TravelDiaryTextRendererTests.cs`, and `src/WildBunch.Web/src/tests/TravelPanel.test.tsx` plus relevant journal tests.
 
-- [ ] Replace independent travel narration expectations with a user-visible scenario in which the event-projected message says the rider retaliated after a multi-round fight; require that exact message and prohibit the current generic one-round/success claim.
-- [ ] Make the test fail against the existing `TravelDiaryDayCard` outcome summary before changing the component.
-- [ ] Extract the existing journal-entry grouping/formatting into one component used by `JournalSurface` and `TravelDiaryNotebook`; preserve full journal loading/error behavior and day/turn ordering.
-- [ ] Render latest-journey entries through that shared component. Keep the day cards for structured travel details and remove their independent prose, including generated encounter success summaries.
-- [ ] Update the focused React tests to prove the journey view displays event-authored messages and does not invent contradictory outcome text.
-- [ ] Run `py -3 tools/run.py web` and verify lint, formatting, typecheck, Vitest, and production build.
+- [x] Replace independent travel narration expectations with a user-visible scenario in which the event-projected message says the rider retaliated after a multi-round fight; require that exact message and prohibit the current generic one-round/success claim.
+- [x] Make the test fail against the existing `TravelDiaryDayCard` outcome summary before changing the component.
+- [x] Extract the existing journal-entry grouping/formatting into one component used by `JournalSurface` and `TravelDiaryNotebook`; preserve full journal loading/error behavior and day/turn ordering.
+- [x] Render latest-journey entries through that shared component. Keep the day cards for structured travel details and remove their independent prose, including generated encounter success summaries.
+- [x] Retire the now-unused `TravelDiaryTextRenderer` and its renderer-specific tests after confirming no remaining production caller; keep meaningful fact/outcome tests on event-backed projector and consumer behavior.
+- [x] Update the focused React tests to prove the journey view displays event-authored messages and does not invent contradictory outcome text.
+- [x] Run `py -3 tools/run.py web` and verify lint, formatting, typecheck, Vitest, and production build.
 
 ## Task 5: Prove journey filtering through a persisted API flow and reconcile records
 
-**Files:** `tests/WildBunch.Integration.Tests/GameApiTests.cs`, `docs/features.md`, `.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-application-test-followup.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, and ADR-0028 only if needed.
+**Files:** `tests/WildBunch.Integration.Tests/GameApiTests.cs`, `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`, `docs/features.md`, `.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-application-test-followup.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, and ADR-0028 only if needed.
 
-- [ ] Extend `HighRiskTravelCanPauseResolveAndResumeWithoutSkippingTheTrail` to inspect the first journey in full history, start the second journey, reload, and assert that the same actual second-journey event message appears in full history and journey view while first-journey narration remains only in full history.
-- [ ] Assert independently observed messages and recorded day/turn/order; do not require the two view collections to be identical.
-- [ ] Prove the test fails if latest-journey filtering includes the first journey or loses the recorded message, then restore the projector/mapper and verify it passes.
-- [ ] Reconcile PG-008's current assessment: PR #246 preserves learned identity/facts through capture; this slice provides shared full/journey narration; remaining read ownership and end-to-end behavior stays partial.
-- [ ] Add dated dispositions for AP-19/WB-21 that distinguish retired independent narration from any still-retained structured facts; update behavioral test follow-ups with the actual replacement proof.
-- [ ] Re-read ADR-0028 against the diff and confirm in the PR description that event authority and rebuildable projections remain unchanged, unless evidence requires a dated ADR note.
+- [x] Extend `HighRiskTravelCanPauseResolveAndResumeWithoutSkippingTheTrail` to inspect the first journey in full history, start the second journey, reload, and assert that the same actual second-journey event message appears in full history and journey view while first-journey narration remains only in full history.
+- [x] Assert independently observed messages and recorded day/turn/order; do not require the two view collections to be identical.
+- [x] Prove the test fails if latest-journey filtering includes the first journey or loses the recorded message, then restore the projector/mapper and verify it passes.
+- [x] Reconcile PG-008's current assessment: PR #246 preserves learned identity/facts through capture; this slice provides shared full/journey narration; remaining read ownership and end-to-end behavior stays partial.
+- [x] Add dated dispositions for AP-19/WB-21 that distinguish retired independent narration from any still-retained structured facts; update behavioral test follow-ups with the actual replacement proof.
+- [x] Re-read ADR-0028 against the diff and confirm in the PR description that event authority and rebuildable projections remain unchanged, unless evidence requires a dated ADR note.
 
 ## Task 6: Validate, review and publish
 

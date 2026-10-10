@@ -266,10 +266,6 @@ export interface TravelDiaryDayDto {
   currentCanteenCharges: number;
   currentAmmo: number;
   currentHeat: number;
-  openingNarration: string | null;
-  journeyBeat: string | null;
-  resourceBeat: string | null;
-  entries: string[];
   warnings: string[];
   beatSlots?: TrailBeatSlotDto[];
 }
@@ -291,6 +287,7 @@ export const TrailBeatSlotType = {
 } as const;
 
 export interface TravelDiaryDto {
+  journeyEntries: GameLogEntryDto[];
   days: TravelDiaryDayDto[];
 }
 
