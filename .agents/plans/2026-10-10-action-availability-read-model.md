@@ -48,42 +48,33 @@
 - [ ] Record PR #250 and its exact source, merge, and hosted gate evidence in row 08; advance the roadmap pointer from `.64` to this `.65` plan and state that the remaining player query is action availability.
 - [ ] Remove the fully delivered `.64` plan, set the sole authored version in `Directory.Build.props` to `0.1.0-dev.65`, and commit the plan, roadmap update, version, and predecessor retirement together before source changes.
 
-### Task 2: Move the Domain resolver from aggregate input to explicit read facts
+### Task 2: Migrate action availability as one compile-atomic query slice
 
 **Files:**
 - Create: `src/WildBunch.Domain/Actions/ActionAvailabilityContext.cs`
 - Modify: `src/WildBunch.Domain/Actions/ActionAvailabilityResolver.cs`
-- Test: `tests/WildBunch.Domain.Tests/ActionAvailabilityResolverTests.cs`
-
-**Interfaces:**
-- Consumes: `StartFlowPhase`, `World`, nullable `TownId`, and nullable `TravelJourneySnapshot` from current Domain types.
-- Produces: `ActionAvailabilityContext(StartFlowPhase StartFlowPhase, World World, TownId? CurrentTownId, TravelJourneySnapshot? Journey)` and `ActionAvailabilityResolver.Resolve(ActionAvailabilityContext context)` returning the existing `IReadOnlyList<AvailableAction>`.
-
-- [ ] Add one full quiet-journey behavior test using `TravelTestFactory.CreateSixDayQuietJourney()`: reach `JourneyStatus.Completed` through `StartJourney` and repeated `AdvanceJourneyDay`, then assert the current resolver wrongly includes `AdvanceTravelDay`; run the focused suite and confirm this new assertion fails for that action. Do not manually mark the journey completed or add an acknowledgement enum.
-- [ ] After recording the behavior RED, refactor the existing resolver tests to construct the explicit context from their started `GameSession` fixtures, preserving their independent action assertions for the canonical town list, no outgoing trail, active journey, and pending encounter. Keep the new completion test's natural journey/acknowledgement lifecycle intact while passing its `TravelJourneySnapshot` to the resolver.
-- [ ] Add a setup-phase behavior test showing any phase before `GameStarted` returns no actions without requiring a current town; then run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~ActionAvailabilityResolverTests"` after the resolver change.
-- [ ] Change the resolver to use only the context, the shared `TownSourceCatalog.Default`, and `World.ListTrailsFromTown`; preserve the exact current branch and output order. For `JourneyStatus.Completed`, return no travel action while arrival awaits acknowledgement; after the existing acknowledgement clears the journey, normal town actions are available. Do not read or introduce `TownVisitState`.
-- [ ] Re-run the focused Domain tests and falsify the setup case by temporarily changing the phase boundary so it returns actions before `GameStarted`; confirm the setup test fails for the unexpected action result. Separately falsify the completed-journey case by temporarily treating a completed journey as advanceable; confirm its `AdvanceTravelDay` assertion fails, restore the correct branch, and rerun the suite.
-
-### Task 3: Route the Application query through the read-only repository
-
-**Files:**
 - Modify: `src/WildBunch.Application/Games/Queries/GetAvailableActionsHandler.cs`
-- Modify: `tests/WildBunch.Application.Tests/Handlers/GetAvailableActionsHandlerTests.cs`
+- Test: `tests/WildBunch.Domain.Tests/ActionAvailabilityResolverTests.cs`
+- Test: `tests/WildBunch.Application.Tests/Handlers/GetAvailableActionsHandlerTests.cs`
 - Modify: `tests/WildBunch.Application.Tests/Guardrails/QueryHandlersAreReadOnlyTests.cs`
 - Preserve: `tests/WildBunch.Integration.Tests/GameApiActionsTests.cs`
 
 **Interfaces:**
-- Consumes: `IGameSessionReadRepository.GetByIdAsync(GameSessionId, CancellationToken)`, the new `ActionAvailabilityContext`, and the existing `ActionAvailabilityResolver`.
-- Produces: the same `IReadOnlyList<AvailableActionDto>` contract and the same not-found exception used by the current API mapping.
+- Consumes: `IGameSessionReadRepository.GetByIdAsync(GameSessionId, CancellationToken)` and `StartFlowPhase`, `World`, nullable `TownId`, and nullable `TravelJourneySnapshot` from current Domain types.
+- Produces: `ActionAvailabilityContext(StartFlowPhase StartFlowPhase, World World, TownId? CurrentTownId, TravelJourneySnapshot? Journey)`, `ActionAvailabilityResolver.Resolve(ActionAvailabilityContext context)` returning the existing `IReadOnlyList<AvailableAction>`, and a `GetAvailableActionsHandler` that returns the same DTOs and missing-session behavior from the read port.
 
-- [ ] Add an Application handler behavior test for a pre-`GameStarted` read model returning no actions, and one active-journey query test proving the snapshot reaches the resolver and town-only actions are absent. Keep the existing missing-session test and exercise the constructor through a statically typed `IGameSessionReadRepository` reference.
-- [ ] Change the handler to call the read repository, throw `GameSessionNotFoundException` for a null model, and build the context from `StartFlowPhase`, `World`, `Player.CurrentTownId`, and `Journey`; do not load `GameSession` through the aggregate repository.
+This is one compile-atomic task: the Application handler currently calls the Domain resolver with `GameSession`, so changing the resolver input before migrating that caller makes the Application project fail to compile. Write behavior tests first, then update the resolver and handler together before running the focused project tests.
+
+- [ ] Add one full quiet-journey behavior test using `TravelTestFactory.CreateSixDayQuietJourney()`: reach `JourneyStatus.Completed` through `StartJourney` and repeated `AdvanceJourneyDay`, then assert the current resolver wrongly includes `AdvanceTravelDay`; run the focused suite and confirm this new assertion fails for that action. Do not manually mark the journey completed or add an acknowledgement enum.
+- [ ] Add an Application behavior test for a pre-`GameStarted` read model returning no actions and an active-journey query proving the journey snapshot reaches the resolver and town-only actions are absent. Keep the missing-session test and pass a statically typed `IGameSessionReadRepository` to the handler.
+- [ ] Refactor the Domain tests to construct the explicit context from started-session fixtures, preserving their independent assertions for the canonical town list, no outgoing trail, active journey and pending encounter. Add the setup-phase test with no current town. Keep the completion test's real travel, acknowledgement, and return-to-town behavior.
+- [ ] Change the resolver to use only the context, `TownSourceCatalog.Default`, and `World.ListTrailsFromTown`; preserve current action order. For `JourneyStatus.Completed`, keep non-travel navigation actions but omit `AdvanceTravelDay` while acknowledgement awaits; after acknowledgement clears the journey, normal town actions return. Do not read or introduce `TownVisitState`.
+- [ ] Change the handler to call `IGameSessionReadRepository`, throw `GameSessionNotFoundException` for a null model, and build the context from `StartFlowPhase`, `World`, `Player.CurrentTownId`, and `Journey`; do not load `GameSession` through the aggregate repository.
 - [ ] Keep the action query in `QueryHandlersAreReadOnlyTests` and type its dependency as `IGameSessionReadRepository`; prove store/commit calls remain zero and the turn and event-derived journal count remain unchanged.
-- [ ] Run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~GetAvailableActionsHandlerTests|FullyQualifiedName~QueryHandlersAreReadOnlyTests"` and `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~GameApiActionsTests"` after `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`; retain the existing endpoint proof for a created game and a missing game.
-- [ ] Falsify the Application travel test by temporarily passing `Journey: null` when building the context; confirm it fails because Travel or town-only actions appear, restore the correct mapping, and rerun focused tests.
+- [ ] Run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~ActionAvailabilityResolverTests"` and `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter "FullyQualifiedName~GetAvailableActionsHandlerTests|FullyQualifiedName~QueryHandlersAreReadOnlyTests"`; after `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~GameApiActionsTests"` to retain the created-game and missing-game HTTP proof.
+- [ ] Falsify the completed-journey case by temporarily treating a completed journey as advanceable; confirm its `AdvanceTravelDay` assertion fails. Falsify the handler mapping by temporarily passing `Journey: null`; confirm the active-journey Application test fails because town-only actions return. Restore both correct behaviors and rerun all three focused test commands.
 
-### Task 4: Reconcile decisions and deliver the completed row 08 slice
+### Task 3: Reconcile decisions and deliver the completed row 08 slice
 
 **Files:**
 - Review: `docs/decisions/ADR-0014-use-ddd-onion-cqrs-repositories-and-first-class-unit-of-work.md`, `docs/decisions/ADR-0028-onion-ddd-cqrs-event-sourcing-and-projections-posture.md`, and `docs/features.md` through `.agents/playbooks/feature-matrix.md`.

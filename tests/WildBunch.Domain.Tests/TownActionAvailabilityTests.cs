@@ -53,7 +53,11 @@ public sealed class TownActionAvailabilityTests
         var session = CreateSessionInTown();
 
         var resolver = new ActionAvailabilityResolver();
-        var actions = resolver.Resolve(session);
+        var actions = resolver.Resolve(new ActionAvailabilityContext(
+            session.StartFlowPhase,
+            session.World,
+            session.Player.CurrentTownId,
+            session.Journey?.ToSnapshot(session.TravelRules)));
 
         Assert.Contains(actions, a => a.Kind == AvailableActionKind.ReadWantedPosters);
     }
@@ -64,7 +68,11 @@ public sealed class TownActionAvailabilityTests
         var session = CreateSessionInTown();
 
         var resolver = new ActionAvailabilityResolver();
-        var actions = resolver.Resolve(session);
+        var actions = resolver.Resolve(new ActionAvailabilityContext(
+            session.StartFlowPhase,
+            session.World,
+            session.Player.CurrentTownId,
+            session.Journey?.ToSnapshot(session.TravelRules)));
 
         Assert.Contains(actions, a => a.Kind == AvailableActionKind.LookAroundSaloon);
     }

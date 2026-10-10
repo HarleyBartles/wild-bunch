@@ -1,5 +1,6 @@
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Cases;
@@ -47,6 +48,49 @@ public sealed class GetAvailableActionsHandlerTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         // ReadWantedPosters is always available - every town has a sheriff's office.
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+    }
+
+    [Fact]
+    public async Task GetAvailableActionsReturnsEmptyDuringSetup()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var world = new DomainWorld(new[] { currentTown }, Array.Empty<Trail>());
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        var repository = new InMemoryGameSessionRepository();
+        repository.Seed(session);
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetAvailableActionsHandler(readRepository, new ActionAvailabilityResolver());
+
+        var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableActionsUsesReadModelJourneyToSuppressTownActions()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession();
+        repository.Seed(session);
+        var preview = new TravelResolver().PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId!.Value,
+            new TownId("connected"),
+            session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetAvailableActionsHandler(readRepository, new ActionAvailabilityResolver());
+
+        var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
     }
 
     [Fact]
