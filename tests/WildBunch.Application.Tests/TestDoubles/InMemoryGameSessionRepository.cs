@@ -112,6 +112,15 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.FromResult<IReadOnlyList<IDomainEvent>>(stream.Skip((int)fromVersion).ToArray());
     }
 
+    public async Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default)
+    {
+        var events = await GetEventStreamAsync(id, fromVersion, cancellationToken).ConfigureAwait(false);
+        return events.Select((domainEvent, index) => new RecordedDomainEvent(
+            domainEvent,
+            fromVersion + index + 1,
+            DateTime.UnixEpoch)).ToArray();
+    }
+
     public Task CommitAsync(CancellationToken cancellationToken = default)
     {
         CommitCalls++;

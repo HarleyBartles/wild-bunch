@@ -184,6 +184,9 @@ public sealed class GameSessionCommandHandlerTests
         public Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<IDomainEvent>>(Array.Empty<IDomainEvent>());
 
+        public Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<RecordedDomainEvent>>(Array.Empty<RecordedDomainEvent>());
+
         public Task CommitAsync(CancellationToken ct = default)
         {
             CommitCalls++;
@@ -216,6 +219,9 @@ public sealed class GameSessionCommandHandlerTests
 
         public Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<IDomainEvent>>(Array.Empty<IDomainEvent>());
+
+        public Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<RecordedDomainEvent>>(Array.Empty<RecordedDomainEvent>());
 
         public Task CommitAsync(CancellationToken ct = default) => Task.CompletedTask;
     }

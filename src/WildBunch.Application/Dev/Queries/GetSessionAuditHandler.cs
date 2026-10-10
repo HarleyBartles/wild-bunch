@@ -26,7 +26,7 @@ public sealed class GetSessionAuditHandler
             throw new GameSessionNotFoundException(sessionId);
         }
 
-        var events = await _repository.GetEventStreamAsync(sessionId, 0, cancellationToken).ConfigureAwait(false);
+        var events = await _repository.GetRecordedEventStreamAsync(sessionId, 0, cancellationToken).ConfigureAwait(false);
         var projection = _auditProjector.Project(events);
 
         return new SessionAuditDto(

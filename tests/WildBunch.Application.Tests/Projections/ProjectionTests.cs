@@ -1,4 +1,5 @@
 using System.Reflection;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
@@ -93,47 +94,6 @@ public sealed class ProjectionTests
     }
 
     [Fact]
-    public void FullAuditProjector_ProducesEntryForEachEvent()
-    {
-        var projector = new FullAuditProjector();
-        var events = new IDomainEvent[]
-        {
-            new GameStarted
-            {
-                PlayerName = "Ranger Vale",
-                StartingTownId = new TownId("pinecross"),
-                StartingTownName = "Pinecross",
-                StartingHealth = 100,
-                StartingWallet = 25m,
-                StartingInventoryItems = Array.Empty<DomainInventoryItem>(),
-                GameDifficulty = GameDifficulty.Standard,
-                SaltSource = SaltSource.CreateFixed(string.Empty),
-                GameEntropy = GameEntropy.Classic
-            },
-            new StoreItemPurchased
-            {
-                TownId = new TownId("pinecross"),
-                ItemKind = DomainItemKind.Food,
-                DisplayName = "Trail Biscuits",
-                Quantity = 2,
-                UnitPrice = 2m,
-                TotalPrice = 4m,
-                WalletAfter = 21m
-            }
-        };
-
-        var audit = projector.Project(events);
-
-        Assert.Equal(2, audit.Entries.Count);
-        Assert.Equal(1, audit.Entries[0].Sequence);
-        Assert.Equal("GameStarted", audit.Entries[0].EventType);
-        Assert.Equal(2, audit.Entries[1].Sequence);
-        Assert.Equal("StoreItemPurchased", audit.Entries[1].EventType);
-        Assert.Contains("Ranger Vale", audit.Entries[0].Summary);
-        Assert.Contains("Trail Biscuits", audit.Entries[1].Summary);
-    }
-
-    [Fact]
     public void FullAuditProjector_SaloonDevOverrideEvents_ProduceReadableSummaries()
     {
         var projector = new FullAuditProjector();
@@ -148,7 +108,7 @@ public sealed class ProjectionTests
             new DevSaloonOverrideConsumed()
         };
 
-        var audit = projector.Project(events);
+        var audit = projector.Project(events.Select((domainEvent, index) => new RecordedDomainEvent(domainEvent, index + 1, DateTime.UnixEpoch)).ToArray());
 
         Assert.Equal(3, audit.Entries.Count);
         Assert.Equal("DevSaloonOverrideForced", audit.Entries[0].EventType);

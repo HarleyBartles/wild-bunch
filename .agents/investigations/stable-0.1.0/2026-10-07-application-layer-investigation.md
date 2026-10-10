@@ -111,6 +111,8 @@ There is no evidence that every file must move to a new vertical-slice tree. The
 
 **Proposed correction:** Obtain occurrence metadata through an application audit read port implemented from persisted envelopes, keeping envelope/storage details outside Domain, or explicitly label a generated projection time. Domain event timestamp getters do not recover stored occurrence time. Preserve developer-only access to audit information.
 
+**Dated disposition, 2026-10-10, row 08:** The developer audit now reads typed events with their persisted sequence and `OccurredAtUtc` through an Application-owned record returned by the Persistence repository. The full-audit projector no longer generates time during reads, and its existing developer endpoint returns the stored values repeatedly. ADR-0028 remains accurate: envelope metadata stays in Persistence while Domain events carry established facts. The historical static finding and original uncertain rationale remain preserved here.
+
 ### AP-15: Overlapping player histories have divergent semantics
 
 **Classification:** Confirmed static duplication with an unresolved intended output distinction. `DiaryProjector` uses generic purchase copy, includes sheriff settlement and omits additional travel messages; `JournalLogProjector` uses specific purchase copy, omits settlement and includes additional travel messages with event-order handling. Both are active player-facing histories. `DiaryProjector` also says every purchase happened at the general store regardless of the actual vendor.

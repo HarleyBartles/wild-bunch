@@ -23,6 +23,8 @@ public sealed class GetSessionAuditHandlerTests
         Assert.Equal(session.Id.Value, result.SessionId);
         Assert.NotEmpty(result.Entries);
         Assert.Contains(result.Entries, e => e.EventType == "GameStarted");
+        Assert.All(result.Entries, entry => Assert.Equal(DateTime.UnixEpoch, entry.OccurredAtUtc));
+        Assert.Equal(Enumerable.Range(1, result.Entries.Count).Select(sequence => (long)sequence), result.Entries.Select(entry => entry.Sequence));
     }
 
     [Fact]
