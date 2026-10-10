@@ -1,20 +1,23 @@
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Actions;
 
 public sealed class ActionAvailabilityResolver
 {
-    public IReadOnlyList<AvailableAction> Resolve(GameSession session)
+    public IReadOnlyList<AvailableAction> Resolve(ActionAvailabilityContext context)
     {
-        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(context);
 
-        if (session.IsSetupPhase)
+        if (context.StartFlowPhase < StartFlowPhase.GameStarted)
         {
             return [];
         }
 
-        var currentTown = session.World.GetTown(session.Player.CurrentTownId!.Value);
+        var currentTownId = context.CurrentTownId
+            ?? throw new InvalidOperationException("A started game must have a current town before actions are available.");
+        var currentTown = context.World.GetTown(currentTownId);
         var availableActions = new List<AvailableAction>
         {
             new(AvailableActionKind.Travel, "Travel"),
@@ -27,18 +30,23 @@ public sealed class ActionAvailabilityResolver
         // is always available when not traveling.
         availableActions.Add(new AvailableAction(AvailableActionKind.BuySupplies, "Buy supplies"));
 
-        availableActions.AddRange(session.CurrentTown.GetInvestigationActions());
+        availableActions.AddRange(TownSourceCatalog.Default.GetInvestigationActions());
 
-        if (session.Journey is not null)
+        if (context.Journey is { } journey)
         {
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.Travel);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.BuySupplies);
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.ReadWantedPosters);
-            foreach (var source in session.CurrentTown.Sources.Definitions)
+            foreach (var source in TownSourceCatalog.Default.Definitions)
             {
                 availableActions.RemoveAll(action => action.Kind == source.ActionKind);
             }
-            if (session.Journey.PendingEncounter is not null)
+            if (journey.Status == JourneyStatus.Completed)
+            {
+                return availableActions;
+            }
+
+            if (journey.PendingEncounter is not null)
             {
                 availableActions.Add(new AvailableAction(AvailableActionKind.ResolveTravelEncounter, "Resolve travel encounter"));
             }
@@ -50,7 +58,7 @@ public sealed class ActionAvailabilityResolver
             return availableActions;
         }
 
-        if (session.World.ListTrailsFromTown(currentTown.Id).Count == 0)
+        if (context.World.ListTrailsFromTown(currentTown.Id).Count == 0)
         {
             availableActions.RemoveAll(action => action.Kind == AvailableActionKind.Travel);
         }

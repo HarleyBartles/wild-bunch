@@ -25,8 +25,8 @@ public sealed class QueryHandlersAreReadOnlyTests
 
         var gameSessionHandler = new GetGameSessionHandler(repository);
         var journalHandler = new GetJournalHandler(repository);
-        var availableActionsHandler = new GetAvailableActionsHandler(repository, new WildBunch.Domain.Actions.ActionAvailabilityResolver());
         IGameSessionReadRepository readRepository = repository;
+        var availableActionsHandler = new GetAvailableActionsHandler(readRepository, new WildBunch.Domain.Actions.ActionAvailabilityResolver());
         var worldMapHandler = new GetWorldMapHandler(readRepository);
         var storeOffersHandler = new GetTownStoreOffersHandler(readRepository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
         var travelPreviewHandler = new PreviewTravelHandler(readRepository, new WildBunch.Domain.Travel.TravelResolver());
