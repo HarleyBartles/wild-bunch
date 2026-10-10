@@ -7,6 +7,7 @@
 ## Dated History
 
 - `2026-10-08` - Settled game-start ownership and the one-shot free arrival into the player's selected starting town.
+- `2026-10-10` - Clarified startup retry identity: setup and first arrival use persisted operation IDs and request fingerprints so only exact retries replay their original operation; this is transport metadata, not game state or a generic receipt framework.
 
 ## Decision Type
 

@@ -46,7 +46,7 @@ public sealed class WorldMapEndpointTests
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
-        var response = await client.PostAsJsonAsync("/api/games/setup", scenario.CreateRequest("Ranger Vale"));
+        var response = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", scenario.CreateRequest("Ranger Vale"));
         var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();
 
         Assert.NotNull(session);

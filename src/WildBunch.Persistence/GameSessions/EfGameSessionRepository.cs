@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
@@ -54,6 +55,31 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             }
         }
         return sessions;
+    }
+
+    public async Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _dbContext.StartupOperations.AsNoTracking()
+            .SingleOrDefaultAsync(operation => operation.OperationId == operationId, cancellationToken)
+            .ConfigureAwait(false);
+        return entity is null
+            ? null
+            : new StartupOperation(
+                entity.OperationId,
+                (StartupOperationKind)entity.Kind,
+                entity.RequestFingerprint,
+                entity.SessionId);
+    }
+
+    public void StoreStartupOperation(StartupOperation operation)
+    {
+        _dbContext.StartupOperations.Add(new StartupOperationEntity
+        {
+            OperationId = operation.OperationId,
+            Kind = (int)operation.Kind,
+            RequestFingerprint = operation.RequestFingerprint,
+            SessionId = operation.SessionId
+        });
     }
 
     /// <summary>

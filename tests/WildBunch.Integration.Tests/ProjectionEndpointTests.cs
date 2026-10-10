@@ -8,26 +8,19 @@ using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
 
-public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory>
+public sealed class ProjectionEndpointTests
 {
-    private readonly PostgreSqlApiFactory _factory;
-    private readonly HttpClient _client;
-
-    public ProjectionEndpointTests(PostgreSqlApiFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-    }
-
     [Fact]
     public async Task GetHudProjection_ReturnsProjectionFromEventStream()
     {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
-        var created = await _client.CreateStartedGameAsync(scenario);
+        var created = await client.CreateStartedGameAsync(scenario);
 
         // Get HUD projection
-        var hudResponse = await _client.GetAsync($"/api/games/{created.Id}/projections/hud");
+        var hudResponse = await client.GetAsync($"/api/games/{created.Id}/projections/hud");
         Assert.Equal(HttpStatusCode.OK, hudResponse.StatusCode);
         var hud = await hudResponse.Content.ReadFromJsonAsync<HudProjection>();
         Assert.NotNull(hud);
@@ -38,21 +31,25 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
     [Fact]
     public async Task GetAuditProjection_IsNotExposedOnPlayerFacingApi()
     {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
         // Per ADR-0028 §10, full audit is a developer/replay surface, not player-facing.
         // The audit endpoint was removed from the normal game API route group.
         // This test proves the endpoint is no longer reachable.
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
-        var created = await _client.CreateStartedGameAsync(scenario);
+        var created = await client.CreateStartedGameAsync(scenario);
 
-        var auditResponse = await _client.GetAsync($"/api/games/{created.Id}/projections/audit");
+        var auditResponse = await client.GetAsync($"/api/games/{created.Id}/projections/audit");
         Assert.Equal(HttpStatusCode.NotFound, auditResponse.StatusCode);
     }
 
     [Fact]
     public async Task GetHudProjection_Returns404_WhenSessionDoesNotExist()
     {
-        var response = await _client.GetAsync($"/api/games/{Guid.NewGuid()}/projections/hud");
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync($"/api/games/{Guid.NewGuid()}/projections/hud");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
@@ -67,37 +64,39 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
     [Fact]
     public async Task CompleteGameStart_ReturnedDto_HudProjectionIncludesGameStartedState()
     {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
         // Step 1: setup
-        var setupResponse = await _client.CreateSetupOnlyGameAsync(scenario);
+        var setupResponse = await client.CreateSetupOnlyGameAsync(scenario);
         Assert.Equal("Ranger Vale", setupResponse.Player.Name);
         Assert.Null(setupResponse.Player.CurrentTownId);
         Assert.Null(setupResponse.Player.Health);
         Assert.Null(setupResponse.Inventory);
         Assert.Null(setupResponse.HudProjection);
 
-        var worldMapResponse = await _client.GetAsync($"/api/games/{setupResponse.Id}/world-map");
+        var worldMapResponse = await client.GetAsync($"/api/games/{setupResponse.Id}/world-map");
         Assert.Equal(HttpStatusCode.OK, worldMapResponse.StatusCode);
         var setupWorldMap = await worldMapResponse.Content.ReadFromJsonAsync<WorldMapDto>();
         Assert.NotNull(setupWorldMap);
         Assert.NotEmpty(setupWorldMap!.Towns);
         Assert.NotEmpty(setupWorldMap.Trails);
 
-        var setupHudResponse = await _client.GetAsync($"/api/games/{setupResponse.Id}/projections/hud");
+        var setupHudResponse = await client.GetAsync($"/api/games/{setupResponse.Id}/projections/hud");
         Assert.Equal(HttpStatusCode.NoContent, setupHudResponse.StatusCode);
         Assert.Empty(await setupHudResponse.Content.ReadAsStringAsync());
 
         // Step 2: view prologue
-        var prologueResponse = await _client.PostAsync(
+        var prologueResponse = await client.PostAsync(
             $"/api/games/{setupResponse.Id}/prologue-viewed", content: null);
         prologueResponse.EnsureSuccessStatusCode();
 
         // Step 3: complete game start — the returned DTO must include HUD
         // projection with GameStarted state (player name, wallet, town, health).
         var townId = setupWorldMap.Towns.First().Id;
-        var startResponse = await _client.PostAsJsonAsync(
+        var startResponse = await client.PostAsJsonWithStartupOperationAsync(
             $"/api/games/{setupResponse.Id}/start",
             new StartGameWithTownRequest(townId));
         startResponse.EnsureSuccessStatusCode();
@@ -111,7 +110,7 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
         Assert.True(startedSession.HudProjection.WalletCash > 0, "Wallet should be set from GameStarted");
         Assert.Equal(townId, startedSession.HudProjection.CurrentTownId.Value);
 
-        var startedWorldMapResponse = await _client.GetAsync($"/api/games/{setupResponse.Id}/world-map");
+        var startedWorldMapResponse = await client.GetAsync($"/api/games/{setupResponse.Id}/world-map");
         Assert.Equal(HttpStatusCode.OK, startedWorldMapResponse.StatusCode);
         var startedWorldMap = await startedWorldMapResponse.Content.ReadFromJsonAsync<WorldMapDto>();
         Assert.NotNull(startedWorldMap);
@@ -130,14 +129,16 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
     [Fact]
     public async Task ViewPrologue_ReturnedDtoOmitsHudUntilGameStarts()
     {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
 
         // Step 1: setup
-        var setupResponse = await _client.CreateSetupOnlyGameAsync(scenario);
+        var setupResponse = await client.CreateSetupOnlyGameAsync(scenario);
 
         // Step 2: view prologue — the response retains setup state but no gameplay HUD.
-        var prologueResponse = await _client.PostAsync(
+        var prologueResponse = await client.PostAsync(
             $"/api/games/{setupResponse.Id}/prologue-viewed", content: null);
         prologueResponse.EnsureSuccessStatusCode();
         var prologueSession = await prologueResponse.Content.ReadFromJsonAsync<GameSessionDto>();

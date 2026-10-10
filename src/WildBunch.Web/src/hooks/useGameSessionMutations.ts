@@ -15,14 +15,22 @@ import {
   startGameWithTown,
   travel,
 } from "../api/wildBunchApi";
-import { GameStatus, type SetupGameRequest, type WantedPosterDto } from "../api/types";
+import { GameStatus, type WantedPosterDto } from "../api/types";
 import { formatMoney, storageKey } from "../utils/formatting";
+import { HttpRequestError } from "../api/httpClient";
 import { formatInvestigationNotice } from "../ui/beatFormatters";
+import {
+  clearPendingFirstArrivalOperation,
+  clearPendingSetupOperation,
+  type PendingSetupOperation,
+} from "../utils/startupOperationStorage";
 
 type UseGameSessionMutationsArgs = {
   gameId: string | null;
   declaredWantedIdentityHandle: string;
   setStoredGameId: (id: string | null) => void;
+  resetSetupDraft: () => void;
+  setPendingSetup: (pending: PendingSetupOperation | null) => void;
   setWantedPosters: (posters: WantedPosterDto[]) => void;
   setDeclaredWantedIdentityHandle: (handle: string) => void;
   setNotice: (notice: string) => void;
@@ -33,6 +41,8 @@ export function useGameSessionMutations({
   gameId,
   declaredWantedIdentityHandle,
   setStoredGameId,
+  resetSetupDraft,
+  setPendingSetup,
   setWantedPosters,
   setDeclaredWantedIdentityHandle,
   setNotice,
@@ -51,8 +61,11 @@ export function useGameSessionMutations({
   );
 
   const setupGameMutation = useMutation({
-    mutationFn: (request: SetupGameRequest) => setupGame(request),
+    mutationFn: (operation: PendingSetupOperation) =>
+      setupGame(operation.request, operation.operationId),
     onSuccess: async (createdSession) => {
+      clearPendingSetupOperation();
+      setPendingSetup(null);
       window.localStorage.setItem(storageKey, createdSession.id);
       setStoredGameId(createdSession.id);
       setNotice("");
@@ -60,6 +73,14 @@ export function useGameSessionMutations({
       await invalidateGameQueries(createdSession.id);
     },
     onError: (exception: unknown) => {
+      if (
+        exception instanceof HttpRequestError &&
+        exception.status >= 400 &&
+        exception.status < 500
+      ) {
+        clearPendingSetupOperation();
+        setPendingSetup(null);
+      }
       setError(exception instanceof Error ? exception.message : "Unable to complete setup.");
     },
   });
@@ -78,9 +99,30 @@ export function useGameSessionMutations({
   });
 
   const startGameWithTownMutation = useMutation({
-    mutationFn: ({ activeGameId, townId }: { activeGameId: string; townId: string }) =>
-      startGameWithTown(activeGameId, { startingTownId: townId }),
+    mutationFn: async ({
+      activeGameId,
+      townId,
+      operationId,
+    }: {
+      activeGameId: string;
+      townId: string;
+      operationId: string;
+    }) => {
+      try {
+        return await startGameWithTown(activeGameId, { startingTownId: townId }, operationId);
+      } catch (exception) {
+        if (
+          exception instanceof HttpRequestError &&
+          exception.status >= 400 &&
+          exception.status < 500
+        ) {
+          clearPendingFirstArrivalOperation(activeGameId);
+        }
+        throw exception;
+      }
+    },
     onSuccess: async (updatedSession) => {
+      clearPendingFirstArrivalOperation(updatedSession.id);
       queryClient.setQueryData(["session", updatedSession.id], updatedSession);
       await invalidateGameQueries(updatedSession.id);
       setNotice(`New game started for ${updatedSession.player.name}.`);
@@ -121,6 +163,7 @@ export function useGameSessionMutations({
       setStoredGameId(null);
       setWantedPosters([]);
       setDeclaredWantedIdentityHandle("");
+      resetSetupDraft();
       setError("");
       if (archivedGameId) {
         queryClient.removeQueries({ queryKey: ["session", archivedGameId] });

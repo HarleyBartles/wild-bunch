@@ -17,7 +17,9 @@ public static class GameSessionEndpoints
             .WithName("SetupGame")
             .Accepts<SetupGameRequest>("application/json")
             .Produces<GameSessionDto>(StatusCodes.Status201Created)
-            .ProducesValidationProblem();
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status409Conflict);
 
         games.MapPost("{id:guid}/prologue-viewed", MarkPrologueViewedAsync)
             .WithName("MarkPrologueViewed")
@@ -29,6 +31,8 @@ public static class GameSessionEndpoints
             .Accepts<StartGameWithTownRequest>("application/json")
             .Produces<GameSessionDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status409Conflict)
             .ProducesValidationProblem();
 
         games.MapGet("{id:guid}/world-map", GetWorldMapAsync)
@@ -55,26 +59,40 @@ public static class GameSessionEndpoints
     }
 
     private static async Task<IResult> SetupGameAsync(
+        HttpRequest httpRequest,
         SetupGameRequest? request,
         CompletePlayerSetupHandler handler,
         CancellationToken cancellationToken)
     {
+        if (!TryGetStartupOperationId(httpRequest, out var operationId))
+        {
+            return Results.BadRequest(new { error = "A valid Idempotency-Key header is required." });
+        }
+
         if (!RequestValidation.TryValidate(request, out var validationResult))
         {
             return validationResult!;
         }
 
         var validatedRequest = request!;
-        var session = await handler.HandleAsync(
-            new CompletePlayerSetupCommand
-            {
-                PlayerName = validatedRequest.PlayerName,
-                GameDifficulty = validatedRequest.GameDifficulty,
-                GameEntropy = validatedRequest.GameEntropy,
-                SeedCode = validatedRequest.SeedCode ?? string.Empty
-            },
-            cancellationToken);
-        return Results.Created($"/api/games/{session.Id}", session);
+        try
+        {
+            var session = await handler.HandleAsync(
+                new CompletePlayerSetupCommand
+                {
+                    OperationId = operationId,
+                    PlayerName = validatedRequest.PlayerName,
+                    GameDifficulty = validatedRequest.GameDifficulty,
+                    GameEntropy = validatedRequest.GameEntropy,
+                    SeedCode = validatedRequest.SeedCode ?? string.Empty
+                },
+                cancellationToken);
+            return Results.Created($"/api/games/{session.Id}", session);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Conflict(new { error = ex.Message });
+        }
     }
 
     private static async Task<IResult> MarkPrologueViewedAsync(
@@ -98,10 +116,16 @@ public static class GameSessionEndpoints
 
     private static async Task<IResult> StartGameAsync(
         Guid id,
+        HttpRequest httpRequest,
         StartGameWithTownRequest? request,
         CompleteGameStartHandler handler,
         CancellationToken cancellationToken)
     {
+        if (!TryGetStartupOperationId(httpRequest, out var operationId))
+        {
+            return Results.BadRequest(new { error = "A valid Idempotency-Key header is required." });
+        }
+
         if (!RequestValidation.TryValidate(request, out var validationResult))
         {
             return validationResult!;
@@ -113,6 +137,7 @@ public static class GameSessionEndpoints
             var session = await handler.HandleAsync(
                 new CompleteGameStartCommand
                 {
+                    OperationId = operationId,
                     SessionId = new GameSessionId(id),
                     StartingTownId = validatedRequest.StartingTownId
                 },
@@ -127,6 +152,13 @@ public static class GameSessionEndpoints
         {
             return Results.Conflict(new { error = ex.Message });
         }
+    }
+
+    private static bool TryGetStartupOperationId(HttpRequest request, out Guid operationId)
+    {
+        operationId = Guid.Empty;
+        return request.Headers.TryGetValue("Idempotency-Key", out var value) &&
+            Guid.TryParse(value, out operationId) && operationId != Guid.Empty;
     }
 
     private static async Task<IResult> GetWorldMapAsync(

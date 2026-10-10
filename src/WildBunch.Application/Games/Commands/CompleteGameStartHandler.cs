@@ -1,5 +1,6 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
+using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Projections;
@@ -38,17 +39,32 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
 
+        if (command.OperationId == Guid.Empty)
+        {
+            throw new StartupOperationConflictException("A non-empty startup operation ID is required.");
+        }
+
+        var fingerprint = StartupOperationFingerprint.ForFirstArrival(command);
+
         var dto = await ExecuteWithRetryAsync(command.SessionId, async (session, ct) =>
         {
-            if (session.StartFlowPhase == StartFlowPhase.GameStarted)
+            var existingOperation = await GameSessionRepository.GetStartupOperationAsync(command.OperationId, ct)
+                .ConfigureAwait(false);
+            if (existingOperation is not null)
             {
-                // Already started — return current state.
+                if (existingOperation.Kind != StartupOperationKind.FirstArrival ||
+                    !StringComparer.Ordinal.Equals(existingOperation.RequestFingerprint, fingerprint) ||
+                    existingOperation.SessionId != command.SessionId.Value)
+                {
+                    throw new StartupOperationConflictException("The startup operation ID was already used for a different request.");
+                }
+
                 return GameSessionMapper.ToDto(session);
             }
 
-            if (session.StartFlowPhase == StartFlowPhase.NotStarted)
+            if (session.StartFlowPhase != StartFlowPhase.PrologueViewed)
             {
-                throw new InvalidOperationException("Cannot complete game start before setup is complete.");
+                throw new StartupOperationConflictException("The starting town can only be selected once, after the prologue and before arrival.");
             }
 
             // Resolve the difficulty envelope for starting wallet/inventory.
@@ -60,6 +76,12 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
             session.CompleteGameStart(
                 wallet,
                 inventory);
+
+            GameSessionRepository.StoreStartupOperation(new StartupOperation(
+                command.OperationId,
+                StartupOperationKind.FirstArrival,
+                fingerprint,
+                session.Id.Value));
 
             return GameSessionMapper.ToDto(session);
         }, cancellationToken).ConfigureAwait(false);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   GameStatus,
@@ -15,6 +15,12 @@ import {
 } from "../utils/actionTypePredicates";
 import { HttpRequestError } from "../api/httpClient";
 import { storageKey } from "../utils/formatting";
+import {
+  readPendingFirstArrivalOperation,
+  readPendingSetupOperation,
+  writePendingFirstArrivalOperation,
+  writePendingSetupOperation,
+} from "../utils/startupOperationStorage";
 import { useGameSessionMutations } from "./useGameSessionMutations";
 import { useGameSessionQueries } from "./useGameSessionQueries";
 import { useGameSessionState } from "./useGameSessionState";
@@ -32,9 +38,14 @@ export function useCurrentGameSession() {
     setNotice,
     setResetToken,
     setStoredGameId,
+    setPendingSetup,
     setWantedPosters,
   } = state;
   const gameId = state.storedGameId;
+  const resetSetupDraft = useCallback(
+    () => setResetToken((current) => current + 1),
+    [setResetToken],
+  );
 
   const {
     sessionQuery,
@@ -56,11 +67,7 @@ export function useCurrentGameSession() {
     setWantedPosters(posters ?? []);
   }, [sessionQuery.data?.wantedPosters, setWantedPosters]);
 
-  // Detect archived sessions and clear local state so the player returns to
-  // the setup screen. A session can be archived by the player (Start Over) or
-  // by the backend (superseded by a new playthrough). Without this, the
-  // frontend keeps showing the archived session as playable, and the archive
-  // endpoint returns 409 on repeated attempts.
+  // Detect an event-backed archive from confirmed Start Over and return to setup.
   useEffect(() => {
     if (sessionQuery.data?.status === GameStatus.Archived) {
       window.localStorage.removeItem(storageKey);
@@ -91,11 +98,21 @@ export function useCurrentGameSession() {
     gameId,
     declaredWantedIdentityHandle: state.declaredWantedIdentityHandle,
     setStoredGameId: state.setStoredGameId,
+    resetSetupDraft,
+    setPendingSetup: state.setPendingSetup,
     setWantedPosters: state.setWantedPosters,
     setDeclaredWantedIdentityHandle: state.setDeclaredWantedIdentityHandle,
     setNotice: state.setNotice,
     setError: state.setError,
   });
+
+  const setupRetryStarted = useRef(false);
+  useEffect(() => {
+    if (!gameId && state.pendingSetup && !setupRetryStarted.current) {
+      setupRetryStarted.current = true;
+      void setupGameMutation.mutateAsync(state.pendingSetup).catch(() => undefined);
+    }
+  }, [gameId, state.pendingSetup, setupGameMutation]);
 
   const investigationPending =
     inspectNoticeBoardMutation.isPending ||
@@ -112,7 +129,9 @@ export function useCurrentGameSession() {
         ? "investigating"
         : sessionQuery.isFetching || actionsQuery.isFetching || journalQuery.isFetching
           ? "refreshing"
-          : "idle";
+          : setupGameMutation.isPending || startGameWithTownMutation.isPending
+            ? "starting"
+            : "idle";
 
   const loading = busyMode !== "idle";
 
@@ -127,9 +146,19 @@ export function useCurrentGameSession() {
 
   const handleSetupGame = useCallback(
     async (request: SetupGameRequest) => {
-      await setupGameMutation.mutateAsync(request);
+      const pending = state.pendingSetup ?? readPendingSetupOperation();
+      const operation = pending ?? {
+        operationId: crypto.randomUUID(),
+        request,
+      };
+      if (!pending) {
+        setupRetryStarted.current = true;
+        writePendingSetupOperation(operation);
+        setPendingSetup(operation);
+      }
+      await setupGameMutation.mutateAsync(operation);
     },
-    [setupGameMutation],
+    [setupGameMutation, state.pendingSetup, setPendingSetup],
   );
 
   const handleMarkPrologueViewed = useCallback(async () => {
@@ -144,9 +173,26 @@ export function useCurrentGameSession() {
       if (!gameId) {
         return;
       }
-      await startGameWithTownMutation.mutateAsync({ activeGameId: gameId, townId });
+      const pending = readPendingFirstArrivalOperation(gameId);
+      if (pending && pending.townId !== townId) {
+        setError(
+          "A starting-town arrival is already pending. Retry the selected town to resolve it.",
+        );
+        return;
+      }
+      const operation = pending ?? {
+        operationId: crypto.randomUUID(),
+        sessionId: gameId,
+        townId,
+      };
+      if (!pending) writePendingFirstArrivalOperation(operation);
+      await startGameWithTownMutation.mutateAsync({
+        activeGameId: gameId,
+        townId: operation.townId,
+        operationId: operation.operationId,
+      });
     },
-    [gameId, startGameWithTownMutation],
+    [gameId, setError, startGameWithTownMutation],
   );
 
   const reloadCurrentGame = useCallback(
@@ -298,6 +344,7 @@ export function useCurrentGameSession() {
 
   return {
     session,
+    pendingSetup: state.pendingSetup,
     journal,
     wantedPosters: state.wantedPosters,
     hasReadWantedPosters: state.wantedPosters.length > 0,

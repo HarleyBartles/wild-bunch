@@ -1,5 +1,6 @@
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
+using WildBunch.Application.Games.Commands;
 
 namespace WildBunch.Application.Abstractions;
 
@@ -8,6 +9,10 @@ public interface IGameSessionRepository
     Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default);
+
+    Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken cancellationToken = default);
+
+    void StoreStartupOperation(StartupOperation operation);
 
     /// <summary>
     /// Stages the snapshot upsert and event append on the DbContext.

@@ -20,7 +20,7 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest("   "));
+        var response = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", new SetupGameRequest("   "));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "playerName");
@@ -32,7 +32,7 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest("Ranger Vale", SeedCode: "not-a-uuid"));
+        var response = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", new SetupGameRequest("Ranger Vale", SeedCode: "not-a-uuid"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "seedCode");
@@ -45,7 +45,7 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games/setup", new { PlayerName = "Ranger Vale" });
+        var response = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", new { PlayerName = "Ranger Vale" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "seedCode");
@@ -58,7 +58,7 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync(
+        var response = await client.PostAsJsonWithStartupOperationAsync(
             "/api/games/setup",
             new SetupGameRequest("Ranger Vale", (GameDifficulty)99, "11111111-1111-4111-8111-111111111111"));
 
@@ -73,7 +73,7 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync(
+        var response = await client.PostAsJsonWithStartupOperationAsync(
             "/api/games/setup",
             new SetupGameRequest("Ranger Vale", SeedCode: "11111111-1111-4111-8111-111111111111", GameEntropy: (GameEntropy)99));
 
@@ -88,7 +88,7 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games/setup", new { });
+        var response = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", new { });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "playerName");

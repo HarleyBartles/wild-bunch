@@ -45,7 +45,7 @@ public sealed class PrologueHiddenTruthTests
         using var client = factory.CreateClient();
 
         const string seedCode = "a1234567-b123-c123-d123-e123456789ab";
-        var setupResponse = await client.PostAsJsonAsync(
+        var setupResponse = await client.PostAsJsonWithStartupOperationAsync(
             "/api/games/setup",
             new SetupGameRequest("Ranger Vale", SeedCode: seedCode));
         Assert.Equal(HttpStatusCode.Created, setupResponse.StatusCode);

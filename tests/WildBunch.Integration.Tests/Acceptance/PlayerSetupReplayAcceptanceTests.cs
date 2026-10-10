@@ -29,7 +29,7 @@ public sealed class PlayerSetupReplayAcceptanceTests
         using var factory = PostgreSqlApiFactory.WithSaltSourceFactory(saltFactory);
         using var client = factory.CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest(
+        var response = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", new SetupGameRequest(
             playerName,
             GameDifficulty.Challenging,
             seedCode,

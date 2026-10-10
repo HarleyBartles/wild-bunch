@@ -25,7 +25,7 @@ internal static class ThreeStepGameSetup
         string? startingTownId = null)
     {
         // Step 1: setup
-        var setupResponse = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest(
+        var setupResponse = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", new SetupGameRequest(
             playerName,
             fixture.GameDifficulty,
             fixture.SeedCode,
@@ -42,7 +42,7 @@ internal static class ThreeStepGameSetup
         // Step 3: start with town — discover the first town from the generated world.
         // Player.CurrentTownId is null during setup phase (the player hasn't chosen yet).
         var townId = startingTownId ?? setupSession.World.Towns.First().Id;
-        var startResponse = await client.PostAsJsonAsync(
+        var startResponse = await client.PostAsJsonWithStartupOperationAsync(
             $"/api/games/{setupSession.Id}/start",
             new StartGameWithTownRequest(townId));
         startResponse.EnsureSuccessStatusCode();
@@ -90,7 +90,7 @@ internal static class ThreeStepGameSetup
         ScenarioSeedFixture fixture,
         string playerName = "Ranger Vale")
     {
-        var setupResponse = await client.PostAsJsonAsync("/api/games/setup", new SetupGameRequest(
+        var setupResponse = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", new SetupGameRequest(
             playerName,
             fixture.GameDifficulty,
             fixture.SeedCode,

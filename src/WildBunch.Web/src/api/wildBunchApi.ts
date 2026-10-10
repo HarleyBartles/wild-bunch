@@ -18,9 +18,10 @@ import type {
 } from "./types";
 import { requestJson } from "./httpClient";
 
-export function setupGame(request: SetupGameRequest) {
+export function setupGame(request: SetupGameRequest, operationId: string) {
   return requestJson<GameSessionDto>("/api/games/setup", {
     method: "POST",
+    headers: { "Idempotency-Key": operationId },
     body: JSON.stringify(request satisfies SetupGameRequest),
   });
 }
@@ -31,9 +32,14 @@ export function markPrologueViewed(gameId: string) {
   });
 }
 
-export function startGameWithTown(gameId: string, request: StartGameWithTownRequest) {
+export function startGameWithTown(
+  gameId: string,
+  request: StartGameWithTownRequest,
+  operationId: string,
+) {
   return requestJson<GameSessionDto>(`/api/games/${gameId}/start`, {
     method: "POST",
+    headers: { "Idempotency-Key": operationId },
     body: JSON.stringify(request satisfies StartGameWithTownRequest),
   });
 }

@@ -33,6 +33,7 @@ export function PreSessionSurface() {
   const {
     session,
     loading,
+    pendingSetup,
     resetToken,
     notice,
     error,
@@ -52,12 +53,16 @@ export function PreSessionSurface() {
       return;
     }
     const trimmedName = flow.playerName.trim();
-    await handleSetupGame({
-      playerName: trimmedName,
-      gameDifficulty: flow.gameDifficulty,
-      seedCode,
-      gameEntropy: flow.gameEntropy,
-    });
+    try {
+      await handleSetupGame({
+        playerName: trimmedName,
+        gameDifficulty: flow.gameDifficulty,
+        seedCode,
+        gameEntropy: flow.gameEntropy,
+      });
+    } catch {
+      return;
+    }
     flow.advance();
   }
 
@@ -69,7 +74,11 @@ export function PreSessionSurface() {
   async function handleStartWithTown(townId: string) {
     flow.setSelectedTownId(townId);
     flow.goToStep("creating");
-    await handleStartGameWithTown(townId);
+    try {
+      await handleStartGameWithTown(townId);
+    } catch {
+      flow.goToStep("town");
+    }
   }
 
   return (
@@ -95,6 +104,8 @@ export function PreSessionSurface() {
           onSeedDraftChange={flow.setSeedDraft}
           onRandomizeSeed={flow.randomizeSeed}
           onContinue={handleSetupComplete}
+          pendingOperation={Boolean(pendingSetup)}
+          busy={loading}
         />
       )}
 

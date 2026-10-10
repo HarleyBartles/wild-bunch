@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { GameDifficulty, GameEntropy, GameSessionDto } from "../api/types";
 import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
+import { readPendingSetupOperation } from "../utils/startupOperationStorage";
 
 interface UseStartGameSeedArgs {
   session: GameSessionDto | null;
@@ -25,15 +26,29 @@ export function useStartGameSeed({
   session,
   resetToken,
 }: UseStartGameSeedArgs): UseStartGameSeedResult {
-  const [playerName, setPlayerName] = useState("");
-  const [gameDifficulty, setGameDifficulty] = useState<GameDifficulty>(0);
-  const [gameEntropy, setGameEntropy] = useState<GameEntropy>(1);
-  const [seedDraft, setSeedDraft] = useState<string>(() => crypto.randomUUID());
+  const sessionId = session?.id;
+  const sessionPlayerName = session?.player.name;
+  const [playerName, setPlayerName] = useState(
+    () => readPendingSetupOperation()?.request.playerName ?? "",
+  );
+  const [gameDifficulty, setGameDifficulty] = useState<GameDifficulty>(
+    () => readPendingSetupOperation()?.request.gameDifficulty ?? 0,
+  );
+  const [gameEntropy, setGameEntropy] = useState<GameEntropy>(
+    () => readPendingSetupOperation()?.request.gameEntropy ?? 1,
+  );
+  const [seedDraft, setSeedDraft] = useState<string>(
+    () => readPendingSetupOperation()?.request.seedCode ?? crypto.randomUUID(),
+  );
   const [decodeError, setDecodeError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPlayerName(session?.player.name ?? "");
-  }, [session?.id, session?.player.name, resetToken]);
+    if (sessionId) {
+      setPlayerName(sessionPlayerName ?? "");
+    } else if (resetToken > 0) {
+      setPlayerName("");
+    }
+  }, [sessionId, sessionPlayerName, resetToken]);
 
   useEffect(() => {
     if (resetToken === 0) {

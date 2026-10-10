@@ -557,6 +557,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var services = CreateServices(database.ConnectionString);
         var first = CreateSession();
         var second = CreateSession();
+        second.ArchivePlaythrough("test-second-session");
 
         using (var seedScope = services.CreateScope())
         {

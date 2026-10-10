@@ -81,6 +81,7 @@ function renderStep(
     gameEntropy: GameEntropy;
     seedDraft: string;
     decodeError: string | null;
+    pendingOperation: boolean;
     stateful: boolean;
     onPlayerNameChange: (value: string) => void;
     onGameDifficultyChange: (difficulty: GameDifficulty) => void;
@@ -128,6 +129,7 @@ function renderStep(
         onSeedDraftChange={handlers.onSeedDraftChange}
         onRandomizeSeed={handlers.onRandomizeSeed}
         onContinue={handlers.onContinue}
+        pendingOperation={overrides.pendingOperation}
       />,
     );
   }
@@ -140,6 +142,14 @@ describe("SetupHuntStep", () => {
     renderStep();
 
     expect(screen.getByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+  });
+
+  it("locks the submitted setup values while keeping the retry action available", () => {
+    renderStep({ playerName: "Ranger Vale", pendingOperation: true });
+
+    expect(screen.getByLabelText(/your name/i)).toBeDisabled();
+    expect(screen.getByLabelText(/world seed/i)).toBeDisabled();
+    expect(screen.getByRole("button", { name: /retry setup/i })).toBeEnabled();
   });
 
   it("shows the validation message when the name is empty after being touched", async () => {
@@ -231,8 +241,8 @@ describe("SetupHuntStep", () => {
   it("renders difficulty options as Easy, Standard, Challenging, Brutal in that order", () => {
     renderStep();
 
-    const groups = screen.getAllByRole("group");
-    const difficultyGroup = groups[0];
+    const difficultyGroup = screen.getByRole("button", { name: "Easy" }).closest('[role="group"]');
+    if (!difficultyGroup) throw new Error("Difficulty options must be grouped.");
     const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
@@ -244,8 +254,8 @@ describe("SetupHuntStep", () => {
   it("renders gameEntropy options as Boring, Classic, Adventurous, Wild in that order", () => {
     renderStep();
 
-    const groups = screen.getAllByRole("group");
-    const entropyGroup = groups[1];
+    const entropyGroup = screen.getByRole("button", { name: "Boring" }).closest('[role="group"]');
+    if (!entropyGroup) throw new Error("Entropy options must be grouped.");
     const buttons = Array.from(entropyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 

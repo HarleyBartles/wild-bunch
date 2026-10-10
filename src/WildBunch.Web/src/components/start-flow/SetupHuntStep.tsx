@@ -17,6 +17,8 @@ interface SetupHuntStepProps {
   onSeedDraftChange: (value: string) => void;
   onRandomizeSeed: () => void;
   onContinue: () => void;
+  pendingOperation?: boolean;
+  busy?: boolean;
 }
 
 const difficultyOptions: ReadonlyArray<{ value: GameDifficulty; label: string }> = [
@@ -59,6 +61,8 @@ export function SetupHuntStep({
   onSeedDraftChange,
   onRandomizeSeed,
   onContinue,
+  pendingOperation = false,
+  busy = false,
 }: SetupHuntStepProps) {
   const trimmed = playerName.trim();
   const [touched, setTouched] = useState(false);
@@ -77,81 +81,84 @@ export function SetupHuntStep({
     <StepCard>
       <StepHeading>Set up your hunt</StepHeading>
       <StepLead>
-        Name yourself, pick your difficulty and entropy, and set the seed for the world you will
-        chase the culprit through.
+        {pendingOperation
+          ? "Your setup is awaiting confirmation. Retry the saved request to continue."
+          : "Name yourself, pick your difficulty and entropy, and set the seed for the world you will chase the culprit through."}
       </StepLead>
 
       <StepForm onSubmit={handleSubmit}>
-        <Field>
-          <Label htmlFor="start-flow-player-name">Your name</Label>
-          <Input
-            id="start-flow-player-name"
-            type="text"
-            value={playerName}
-            onChange={(event) => {
-              onPlayerNameChange(event.target.value);
-              setTouched(true);
-            }}
-            onBlur={() => setTouched(true)}
-            placeholder="Enter a rider name"
-            autoComplete="off"
-            aria-invalid={showNameError}
-            aria-describedby={showNameError ? "start-flow-player-name-validation" : undefined}
-          />
-          {showNameError && (
-            <FlowError id="start-flow-player-name-validation" role="alert">
-              Tell me what name you go by before we ride on.
-            </FlowError>
-          )}
-        </Field>
-
-        <FieldGroup>
-          <GroupLabel>Difficulty</GroupLabel>
-          <SegmentedToggle
-            options={difficultyOptions}
-            value={gameDifficulty}
-            onSelect={onGameDifficultyChange}
-          />
-          <DifficultyDescription>{difficultyDescriptions[gameDifficulty]}</DifficultyDescription>
-        </FieldGroup>
-
-        <FieldGroup>
-          <GroupLabel>Entropy</GroupLabel>
-          <SegmentedToggle
-            options={gameEntropyOptions}
-            value={gameEntropy}
-            onSelect={onGameEntropyChange}
-          />
-          <DifficultyDescription>{entropyDescriptions[gameEntropy]}</DifficultyDescription>
-        </FieldGroup>
-
-        <Field>
-          <Label htmlFor="start-flow-seed-code">World seed</Label>
-          <SeedRow>
+        <SetupFields disabled={pendingOperation || busy}>
+          <Field>
+            <Label htmlFor="start-flow-player-name">Your name</Label>
             <Input
-              id="start-flow-seed-code"
+              id="start-flow-player-name"
               type="text"
-              value={seedDraft}
-              onChange={(event) => onSeedDraftChange(event.target.value)}
-              placeholder="00000000-0000-0000-0000-000000000000"
+              value={playerName}
+              onChange={(event) => {
+                onPlayerNameChange(event.target.value);
+                setTouched(true);
+              }}
+              onBlur={() => setTouched(true)}
+              placeholder="Enter a rider name"
               autoComplete="off"
-              aria-invalid={Boolean(decodeError)}
-              aria-describedby={decodeError ? "start-flow-seed-validation" : undefined}
+              aria-invalid={showNameError}
+              aria-describedby={showNameError ? "start-flow-player-name-validation" : undefined}
             />
-            <Button type="button" $variant="ghost" onClick={onRandomizeSeed}>
-              Randomize
-            </Button>
-          </SeedRow>
-          {decodeError && (
-            <FlowError id="start-flow-seed-validation" role="alert">
-              {decodeError}
-            </FlowError>
-          )}
-        </Field>
+            {showNameError && (
+              <FlowError id="start-flow-player-name-validation" role="alert">
+                Tell me what name you go by before we ride on.
+              </FlowError>
+            )}
+          </Field>
+
+          <FieldGroup>
+            <GroupLabel>Difficulty</GroupLabel>
+            <SegmentedToggle
+              options={difficultyOptions}
+              value={gameDifficulty}
+              onSelect={onGameDifficultyChange}
+            />
+            <DifficultyDescription>{difficultyDescriptions[gameDifficulty]}</DifficultyDescription>
+          </FieldGroup>
+
+          <FieldGroup>
+            <GroupLabel>Entropy</GroupLabel>
+            <SegmentedToggle
+              options={gameEntropyOptions}
+              value={gameEntropy}
+              onSelect={onGameEntropyChange}
+            />
+            <DifficultyDescription>{entropyDescriptions[gameEntropy]}</DifficultyDescription>
+          </FieldGroup>
+
+          <Field>
+            <Label htmlFor="start-flow-seed-code">World seed</Label>
+            <SeedRow>
+              <Input
+                id="start-flow-seed-code"
+                type="text"
+                value={seedDraft}
+                onChange={(event) => onSeedDraftChange(event.target.value)}
+                placeholder="00000000-0000-0000-0000-000000000000"
+                autoComplete="off"
+                aria-invalid={Boolean(decodeError)}
+                aria-describedby={decodeError ? "start-flow-seed-validation" : undefined}
+              />
+              <Button type="button" $variant="ghost" onClick={onRandomizeSeed}>
+                Randomize
+              </Button>
+            </SeedRow>
+            {decodeError && (
+              <FlowError id="start-flow-seed-validation" role="alert">
+                {decodeError}
+              </FlowError>
+            )}
+          </Field>
+        </SetupFields>
 
         <StepActions>
-          <Button type="submit" $variant="primary" disabled={!trimmed}>
-            Ride on
+          <Button type="submit" $variant="primary" disabled={!trimmed || busy}>
+            {pendingOperation ? "Retry setup" : "Ride on"}
           </Button>
         </StepActions>
       </StepForm>
@@ -191,6 +198,14 @@ const StepLead = styled.p`
 const StepForm = styled.form`
   display: grid;
   gap: 18px;
+`;
+
+const SetupFields = styled.fieldset`
+  display: grid;
+  gap: 18px;
+  border: 0;
+  margin: 0;
+  padding: 0;
 `;
 
 const Field = styled.div`

@@ -2,6 +2,7 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
+using WildBunch.Application.Games.Exceptions;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.GameContent.Abstractions;
@@ -10,13 +11,10 @@ namespace WildBunch.Application.Games.Commands;
 
 /// <summary>
 /// Creates a new game session in the setup-complete phase.
-/// Archives any pre-existing non-archived sessions (one-active-playthrough invariant).
 /// The world and case file are resolved from the seed code at this point.
 /// </summary>
 public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
 {
-    private const string SupersededByNewPlaythrough = "superseded-by-new-playthrough";
-
     private readonly INewGameFactory _newGameFactory;
 
     public CompletePlayerSetupHandler(
@@ -35,23 +33,42 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var correlationId = Guid.NewGuid();
-
-        // 1. Archive all pre-existing Active sessions (one-active-playthrough invariant).
-        var activeSessions = await GameSessionRepository.GetByStatusAsync(
-            GameStatus.Active, cancellationToken).ConfigureAwait(false);
-        foreach (var activeSession in activeSessions)
+        if (command.OperationId == Guid.Empty)
         {
-            activeSession.ArchivePlaythrough(SupersededByNewPlaythrough);
-            await GameSessionRepository.StoreAsync(
-                activeSession, correlationId, cancellationToken).ConfigureAwait(false);
+            throw new StartupOperationConflictException("A non-empty startup operation ID is required.");
         }
 
-        // 2. Resolve the world and case file from the seed code (without starting the game).
+        var fingerprint = StartupOperationFingerprint.ForSetup(command);
+        var existingOperation = await GameSessionRepository.GetStartupOperationAsync(command.OperationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (existingOperation is not null)
+        {
+            return await ResolveExistingOperationAsync(existingOperation, StartupOperationKind.Setup, fingerprint, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var activeSessions = await GameSessionRepository.GetByStatusAsync(GameStatus.Active, cancellationToken)
+            .ConfigureAwait(false);
+        if (activeSessions.Count > 0)
+        {
+            // Another delivery of this same operation may have committed after
+            // the initial receipt lookup but before the active-session query.
+            // Recheck its atomic receipt before treating the active session as
+            // a separate playthrough conflict.
+            var racedOperation = await GameSessionRepository.GetStartupOperationAsync(command.OperationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (racedOperation is not null)
+            {
+                return await ResolveExistingOperationAsync(racedOperation, StartupOperationKind.Setup, fingerprint, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            throw new StartupOperationConflictException("An active playthrough must be archived with Start Over before a new game can be started.");
+        }
+
         var (world, caseFile, seedCodeText, saltSource) = _newGameFactory.ResolveWorld(
             command.PlayerName, command.GameDifficulty, command.SeedCode, command.GameEntropy);
 
-        // 3. Create the session in setup-complete phase.
         var newSession = GameSession.StartSetup(
             command.PlayerName,
             world,
@@ -61,20 +78,55 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
             seedCodeText,
             saltSource);
 
-        await GameSessionRepository.StoreAsync(
-            newSession, correlationId, cancellationToken).ConfigureAwait(false);
+        await GameSessionRepository.StoreAsync(newSession, Guid.NewGuid(), cancellationToken).ConfigureAwait(false);
+        GameSessionRepository.StoreStartupOperation(new StartupOperation(
+            command.OperationId,
+            StartupOperationKind.Setup,
+            fingerprint,
+            newSession.Id.Value));
 
-        // 4. Commit everything in one transaction.
-        await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-
-        // 5. Mark events committed on all touched sessions.
-        foreach (var archived in activeSessions)
+        try
         {
-            archived.MarkEventsCommitted();
+            await GameSessionUnitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+            newSession.MarkEventsCommitted();
+            return GameSessionMapper.ToDto(newSession);
         }
-        newSession.MarkEventsCommitted();
+        catch (ConcurrencyException)
+        {
+            var racedOperation = await GameSessionRepository.GetStartupOperationAsync(command.OperationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (racedOperation is null)
+            {
+                var activeSession = await GameSessionRepository.GetByStatusAsync(GameStatus.Active, cancellationToken)
+                    .ConfigureAwait(false);
+                if (activeSession.Count > 0)
+                {
+                    throw new StartupOperationConflictException(
+                        "An active playthrough must be archived with Start Over before a new game can be started.");
+                }
 
-        // 6. Return the setup DTO without gameplay-only projections.
-        return GameSessionMapper.ToDto(newSession);
+                throw;
+            }
+            return await ResolveExistingOperationAsync(racedOperation, StartupOperationKind.Setup, fingerprint, cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private async Task<GameSessionDto> ResolveExistingOperationAsync(
+        StartupOperation operation,
+        StartupOperationKind expectedKind,
+        string fingerprint,
+        CancellationToken cancellationToken)
+    {
+        if (operation.Kind != expectedKind || !StringComparer.Ordinal.Equals(operation.RequestFingerprint, fingerprint))
+        {
+            throw new StartupOperationConflictException("The startup operation ID was already used for a different request.");
+        }
+
+        var session = await GameSessionRepository.GetByIdAsync(new GameSessionId(operation.SessionId), cancellationToken)
+            .ConfigureAwait(false);
+        return session is null
+            ? throw new InvalidOperationException("The startup operation references a missing playthrough.")
+            : GameSessionMapper.ToDto(session);
     }
 }
