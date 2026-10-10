@@ -63,8 +63,8 @@
 
 ## Task 4: Review and publish the slice
 
-- [ ] Run `py -3 tools/run.py ci --check` on the intended staged/committed candidate; the focused Application, Integration and Web lanes have passed and PostgreSQL was healthy.
-- [ ] Compare the final diff with ADR-0039, PG-003 and the row 08 specification; record that the slice implements ADR-0039 and PG-003 without changing their durable decision or feature promise, so neither ADR nor feature matrix requires an update.
-- [ ] Perform a fresh whole-branch review against the final plan, applicable backend/web/code-review profiles, actual ADRs, and feature matrix; resolve Critical/Important findings and re-review the resulting head.
+- [x] Run `py -3 tools/run.py ci --check` on the intended staged/committed candidate; the focused Application, Integration and Web lanes passed and PostgreSQL was healthy.
+- [x] Compare the final diff with ADR-0039, PG-003 and the row 08 specification; this slice leaves their durable decision and feature promise unchanged, so neither ADR nor feature matrix requires an update.
+- [x] Perform a fresh whole-branch review against the final plan, applicable backend/web/code-review profiles, actual ADRs, and feature matrix; review found no actionable issues. The documented keyboard-selection gap is unchanged and outside this slice.
 - [ ] Publish a Draft PR to `develop`, verify its exact head and scope, set it ready for hosted checks, and wait for the exact-head canonical gate to pass.
 - [ ] Merge to `develop` only after the required review and exact-head gate pass; verify the develop push gate on the merge commit, then update the roadmap with the source SHA, merge SHA, both run IDs and the next row 08 target in the next substantive successor slice.
