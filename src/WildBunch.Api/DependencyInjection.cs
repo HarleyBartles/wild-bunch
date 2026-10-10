@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<ViewPrologueHandler>();
         services.AddScoped<CompleteGameStartHandler>();
         services.AddScoped<GetGameSessionHandler>();
+        services.AddScoped<GetHudProjectionHandler>();
         services.AddScoped<GetWorldMapHandler>();
         services.AddScoped<GetPrologueHandler>();
         services.AddScoped<GetAvailableActionsHandler>();
