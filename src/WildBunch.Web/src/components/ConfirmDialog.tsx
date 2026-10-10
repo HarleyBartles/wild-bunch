@@ -56,6 +56,13 @@ const DialogBody = styled.p`
   white-space: pre-wrap;
 `;
 
+const DialogError = styled.p`
+  margin: 0;
+  padding: 0 22px 20px;
+  color: var(--danger-text);
+  line-height: 1.5;
+`;
+
 const DialogFooter = styled.footer`
   display: flex;
   justify-content: flex-end;
@@ -91,6 +98,7 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
   onConfirm: () => void;
   busy?: boolean;
+  errorMessage?: string;
 }
 
 export function ConfirmDialog({
@@ -102,6 +110,7 @@ export function ConfirmDialog({
   onCancel,
   onConfirm,
   busy = false,
+  errorMessage,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -184,6 +193,7 @@ export function ConfirmDialog({
           <h2 id="confirm-dialog-title">{title}</h2>
         </DialogHeader>
         <DialogBody id="confirm-dialog-body">{body}</DialogBody>
+        {errorMessage ? <DialogError role="alert">{errorMessage}</DialogError> : null}
         <DialogFooter>
           <Button
             type="button"

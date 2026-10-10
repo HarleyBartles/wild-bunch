@@ -1,5 +1,15 @@
 const defaultApiBaseUrl = "http://localhost:5275";
 
+export class HttpRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "HttpRequestError";
+  }
+}
+
 export function getApiBaseUrl() {
   const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
   if (configured === undefined) {
@@ -29,7 +39,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
 
   if (!response.ok) {
     const message = extractErrorMessage(body) || `Request failed with status ${response.status}`;
-    throw new Error(message);
+    throw new HttpRequestError(message, response.status);
   }
 
   return body as T;

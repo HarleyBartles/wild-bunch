@@ -6,6 +6,7 @@ import {
   checkLocalRecords,
   confrontSaloonPersonOfInterest,
   gatherLocalGossip,
+  getGame,
   inspectNoticeBoard,
   lookAroundSaloon,
   markPrologueViewed,
@@ -14,7 +15,7 @@ import {
   startGameWithTown,
   travel,
 } from "../api/wildBunchApi";
-import type { SetupGameRequest, WantedPosterDto } from "../api/types";
+import { GameStatus, type SetupGameRequest, type WantedPosterDto } from "../api/types";
 import { formatMoney, storageKey } from "../utils/formatting";
 import { formatInvestigationNotice } from "../ui/beatFormatters";
 
@@ -90,7 +91,30 @@ export function useGameSessionMutations({
   });
 
   const archivePlaythroughMutation = useMutation({
-    mutationFn: () => archiveGame(gameId as string),
+    mutationFn: async () => {
+      const archivedGameId = gameId as string;
+      try {
+        await archiveGame(archivedGameId);
+      } catch {
+        let currentSession;
+        try {
+          currentSession = await getGame(archivedGameId);
+        } catch {
+          throw new Error(
+            "Unable to confirm whether this playthrough was archived. Your saved game remains available. Try Start Over again.",
+          );
+        }
+
+        if (currentSession?.status !== GameStatus.Archived) {
+          throw new Error(
+            "The playthrough is still active. Start Over did not complete. Try again.",
+          );
+        }
+      }
+    },
+    onMutate: () => {
+      setError("");
+    },
     onSuccess: async () => {
       const archivedGameId = gameId;
       window.localStorage.removeItem(storageKey);
@@ -106,25 +130,8 @@ export function useGameSessionMutations({
       setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
     },
     onError: (exception: unknown) => {
-      // If the session is already archived (409 Conflict), clear local state
-      // and return to setup instead of stranding the player on a dead session.
       const message = exception instanceof Error ? exception.message : "";
-      if (message.includes("already archived") || message.includes("409")) {
-        const archivedGameId = gameId;
-        window.localStorage.removeItem(storageKey);
-        setStoredGameId(null);
-        setWantedPosters([]);
-        setDeclaredWantedIdentityHandle("");
-        setError("");
-        if (archivedGameId) {
-          queryClient.removeQueries({ queryKey: ["session", archivedGameId] });
-          queryClient.removeQueries({ queryKey: ["actions", archivedGameId] });
-          queryClient.removeQueries({ queryKey: ["journal", archivedGameId] });
-        }
-        setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
-      } else {
-        setError(message || "Unable to archive the playthrough.");
-      }
+      setError(message || "Unable to archive the playthrough.");
     },
   });
 

@@ -13,6 +13,7 @@ import {
   actionIsLookAroundSaloon,
   actionIsWantedPosters,
 } from "../utils/actionTypePredicates";
+import { HttpRequestError } from "../api/httpClient";
 import { storageKey } from "../utils/formatting";
 import { useGameSessionMutations } from "./useGameSessionMutations";
 import { useGameSessionQueries } from "./useGameSessionQueries";
@@ -260,6 +261,28 @@ export function useCurrentGameSession() {
 
   const archiving = archivePlaythroughMutation.isPending;
 
+  const sessionRestoreStatus = !gameId
+    ? "none"
+    : sessionQuery.isLoading || sessionQuery.data?.status === GameStatus.Archived
+      ? "loading"
+      : sessionQuery.isError
+        ? sessionQuery.error instanceof HttpRequestError && sessionQuery.error.status === 404
+          ? "missing"
+          : sessionQuery.data === undefined
+            ? "failed"
+            : "restored"
+        : "restored";
+
+  const retrySessionRestore = useCallback(async () => {
+    await sessionQuery.refetch();
+  }, [sessionQuery]);
+
+  const abandonMissingSession = useCallback(() => {
+    if (sessionRestoreStatus === "missing") {
+      handleReset();
+    }
+  }, [sessionRestoreStatus, handleReset]);
+
   const setSession = useCallback(
     (next: GameSessionDto | null) => {
       if (gameId) {
@@ -285,6 +308,9 @@ export function useCurrentGameSession() {
     busyMode,
     loading,
     sessionLoading: sessionQuery.isLoading,
+    sessionRestoreStatus,
+    retrySessionRestore,
+    abandonMissingSession,
     notice: state.notice,
     error: state.error,
     resetToken: state.resetToken,

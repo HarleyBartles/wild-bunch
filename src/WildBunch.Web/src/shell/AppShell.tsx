@@ -8,8 +8,11 @@ import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
 import { usePhaseRouteSync } from "./usePhaseRouteSync";
 import { useDevSurfaceSync } from "./useDevSurfaceSync";
 import { RouteLoading } from "./RouteLoading";
+import { useGameSession } from "../state/useGameSession";
+import { SessionRecoverySurface } from "../components/session-recovery/SessionRecoverySurface";
 
 function ShellChrome() {
+  const { sessionRestoreStatus, retrySessionRestore, abandonMissingSession } = useGameSession();
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
   const [devOverlayOpen, setDevOverlayOpen] = useState(false);
   const chromeBarRef = useRef<HTMLDivElement>(null);
@@ -23,6 +26,20 @@ function ShellChrome() {
 
   usePhaseRouteSync();
   useDevSurfaceSync();
+
+  if (sessionRestoreStatus === "loading") {
+    return <RouteLoading role="status">Opening your saved game...</RouteLoading>;
+  }
+
+  if (sessionRestoreStatus === "failed" || sessionRestoreStatus === "missing") {
+    return (
+      <SessionRecoverySurface
+        missing={sessionRestoreStatus === "missing"}
+        onRetry={retrySessionRestore}
+        onStartNewGame={abandonMissingSession}
+      />
+    );
+  }
 
   return (
     <Shell>
