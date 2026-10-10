@@ -36,21 +36,17 @@ public static class JournalMapper
         IReadOnlyList<Warrant> warrants,
         IReadOnlyList<SheriffTurnInSettlementState> sheriffTurnInSettlements)
     {
-        var capturedTargetNames = sheriffTurnInSettlements
-            .Select(settlement => Normalize(settlement.TargetName))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var settledSuspectIds = sheriffTurnInSettlements
+            .Select(settlement => settlement.SuspectId)
+            .ToHashSet();
 
         return warrants
-            .Where(warrant => !capturedTargetNames.Contains(Normalize(warrant.TargetName)))
+            .Where(warrant => warrant.TargetSuspectId is not { } suspectId || !settledSuspectIds.Contains(suspectId))
             .ToArray();
     }
 
-    private static string Normalize(string value)
-        => string.Join(" ", value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
-
     private static DiscoveredSuspectDto ToDto(Suspect suspect)
         => new(
-            suspect.Id.Value,
             suspect.Name,
             suspect.Status);
 

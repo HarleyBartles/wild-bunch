@@ -221,3 +221,7 @@ The table below gives each assessed application/configuration/guidance file an o
 | [src/vite-env.d.ts](../../../src/WildBunch.Web/src/vite-env.d.ts) | Application tooling: retain Vite environment types. |
 | [tsconfig.json](../../../src/WildBunch.Web/tsconfig.json) | Application tooling: retain compiler configuration; reconcile supported type contracts. |
 | [vite.config.ts](../../../src/WildBunch.Web/vite.config.ts) | Application tooling: retain build/test configuration; compose deployment environments explicitly. |
+
+## Dated row 08 disposition, 2026-10-10
+
+**WB-20:** The casebook renders supplied warrant and clue records directly, including clue provenance/anchors and recorded turn-in outcomes. It no longer ranks fallback clues, derives discovery provenance from text, joins settlement by display name, or emits resolved/possible-match identity copy. Captured wanted posters are filtered by the warrant/poster ID shared by the source contracts. A rendered behavior test covers two same-name warrant records, one settled record, and a separate unnamed feature clue. No browser-backed journey is claimed because the repository has no browser/e2e harness.

@@ -55,7 +55,7 @@ function createInTownSession(): GameSessionDto {
       openingLead: "",
       caseState: { statusText: "" },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -97,7 +97,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "" },
       caseSummary: "",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],

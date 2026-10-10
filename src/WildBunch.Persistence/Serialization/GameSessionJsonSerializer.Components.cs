@@ -700,21 +700,24 @@ public sealed partial class GameSessionJsonSerializer
         string Id,
         string TargetName,
         WarrantTermsSnapshot Terms,
-        string Summary)
+        string Summary,
+        string? TargetSuspectId = null)
     {
         public static WarrantSnapshot FromDomain(Warrant warrant)
             => new(
                 warrant.Id.Value,
                 warrant.TargetName,
                 WarrantTermsSnapshot.FromDomain(warrant.Terms),
-                warrant.Summary);
+                warrant.Summary,
+                warrant.TargetSuspectId?.Value);
 
         public static Warrant ToDomain(WarrantSnapshot snapshot)
             => new(
                 new WarrantId(snapshot.Id),
                 snapshot.TargetName,
                 WarrantTermsSnapshot.ToDomain(snapshot.Terms),
-                snapshot.Summary);
+                snapshot.Summary,
+                snapshot.TargetSuspectId is null ? null : new SuspectId(snapshot.TargetSuspectId));
     }
 
     private sealed record WarrantTermsSnapshot(

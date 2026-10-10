@@ -32,7 +32,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
-        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Ira Flint");
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Single(result.WantedPosters);
@@ -45,7 +45,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"wantedPosters\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -72,7 +72,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Ira Flint");
         Assert.Single(result.WantedPosters);
         Assert.Equal("warrant-public-1", result.WantedPosters[0].PosterId);
         Assert.Equal("Mira Cline", result.WantedPosters[0].TargetDisplayName);

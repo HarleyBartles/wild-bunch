@@ -35,7 +35,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         services.AddDbContext<WildBunchDbContext>(options => options.UseNpgsql(connectionString));
         services.AddSingleton<GameSessionJsonSerializer>();
         services.AddSingleton<TravelDiaryDayProjector>();
-        services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry([]));
+        services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters()));
         services.AddSingleton<PersistedPayloadLoader>(sp =>
         {
             var eventUpcasters = sp.GetRequiredService<PayloadUpcasterRegistry>();
@@ -200,6 +200,38 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         Assert.Equal(expectedSalts.RoadsSalt, replayedSalts.RoadsSalt);
         Assert.Equal(expectedSalts.DirtSalt, replayedSalts.DirtSalt);
         Assert.Equal(expectedSalts.PropsSalt, replayedSalts.PropsSalt);
+    }
+
+    [Fact]
+    public async Task GeneratedWarrantIdentity_SurvivesPostgreSqlEventReplay()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+        var factory = new SeededNewGameFactory(new DeterministicSaltSourceFactory());
+        var seedCode = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorldResolver.CreateCanonicalSeedWorld()));
+        var (world, caseFile, seedCodeText, saltSource) = factory.ResolveWorld(
+            "Ranger Vale",
+            GameDifficulty.Standard,
+            seedCode,
+            GameEntropy.Classic);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, seedCodeText, saltSource);
+
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+
+        var loadedFromComponents = await repo.GetByIdAsync(session.Id);
+        var persistedEvents = await repo.GetEventStreamAsync(session.Id);
+        var replayed = GameSession.RehydrateFromEvents(session.Id, world, persistedEvents);
+        var expectedSuspectIds = Enumerable.Range(1, caseFile.Suspects.Count).Select(index => $"suspect-{index}");
+
+        Assert.NotNull(loadedFromComponents);
+        Assert.Equal(expectedSuspectIds, loadedFromComponents!.CaseFile.PublicWarrants.Select(warrant => warrant.TargetSuspectId?.Value));
+        Assert.Equal(expectedSuspectIds, replayed.CaseFile.PublicWarrants.Select(warrant => warrant.TargetSuspectId?.Value));
     }
 
     [Fact]

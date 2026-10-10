@@ -54,8 +54,6 @@ export type WaterFeature = 0 | 1 | 2 | 3;
 export type ClueRecency = 0 | 1 | 2 | 3 | 4;
 export type JourneyTrailEventKind = 0 | 1;
 export type JourneyTrailEventId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-export type CaseIdentityKind = 0 | 1 | 2 | 3 | 4;
-export type CaseIdentityStatus = 0 | 1 | 2 | 3;
 
 export interface SetupGameRequest {
   playerName: string;
@@ -431,42 +429,42 @@ export interface WarrantDto {
 }
 
 export interface DiscoveredSuspectDto {
-  id: string;
   name: string;
   status: SuspectStatus;
 }
 
 export interface CaseBoardDto {
-  namedRecords: CaseIdentityHandleDto[];
-  looseLeads: CaseIdentityHandleDto[];
-  evidenceItems: CaseEvidenceItemDto[];
+  warrants: CaseWarrantRecordDto[];
+  clues: CaseClueDto[];
 }
 
-export interface CaseIdentityHandleDto {
+export interface CaseWarrantRecordDto {
   id: string;
-  displayName: string;
-  kind: CaseIdentityKind;
-  status: CaseIdentityStatus;
-  resolvedToDisplayName: string | null;
-  evidenceIds: string[];
-  summaryLines: string[];
-  relatedLabels: string[];
+  targetName: string;
+  disposition: number;
+  bountyAmount: number;
   knownAliases: string[];
-  distinguishingFeatures: string[];
-  warrantDisposition: number | null;
-  bountyAmount: number | null;
-  issuingAuthority: string | null;
-  crimeSummary: string | null;
+  knownFeatures: string[];
+  issuingSource: string;
+  summary: string;
+  settlement: SheriffTurnInSettlementDto | null;
 }
 
-export interface CaseEvidenceItemDto {
+export interface SheriffTurnInSettlementDto {
+  isAlive: boolean;
+  bountyAmount: number;
+  day: number;
+  turn: number;
+}
+
+export interface CaseClueDto {
   id: string;
-  kindLabel: string;
-  sourceLabel: string;
-  summary: string;
-  identityBearing: boolean;
+  kind: ClueKind;
+  description: string;
+  sourceKind: InvestigationSourceKind | null;
+  source: string | null;
+  context: string | null;
   anchors: ClueAnchorsDto;
-  handleIds: string[];
 }
 
 export interface CaseStateDto {

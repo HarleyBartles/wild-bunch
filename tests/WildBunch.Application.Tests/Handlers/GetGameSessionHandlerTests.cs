@@ -70,7 +70,6 @@ public sealed class GetGameSessionHandlerTests
         var result = await handler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
 
         Assert.Single(result.CaseFile.DiscoveredSuspects);
-        Assert.Equal("suspect-1", result.CaseFile.DiscoveredSuspects[0].Id);
         Assert.Equal("Ira Flint", result.CaseFile.DiscoveredSuspects[0].Name);
         Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
         Assert.Single(session.CaseFile.Suspects);
@@ -80,6 +79,7 @@ public sealed class GetGameSessionHandlerTests
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("suspect-2", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);

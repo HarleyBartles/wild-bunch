@@ -112,6 +112,8 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 **0.1.0 disposition:** Retain and repair an organized, truthful casebook and one event-derived journal with full and journey views. Retire automatic identity/deduction assistance as a separate future feature; keep full developer audit out of player surfaces.
 
+**Dated implementation evidence, 2026-10-10, row 08:** The implementation now gives generated warrants explicit stable suspect associations in `CaseFileGenerated` v3; historical v2 warrants upcast with unknown association and no name-based repair. Application read models preserve every learned clue and warrant, attach turn-in outcomes only to the exactly associated warrant, keep unknown records active, and omit internal suspect IDs from player DTOs. The Web case file displays those supplied facts and clue anchors without inferred identity or ranking. Focused mapper, PostgreSQL replay/cache and HTTP response tests passed, as did the Web gate (303 tests and production build). PG-008 remains partial: this slice does not complete the whole casebook/journal experience, the journey-focused view and its narration still require their planned consumer-level validation, and the complete deployed browser journey has not been demonstrated.
+
 ### PG-009 - Independent unrelated-criminal bounties
 
 **Promise and entry:** Retired from the 0.1.0 product. The former shell generated independent warrants and ledger state without a complete discover/encounter/capture/settlement player loop. Saloons continue to choose eligible gang members, citizens or nobody.

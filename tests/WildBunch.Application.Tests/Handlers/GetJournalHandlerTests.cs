@@ -72,7 +72,6 @@ public sealed class GetJournalHandlerTests
         var result = await handler.HandleAsync(new GetJournalQuery(session.Id.Value));
 
         Assert.Single(result.CaseFile.DiscoveredSuspects);
-        Assert.Equal("suspect-2", result.CaseFile.DiscoveredSuspects[0].Id);
         Assert.Equal("Mira Cline", result.CaseFile.DiscoveredSuspects[0].Name);
         Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
@@ -80,6 +79,7 @@ public sealed class GetJournalHandlerTests
         var payload = System.Text.Json.JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-2", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("trueCulpritId", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);

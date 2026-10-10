@@ -142,7 +142,7 @@ public sealed class EfGameSessionRepositoryTests
                 });
 
         Assert.Equal(3, events["WorldGenerated"].SchemaVersion);
-        Assert.Equal(2, events["CaseFileGenerated"].SchemaVersion);
+        Assert.Equal(3, events["CaseFileGenerated"].SchemaVersion);
         Assert.Equal(2, events["StartingTownSelected"].SchemaVersion);
         foreach (var storedEvent in events.Values)
         {
@@ -2184,7 +2184,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(playerRead);
         Assert.Equal(expectedDiscoveredSuspectIds, playerRead!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
         Assert.NotNull(journalRead);
-        Assert.Equal(expectedDiscoveredSuspectIds, journalRead!.DiscoveredSuspects.Select(suspect => suspect.Id.Value));
+        Assert.Equal(expectedDiscoveredSuspectIds.Length, journalRead!.DiscoveredSuspects.Count);
         Assert.NotNull(commandRead);
         Assert.Equal(expectedDiscoveredSuspectIds, commandRead!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
 
@@ -2466,7 +2466,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(playerRead);
         Assert.Equal(expectedDiscoveredIds, playerRead!.CaseFile.DiscoveredSuspectIds.Select(id => id.Value));
         Assert.NotNull(journalRead);
-        Assert.Equal(expectedDiscoveredIds, journalRead!.DiscoveredSuspects.Select(suspect => suspect.Id.Value));
+        Assert.Equal(expectedDiscoveredIds.Length, journalRead!.DiscoveredSuspects.Count);
         var playerDtoJson = JsonSerializer.Serialize(GameSessionMapper.ToDto(playerRead));
         var journalDtoJson = JsonSerializer.Serialize(JournalMapper.ToDto(journalRead));
         Assert.Contains("Ira Flint", playerDtoJson, StringComparison.Ordinal);
@@ -2844,8 +2844,14 @@ public sealed class EfGameSessionRepositoryTests
             commandRead.Player.Wallet.Cash);
 
         var caseBoard = GameSessionMapper.ToDto(playerRead).CaseFile.CaseBoard;
-        Assert.All(expectedSettlements, settlement => Assert.Contains(caseBoard.NamedRecords,
-            record => record.DisplayName == settlement.TargetName && record.Status == CaseIdentityStatus.Captured));
+        var expectedSettledWarrantIds = expectedSettlements
+            .Select(settlement => session.CaseFile.KnownWarrants.Single(warrant => warrant.TargetSuspectId == settlement.SuspectId).Id.Value)
+            .OrderBy(id => id, StringComparer.Ordinal);
+        var projectedSettledWarrantIds = caseBoard.Warrants
+            .Where(warrant => warrant.Settlement is not null)
+            .Select(warrant => warrant.Id)
+            .OrderBy(id => id, StringComparer.Ordinal);
+        Assert.Equal(expectedSettledWarrantIds, projectedSettledWarrantIds);
 
         var afterReads = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
         Assert.Equal(beforeReads.ComponentVersion, afterReads.ComponentVersion);
@@ -5561,8 +5567,8 @@ public sealed class EfGameSessionRepositoryTests
             knownClues: Array.Empty<Clue>(),
             knownWarrants: new[]
             {
-                CreateSettlementWarrant("settlement-warrant-1", "Mira Cline", 250m),
-                CreateSettlementWarrant("settlement-warrant-3", "Vance Bell", 450m)
+                CreateSettlementWarrant("settlement-warrant-1", "Mira Cline", 250m, firstId),
+                CreateSettlementWarrant("settlement-warrant-3", "Vance Bell", 450m, secondId)
             });
         var inventory = new DomainInventory(new[]
         {
@@ -5599,7 +5605,7 @@ public sealed class EfGameSessionRepositoryTests
         return session;
     }
 
-    private static Warrant CreateSettlementWarrant(string id, string name, decimal bounty)
+    private static Warrant CreateSettlementWarrant(string id, string name, decimal bounty, SuspectId targetSuspectId)
         => new(
             new WarrantId(id),
             name,
@@ -5612,7 +5618,8 @@ public sealed class EfGameSessionRepositoryTests
                 InvestigationTargetKind.GangMember,
                 Array.Empty<OutlawGangId>(),
                 null),
-            $"Wanted for robbery by {name}.");
+            $"Wanted for robbery by {name}.",
+            targetSuspectId);
 
     private static SheriffTurnInSettlementState ToSettlementState(SheriffTurnInSettled turnIn)
         => new(

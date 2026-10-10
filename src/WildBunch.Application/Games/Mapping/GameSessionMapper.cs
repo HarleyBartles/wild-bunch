@@ -159,7 +159,6 @@ public static class GameSessionMapper
 
     private static DiscoveredSuspectDto ToDto(DomainSuspect suspect)
         => new(
-            suspect.Id.Value,
             suspect.Name,
             suspect.Status);
 

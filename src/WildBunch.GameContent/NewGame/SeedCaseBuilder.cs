@@ -91,6 +91,7 @@ internal static class SeedCaseBuilder
         var publicWarrants = CreatePublicWarrants(
             source,
             roster,
+            suspects,
             trueCulpritIndex);
         var accusationId = suspects[accusationIndex].Id;
 
@@ -246,10 +247,16 @@ internal static class SeedCaseBuilder
     private static IReadOnlyList<Warrant> CreatePublicWarrants(
         GameSetupDeterministicSource source,
         IReadOnlyList<CaseCharacterProfile> roster,
+        IReadOnlyList<Suspect> suspects,
         int trueCulpritIndex)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(roster);
+        ArgumentNullException.ThrowIfNull(suspects);
+        if (roster.Count != suspects.Count)
+        {
+            throw new ArgumentException("Each public warrant must correspond to one generated suspect.", nameof(suspects));
+        }
 
         var publicWarrants = new List<Warrant>();
         var warrantIndex = 1;
@@ -269,7 +276,8 @@ internal static class SeedCaseBuilder
                 profile,
                 source,
                 "Wanted for Wild Bunch gang crimes.",
-                InvestigationSourceKind.SheriffWarrants));
+                InvestigationSourceKind.SheriffWarrants,
+                suspects[i].Id));
         }
 
         return publicWarrants;
@@ -313,7 +321,7 @@ internal static class SeedCaseBuilder
             .ToArray();
     }
 
-    private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "", InvestigationSourceKind? sourceKind = null)
+    private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "", InvestigationSourceKind? sourceKind = null, SuspectId? targetSuspectId = null)
     {
         ArgumentNullException.ThrowIfNull(profile);
 
@@ -334,7 +342,8 @@ internal static class SeedCaseBuilder
                 profile.GangAffiliations,
                 profile.AdvancesGangPressureFor,
                 sourceKind),
-            summary);
+            summary,
+            targetSuspectId);
     }
 
     private static Clue CreateClue(
