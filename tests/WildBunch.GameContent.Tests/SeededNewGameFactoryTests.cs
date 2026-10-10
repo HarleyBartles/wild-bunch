@@ -33,7 +33,6 @@ public sealed class SeededNewGameFactoryTests
         Assert.True(capabilities.FirearmThreatAvailable);
         Assert.True(capabilities.GunfightCapable);
         Assert.True(capabilities.RevolverUsable);
-        Assert.False(capabilities.RifleUsable);
         Assert.Equal(8, session.World.Towns.Count);
         // The world should be fully connected (all towns reachable)
         var towns = session.World.Towns.ToArray();

@@ -106,7 +106,7 @@ internal sealed class StoreLoop
     }
 
     internal static bool IsStackableItemKind(ItemKind kind)
-        => kind is ItemKind.Food or ItemKind.HorseFeed or ItemKind.RevolverAmmo or ItemKind.RifleAmmo;
+        => kind is ItemKind.Food or ItemKind.HorseFeed or ItemKind.RevolverAmmo;
 }
 
 internal sealed record StorePurchaseContext(

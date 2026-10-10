@@ -77,7 +77,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
         Assert.Equal(resolveResult.CurrentSession.Player.Health, resolvedDay.CurrentHealth);
         Assert.Equal(
-            resolveResult.CurrentSession.Inventory!.Items.Where(item => item.Kind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo).Sum(item => item.Quantity),
+            resolveResult.CurrentSession.Inventory!.Items.Where(item => item.Kind == ItemKind.RevolverAmmo).Sum(item => item.Quantity),
             resolvedDay.CurrentAmmo);
         Assert.Equal(2, resolvedDay.EncounterResolution!.AmmoSpent);
         Assert.Single(resolveResult.TravelDiary!.JourneyEntries, entry => entry.Message == "You push the rider behind you and keep moving.");

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Linq;
+using System.Text.Json;
 using WildBunch.Api.Games;
 using WildBunch.Application.Games.Models;
 using WildBunch.Integration.Tests.TestInfrastructure;
@@ -9,6 +10,24 @@ namespace WildBunch.Integration.Tests;
 
 public sealed class GameApiPurchaseTests
 {
+    [Fact]
+    public async Task GetGameOmitsRetiredRifleCapabilityFromInventoryContract()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
+        scenario.AssertReady();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+
+        Assert.NotNull(createdSession);
+        using var response = await client.GetAsync($"/api/games/{createdSession!.Id}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var capabilities = document.RootElement.GetProperty("inventory").GetProperty("capabilities");
+
+        Assert.False(capabilities.TryGetProperty("rifleUsable", out _));
+    }
+
     [Fact]
     public async Task PostStoreBuySucceedsForCurrentTownOfferAndReturnsUpdatedState()
     {
@@ -118,10 +137,10 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(createdSession);
         await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
-        // Rifle is a valid item kind but is not currently offered by the Store.
+        // Former persisted item-kind values are not valid store purchases.
         var response = await client.PostAsJsonAsync(
             $"/api/games/{createdSession!.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.Rifle, 1));
+            new BuyStoreItemRequest((WildBunch.Domain.Inventory.ItemKind)8, 1));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -131,6 +150,7 @@ public sealed class GameApiPurchaseTests
         Assert.False(result!.Success);
         Assert.Equal("That item is not offered at this store.", result.Message);
         Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
+        Assert.Equal(createdSession.Inventory!.Items, result.CurrentSession.Inventory.Items);
         Assert.Equal(createdSession.LogEntries.Count, result.CurrentSession.LogEntries.Count);
     }
 }

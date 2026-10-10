@@ -79,11 +79,11 @@ public sealed class PurchaseStoreItemHandlerTests
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
             new HudProjector());
 
-        // Rifle is a valid inventory kind but is not in the current Store catalog.
+        // Former persisted item-kind values are not valid Store offers.
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            DomainItemKind.Rifle,
+            (DomainItemKind)8,
             1));
 
         Assert.False(result.Success);

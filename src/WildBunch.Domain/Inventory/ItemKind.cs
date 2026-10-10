@@ -9,7 +9,5 @@ public enum ItemKind
     Saddle = 4,
     Knife = 5,
     Revolver = 6,
-    RevolverAmmo = 7,
-    Rifle = 8,
-    RifleAmmo = 9
+    RevolverAmmo = 7
 }

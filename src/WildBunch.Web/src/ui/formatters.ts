@@ -197,10 +197,6 @@ export function formatItemKind(kind: number) {
       return "Revolver";
     case 7:
       return "Revolver ammo";
-    case 8:
-      return "Rifle";
-    case 9:
-      return "Rifle ammo";
     default:
       return `Item ${kind}`;
   }
@@ -278,8 +274,6 @@ export function formatCapabilityLabel(label: keyof InventoryCapabilitiesDto) {
       return "Gunfight capable";
     case "revolverUsable":
       return "Revolver usable";
-    case "rifleUsable":
-      return "Rifle usable";
     default:
       return label;
   }

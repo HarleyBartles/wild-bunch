@@ -92,6 +92,19 @@ public sealed class InventoryTests
         Assert.Equal(1, inventory.GetQuantity(DomainItemKind.Food));
     }
 
+    [Theory]
+    [InlineData(8)]
+    [InlineData(9)]
+    public void AddItemRejectsRetiredRifleKinds(int retiredKindValue)
+    {
+        var inventory = new DomainInventory();
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => inventory.AddItem((DomainItemKind)retiredKindValue, 1));
+
+        Assert.Empty(inventory.Items);
+    }
+
     [Fact]
     public void RemovingMoreThanOwnedFailsWithoutChangingTheStack()
     {

@@ -82,8 +82,7 @@ public sealed record InventoryCapabilitiesDto(
     bool CloseThreatAvailable,
     bool FirearmThreatAvailable,
     bool GunfightCapable,
-    bool RevolverUsable,
-    bool RifleUsable);
+    bool RevolverUsable);
 
 public sealed record WorldDto(
     IReadOnlyList<TownDto> Towns,

@@ -34,7 +34,7 @@ internal static class TravelResourceSnapshotFactory
             player.Inventory.GetQuantity(ItemKind.Food),
             player.Inventory.GetQuantity(ItemKind.HorseFeed),
             player.Inventory.GetCanteenState()?.Charges ?? 0,
-            player.Inventory.GetQuantity(ItemKind.RevolverAmmo) + player.Inventory.GetQuantity(ItemKind.RifleAmmo),
+            player.Inventory.GetQuantity(ItemKind.RevolverAmmo),
             player.Health,
             pursuitState.Heat);
     }

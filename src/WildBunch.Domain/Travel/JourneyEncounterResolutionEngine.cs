@@ -275,7 +275,6 @@ internal static class JourneyEncounterResolutionEngine
         int availableFood,
         int availableHorseFeed,
         int availableRevolverAmmo,
-        int availableRifleAmmo,
         ulong roll)
     {
         ArgumentNullException.ThrowIfNull(encounter);
@@ -371,7 +370,7 @@ internal static class JourneyEncounterResolutionEngine
                     : updatedEncounter.WithHiddenState(updatedHiddenState));
         }
 
-        var stolenItem = SelectTheftItem(availableFood, availableHorseFeed, availableRevolverAmmo, availableRifleAmmo);
+        var stolenItem = SelectTheftItem(availableFood, availableHorseFeed, availableRevolverAmmo);
         var healthDelta = -Math.Max(2, foeProfile.FightStrength * 2);
         var walletDelta = stolenItem is null
             ? -Math.Min(playerCash - offer, Math.Max(1m, Math.Round(foeProfile.MinimumBribe / 2m, 0, MidpointRounding.AwayFromZero)))
@@ -440,14 +439,12 @@ internal static class JourneyEncounterResolutionEngine
             attempts,
             context);
 
-    private static ItemKind? SelectTheftItem(int availableFood, int availableHorseFeed, int availableRevolverAmmo, int availableRifleAmmo)
+    private static ItemKind? SelectTheftItem(int availableFood, int availableHorseFeed, int availableRevolverAmmo)
         => availableFood > 0
             ? ItemKind.Food
             : availableHorseFeed > 0
                 ? ItemKind.HorseFeed
                 : availableRevolverAmmo > 0
                     ? ItemKind.RevolverAmmo
-                    : availableRifleAmmo > 0
-                        ? ItemKind.RifleAmmo
-                        : null;
+                    : null;
 }

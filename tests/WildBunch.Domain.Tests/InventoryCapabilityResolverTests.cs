@@ -110,7 +110,7 @@ public sealed class InventoryCapabilityResolverTests
         var mismatched = new DomainInventory(new[]
         {
             new DomainInventoryItem(DomainItemKind.Revolver, 1),
-            new DomainInventoryItem(DomainItemKind.RifleAmmo, 1)
+            new DomainInventoryItem(DomainItemKind.Food, 1)
         });
 
         Assert.True(resolver.Resolve(matched).RevolverUsable);
@@ -119,20 +119,4 @@ public sealed class InventoryCapabilityResolverTests
         Assert.False(resolver.Resolve(mismatched).GunfightCapable);
     }
 
-    [Fact]
-    public void RifleRequiresMatchingAmmoAndCountsAsFirearmThreat()
-    {
-        var resolver = new DomainInventoryCapabilityResolver();
-        var matched = new DomainInventory(new[]
-        {
-            new DomainInventoryItem(DomainItemKind.Rifle, 1),
-            new DomainInventoryItem(DomainItemKind.RifleAmmo, 2)
-        });
-
-        var capabilities = resolver.Resolve(matched);
-
-        Assert.True(capabilities.RifleUsable);
-        Assert.True(capabilities.FirearmThreatAvailable);
-        Assert.True(capabilities.GunfightCapable);
-    }
 }

@@ -17,6 +17,10 @@ PG-004 is an umbrella requiring decomposition. Buying goods, town prosperity, ho
 
 The original game's Colt .44 and Colt .45 are distinct item types, each individually nonstackable, with separately stackable compatible ammunition and weapon-specific encounter damage. Record this as a feature-shaped original-game reference to assess for future scope, not proof it currently ships or an instruction to add weapon variants during cleanup. Likewise, snakebite medicine is supplied as a consumable example; current ItemKind contains food, horse feed, canteen, horse, saddle, knife, revolver/revolver ammunition and rifle/rifle ammunition, but no medicine. Track its delivery status and consumer before claiming it ships.
 
+## Dated stable 0.1.0 disposition, 2026-10-10
+
+The user chose to retire the incomplete Rifle/Rifle-ammunition shell rather than expand it into a full combat capability during the stable 0.1.0 cleanup. The current game supports the revolver/ammunition path; it must not sell, hold, steal, spend, narrate or expose rifle equipment. The successor slice removes the rifle item kinds and their gameplay/read surfaces, then uses an explicit PostgreSQL migration to discard pre-alpha GameSessions and their dependent history/cache rows so event and snapshot payloads containing numeric rifle item kinds cannot be loaded under the reduced enum. This preserves the database and migration chain; the migration cannot restore discarded playthroughs. Reintroduce the Rifle only through PG-004-B as a complete capability with acquisition, compatible ammo, unique ownership, weapon-specific travel-combat effects, event replay and player-facing reads. This dated release disposition does not rewrite the earlier investigation statement about what the original store slice contained.
+
 ## PG-004-R: remove separate-vendor distinctions now
 
 **Story:** As a player in a town, I buy the goods offered by that town's one store, at prices driven by the town's prosperity. I am not asked to choose a stable or gunsmith.

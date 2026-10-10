@@ -107,7 +107,6 @@ export interface InventoryCapabilitiesDto {
   firearmThreatAvailable: boolean;
   gunfightCapable: boolean;
   revolverUsable: boolean;
-  rifleUsable: boolean;
 }
 
 export interface InventoryDto {

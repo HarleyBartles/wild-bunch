@@ -5,7 +5,6 @@ import { JourneyDecision } from "./JourneyDecision";
 import styled from "styled-components";
 
 const revolverAmmoKind = 7;
-const rifleAmmoKind = 9;
 
 interface TravelActionsProps {
   session: GameSessionDto;
@@ -39,7 +38,7 @@ export function TravelActions({
   }
 
   const firearmAmmo = session.inventory.items
-    .filter((item) => item.kind === revolverAmmoKind || item.kind === rifleAmmoKind)
+    .filter((item) => item.kind === revolverAmmoKind)
     .reduce((total, item) => total + item.quantity, 0);
 
   const disabled = busy || refreshing;

@@ -30,8 +30,7 @@ public sealed class TownStoreCatalogResolver
                 new StoreOffer(ItemKind.Horse, "Horse", 60m),
                 new StoreOffer(ItemKind.Saddle, "Saddle", 20m),
                 new StoreOffer(ItemKind.Revolver, "Revolver", 32m),
-                new StoreOffer(ItemKind.RevolverAmmo, "Revolver ammo", 4m),
-                new StoreOffer(ItemKind.RifleAmmo, "Rifle ammo", 6m)
+                new StoreOffer(ItemKind.RevolverAmmo, "Revolver ammo", 4m)
             },
             TownProsperity.Prosperous => new[]
             {
@@ -42,8 +41,7 @@ public sealed class TownStoreCatalogResolver
                 new StoreOffer(ItemKind.Horse, "Horse", 60m),
                 new StoreOffer(ItemKind.Saddle, "Saddle", 20m),
                 new StoreOffer(ItemKind.Revolver, "Revolver", 35m),
-                new StoreOffer(ItemKind.RevolverAmmo, "Revolver ammo", 4m),
-                new StoreOffer(ItemKind.RifleAmmo, "Rifle ammo", 6m)
+                new StoreOffer(ItemKind.RevolverAmmo, "Revolver ammo", 4m)
             },
             TownProsperity.Poor => new[]
             {
