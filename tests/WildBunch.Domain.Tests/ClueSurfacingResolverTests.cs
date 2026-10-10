@@ -53,9 +53,9 @@ public sealed class ClueSurfacingResolverTests
         var caseFile = BuildTestCaseFile();
         var resolver = new ClueSurfacingResolver();
 
-        var clue = resolver.Resolve(caseFile, InvestigationSourceKind.SheriffWarrants, 0, 0, salt: null);
+        var clue = resolver.Resolve(caseFile, InvestigationSourceKind.Prologue, 0, 0, salt: null);
 
-        // No SheriffWarrants-tagged clues exist in the base 6, so this returns null.
+        // Prologue knowledge is already in the opening case file, not in the public clue pool.
         Assert.Null(clue);
     }
 
@@ -174,14 +174,14 @@ public sealed class ClueSurfacingResolverTests
                 "A county ledger lists a horse sold to a cash-paying stranger.",
                 new[] { new SuspectId("suspect-1") },
                 InvestigationTargetKind.Suspected,
-                InvestigationSourceKind.LocalRecords),
+                InvestigationSourceKind.LocalGossip),
             new Clue(
                 new ClueId("clue-notice-1"),
                 ClueKind.Alias,
                 "A posted notice describes a rider wearing a faded blue scarf.",
                 new[] { new SuspectId("suspect-1") },
                 InvestigationTargetKind.GangMember,
-                InvestigationSourceKind.NoticeBoard)
+                InvestigationSourceKind.SheriffWarrants)
         };
 
         return new CaseFile(

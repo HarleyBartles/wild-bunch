@@ -58,23 +58,6 @@ public sealed class SetupPhaseGuardTests
     }
 
     [Fact]
-    public async Task InvestigationActionDuringSetupPhaseReturnsConflict()
-    {
-        using var factory = new PostgreSqlApiFactory();
-        using var client = factory.CreateClient();
-
-        var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
-        var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
-
-        var response = await client.PostAsync(
-            $"/api/games/{setupSession.Id}/investigations/notice-board/inspect",
-            content: null);
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
-
-    [Fact]
     public async Task PreviewTravelDuringSetupPhaseReturnsFailureDto()
     {
         // PreviewTravel is a query, not a command — it does not go through

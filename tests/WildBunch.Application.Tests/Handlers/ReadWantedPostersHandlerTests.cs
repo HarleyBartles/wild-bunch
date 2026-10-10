@@ -55,11 +55,11 @@ public sealed class ReadWantedPostersHandlerTests
     }
 
     [Fact]
-    public async Task ReadWantedPostersSucceedsEvenWithoutNoticeBoardService()
+    public async Task ReadWantedPostersSucceedsForAValidSession()
     {
         // Every town has a sheriff's office. ReadWantedPosters is always available,
         // regardless of which town is current. The action should succeed and
-        // reveal warrants/clues just like in a town with NoticeBoard.
+        // reveal the warrant and one poster clue in the Sheriff Office.
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         session.MarkEventsCommitted();
@@ -150,7 +150,7 @@ public sealed class ReadWantedPostersHandlerTests
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.SheriffWarrants,
-                    source: "notice board",
+                    source: "sheriff office",
                     context: "Public wanted poster",
                     anchors: new ClueAnchors(
                         subjects: new[]

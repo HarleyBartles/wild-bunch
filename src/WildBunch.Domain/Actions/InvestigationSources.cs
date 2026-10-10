@@ -9,10 +9,6 @@ public static class InvestigationSources
 
     public static IReadOnlyList<TownSourceDefinition> All => Catalog.Definitions;
 
-    public static TownSourceDefinition NoticeBoard => Catalog.GetRequiredDefinition(InvestigationSourceKind.NoticeBoard);
-
-    public static TownSourceDefinition LocalRecords => Catalog.GetRequiredDefinition(InvestigationSourceKind.LocalRecords);
-
     public static TownSourceDefinition LocalGossip => Catalog.GetRequiredDefinition(InvestigationSourceKind.LocalGossip);
 
     public static TownSourceDefinition SaloonLookAround => Catalog.GetRequiredDefinition(InvestigationSourceKind.SaloonLookAround);

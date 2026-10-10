@@ -76,7 +76,7 @@ public sealed class GameSessionWantedPostersTests
     }
 
     [Fact]
-    public void ReadingWantedPostersInTownWithoutNoticeBoardStillSucceeds()
+    public void ReadingWantedPostersSucceedsInTown()
     {
         // Every town has a sheriff's office. ReadWantedPosters is always available
         // and reveals its warrants and clues.
@@ -149,7 +149,7 @@ public sealed class GameSessionWantedPostersTests
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.GangMember,
                     InvestigationSourceKind.SheriffWarrants,
-                    source: "notice board",
+                    source: "sheriff office",
                     context: "Public wanted poster")
             }.Concat(includeSourceSpecificClues
                 ? new[]

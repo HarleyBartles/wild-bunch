@@ -28,7 +28,7 @@ export const TravelMode = {
   Foot: 1,
 } as const;
 
-export type AvailableActionKind = 0 | 1 | 2 | 3 | 5 | 6 | 7 | 8 | 9 | 11 | 12;
+export type AvailableActionKind = 0 | 1 | 2 | 3 | 5 | 6 | 7 | 11 | 12;
 export const AvailableActionKind = {
   Travel: 0,
   ViewMap: 1,
@@ -37,8 +37,6 @@ export const AvailableActionKind = {
   ReadWantedPosters: 5,
   AdvanceTravelDay: 6,
   ResolveTravelEncounter: 7,
-  InspectNoticeBoard: 8,
-  CheckSheriffRecords: 9,
   GatherLocalGossip: 11,
   LookAroundSaloon: 12,
 } as const;
@@ -397,8 +395,6 @@ export interface WorldDto {
 
 export type InvestigationSourceKind = 0 | 1 | 3 | 4 | 5 | 6 | 7;
 export const InvestigationSourceKind = {
-  NoticeBoard: 0,
-  LocalRecords: 1,
   LocalGossip: 3,
   StableLedger: 4,
   SheriffWarrants: 5,

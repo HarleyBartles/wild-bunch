@@ -9,7 +9,6 @@ public class BeatNarrationRendererTests
     [Theory]
     [InlineData(TimeOfDay.Morning, TownActionContext.Saloon, "Tumbleweed", "You spent the morning at the saloon in Tumbleweed")]
     [InlineData(TimeOfDay.Afternoon, TownActionContext.SheriffOffice, "Dust Creek", "You spent the afternoon at the sheriff's office in Dust Creek")]
-    [InlineData(TimeOfDay.Night, TownActionContext.TownSquare, "Silverton", "You spent the night at the town square in Silverton")]
     public void Render_ReturnsDiegeticNarration(TimeOfDay timeOfDay, TownActionContext context, string townName, string expected)
     {
         var result = BeatNarrationRenderer.Render(timeOfDay, context, townName);

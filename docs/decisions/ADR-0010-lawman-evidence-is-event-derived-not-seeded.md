@@ -8,6 +8,7 @@
 
 - `2026-06-01` - Chose that a future lawman evidence system should derive its claims from game events and established facts rather than a static seeded evidence list.
 - `2026-10-08` - Clarified the initial telegraph scope: its first use is lawman intelligence. This record does not authorize other telegraph clue types.
+- `2026-10-10` - Clarified current scope: stable 0.1.0 removes the pre-alpha public-notice clue and local-record interaction. This does not change the planned event-derived lawman intelligence decision.
 
 ## Decision Type
 
@@ -21,6 +22,8 @@
 ## Context
 
 The current case uses seeded clues, public notices, and structured anchors. Lawman intelligence has a different meaning: it describes what the lawman could learn from events and where those events became knowable.
+
+**Editorial clarification (2026-10-10):** The first sentence describes the pre-alpha game when this decision was recorded. Stable 0.1.0 removes the public-notice clue and local-record interaction; the event-derived lawman intelligence decision remains planned.
 
 ## Decision
 

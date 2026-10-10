@@ -30,20 +30,6 @@ public sealed record TownSourceCatalog(IReadOnlyList<TownSourceDefinition> Defin
     public static TownSourceCatalog Default { get; } = new(
         [
             new TownSourceDefinition(
-                "town-source.notice-board",
-                InvestigationSourceKind.NoticeBoard,
-                AvailableActionKind.InspectNoticeBoard,
-                "Inspect notice board",
-                TownSourceLocality.TownLocal,
-                TownSourceRefreshPolicy.PerVisit),
-            new TownSourceDefinition(
-                "town-source.local-records",
-                InvestigationSourceKind.LocalRecords,
-                AvailableActionKind.CheckSheriffRecords,
-                "Check local records",
-                TownSourceLocality.TownLocal,
-                TownSourceRefreshPolicy.PerVisit),
-            new TownSourceDefinition(
                 "town-source.local-gossip",
                 InvestigationSourceKind.LocalGossip,
                 AvailableActionKind.GatherLocalGossip,

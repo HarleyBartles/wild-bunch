@@ -44,10 +44,6 @@ export function formatActionKind(kind: number) {
       return "Advance travel day";
     case 7:
       return "Resolve travel encounter";
-    case 8:
-      return "Inspect notice board";
-    case 9:
-      return "Check local records";
     case 11:
       return "Gather local gossip";
     case 12:

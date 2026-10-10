@@ -8,22 +8,18 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { SheriffPlace } from "../flow/places/SheriffPlace";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import {
-  AvailableActionKind,
-  InvestigationSourceKind,
-  type GameSessionDto,
-  type JournalDto,
-} from "../api/types";
 import {
   getAvailableActions,
   getGame,
   getJournal,
   getTownStoreOffers,
-  checkLocalRecords,
   readWantedPosters,
 } from "../api/wildBunchApi";
+import { AvailableActionKind } from "../api/types";
+import type { GameSessionDto, JournalDto } from "../api/types";
 
 vi.mock("../api/wildBunchApi", () => ({
   buyStoreItem: vi.fn(),
@@ -31,8 +27,6 @@ vi.mock("../api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
@@ -48,7 +42,6 @@ const mockedGetGame = vi.mocked(getGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
-const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 
 afterEach(() => {
@@ -57,10 +50,6 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-function seedGameId(id: string) {
-  window.localStorage.setItem("wild-bunch.current-game-id", id);
-}
-
 function createSession(): GameSessionDto {
   return {
     id: "game-1",
@@ -68,18 +57,8 @@ function createSession(): GameSessionDto {
     gameDifficulty: 0,
     gameEntropy: 1,
     startFlowPhase: 4,
-    player: {
-      name: "Ruth",
-      currentTownId: "t-town",
-      health: 9,
-    },
-    world: {
-      towns: [
-        { id: "t-town", name: "Tumbleweed" },
-        { id: "dust-fork", name: "Dust Fork" },
-      ],
-      trails: [],
-    },
+    player: { name: "Ruth", currentTownId: "t-town", health: 9 },
+    world: { towns: [{ id: "t-town", name: "Tumbleweed" }], trails: [] },
     caseFile: {
       accusationId: null,
       openingLead: "The trail went cold outside town.",
@@ -114,7 +93,7 @@ function createSession(): GameSessionDto {
   };
 }
 
-function createJournalWithSheriffLeads(): JournalDto {
+function createJournal(): JournalDto {
   return {
     id: "game-1",
     status: 0,
@@ -127,26 +106,7 @@ function createJournalWithSheriffLeads(): JournalDto {
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
       caseBoard: { warrants: [], clues: [] },
-      knownClues: [
-        {
-          id: "clue-local-records-1",
-          kind: 2,
-          description: "A public notice describes an unnamed rider who wears a silver spur.",
-          sourceLabel: "sheriff record",
-          context: "Public notice",
-          sourceKind: InvestigationSourceKind.LocalRecords,
-          anchors: { subjects: [], locations: [], times: [], directions: [] },
-        },
-        {
-          id: "clue-gossip-1",
-          kind: 7,
-          description: "Local gossip says the rider kept to the rail spur after dark.",
-          sourceLabel: "saloon talk",
-          context: "Town gossip",
-          sourceKind: InvestigationSourceKind.LocalGossip,
-          anchors: { subjects: [], locations: [], times: [], directions: [] },
-        },
-      ],
+      knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
     },
@@ -158,6 +118,7 @@ function renderSheriffPlace() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
   const rootRoute = createRootRoute({ component: () => <Outlet /> });
   const sheriffRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -175,89 +136,35 @@ function renderSheriffPlace() {
   );
 }
 
-function primeMocksWithSheriffLeads() {
-  mockedGetGame.mockResolvedValue(createSession());
-  mockedGetAvailableActions.mockResolvedValue([
-    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
-    { kind: AvailableActionKind.CheckSheriffRecords, label: "Check local records" },
-  ]);
-  mockedGetJournal.mockResolvedValue(createJournalWithSheriffLeads());
-  mockedGetTownStoreOffers.mockResolvedValue({
-    townId: "t-town",
-    townName: "Tumbleweed",
-    offers: [],
-  });
-  mockedReadWantedPosters.mockResolvedValue({
-    success: true,
-    message: "You read the wanted posters.",
-    currentJournal: createJournalWithSheriffLeads(),
-    wantedPosters: [],
-  });
-  mockedCheckLocalRecords.mockResolvedValue({
-    success: true,
-    message: "You check the local records and uncover a public lead.",
-    currentJournal: createJournalWithSheriffLeads(),
-  });
-}
-
 describe("SheriffPlace", () => {
-  it("shows sheriff office leads (LocalRecords clues) inline and excludes non-sheriff clues", async () => {
-    seedGameId("game-1");
-    primeMocksWithSheriffLeads();
-    renderSheriffPlace();
-
-    await waitFor(() => {
-      expect(screen.getByText("Sheriff Office")).toBeInTheDocument();
-    });
-
-    // The LocalRecords clue should appear inline.
-    expect(
-      screen.getByText("A public notice describes an unnamed rider who wears a silver spur."),
-    ).toBeInTheDocument();
-
-    // The LocalGossip clue should NOT appear in the sheriff office.
-    expect(
-      screen.queryByText("Local gossip says the rider kept to the rail spur after dark."),
-    ).not.toBeInTheDocument();
-  });
-
-  it("shows a placeholder when no sheriff leads have been discovered yet", async () => {
-    seedGameId("game-1");
+  it("offers wanted posters and routes the read without showing fake records", async () => {
+    const user = userEvent.setup();
+    const journal = createJournal();
     mockedGetGame.mockResolvedValue(createSession());
     mockedGetAvailableActions.mockResolvedValue([
       { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
-      { kind: AvailableActionKind.CheckSheriffRecords, label: "Check local records" },
     ]);
-    mockedGetJournal.mockResolvedValue({
-      id: "game-1",
-      status: 0,
-      clock: { day: 5, turn: 2, timeOfDay: "Morning" },
-      currentTown: { id: "t-town", name: "Tumbleweed" },
-      caseFile: {
-        accusationId: null,
-        openingLead: "The trail went cold outside town.",
-        caseState: { statusText: "Still chasing leads." },
-        caseSummary: "Find the culprit before the law closes in.",
-        discoveredSuspects: [],
-        caseBoard: { warrants: [], clues: [] },
-        knownClues: [],
-        knownWarrants: [],
-        wantedPosters: [],
-      },
-      logEntries: [],
-    });
+    mockedGetJournal.mockResolvedValue(journal);
     mockedGetTownStoreOffers.mockResolvedValue({
       townId: "t-town",
       townName: "Tumbleweed",
       offers: [],
     });
+    mockedReadWantedPosters.mockResolvedValue({
+      success: true,
+      message: "You read the wanted posters.",
+      currentJournal: journal,
+      wantedPosters: [],
+    });
 
     renderSheriffPlace();
 
-    await waitFor(() => {
-      expect(screen.getByText("Sheriff Office")).toBeInTheDocument();
-    });
+    const readButton = await screen.findByRole("button", { name: /read wanted posters/i });
+    expect(screen.getByRole("heading", { name: "Sheriff Office" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /records/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/local records/i)).not.toBeInTheDocument();
 
-    expect(screen.getByText("No leads from local records yet.")).toBeInTheDocument();
+    await user.click(readButton);
+    await waitFor(() => expect(mockedReadWantedPosters).toHaveBeenCalledWith("game-1"));
   });
 });

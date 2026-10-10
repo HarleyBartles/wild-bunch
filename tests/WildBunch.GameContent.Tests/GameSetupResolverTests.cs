@@ -75,8 +75,8 @@ public sealed class GameSetupResolverTests
         Assert.Single(setup.CaseFile.Suspects, suspect => suspect.Id.Equals(setup.CaseFile.TrueCulpritId));
         Assert.Equal(5, setup.CaseFile.KillerReleaseThreshold);
         Assert.Equal("The culprit has a scar on the left cheek.", setup.CaseFile.OpeningLead.Description);
-        // Four base surface-tagged clues and one warrant for each generated gang member or culprit.
-        Assert.Equal(4, setup.CaseFile.PublicClues.Count);
+        // The authored public source is the Sheriff Office poster; other public clues are gossip.
+        Assert.Single(setup.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
         Assert.Equal(7, setup.CaseFile.PublicWarrants.Count);
         Assert.All(setup.CaseFile.PublicWarrants, warrant => Assert.True(
             warrant.Terms.TargetKind is InvestigationTargetKind.GangMember or InvestigationTargetKind.TrueCulprit));

@@ -58,8 +58,6 @@ public static class DependencyInjection
         services.AddScoped<GetTownStoreOffersHandler>();
         services.AddScoped<PurchaseStoreItemHandler>();
         services.AddScoped<ReadWantedPostersHandler>();
-        services.AddScoped<InspectNoticeBoardHandler>();
-        services.AddScoped<CheckSheriffRecordsHandler>();
         services.AddScoped<GatherLocalGossipHandler>();
         services.AddScoped<LookAroundSaloonHandler>();
         services.AddScoped<ConfrontWantedSuspectHandler>();

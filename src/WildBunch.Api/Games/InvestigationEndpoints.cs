@@ -8,16 +8,6 @@ public static class InvestigationEndpoints
 {
     public static IEndpointRouteBuilder MapInvestigationEndpoints(this IEndpointRouteBuilder games)
     {
-        games.MapPost("{id:guid}/investigations/notice-board/inspect", InspectNoticeBoardAsync)
-            .WithName("InspectNoticeBoard")
-            .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
-
-        games.MapPost("{id:guid}/investigations/local-records/check", CheckLocalRecordsAsync)
-            .WithName("CheckLocalRecords")
-            .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
-
         games.MapPost("{id:guid}/investigations/local-gossip/gather", GatherLocalGossipAsync)
             .WithName("GatherLocalGossip")
             .Produces<InvestigationActionResultDto>(StatusCodes.Status200OK)
@@ -34,38 +24,6 @@ public static class InvestigationEndpoints
             .Produces(StatusCodes.Status404NotFound);
 
         return games;
-    }
-
-    private static async Task<IResult> InspectNoticeBoardAsync(
-        Guid id,
-        InspectNoticeBoardHandler handler,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await handler.HandleAsync(new InspectNoticeBoardCommand(id), cancellationToken);
-            return Results.Ok(result);
-        }
-        catch (GameSessionNotFoundException)
-        {
-            return Results.NotFound();
-        }
-    }
-
-    private static async Task<IResult> CheckLocalRecordsAsync(
-        Guid id,
-        CheckSheriffRecordsHandler handler,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var result = await handler.HandleAsync(new CheckSheriffRecordsCommand(id), cancellationToken);
-            return Results.Ok(result);
-        }
-        catch (GameSessionNotFoundException)
-        {
-            return Results.NotFound();
-        }
     }
 
     private static async Task<IResult> GatherLocalGossipAsync(

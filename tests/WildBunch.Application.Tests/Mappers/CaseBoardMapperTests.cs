@@ -182,7 +182,7 @@ public sealed class CaseBoardMapperTests
                 InvestigationTargetKind.Suspected,
                 InvestigationSourceKind.SheriffWarrants,
                 source: "wanted poster",
-                context: "Public notice",
+                context: "Wanted poster",
                 anchors: new ClueAnchors(subjects: new[] { new ClueSubjectAnchor("Red Wren", Alias: "Red Wren") })),
             new Clue(
                 new ClueId("clue-mira-feature"),
@@ -200,8 +200,8 @@ public sealed class CaseBoardMapperTests
                 "A deputy remembers a wanted rider with mismatched spurs.",
                 new[] { new SuspectId("suspect-2") },
                 InvestigationTargetKind.Suspected,
-                InvestigationSourceKind.LocalRecords,
-                source: "sheriff record",
+                InvestigationSourceKind.SheriffWarrants,
+                source: "sheriff office",
                 context: "Open warrant",
                 anchors: new ClueAnchors(subjects: new[] { new ClueSubjectAnchor("Mismatched spurs", Feature: "Mismatched spurs") }))
         };

@@ -42,14 +42,10 @@ export function AvailableActionsPanel() {
     gameId,
     selectedWantedPoster,
     canReadWantedPosters,
-    canInspectNoticeBoard,
-    canCheckLocalRecords,
     canGatherLocalGossip,
     canLookAroundSaloon,
     canConfrontSaloonPersonOfInterest,
     handleReadWantedPosters,
-    handleInspectNoticeBoard,
-    handleCheckLocalRecords,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
     handleConfrontSaloonPersonOfInterest,
@@ -113,22 +109,6 @@ export function AvailableActionsPanel() {
                   disabled={!gameId || loading || !canReadWantedPosters}
                 >
                   {busyMode === "reading" ? "Reading..." : "Read wanted posters"}
-                </Button>
-              ) : action.kind === AvailableActionKind.InspectNoticeBoard ? (
-                <Button
-                  type="button"
-                  onClick={handleInspectNoticeBoard}
-                  disabled={!gameId || loading || !canInspectNoticeBoard}
-                >
-                  {busyMode === "investigating" ? "Inspecting..." : "Inspect notice board"}
-                </Button>
-              ) : action.kind === AvailableActionKind.CheckSheriffRecords ? (
-                <Button
-                  type="button"
-                  onClick={handleCheckLocalRecords}
-                  disabled={!gameId || loading || !canCheckLocalRecords}
-                >
-                  {busyMode === "investigating" ? "Checking..." : "Check local records"}
                 </Button>
               ) : action.kind === AvailableActionKind.GatherLocalGossip ? (
                 <Button

@@ -6,16 +6,6 @@ namespace WildBunch.Domain.Tests;
 public class BeatNarrationDomainTests
 {
     [Fact]
-    public void InspectNoticeBoard_PopulatesBeatNarration()
-    {
-        var session = TestSessionFactory.CreateDefault();
-        var result = session.InspectNoticeBoard();
-        Assert.NotNull(result.BeatNarration);
-        Assert.Contains("town square", result.BeatNarration);
-        Assert.DoesNotContain("turn", result.BeatNarration!.ToLowerInvariant());
-    }
-
-    [Fact]
     public void GatherLocalGossip_PopulatesBeatNarration()
     {
         var session = TestSessionFactory.CreateDefault();
@@ -44,7 +34,7 @@ public class BeatNarrationDomainTests
         var session = TestSessionFactory.CreateDefault();
         Assert.Equal(TimeOfDay.Morning, session.Clock.TimeOfDay);
 
-        var result = session.InspectNoticeBoard();
+        var result = session.LookAroundSaloon();
 
         // After the action, the clock has advanced to Afternoon
         Assert.Equal(TimeOfDay.Afternoon, session.Clock.TimeOfDay);
@@ -62,11 +52,11 @@ public class BeatNarrationDomainTests
         // The narration must say "evening" (the beat spent), not "night" (the resulting state).
         var session = TestSessionFactory.CreateDefault();
         // Advance to Evening: take 2 cross-location actions
-        session.InspectNoticeBoard();   // Morning -> Afternoon (TownSquare)
-        session.GatherLocalGossip();    // Afternoon -> Evening (Saloon)
+        session.LookAroundSaloon();    // Morning -> Afternoon (Saloon)
+        session.ReadWantedPosters();   // Afternoon -> Evening (SheriffOffice)
         Assert.Equal(TimeOfDay.Evening, session.Clock.TimeOfDay);
 
-        var result = session.CheckSheriffRecords();
+        var result = session.GatherLocalGossip();
 
         // After the action, the clock has advanced to Night
         Assert.Equal(TimeOfDay.Night, session.Clock.TimeOfDay);

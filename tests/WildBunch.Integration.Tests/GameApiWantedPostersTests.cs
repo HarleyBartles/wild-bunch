@@ -124,9 +124,9 @@ public sealed class GameApiWantedPostersTests
     [Fact]
     public async Task PostReadWantedPostersSucceedsAfterTravelingToAnotherTown()
     {
-        // BUNCH-107: Every town now has a notice board always. The resolver-based
-        // selection (town slot + visit count + salt) determines which warrant
-        // surfaces. This test verifies that reading wanted posters succeeds
+        // Every town has a Sheriff Office. The resolver-based selection
+        // (town slot + visit count + salt) determines which warrant surfaces.
+        // This test verifies that reading wanted posters succeeds
         // after traveling to a different town.
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();

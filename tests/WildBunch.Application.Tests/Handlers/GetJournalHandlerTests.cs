@@ -92,13 +92,13 @@ public sealed class GetJournalHandlerTests
         var session = CreateSession();
         session.ProduceEvent(new InvestigationPerformed
         {
-            SourceKind = InvestigationSourceKind.LocalRecords,
+            SourceKind = InvestigationSourceKind.LocalGossip,
             TownId = session.Player.CurrentTownId!.Value,
             Message = "Second entry"
         });
         session.ProduceEvent(new InvestigationPerformed
         {
-            SourceKind = InvestigationSourceKind.LocalRecords,
+            SourceKind = InvestigationSourceKind.LocalGossip,
             TownId = session.Player.CurrentTownId!.Value,
             Message = "Third entry"
         });

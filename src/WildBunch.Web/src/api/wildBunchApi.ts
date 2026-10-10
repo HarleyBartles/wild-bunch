@@ -120,24 +120,6 @@ export function readWantedPosters(gameId: string) {
   });
 }
 
-export function inspectNoticeBoard(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(
-    `/api/games/${gameId}/investigations/notice-board/inspect`,
-    {
-      method: "POST",
-    },
-  );
-}
-
-export function checkLocalRecords(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(
-    `/api/games/${gameId}/investigations/local-records/check`,
-    {
-      method: "POST",
-    },
-  );
-}
-
 export function gatherLocalGossip(gameId: string) {
   return requestJson<InvestigationActionResultDto>(
     `/api/games/${gameId}/investigations/local-gossip/gather`,

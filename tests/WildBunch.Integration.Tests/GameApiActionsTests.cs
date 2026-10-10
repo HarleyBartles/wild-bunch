@@ -30,15 +30,14 @@ public sealed class GameApiActionsTests
         var actions = await response.Content.ReadFromJsonAsync<AvailableActionDto[]>();
 
         Assert.NotNull(actions);
-        Assert.Equal(9, actions!.Length);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.Travel);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.ViewMap);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.ViewJournal);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.BuySupplies);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.ReadWantedPosters);
-        Assert.Contains(actions!, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.Contains(actions!, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(actions!, action => action.Kind == AvailableActionKind.GatherLocalGossip);
+        Assert.DoesNotContain(actions!, action =>
+            action.Label is "Inspect notice board" or "Check local records");
     }
 
     [Fact]

@@ -42,8 +42,6 @@ public sealed class GetAvailableActionsHandlerTests
 
         var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
 
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         // ReadWantedPosters is always available - every town has a sheriff's office.

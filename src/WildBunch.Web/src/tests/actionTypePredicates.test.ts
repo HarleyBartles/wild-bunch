@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   actionIsWantedPosters,
-  actionIsInspectNoticeBoard,
-  actionIsCheckLocalRecords,
   actionIsGatherLocalGossip,
   actionIsLookAroundSaloon,
 } from "../utils/actionTypePredicates";
@@ -10,39 +8,19 @@ import { AvailableActionKind } from "../api/types";
 import type { AvailableActionDto } from "../api/types";
 
 function makeAction(kind: AvailableActionKind): AvailableActionDto {
-  return {
-    kind,
-    label: "Test action",
-    destinationTownId: null,
-  } as AvailableActionDto;
+  return { kind, label: "Test action", destinationTownId: null } as AvailableActionDto;
 }
 
 describe("actionTypePredicates", () => {
-  it("returns true only for the matching kind", () => {
+  it("identifies wanted posters", () => {
     expect(actionIsWantedPosters(makeAction(AvailableActionKind.ReadWantedPosters))).toBe(true);
-    expect(actionIsWantedPosters(makeAction(AvailableActionKind.InspectNoticeBoard))).toBe(false);
   });
 
-  it("identifies InspectNoticeBoard", () => {
-    expect(actionIsInspectNoticeBoard(makeAction(AvailableActionKind.InspectNoticeBoard))).toBe(
-      true,
-    );
-    expect(actionIsInspectNoticeBoard(makeAction(AvailableActionKind.ReadWantedPosters))).toBe(
-      false,
-    );
-  });
-
-  it("identifies CheckSheriffRecords as checkLocalRecords", () => {
-    expect(actionIsCheckLocalRecords(makeAction(AvailableActionKind.CheckSheriffRecords))).toBe(
-      true,
-    );
-  });
-
-  it("identifies GatherLocalGossip", () => {
+  it("identifies local gossip", () => {
     expect(actionIsGatherLocalGossip(makeAction(AvailableActionKind.GatherLocalGossip))).toBe(true);
   });
 
-  it("identifies LookAroundSaloon", () => {
+  it("identifies saloon observation", () => {
     expect(actionIsLookAroundSaloon(makeAction(AvailableActionKind.LookAroundSaloon))).toBe(true);
   });
 });

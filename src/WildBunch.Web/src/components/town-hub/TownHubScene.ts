@@ -84,10 +84,7 @@ export function isBuildingAvailable(kind: BuildingKind, actions: AvailableAction
     case BuildingKind.Store:
       return actions.includes(AvailableActionKind.BuySupplies);
     case BuildingKind.Sheriff:
-      return (
-        actions.includes(AvailableActionKind.ReadWantedPosters) ||
-        actions.includes(AvailableActionKind.CheckSheriffRecords)
-      );
+      return actions.includes(AvailableActionKind.ReadWantedPosters);
     case BuildingKind.Saloon:
       return (
         actions.includes(AvailableActionKind.LookAroundSaloon) ||

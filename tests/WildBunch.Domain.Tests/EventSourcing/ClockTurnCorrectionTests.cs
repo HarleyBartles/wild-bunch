@@ -183,11 +183,11 @@ public sealed class ClockTurnCorrectionTests
     // --- Task 6: Investigation method context entry ---
 
     [Fact]
-    public void CheckSheriffRecords_EntersSheriffOfficeContext_AndAdvancesTurn()
+    public void ReadWantedPosters_EntersSheriffOfficeContext_AndAdvancesTurn()
     {
         var session = TestSessionFactory.CreateDefault();
         var turnBefore = session.Clock.Turn;
-        session.CheckSheriffRecords();
+        session.ReadWantedPosters();
         Assert.Equal(TownActionContext.SheriffOffice, session.CurrentActionContext);
         Assert.Equal(turnBefore + 1, session.Clock.Turn);
     }
@@ -198,14 +198,6 @@ public sealed class ClockTurnCorrectionTests
         var session = TestSessionFactory.CreateDefault();
         session.GatherLocalGossip();
         Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
-    }
-
-    [Fact]
-    public void InspectNoticeBoard_EntersTownSquareContext()
-    {
-        var session = TestSessionFactory.CreateDefault();
-        session.InspectNoticeBoard();
-        Assert.Equal(TownActionContext.TownSquare, session.CurrentActionContext);
     }
 
     [Fact]
@@ -220,7 +212,7 @@ public sealed class ClockTurnCorrectionTests
     public void TwoSheriffActionsInSameContext_DoNotAdvanceTurnTwice()
     {
         var session = TestSessionFactory.CreateDefault();
-        session.CheckSheriffRecords(); // enters SheriffOffice, advances turn
+        session.ReadWantedPosters(); // enters SheriffOffice, advances turn
         var turnAfterFirst = session.Clock.Turn;
 
         // ReadWantedPosters is also a SheriffOffice action — same context, no turn advance

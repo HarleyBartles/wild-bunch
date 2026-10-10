@@ -3,11 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   acknowledgeTravelArrival,
   archiveGame,
-  checkLocalRecords,
   confrontSaloonPersonOfInterest,
   gatherLocalGossip,
   getGame,
-  inspectNoticeBoard,
   lookAroundSaloon,
   markPrologueViewed,
   readWantedPosters,
@@ -18,7 +16,6 @@ import {
 import { GameStatus, type WantedPosterDto } from "../api/types";
 import { formatMoney, storageKey } from "../utils/formatting";
 import { HttpRequestError } from "../api/httpClient";
-import { formatInvestigationNotice } from "../ui/beatFormatters";
 import {
   clearPendingFirstArrivalOperation,
   clearPendingSetupOperation,
@@ -218,34 +215,6 @@ export function useGameSessionMutations({
     },
   });
 
-  const inspectNoticeBoardMutation = useMutation({
-    mutationFn: () => inspectNoticeBoard(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error ? exception.message : "Unable to inspect the notice board.",
-      );
-    },
-  });
-
-  const checkLocalRecordsMutation = useMutation({
-    mutationFn: () => checkLocalRecords(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to check local records.");
-    },
-  });
-
   const gatherLocalGossipMutation = useMutation({
     mutationFn: () => gatherLocalGossip(gameId as string),
     onSuccess: async (result) => {
@@ -304,8 +273,6 @@ export function useGameSessionMutations({
     travelMutation,
     acknowledgeArrivalMutation,
     readWantedPostersMutation,
-    inspectNoticeBoardMutation,
-    checkLocalRecordsMutation,
     gatherLocalGossipMutation,
     lookAroundSaloonMutation,
     confrontSaloonMutation,

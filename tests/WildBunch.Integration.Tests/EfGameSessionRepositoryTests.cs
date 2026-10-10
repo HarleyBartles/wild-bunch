@@ -2379,7 +2379,7 @@ public sealed class EfGameSessionRepositoryTests
             "A witness mentions a silver spur.",
             new[] { new SuspectId("suspect-1") },
             InvestigationTargetKind.GangMember,
-            InvestigationSourceKind.NoticeBoard);
+            InvestigationSourceKind.LocalGossip);
         var session = CreateSession(publicClues: new[] { unlearnedClue });
 
         Assert.Empty(session.CaseFile.KnownClues);
@@ -3162,7 +3162,7 @@ public sealed class EfGameSessionRepositoryTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var expectedClue = CreatePayloadCacheClue();
-        var unlearnedClue = CreateUnlearnedCacheClue();
+        var unlearnedClue = CreateUnlearnedCacheClue(InvestigationSourceKind.SheriffWarrants);
         var session = CreateSession(includeKnownClue: true, publicClues: new[] { expectedClue, unlearnedClue });
         var repository = CreateRepository(fixture, out var unitOfWork);
         await PersistAsync(repository, unitOfWork, session);
@@ -3364,7 +3364,7 @@ public sealed class EfGameSessionRepositoryTests
             "A second witness mentions a silver spur.",
             new[] { new SuspectId("suspect-1") },
             InvestigationTargetKind.GangMember,
-            InvestigationSourceKind.NoticeBoard);
+            InvestigationSourceKind.SheriffWarrants);
         var session = CreateSession(publicClues: new[] { expectedClue, unlearnedClue });
         var repository = CreateRepository(fixture, out var unitOfWork);
         await PersistAsync(repository, unitOfWork, session);
@@ -6055,21 +6055,21 @@ public sealed class EfGameSessionRepositoryTests
                 125m,
                 new[] { "The Tall Texan", "Kid Curry" },
                 new[] { "missing left ear", "red neckerchief" },
-                "Sheriff's public noticeboard",
+                "Dodge City Marshal",
                 InvestigationTargetKind.GangMember,
                 new[] { OutlawGangIds.WildBunch },
                 OutlawGangIds.WildBunch,
                 InvestigationSourceKind.SheriffWarrants),
             "Wanted for a stagecoach robbery near Dustvale.");
 
-    private static Clue CreateUnlearnedCacheClue()
+    private static Clue CreateUnlearnedCacheClue(InvestigationSourceKind sourceKind = InvestigationSourceKind.LocalGossip)
         => new(
             new ClueId("unlearned-cache-clue"),
             ClueKind.IdentityFact,
             "A second witness mentions a silver spur.",
             new[] { new SuspectId("suspect-1") },
             InvestigationTargetKind.GangMember,
-            InvestigationSourceKind.NoticeBoard);
+            sourceKind);
 
     private static async Task<(int ComponentVersion, string ComponentPayload, long? SnapshotVersion, long StreamVersion,
         (long Sequence, Guid EventId, string EventType, string PayloadJson, int SchemaVersion)[] Events,
