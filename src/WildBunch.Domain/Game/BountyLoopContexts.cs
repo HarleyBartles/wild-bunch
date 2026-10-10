@@ -30,6 +30,7 @@ internal sealed record SaloonConfrontationContext(
     WantedSuspectPresenceState? ActiveSaloonSuspectPresenceState,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Warrant> KnownWarrants,
+    IReadOnlyList<Warrant> PublicWarrants,
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates,
     bool HasRevolver,
     decimal PlayerCash,

@@ -7,7 +7,9 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using WildBunch.Integration.Tests.TestInfrastructure;
@@ -64,12 +66,42 @@ public sealed class SaloonConfrontationAcceptanceTests
     }
 
     [Fact]
-    public async Task PostSaloonConfrontWithDeclaredWantedIdentityReturnsTheDeclaredHandleAlongsideTheTrueTarget()
+    public async Task PostSaloonConfrontWithFabricatedIdentityRejectsWithoutConsumingTheObservedPersonOrFiningThePlayer()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateAuthenticatedClient();
 
         var createdSession = await SeedSessionWithAvailableSaloonSuspectAsync(factory);
+        await client.PostAsJsonAsync(
+            $"/api/dev/sessions/{createdSession.Id}/saloon/force-override",
+            new ForceSaloonOverrideRequestDto(ForcedKind: "Suspect", ForcedSuspectId: "suspect-1", ForcedCitizenRoleKey: null));
+        await client.PostAsync($"/api/games/{createdSession.Id}/investigations/saloon/look-around", content: null);
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/games/{createdSession.Id}/investigations/saloon/confront",
+            new { declaredWantedIdentityHandle = "fabricated-warrant" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<SaloonPersonOfInterestConfrontationResultDto>();
+        Assert.NotNull(result);
+        Assert.False(result!.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, result.Outcome);
+        Assert.False(result.SessionChanged);
+        Assert.Null(result.FineAmount);
+
+        var reloadedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
+        Assert.Equal(new SuspectId("suspect-1"), reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Empty(reloadedSession.AllEvents.OfType<SaloonPersonOfInterestConfronted>());
+        Assert.Equal(25m, reloadedSession.Player.Wallet.Cash);
+    }
+
+    [Fact]
+    public async Task PostSaloonConfrontWithKnownIdentitySettlesTheSelectedWantedPerson()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateAuthenticatedClient();
+
+        var createdSession = await SeedSessionWithAvailableSaloonSuspectAsync(factory, armed: true);
 
         // Force the suspect POI via the dev override so the probabilistic saloon
         // roll deterministically surfaces suspect-1.
@@ -88,9 +120,17 @@ public sealed class SaloonConfrontationAcceptanceTests
 
         Assert.Equal(HttpStatusCode.OK, confrontationResponse.StatusCode);
 
-        var json = await confrontationResponse.Content.ReadAsStringAsync();
-        Assert.Contains("\"declaredWantedIdentityHandle\":\"warrant-1\"", json, StringComparison.Ordinal);
-        Assert.Contains("\"targetName\":\"Mira Cline\"", json, StringComparison.Ordinal);
+        var result = await confrontationResponse.Content.ReadFromJsonAsync<SaloonPersonOfInterestConfrontationResultDto>();
+        Assert.NotNull(result);
+        Assert.True(result!.Success);
+        Assert.Equal("warrant-1", result.DeclaredWantedIdentityHandle);
+        Assert.Equal("Mira Cline", result.TargetName);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Surrendered, result.Outcome);
+        Assert.True(result.IsSecured);
+
+        var reloadedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
+        var settlement = Assert.Single(reloadedSession.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(2500m, settlement.BountyAmount);
     }
 
     [Fact]
@@ -147,9 +187,9 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.Null(reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor);
     }
 
-    private static async Task<GameSessionDto> SeedSessionWithAvailableSaloonSuspectAsync(PostgreSqlApiFactory factory)
+    private static async Task<GameSessionDto> SeedSessionWithAvailableSaloonSuspectAsync(PostgreSqlApiFactory factory, bool armed = false)
     {
-        var session = CreateSession();
+        var session = CreateSession(armed);
         session.SetWantedSuspectPresenceState(new SuspectId("suspect-1"), WantedSuspectPresenceState.AvailableInTown);
 
         using var scope = factory.Services.CreateScope();
@@ -188,7 +228,7 @@ public sealed class SaloonConfrontationAcceptanceTests
         return session;
     }
 
-    private static GameSession CreateSession()
+    private static GameSession CreateSession(bool armed = false)
     {
         var currentTown = new Town(new TownId("current"), "Current Town");
         var connectedTown = new Town(new TownId("connected"), "Connected Town");
@@ -230,7 +270,10 @@ public sealed class SaloonConfrontationAcceptanceTests
             GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
         session.ViewPrologue("test-prologue-descriptor");
         session.SelectStartingTown(currentTown.Id);
-        session.CompleteGameStart();
+        var inventory = armed
+            ? new Inventory([new InventoryItem(ItemKind.Revolver, 1)])
+            : null;
+        session.CompleteGameStart(inventory: inventory);
         return session;
     }
 
@@ -248,7 +291,22 @@ public sealed class SaloonConfrontationAcceptanceTests
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
-            knownWarrants: Array.Empty<Warrant>());
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-1"),
+                    "Known wanted identity",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        100m,
+                        Array.Empty<string>(),
+                        Array.Empty<string>(),
+                        "Current Town Sheriff",
+                        InvestigationTargetKind.TrueCulprit,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for testing.")
+            });
 
         var session = GameSession.StartSetup(
             "Ranger Vale", world, caseFile,

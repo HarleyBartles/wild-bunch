@@ -79,6 +79,22 @@ internal sealed class BountyLoop
                 null);
         }
 
+        if (!context.KnownWarrants.Any(warrant =>
+                BountyDeclarationMatchPolicy.MatchesDeclaredWantedIdentity(
+                    context.DeclaredWantedIdentityHandle,
+                    warrant)))
+        {
+            return new SaloonConfrontationOutcome(
+                SaloonPersonOfInterestConfrontationResult.Rejected(
+                    "Choose a wanted identity from the posters before trying to take someone in.",
+                    context.DeclaredWantedIdentityHandle,
+                    activeSaloonPersonOfInterestDescriptor,
+                    sessionChanged: false,
+                    personOfInterestKind: activeSaloonPersonOfInterestKind),
+                [],
+                null);
+        }
+
         if (activeSaloonSuspectId is not null)
         {
             return ConfrontWantedSuspectInSaloon(context, activeSaloonSuspectId.Value, activeSaloonPersonOfInterestKind);
@@ -114,22 +130,21 @@ internal sealed class BountyLoop
                 null);
         }
 
-        var activeSaloonWarrant = context.KnownWarrants.FirstOrDefault(w => MatchesKnownWarrant(w, targetSuspect));
-        if (activeSaloonWarrant is null)
+        // The declared handle must be player-known, but server truth can resolve
+        // the encountered suspect through either the known or unread public pool.
+        var targetWarrant = context.KnownWarrants
+            .Concat(context.PublicWarrants)
+            .FirstOrDefault(warrant => MatchesKnownWarrant(warrant, targetSuspect));
+        if (targetWarrant is null)
         {
-            events.Add(BuildSaloonConfrontedEvent(
-                "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
-                declaredWantedIdentityHandle,
-                targetName: targetSuspect.Name,
-                personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
-                outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected));
             return new SaloonConfrontationOutcome(
                 SaloonPersonOfInterestConfrontationResult.Rejected(
-                    "You do not know any wanted identity or warrant to declare, so the opportunity has passed.",
+                    "The sheriff cannot identify a warrant for this person of interest.",
                     declaredWantedIdentityHandle,
-                    sessionChanged: true,
+                    context.ActiveSaloonDescriptor,
+                    sessionChanged: false,
                     personOfInterestKind: activeSaloonPersonOfInterestKind),
-                events,
+                [],
                 null);
         }
 
@@ -166,7 +181,7 @@ internal sealed class BountyLoop
                     $"{existingState.TargetName} has already been confronted.",
                     declaredWantedIdentityHandle,
                     existingState.TargetName,
-                    activeSaloonWarrant.Terms.Disposition,
+                    targetWarrant.Terms.Disposition,
                     sessionChanged: true,
                     personOfInterestKind: activeSaloonPersonOfInterestKind),
                 events,
@@ -175,7 +190,7 @@ internal sealed class BountyLoop
 
         var hasRevolver = context.HasRevolver;
         var isDeclaredWantedIdentityForThisWarrant =
-            BountyDeclarationMatchPolicy.MatchesDeclaredWantedIdentity(declaredWantedIdentityHandle, activeSaloonWarrant);
+            BountyDeclarationMatchPolicy.MatchesDeclaredWantedIdentity(declaredWantedIdentityHandle, targetWarrant);
 
         if (!hasRevolver)
         {
@@ -207,22 +222,22 @@ internal sealed class BountyLoop
             // SettleSheriffTurnIn, then produce the final SaloonPersonOfInterestConfronted.
             var armedWantedEvent = BuildWantedSuspectConfrontedEvent(
                 activeSaloonSuspect,
-                activeSaloonWarrant,
+                targetWarrant,
                 WantedSuspectConfrontationChoice.Surrendered,
                 declaredWantedIdentityHandle);
             events.Add(armedWantedEvent);
 
             var armedWantedResult = WantedSuspectConfrontationResult.Surrendered(
                 declaredWantedIdentityHandle,
-                activeSaloonWarrant.TargetName,
-                activeSaloonWarrant.Terms.Disposition,
+                targetWarrant.TargetName,
+                targetWarrant.Terms.Disposition,
                 armedWantedEvent.Message);
 
             return new SaloonConfrontationOutcome(
                 SaloonPersonOfInterestConfrontationResult.Surrendered(
                     declaredWantedIdentityHandle,
-                    activeSaloonWarrant.TargetName,
-                    activeSaloonWarrant.Terms.Disposition,
+                    targetWarrant.TargetName,
+                    targetWarrant.Terms.Disposition,
                     armedWantedResult.Message),
                 events,
                 new SaloonSettlementRequest(
@@ -230,7 +245,7 @@ internal sealed class BountyLoop
                     IsAlive: true,
                     declaredWantedIdentityHandle,
                     armedWantedEvent.Message,
-                    activeSaloonWarrant.TargetName,
+                    targetWarrant.TargetName,
                     activeSaloonPersonOfInterestKind));
         }
 

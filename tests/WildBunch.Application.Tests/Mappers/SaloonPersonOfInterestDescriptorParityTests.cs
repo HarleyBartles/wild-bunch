@@ -173,7 +173,22 @@ public sealed class SaloonPersonOfInterestDescriptorParityTests
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
-            knownWarrants: Array.Empty<Warrant>());
+            knownWarrants: new[]
+            {
+                new Warrant(
+                    new WarrantId("warrant-1"),
+                    "Known wanted identity",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        100m,
+                        Array.Empty<string>(),
+                        Array.Empty<string>(),
+                        "Current Town Sheriff",
+                        InvestigationTargetKind.TrueCulprit,
+                        Array.Empty<OutlawGangId>(),
+                        null),
+                    "Wanted for testing.")
+            });
 
         var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
         session.ViewPrologue("test-prologue-descriptor");

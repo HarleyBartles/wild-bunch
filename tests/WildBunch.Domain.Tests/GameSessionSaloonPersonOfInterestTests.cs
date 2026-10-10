@@ -105,7 +105,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     }
 
     [Fact]
-    public void ConfrontSaloonPersonOfInterestRejectsWhenNoKnownWantedIdentityCanBeDeclared()
+    public void ConfrontSaloonPersonOfInterestRejectsUnknownIdentityWhenNoWarrantsAreKnownWithoutConsumingThePerson()
     {
         var session = CreateSessionWithPublicDescriptor();
         var activePersonOfInterest = new SuspectId("suspect-1");
@@ -117,21 +117,20 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(lookAround.Success);
         Assert.Equal(activePersonOfInterest, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        var logCountBeforeConfront = GameSessionLogProjection.Project(session).Count;
+        session.MarkEventsCommitted();
+        var eventCountBeforeConfront = session.AllEvents.Count;
 
         var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
-        var journal = GameSessionLogProjection.Project(session);
-
         Assert.False(result.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, result.Outcome);
         Assert.Equal(declaredWantedIdentityHandle, result.DeclaredWantedIdentityHandle);
         Assert.Contains("wanted identity", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("passed", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.False(result.SessionChanged);
+        Assert.Equal(activePersonOfInterest, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
-        Assert.Equal(logCountBeforeConfront + 1, journal.Count);
-        Assert.Equal(result.Message, journal[^1].Message);
+        Assert.Equal(eventCountBeforeConfront, session.AllEvents.Count);
+        Assert.Empty(session.UncommittedEvents);
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(activePersonOfInterest, out _));
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-2"), out _));
     }
@@ -265,7 +264,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     {
         // Use dev override to force a citizen POI — the proper test seam per BUNCH-106 realignment.
         // Use a session with suspects that have identifying facts so the shared feature vocabulary is non-empty.
-        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        var session = CreateUnarmedWantedSession();
         Assert.False(session.Player.HasItem(ItemKind.Revolver));
         session.Player.AdjustCash(4m - session.Player.Wallet.Cash);
         session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
@@ -349,7 +348,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Equal("You look around the saloon and spot a stranger with Raven-feather pin.", lookAround.Message);
         Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
 
-        var result = session.ConfrontSaloonPersonOfInterest("warrant-99");
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-public-2");
 
         Assert.True(result.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
@@ -376,6 +375,27 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents);
         Assert.Equal(15m, replayed.Player.Wallet.Cash);
         Assert.Empty(replayed.CaseFile.SheriffTurnInSettlements);
+    }
+
+    [Fact]
+    public void ConfrontSaloonPersonWithUnreadPosterAndKnownDifferentIdentityUsesWrongNameOutcome()
+    {
+        var session = CreateArmedWantedSession(includePrimaryWarrantInKnown: false);
+        var suspectId = new SuspectId("suspect-1");
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
+        Assert.True(session.LookAroundSaloon().Success);
+
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-public-2");
+
+        Assert.True(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Equal("an unfamiliar person", result.TargetName);
+        Assert.Equal(10m, result.FineAmount);
+        Assert.Equal(15m, session.Player.Wallet.Cash);
+        Assert.DoesNotContain("Mira Cline", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("warrant-public-1", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -411,7 +431,33 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Empty(session.UncommittedEvents);
     }
 
-    private static GameSession CreateArmedWantedSession()
+    [Fact]
+    public void ConfrontSaloonPersonOfInterestRejectsAnUnknownWantedIdentityWithoutConsumingTheObservedPersonOrFiningThePlayer()
+    {
+        var session = CreateArmedWantedSession();
+        var suspectId = new SuspectId("suspect-1");
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
+        Assert.True(session.LookAroundSaloon().Success);
+        session.MarkEventsCommitted();
+        var eventsBeforeAttempt = session.AllEvents.Count;
+
+        var result = session.ConfrontSaloonPersonOfInterest("made-up-warrant");
+
+        Assert.False(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, result.Outcome);
+        Assert.False(result.SessionChanged);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Equal(WantedSuspectPresenceState.AvailableInTown, session.GetWantedSuspectPresenceState(suspectId));
+        Assert.Equal(eventsBeforeAttempt, session.AllEvents.Count);
+        Assert.Empty(session.UncommittedEvents);
+    }
+
+    private static GameSession CreateArmedWantedSession(
+        bool includeSecondaryWarrantInKnown = true,
+        bool includePrimaryWarrantInKnown = true)
     {
         var currentTown = new Town(new TownId("current"), "Current Town");
         var connectedTown = new Town(new TownId("connected"), "Connected Town");
@@ -432,28 +478,52 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                 SuspectStatus.AtLarge)
         };
 
+        var miraWarrant = new Warrant(
+            new WarrantId("warrant-public-1"),
+            "Mira Cline",
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                2500m,
+                new[] { "Red Wren" },
+                new[] { "Raven-feather pin" },
+                "Dodge City Marshal",
+                InvestigationTargetKind.TrueCulprit,
+                Array.Empty<OutlawGangId>(),
+                null),
+            "Wanted for a stage robbery.");
+        var renoWarrant = new Warrant(
+            new WarrantId("warrant-public-2"),
+            "Reno Pike",
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                1800m,
+                new[] { "Black Reno" },
+                new[] { "a black duster" },
+                "Silver Creek Marshal",
+                InvestigationTargetKind.GangMember,
+                Array.Empty<OutlawGangId>(),
+                null),
+            "Wanted for a train robbery.");
+        var publicWarrants = new[] { miraWarrant, renoWarrant };
+        var knownWarrants = new List<Warrant>();
+        if (includePrimaryWarrantInKnown)
+        {
+            knownWarrants.Add(miraWarrant);
+        }
+
+        if (includeSecondaryWarrantInKnown)
+        {
+            knownWarrants.Add(renoWarrant);
+        }
+
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
-            knownWarrants: new[]
-            {
-                new Warrant(
-                    new WarrantId("warrant-public-1"),
-                    "Mira Cline",
-                    new WarrantTerms(
-                        WarrantDisposition.DeadOrAlive,
-                        2500m,
-                        new[] { "Red Wren" },
-                        new[] { "Raven-feather pin" },
-                        "Dodge City Marshal",
-                        InvestigationTargetKind.TrueCulprit,
-                        Array.Empty<OutlawGangId>(),
-                        null),
-                    "Wanted for a stage robbery.")
-            });
+            knownWarrants: knownWarrants,
+            publicWarrants: publicWarrants);
 
         var inventory = new DomainInventory(
             new[]

@@ -19,6 +19,66 @@ namespace WildBunch.Integration.Tests;
 public sealed class MigrationTests
 {
     [Fact]
+    public async Task RetiringIntermediateSaloonPlaythroughsDeletesAllSessionDataAndCannotBeReversed()
+    {
+        const string priorMigration = "20261010202420_RetirePreAlphaRiflePlaythroughs";
+        using var database = new PostgreSqlTestDatabase();
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .Options;
+        const string emptyJson = "{}";
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync(priorMigration);
+            var session = CreateSession();
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(session);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "StartupOperations" ("OperationId", "Kind", "RequestFingerprint", "SessionId")
+                VALUES ({Guid.NewGuid()}, 0, '0123456789abcdef', {session.Id.Value});
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionTravelDiaryDays" ("SessionId", "Sequence", "PayloadJson", "RecordedAtUtc", "SchemaVersion")
+                VALUES ({session.Id.Value}, 1, CAST({emptyJson} AS jsonb), {DateTime.UtcNow}, 1);
+                """);
+
+            Assert.Single(await context.GameSessions.ToListAsync());
+            Assert.NotEmpty(await context.GameSessionComponents.ToListAsync());
+            Assert.NotEmpty(await context.StoredEvents.ToListAsync());
+            Assert.NotEmpty(await context.GameSessionDiaryDays.ToListAsync());
+            Assert.Single(await context.StartupOperations.ToListAsync());
+        }
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.MigrateAsync();
+
+            Assert.Empty(await context.GameSessions.ToListAsync());
+            Assert.Empty(await context.GameSessionComponents.ToListAsync());
+            Assert.Empty(await context.StoredEvents.ToListAsync());
+            Assert.Empty(await context.GameSessionDiaryDays.ToListAsync());
+            Assert.Empty(await context.StartupOperations.ToListAsync());
+            Assert.Contains(
+                await context.Database.GetAppliedMigrationsAsync(),
+                migration => migration.Contains("RetireIntermediateSaloonPlaythroughs", StringComparison.Ordinal));
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => context.GetService<IMigrator>().MigrateAsync(priorMigration));
+        }
+    }
+
+    [Fact]
     public async Task RetiringRifleKindsDiscardsPreAlphaSessionsAndAllowsNewSessions()
     {
         const string priorMigration = "20261010184918_EnforceSingleActivePlaythrough";

@@ -1783,6 +1783,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 : null,
             CaseFile.Suspects,
             CaseFile.KnownWarrants,
+            CaseFile.PublicWarrants,
             CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
             Player.HasItem(ItemKind.Revolver),
             Player.Wallet.Cash,

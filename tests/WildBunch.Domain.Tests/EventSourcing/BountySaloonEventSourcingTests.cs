@@ -284,7 +284,7 @@ public sealed class BountySaloonEventSourcingTests
     public void ConfrontCitizenWithWrongDeclarationProducesConfrontedEvent()
     {
         var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
-        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "warrant-1");
 
         Assert.True(result.Success);
         var confrontedEvent = session.UncommittedEvents.OfType<SaloonPersonOfInterestConfronted>().Single();
@@ -310,7 +310,7 @@ public sealed class BountySaloonEventSourcingTests
         var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
         var turnAfterLookAround = session.Clock.Turn;
 
-        session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+        session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "warrant-1");
 
         Assert.Equal(turnAfterLookAround, session.Clock.Turn);
     }
