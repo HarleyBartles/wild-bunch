@@ -4,6 +4,7 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
@@ -229,16 +230,59 @@ public sealed partial class GameSessionJsonSerializer
     private sealed record CurrentActionContextSnapshot(TownActionContext Context, string? TownId);
 
     public string? SerializePendingDevTravelOverride(DevTravelOverride? overrideValue)
-        => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
+        => overrideValue is null
+            ? null
+            : JsonSerializer.Serialize(PendingDevTravelOverrideSnapshot.FromDomain(overrideValue), Options);
 
     internal DevTravelOverride? DeserializePendingDevTravelOverride(string? json)
-        => json is null ? null : Deserialize<DevTravelOverride>(json);
+        => json is null ? null : Deserialize<PendingDevTravelOverrideSnapshot>(json).ToDomain();
 
     public string? SerializePendingDevSaloonOverride(DevSaloonOverride? overrideValue)
-        => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
+        => overrideValue is null
+            ? null
+            : JsonSerializer.Serialize(PendingDevSaloonOverrideSnapshot.FromDomain(overrideValue), Options);
 
     internal DevSaloonOverride? DeserializePendingDevSaloonOverride(string? json)
-        => json is null ? null : Deserialize<DevSaloonOverride>(json);
+        => json is null ? null : Deserialize<PendingDevSaloonOverrideSnapshot>(json).ToDomain();
+
+    private sealed record PendingDevTravelOverrideSnapshot(
+        TravelDayEncounterCategory ForcedCategory,
+        JourneyFoeProfileSnapshot? FoeProfile,
+        string? EncounterMessage)
+    {
+        public static PendingDevTravelOverrideSnapshot FromDomain(DevTravelOverride value)
+            => new(
+                value.ForcedCategory,
+                value.FoeProfile is null ? null : JourneyFoeProfileSnapshot.FromDomain(value.FoeProfile),
+                value.EncounterMessage);
+
+        public DevTravelOverride ToDomain()
+            => new(ForcedCategory, FoeProfile?.ToDomain(), EncounterMessage);
+    }
+
+    private sealed record PendingDevSaloonOverrideSnapshot(
+        DevSaloonPoiKind ForcedKind,
+        SuspectIdSnapshot? ForcedSuspectId,
+        string? ForcedCitizenRoleKey)
+    {
+        public static PendingDevSaloonOverrideSnapshot FromDomain(DevSaloonOverride value)
+            => new(
+                value.ForcedKind,
+                value.ForcedSuspectId is null ? null : SuspectIdSnapshot.FromDomain(value.ForcedSuspectId.Value),
+                value.ForcedCitizenRoleKey);
+
+        public DevSaloonOverride ToDomain()
+            => new(ForcedKind, ForcedSuspectId?.ToDomain(), ForcedCitizenRoleKey);
+    }
+
+    private sealed record SuspectIdSnapshot(string Value)
+    {
+        public static SuspectIdSnapshot FromDomain(SuspectId value)
+            => new(value.Value);
+
+        public SuspectId ToDomain()
+            => new(Value);
+    }
 
     private sealed record PlayerSnapshot(
         string Name,

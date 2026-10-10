@@ -47,22 +47,23 @@
 
 **Interfaces:** Add private Persistence snapshot types for `DevTravelOverride`, `DevSaloonOverride`, and the nested `SuspectId` value. Map `JourneyFoeProfile` through `JourneyFoeProfileSnapshot`; map every override field both directions and preserve the old component JSON property names and null semantics. Keep the component methods and their consumers unchanged.
 
-- [ ] Add literal v1 component payload tests for a travel override with a populated foe profile and a saloon override with a suspect ID; assert exact enum, nested values, optional message/role fields and IDs after decode.
-- [ ] Add PostgreSQL repository save/load tests for both pending override values; compare the actual aggregate pending state before and after a fresh load and exercise each existing next-action path to prove it remains the same behavior.
-- [ ] Run the literal and repository behavior tests against the direct-serialization implementation first; record any ruling if the natural setup does not reach the planned state.
-- [ ] Implement the explicit snapshots without changing component names, values, null behavior, event payloads, or component/projection versions. Prove tests are sensitive by corrupting the nested foe profile and suspect ID mappings independently, observe the intended assertions fail, restore them, and rerun.
-- [ ] Run the focused PostgreSQL and codec tests plus `ProjectionVersionCompletenessTests`.
-- [ ] Append dated PS-14 dispositions that distinguish the now-explicit component snapshot contracts from typed event payload serialization, and state whether any direct Domain-state persistence remains after source call-site review.
-- [ ] Recheck ADR-0028 and `docs/features.md`; leave them unchanged because no durable decision or player-facing contract changes.
+- [x] Add literal v1 component payload tests for a travel override with a populated foe profile and a saloon override with a suspect ID; assert exact enum, nested values, optional message/role fields and IDs after decode.
+- [x] Add PostgreSQL repository save/load tests for both pending override values; compare the actual aggregate pending state before and after a fresh load and exercise each existing next-action path to prove it remains the same behavior.
+- [x] Run the literal and repository behavior tests against the direct-serialization implementation first; the travel repository case correctly produces `Interrupted` while its forced foe encounter is pending, so its assertions prove the pending encounter facts rather than mistaking the interruption for a failed action.
+- [x] Implement the explicit snapshots without changing component names, values, null behavior, event payloads, or component/projection versions. Corrupting the foe-profile mapping made the travel v1 fixture fail; corrupting the suspect-ID mapping made the saloon decoded-value assertion fail. Both were restored and the focused suite passed.
+- [x] Run the focused PostgreSQL and codec tests plus `ProjectionVersionCompletenessTests`; all six tests passed.
+- [x] Append dated PS-14 dispositions distinguishing explicit component snapshots from typed event and world snapshot serialization; source call-site review found no direct component serialization of these Domain override records.
+- [x] Recheck ADR-0028 and `docs/features.md`; both remain unchanged because no durable decision or player-facing contract changes.
 
 **Expected:** The two pending override component payloads retain their existing v1 JSON contract through explicit Persistence mappings, and a fresh PostgreSQL aggregate load retains the same pending values and next-action behavior.
 
 ### Task 3: Validate, review and publish to `develop`
 
-- [ ] Run `dotnet tool restore` and `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; no new migration is expected.
-- [ ] Run the focused PostgreSQL and serializer behavior tests against the final candidate.
-- [ ] Run the canonical fail-fast `py -3 tools/run.py ci --check` gate on the staged candidate.
-- [ ] Inspect the full branch diff, actual v1 component payload compatibility, both pending override continuations, PS-14 dispositions, ADR-0028, feature matrix, and applicable persistence/code-review unslop profiles. Use and disclose the self-review fallback if reviewer-agent dispatch is unavailable.
+- [x] Run `dotnet tool restore` and `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; no new migration was generated. The local database reports two existing repository migrations pending.
+- [x] Run the focused PostgreSQL and serializer behavior tests against the final candidate.
+- [x] Run the canonical fail-fast `py -3 tools/run.py ci --check` gate; it passed on the candidate before commit.
+- [x] Inspect the full branch diff, actual v1 component payload compatibility, both pending override continuations, PS-14 dispositions, ADR-0028, feature matrix, and applicable persistence/code-review unslop profiles. Reviewer-agent dispatch is unavailable under the current session constraints, so this slice received inline self-review and will disclose that in the PR.
+- [ ] Stage the reviewed candidate and let the normal check-only commit hook pass before committing.
 - [ ] Publish a Draft PR to `develop`, reconcile its remote head with local `HEAD`, correct and reread the PR body, mark it ready, and require hosted canonical CI to pass on that exact head before merging.
 - [ ] Merge to `develop`, verify the push gate passes on the exact merge SHA, fast-forward the main checkout, and retire this plan in the next substantive successor after verifying delivery evidence.
 
