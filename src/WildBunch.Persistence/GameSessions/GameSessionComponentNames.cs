@@ -1,4 +1,3 @@
-using WildBunch.Domain.Events;
 using WildBunch.Persistence.Serialization;
 using WildBunch.Persistence.Versioning;
 
@@ -31,25 +30,19 @@ internal static class GameSessionComponentNames
 internal static class GameSessionComponentPayloads
 {
     internal static string GetRequiredCachePayload(
-        IReadOnlyDictionary<string, GameSessionComponentEntity> components,
-        string componentName,
-        PersistedPayloadLoader payloadLoader,
-        IReadOnlyList<IDomainEvent> events)
-        => payloadLoader.LoadComponentPayload(components, componentName, events)
+        PersistedPayloadLoader.ComponentPayloadReadScope readScope,
+        string componentName)
+        => readScope.GetPayload(componentName)
             ?? throw new InvalidRequiredComponentCacheShapeException(componentName, "the cache component is missing.");
 
     internal static string GetRequiredPayload(
-        IReadOnlyDictionary<string, GameSessionComponentEntity> components,
-        string componentName,
-        PersistedPayloadLoader payloadLoader,
-        IReadOnlyList<IDomainEvent> events)
-        => payloadLoader.LoadComponentPayload(components, componentName, events)
+        PersistedPayloadLoader.ComponentPayloadReadScope readScope,
+        string componentName)
+        => readScope.GetPayload(componentName)
             ?? throw new InvalidOperationException($"Missing required game session component '{componentName}'.");
 
     internal static string? GetOptionalPayload(
-        IReadOnlyDictionary<string, GameSessionComponentEntity> components,
-        string componentName,
-        PersistedPayloadLoader payloadLoader,
-        IReadOnlyList<IDomainEvent> events)
-        => payloadLoader.LoadComponentPayload(components, componentName, events);
+        PersistedPayloadLoader.ComponentPayloadReadScope readScope,
+        string componentName)
+        => readScope.GetPayload(componentName);
 }

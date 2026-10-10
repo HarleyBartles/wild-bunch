@@ -36,10 +36,10 @@
 
 **Interfaces:** Record PR #233 source `844a0dd4fcca2501b8c7acd69e9af5ae873cd11c`, merge `4f96147b92986f88781df7e258b4e5bf5b4634ab`, exact-head PR gate run `38006131985`, develop push gate run `38006418496`, and delivered identity `0.1.0-dev.48`. Row 07 remains executing and points to this `.49` plan.
 
-- [ ] Verify PR #233 is merged to `develop` at the stated source and merge SHAs and both hosted gates passed on those exact commits.
-- [ ] Record PR #233's `.48` rebuilder cleanup and disclosed self-review outcome in row 07; append PR #233 to its merged-PR list.
-- [ ] Select repeated stale-component reconstruction as the next bounded PS-11 slice; leave ownership-bound status queries and historical migration deployment policy with their roadmap owners.
-- [ ] Advance `Directory.Build.props` to `0.1.0-dev.49`, retire the completed `.48` plan and stale row pointer, and commit this plan before source edits.
+- [x] Verify PR #233 is merged to `develop` at the stated source and merge SHAs and both hosted gates passed on those exact commits.
+- [x] Record PR #233's `.48` rebuilder cleanup and disclosed self-review outcome in row 07; append PR #233 to its merged-PR list.
+- [x] Select repeated stale-component reconstruction as the next bounded PS-11 slice; leave ownership-bound status queries and historical migration deployment policy with their roadmap owners.
+- [x] Advance `Directory.Build.props` to `0.1.0-dev.49`, retire the completed `.48` plan and stale row pointer, and commit this plan before source edits.
 
 **Expected:** Delivery evidence is exact, the `.48` plan is retired, and this committed plan is row 07's live pointer.
 
@@ -49,13 +49,13 @@
 
 **Interfaces:** Add one per-load component-payload read scope to `PersistedPayloadLoader`, with a `GetPayload(componentName)` operation. Both persistence loaders create exactly one scope after loading components and upcasted events, and every required/cache/optional component lookup for that `GameSessionStore` uses it. The scope returns missing as null, returns current-version JSON directly, and lazily memoizes one rebuilt `GameSession` plus the serialized payloads requested from it when a stale component version is first read. Keep any direct single-component convenience API by delegating it to a fresh scope.
 
-- [ ] Add a PostgreSQL integration test that persists a real session, marks at least the seven required component rows (`player`, `world`, `caseFile`, `clock`, `pursuitState`, `setup`, `saltSource`) stale, and loads it through `EfGameSessionRepository` with a counting rebuild callback. Assert one rebuild, independently expected player/world/case/clock facts, a successful purchase, and a fresh reload with the purchase persisted. Run it first and confirm it fails because the current code rebuilds once per stale component.
-- [ ] Add a PostgreSQL read-side test with the same stale component set and separate player/journal loads. Assert one rebuild for each load, correct wallet/status/log facts, and unchanged stale component versions, payloads, envelope watermarks, and event rows after both reads.
-- [ ] Introduce the per-load read scope and update `EfGameSessionRepository` and `GameSessionReadStoreLoader` so every component lookup within one `GameSessionStore` uses that single scope. Do not place mutable memoization on the singleton `PersistedPayloadLoader`.
-- [ ] Preserve the existing single-component loader tests by delegating their call to a fresh read scope. Preserve missing-component handling and current-version invalid-cache fallback without changing event, snapshot, diary or schema contracts.
-- [ ] Run the focused new command/read tests together with `LoadComponentPayload_StaleVersion_TriggersRebuildFromEvents`, `LoadComponentPayload_CurrentVersion_UsesStoredJson`, `LoadComponentPayload_MissingComponent_ReturnsNull`, `ReadModel_MalformedTownVisitWantedSuspectShapeRecoversFromEvents`, fail-closed cache recovery, and full replay tests.
-- [ ] Append dated investigation/test dispositions that state the repeated-rebuild symptom, one reconstruction per coherent component load, the real cache paths covered, and the preserved write/no-write boundaries.
-- [ ] Recheck ADR-0028 and `docs/features.md`; leave them unchanged if cache authority and player-facing behavior remain as specified.
+- [x] Add a PostgreSQL integration test that persists a real session, marks at least the seven required component rows (`player`, `world`, `caseFile`, `clock`, `pursuitState`, `setup`, `saltSource`) stale, and loads it through `EfGameSessionRepository` with a counting rebuild callback. Assert one rebuild, independently expected player/world/case/clock facts, a successful purchase, and a fresh reload with the purchase persisted. Run it first and confirm it fails because the current code rebuilds once per stale component.
+- [x] Add a PostgreSQL read-side test with the same stale component set and separate player/journal loads. Assert one rebuild for each load, correct wallet/status/log facts, and unchanged stale component versions, payloads, envelope watermarks, and event rows after both reads.
+- [x] Introduce the per-load read scope and update `EfGameSessionRepository` and `GameSessionReadStoreLoader` so every component lookup within one `GameSessionStore` uses that single scope. Do not place mutable memoization on the singleton `PersistedPayloadLoader`.
+- [x] Preserve the existing single-component loader tests by delegating their call to a fresh read scope. Preserve missing-component handling and current-version invalid-cache fallback without changing event, snapshot, diary or schema contracts.
+- [x] Run the focused new command/read tests together with `LoadComponentPayload_StaleVersion_TriggersRebuildFromEvents`, `LoadComponentPayload_CurrentVersion_UsesStoredJson`, `LoadComponentPayload_MissingComponent_ReturnsNull`, `ReadModel_MalformedTownVisitWantedSuspectShapeRecoversFromEvents`, fail-closed cache recovery, and full replay tests.
+- [x] Append dated investigation/test dispositions that state the repeated-rebuild symptom, one reconstruction per coherent component load, the real cache paths covered, and the preserved write/no-write boundaries.
+- [x] Recheck ADR-0028 and `docs/features.md`; leave them unchanged if cache authority and player-facing behavior remain as specified.
 
 **Expected:** One stale version transition reconstructs one `GameSession` per command, player-read, or journal-read load; current payloads remain on the normal cache path and all reads leave durable state unchanged.
 

@@ -370,11 +370,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
             envelope.StreamVersion,
             envelope.TravelDiaryProjectionStreamVersion,
             envelope.TravelDiaryProjectionDayCount);
+        var componentPayloads = _payloadLoader.CreateComponentPayloadReadScope(components, allEvents);
         return new GameSessionStore(
             envelope,
             components,
             diaryDays,
-            allEvents);
+            allEvents,
+            componentPayloads);
     }
 
     /// <summary>
@@ -415,20 +417,20 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     private GameSession ToAggregate(GameSessionStore store)
     {
-        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Player, _payloadLoader, store.AllEvents));
-        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.World, _payloadLoader, store.AllEvents));
-        var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.CaseFile, _payloadLoader, store.AllEvents));
-        var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.Clock, _payloadLoader, store.AllEvents));
-        var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.PursuitState, _payloadLoader, store.AllEvents));
-        var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.Components, GameSessionComponentNames.Setup, _payloadLoader, store.AllEvents);
+        var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Player));
+        var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.World));
+        var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.CaseFile));
+        var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Clock));
+        var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.PursuitState));
+        var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.Setup);
         var entropy = _serializer.DeserializeSetup(entropyJson);
-        var saltSourceJson = GameSessionComponentPayloads.GetRequiredPayload(store.Components, GameSessionComponentNames.SaltSource, _payloadLoader, store.AllEvents);
+        var saltSourceJson = GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.SaltSource);
         var saltSource = _serializer.DeserializeSaltSource(saltSourceJson);
-        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.TownVisitState, _payloadLoader, store.AllEvents);
+        var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.TownVisitState);
         var townVisitState = townVisitStateJson is null ? null : _serializer.DeserializeTownVisitState(townVisitStateJson);
-        var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.Journey, _payloadLoader, store.AllEvents);
+        var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.Journey);
         var journey = journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson);
-        var completedJourneyHistoryJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CompletedJourneyHistory, _payloadLoader, store.AllEvents);
+        var completedJourneyHistoryJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.CompletedJourneyHistory);
         IReadOnlyList<TravelJourneySnapshot> completedJourneyHistory;
         if (completedJourneyHistoryJson is null)
         {
@@ -447,11 +449,11 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
                 completedJourneyHistory = Array.Empty<TravelJourneySnapshot>();
             }
         }
-        var wantedSuspectPresenceLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.WantedSuspectPresenceLedger, _payloadLoader, store.AllEvents);
+        var wantedSuspectPresenceLedgerJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.WantedSuspectPresenceLedger);
         var wantedSuspectPresenceEntries = wantedSuspectPresenceLedgerJson is null
             ? Array.Empty<WantedSuspectPresenceEntry>()
             : _serializer.DeserializeWantedSuspectPresenceLedger(wantedSuspectPresenceLedgerJson);
-        var currentActionContextJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.CurrentActionContext, _payloadLoader, store.AllEvents);
+        var currentActionContextJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.CurrentActionContext);
         TownActionContext currentActionContext;
         TownId? currentActionContextTownId;
         if (currentActionContextJson is null)
@@ -507,7 +509,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         session.RestoreActionContextState(currentActionContext, currentActionContextTownId);
 
         // Restore supported developer state from the current snapshot. See BUNCH-89.
-        var devOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevTravelOverride, _payloadLoader, store.AllEvents);
+        var devOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.PendingDevTravelOverride);
         var pendingDevOverride = _serializer.DeserializePendingDevTravelOverride(devOverrideJson);
         if (pendingDevOverride is not null)
         {
@@ -515,7 +517,7 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         }
 
         // Restore the pending dev saloon override from the current snapshot. See BUNCH-90, BUNCH-112.
-        var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.Components, GameSessionComponentNames.PendingDevSaloonOverride, _payloadLoader, store.AllEvents);
+        var devSaloonOverrideJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.PendingDevSaloonOverride);
         var pendingDevSaloonOverride = _serializer.DeserializePendingDevSaloonOverride(devSaloonOverrideJson);
 
         if (pendingDevSaloonOverride is not null)
@@ -628,5 +630,6 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         GameSessionEntity Envelope,
         IReadOnlyDictionary<string, GameSessionComponentEntity> Components,
         IReadOnlyList<TravelDiaryDayState> TravelDiaryDays,
-        IReadOnlyList<IDomainEvent> AllEvents);
+        IReadOnlyList<IDomainEvent> AllEvents,
+        PersistedPayloadLoader.ComponentPayloadReadScope ComponentPayloads);
 }
