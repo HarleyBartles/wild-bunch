@@ -61,7 +61,7 @@
 ## Task 4: Verify and publish the slice
 
 - [x] Run focused tests for Application, Integration and Web, then run `py -3 tools/run.py ci --check` from the repository command bus.
-- [ ] Review the complete diff against this plan, the baseline spec, AP-12 and the current row 08 roadmap text; confirm no feature-matrix or ADR update is required unless implementation reveals a durable divergence.
+- [x] Review the complete diff against this plan, the baseline spec, AP-12 and the current row 08 roadmap text; confirm no feature-matrix or ADR update is required unless implementation reveals a durable divergence. Independent review found no actionable issues.
 - [ ] Commit the implementation in coherent task commits, push the branch and open a PR against `develop` with current validation evidence.
 - [ ] Confirm hosted CI passes on the exact PR head before merging; merge the PR into `develop` and verify the hosted develop gate passes on the merge commit.
 - [ ] Update the roadmap with the merged PR, source/merge SHAs, exact hosted PR and develop gate runs, and next row 08 target; the next successor plan will retire this plan after verifying its full scope.
