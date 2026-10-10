@@ -88,9 +88,9 @@
 
 **Files:** All changed application, API, web contract, test, investigation, roadmap and unslop paths in Tasks 1–4.
 
-- [ ] Review the complete diff against the baseline spec, ADR-0028, AP-15, event-sourcing integrity, the feature matrix and completed-artifact custody.
-- [ ] Run the focused projector and PostgreSQL journal integration tests, then rely on the check-only pre-commit hook for the canonical fail-fast gate; do not run the canonical gate immediately before or after a successful hooked commit.
-- [ ] Verify no `DiaryProjector`, player API `DiaryProjection`, `diaryProjection` DTO field, or `/projections/diary` consumer remains, while `TravelDiaryDay` persistence, its `TravelDiaryProjection*` watermark, and HUD/full-audit behavior remain covered through their actual consumers.
+- [x] Review the complete diff against the baseline spec, ADR-0028, AP-15, event-sourcing integrity, the feature matrix and completed-artifact custody.
+- [x] Run the focused projector and PostgreSQL journal integration tests, then rely on the check-only pre-commit hook for the canonical fail-fast gate; do not run the canonical gate immediately before or after a successful hooked commit.
+- [x] Verify no `DiaryProjector`, player API `DiaryProjection`, `diaryProjection` DTO field, or `/projections/diary` consumer remains, while `TravelDiaryDay` persistence, its `TravelDiaryProjection*` watermark, and HUD/full-audit behavior remain covered through their actual consumers.
 - [ ] Push and open a PR to `develop`; verify the exact PR head SHA and hosted canonical gate. Merge as authorized by the goal and verify the exact develop push gate.
 - [ ] Record actual source/merge SHAs and hosted gate evidence in the next successor handoff; sync the shared `Z:\wild-bunch` checkout and retire only this verified merged worktree and branch.
 
