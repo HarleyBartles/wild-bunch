@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Mapping;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
@@ -25,12 +26,17 @@ public sealed class QueryHandlersAreReadOnlyTests
         var gameSessionHandler = new GetGameSessionHandler(repository);
         var journalHandler = new GetJournalHandler(repository);
         var availableActionsHandler = new GetAvailableActionsHandler(repository, new WildBunch.Domain.Actions.ActionAvailabilityResolver());
-        var storeOffersHandler = new GetTownStoreOffersHandler(repository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var worldMapHandler = new GetWorldMapHandler(readRepository);
+        var storeOffersHandler = new GetTownStoreOffersHandler(readRepository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
+        var travelPreviewHandler = new PreviewTravelHandler(readRepository, new WildBunch.Domain.Travel.TravelResolver());
 
         _ = await gameSessionHandler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
         _ = await journalHandler.HandleAsync(new GetJournalQuery(session.Id.Value));
         _ = await availableActionsHandler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+        _ = await worldMapHandler.HandleAsync(new GetWorldMapQuery(session.Id.Value));
         _ = await storeOffersHandler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "pinecross"));
+        _ = await travelPreviewHandler.HandleAsync(new PreviewTravelQuery(session.Id.Value, "redmesa"));
 
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);

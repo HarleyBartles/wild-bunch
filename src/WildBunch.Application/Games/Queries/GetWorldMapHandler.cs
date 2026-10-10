@@ -8,11 +8,11 @@ namespace WildBunch.Application.Games.Queries;
 
 public sealed class GetWorldMapHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionReadRepository _gameSessionReadRepository;
 
-    public GetWorldMapHandler(IGameSessionRepository gameSessionRepository)
+    public GetWorldMapHandler(IGameSessionReadRepository gameSessionReadRepository)
     {
-        _gameSessionRepository = gameSessionRepository;
+        _gameSessionReadRepository = gameSessionReadRepository;
     }
 
     public async Task<WorldMapDto> HandleAsync(GetWorldMapQuery query, CancellationToken cancellationToken = default)
@@ -20,12 +20,8 @@ public sealed class GetWorldMapHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var sessionId = new GameSessionId(query.SessionId);
-        var session = await _gameSessionRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false);
-
-        if (session is null)
-        {
-            throw new GameSessionNotFoundException(sessionId);
-        }
+        var session = await _gameSessionReadRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+            ?? throw new GameSessionNotFoundException(sessionId);
 
         var towns = SeedWorldMapLayout.GetMapTowns(session.World)
             .Select(town => new WorldMapTownDto(

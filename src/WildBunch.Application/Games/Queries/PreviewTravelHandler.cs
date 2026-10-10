@@ -1,5 +1,6 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
+using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
@@ -10,12 +11,12 @@ namespace WildBunch.Application.Games.Queries;
 
 public sealed class PreviewTravelHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionReadRepository _gameSessionReadRepository;
     private readonly TravelResolver _travelResolver;
 
-    public PreviewTravelHandler(IGameSessionRepository gameSessionRepository, TravelResolver travelResolver)
+    public PreviewTravelHandler(IGameSessionReadRepository gameSessionReadRepository, TravelResolver travelResolver)
     {
-        _gameSessionRepository = gameSessionRepository;
+        _gameSessionReadRepository = gameSessionReadRepository;
         _travelResolver = travelResolver;
     }
 
@@ -24,9 +25,10 @@ public sealed class PreviewTravelHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionReadRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+            ?? throw new GameSessionNotFoundException(sessionId);
 
-        if (session.IsSetupPhase)
+        if (session.StartFlowPhase < StartFlowPhase.GameStarted)
         {
             return new TravelPreviewResultDto(false, "The game hasn't started yet.", null);
         }
@@ -37,7 +39,7 @@ public sealed class PreviewTravelHandler
             session.Player.CurrentTownId!.Value,
             destinationTownId,
             session.Player.Inventory,
-            session.TravelRules);
+            TravelRulesProfile.For(session.GameDifficulty));
 
         return new TravelPreviewResultDto(
             previewResult.Success,
