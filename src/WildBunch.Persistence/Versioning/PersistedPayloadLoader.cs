@@ -141,10 +141,18 @@ public sealed class PersistedPayloadLoader
             && hasCurrentSchema
             && hasContiguousSequence)
         {
-            return ordered.Select(d => _serializer.DeserializeTravelDiaryDay(d.PayloadJson)).ToArray();
+            try
+            {
+                return ordered.Select(d => _serializer.DeserializeTravelDiaryDay(d.PayloadJson)).ToArray();
+            }
+            catch (InvalidComponentCacheShapeException)
+            {
+                // Current metadata cannot make an unmaterializable diary row valid.
+                // Rebuild the complete projection; authoritative history failures escape.
+            }
         }
 
-        // Stale or empty: rebuild from events via the projector.
+        // Stale, empty or malformed: rebuild from events via the projector.
         return _diaryDayProjector.Project(events).Days;
     }
 

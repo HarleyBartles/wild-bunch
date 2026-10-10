@@ -35,10 +35,10 @@
 
 **Files:** Modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` and `Directory.Build.props`; delete `.agents/plans/2026-10-10-explicit-dev-override-snapshots.md`; create this plan.
 
-- [ ] Confirm PR #236 and both hosted gates against the exact source and merge SHAs above.
-- [ ] Record `.51` delivery and the selected malformed-diary follow-up in row 07 and this roadmap's dated delivery history; keep older dated decisions intact.
-- [ ] Retire the completed `.51` plan and advance the version to `0.1.0-dev.52`.
-- [ ] Commit the planning handoff before editing source or tests.
+- [x] Confirm PR #236 and both hosted gates against the exact source and merge SHAs above.
+- [x] Record `.51` delivery and the selected malformed-diary follow-up in row 07 and this roadmap's dated delivery history; keep older dated decisions intact.
+- [x] Retire the completed `.51` plan and advance the version to `0.1.0-dev.52`.
+- [x] Commit the planning handoff before editing source or tests (`7e02330`).
 
 **Expected:** The roadmap points to this committed plan, records verified `.51` delivery, and the plan contains a bounded implementation and proof contract.
 
@@ -46,13 +46,13 @@
 
 **Files:** `src/WildBunch.Persistence/Serialization/GameSessionJsonSerializer.Travel.cs`; `src/WildBunch.Persistence/Versioning/PersistedPayloadLoader.cs`; `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`.
 
-- [ ] Extend the real PostgreSQL diary recovery scenario to persist a three-day diary, replace the middle row JSON with `{"entries":null}` while preserving row metadata and stream watermark/count, then read through player and journal repositories.
-- [ ] Assert both reads return all event-projected days and leave every diary row, envelope watermark, and stored event unchanged.
-- [ ] Load the same session through the command repository, perform the existing legal next-day action and save, then prove a fresh load observes complete, contiguous, repaired rows matching the event projector.
-- [ ] Include a negative proving malformed authoritative event history still fails rather than being interpreted as a cache-recovery condition.
-- [ ] Confirm the new behavior test fails on the current raw deserialization implementation before adding the recovery boundary.
-- [ ] Make `DeserializeTravelDiaryDay` wrap the same targeted JSON/materialization failures already treated as invalid cache shape by neighboring snapshot decoders. In `LoadDiaryDays`, catch only that typed cache exception and rebuild all days; let event/projector failures escape.
-- [ ] Update the dated PS-04/PS-06 finding disposition and test follow-up with the exact structural limit: this validates materializability, not semantic correctness of values that successfully materialize.
+- [x] Extend the real PostgreSQL diary recovery scenario to persist a three-day diary, replace the middle row JSON with `{"entries":null}` while preserving row metadata and stream watermark/count, then read through player and journal repositories.
+- [x] Assert both reads return all event-projected days and leave every diary row, envelope watermark, and stored event payload/identity/version unchanged.
+- [x] Load the same session through the command repository, perform the existing legal next-day action and save, then prove a fresh load observes complete, contiguous, repaired rows matching the event projector.
+- [x] Include a negative proving malformed authoritative event history still fails rather than being interpreted as a cache-recovery condition.
+- [x] Confirm the new behavior test fails on the current raw deserialization implementation before adding the recovery boundary (it failed with `ArgumentNullException` from `TravelDiaryDaySnapshot.ToDomain`).
+- [x] Make `DeserializeTravelDiaryDay` wrap the same targeted JSON/materialization failures already treated as invalid cache shape by neighboring snapshot decoders. In `LoadDiaryDays`, catch only that typed cache exception and rebuild all days; let event/projector failures escape.
+- [x] Update the dated PS-04/PS-06 finding disposition and test follow-up with the exact structural limit: this validates materializability, not semantic correctness of values that successfully materialize.
 
 **Expected:** Focused PostgreSQL tests prove read recovery, no writeback, later ordinary-save repair and fail-closed authoritative-history behavior. No event, schema or migration changes.
 
@@ -60,9 +60,9 @@
 
 **Files:** All implementation and planning paths in Tasks 1-2.
 
-- [ ] Run the focused PostgreSQL diary recovery tests and adjacent projection-version coverage; ensure the test can fail for the malformed payload path it protects.
-- [ ] Start/ensure the repository PostgreSQL cluster and run the canonical `py -3 tools/run.py ci --check` fail-fast and cheapest-first. Run applicable migration inventory checks and confirm no migration was introduced.
-- [ ] Review the complete branch against `develop`, correct findings, rerun affected checks and commit through the normal check-only hook.
+- [x] Run the focused PostgreSQL diary recovery tests and adjacent projection-version coverage; ensure the test can fail for the malformed payload path it protects. The new case failed before the fix and passed after it; the focused selection passed five tests.
+- [x] Started/ensured PostgreSQL and inspected `dotnet ef migrations list`; no migration was added. The inventory reports two already-pending repository migrations on this local database. The normal hooked commit supplies canonical staged-snapshot CI, so no separate canonical run is placed immediately before it.
+- [x] Reviewed the complete branch against `develop`, event-sourcing doctrine and the plan; no actionable findings. Independent reviewer dispatch is unavailable, so this uses the disclosed author self-review fallback. Focused behavior tests and formatting checks were rerun; commit uses the normal check-only hook.
 - [ ] Push and open a PR to `develop`; verify hosted CI passes for the exact PR head before merge, merge as authorized by the goal, then verify the exact develop push gate passes.
 - [ ] Record actual source/merge SHAs and CI evidence in the roadmap. Fast-forward the main checkout to the merged `develop`, then archive this worktree and delete its local/remote branch only after verifying merge containment and clean state.
 
