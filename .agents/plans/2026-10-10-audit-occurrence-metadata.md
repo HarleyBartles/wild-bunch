@@ -69,11 +69,11 @@
 
 **Files:** `.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-application-test-followup.md`, and all implementation/test files above.
 
-- [ ] Add a dated AP-14 disposition recording the metadata path and what AP-14's static finding no longer describes; retain the historical audit evidence and its audience boundary.
-- [ ] Update AP-14's test disposition to name the persisted-record pairing and repeated HTTP read behavior now protected; retain only tests with independent timestamp and sequence oracles.
-- [ ] Re-read ADR-0028 and verify this change follows its existing persistence-envelope ownership; leave the ADR and feature matrix unchanged unless source inspection establishes a durable decision or feature assessment changed.
-- [ ] Review the full diff against the spec, repository boundaries, event upcasting, audit authorization, test anti-pattern guidance and this plan.
-- [ ] Run `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter FullyQualifiedName~FullAuditProjector` and `dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~EventStorePersistenceTests|FullyQualifiedName~DevEndpointTests"`; ensure the local PostgreSQL test dependency is running before integration tests.
+- [x] Add a dated AP-14 disposition recording the metadata path and what AP-14's static finding no longer describes; retain the historical audit evidence and its audience boundary.
+- [x] Update AP-14's test disposition to name the persisted-record pairing and repeated HTTP read behavior now protected; retain only tests with independent timestamp and sequence oracles.
+- [x] Re-read ADR-0028 and verify this change follows its existing persistence-envelope ownership; leave the ADR and feature matrix unchanged unless source inspection establishes a durable decision or feature assessment changed.
+- [x] Review the full diff against the spec, repository boundaries, event upcasting, audit authorization, test anti-pattern guidance and this plan.
+- [x] Run `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter FullyQualifiedName~FullAuditProjector` and `dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~EventStorePersistenceTests|FullyQualifiedName~DevEndpointTests"`; ensure the local PostgreSQL test dependency is running before integration tests.
 - [ ] Use the check-only pre-commit hook as the canonical fail-fast gate. Do not rerun `py -3 tools/run.py ci --check` immediately before or after a successful hooked commit.
 - [ ] Push and open a PR to `develop`; verify hosted canonical CI on the exact PR head, merge under the active epic authorization, and verify the exact develop push gate.
 - [ ] Record actual source/merge SHAs and both hosted gate runs in the next successor handoff; sync the shared checkout and retire only this verified merged worktree and branch.

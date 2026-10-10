@@ -1,4 +1,3 @@
-using WildBunch.Application.Abstractions;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
@@ -17,55 +16,6 @@ namespace WildBunch.Application.Tests.Projections;
 /// </summary>
 public sealed class GameLogEntryLegacyProjectionTests
 {
-    [Fact]
-    public void FullAuditProjection_SupersedesLegacyLogEntries_ForEventSourcedFlows()
-    {
-        // The event stream carries the same information that legacy log entries stored.
-        // The FullAuditProjector derives it from events, proving the legacy table
-        // is a projection-legacy, not the source of truth.
-        var projector = new FullAuditProjector();
-        var events = new IDomainEvent[]
-        {
-            new GameStarted
-            {
-                PlayerName = "Ranger Vale",
-                StartingTownId = new TownId("pinecross"),
-                StartingTownName = "Pinecross",
-                StartingHealth = 100,
-                StartingWallet = 25m,
-                StartingInventoryItems = new[]
-                {
-                    new InventoryItem(ItemKind.Food, 1)
-                },
-                GameDifficulty = GameDifficulty.Standard,
-                SaltSource = SaltSource.CreateFixed("test"),
-                GameEntropy = GameEntropy.Classic
-            },
-            new StoreItemPurchased
-            {
-                TownId = new TownId("pinecross"),
-                ItemKind = ItemKind.Food,
-                DisplayName = "Trail Biscuits",
-                Quantity = 2,
-                UnitPrice = 2m,
-                TotalPrice = 4m,
-                WalletAfter = 21m
-            }
-        };
-
-        var recordedEvents = events.Select((domainEvent, index) => new RecordedDomainEvent(domainEvent, index + 1, DateTime.UnixEpoch)).ToArray();
-        var audit = projector.Project(recordedEvents);
-
-        // The audit projection has the same number of entries as events
-        Assert.Equal(2, audit.Entries.Count);
-
-        // Each entry has a summary that carries the same information as a legacy log entry
-        Assert.Contains("Ranger Vale", audit.Entries[0].Summary);
-        Assert.Contains("Pinecross", audit.Entries[0].Summary);
-        Assert.Contains("Trail Biscuits", audit.Entries[1].Summary);
-        Assert.Contains("2", audit.Entries[1].Summary);
-    }
-
     /// <summary>
     /// Projector behavior: JournalLogProjector reproduces the legacy GameLogEntry
     /// sequence for a mixed event stream, including a Purchase entry for
