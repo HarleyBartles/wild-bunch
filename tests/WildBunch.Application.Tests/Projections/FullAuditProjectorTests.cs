@@ -1,3 +1,4 @@
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
@@ -106,7 +107,7 @@ public sealed class FullAuditProjectorTests
             }
         };
 
-        var audit = projector.Project(events);
+        var audit = projector.Project(ToRecordedEvents(events));
 
         Assert.Equal(events.Length, audit.Entries.Count);
         AssertReadableEntries(audit);
@@ -209,7 +210,7 @@ public sealed class FullAuditProjectorTests
             new DevSaloonOverrideConsumed()
         };
 
-        var audit = projector.Project(events);
+        var audit = projector.Project(ToRecordedEvents(events));
 
         Assert.Equal(events.Length, audit.Entries.Count);
         AssertReadableEntries(audit);
@@ -270,5 +271,25 @@ public sealed class FullAuditProjectorTests
             CurrentDayPlan: null,
             PendingEncounter: null,
             Warnings: Array.Empty<string>());
+    }
+
+    [Fact]
+    public void FullAuditProjector_PreservesRecordedSequenceAndOccurrenceTime()
+    {
+        var occurrenceAt = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        var recordedEvent = new RecordedDomainEvent(new DevTravelOverrideCleared(), 42, occurrenceAt);
+
+        var audit = new FullAuditProjector().Project([recordedEvent]);
+
+        var entry = Assert.Single(audit.Entries);
+        Assert.Equal(42, entry.Sequence);
+        Assert.Equal("DevTravelOverrideCleared", entry.EventType);
+        Assert.Equal(occurrenceAt, entry.OccurredAtUtc);
+    }
+
+    private static IReadOnlyList<RecordedDomainEvent> ToRecordedEvents(IReadOnlyList<IDomainEvent> events)
+    {
+        var occurrenceAt = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        return events.Select((domainEvent, index) => new RecordedDomainEvent(domainEvent, index + 1, occurrenceAt)).ToArray();
     }
 }

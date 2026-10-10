@@ -320,6 +320,26 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
     public async Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default)
     {
+        var eventBatch = await ReadEventBatchAsync(id, fromVersion, cancellationToken).ConfigureAwait(false);
+        return eventBatch.DomainEvents;
+    }
+
+    public async Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default)
+    {
+        var eventBatch = await ReadEventBatchAsync(id, fromVersion, cancellationToken).ConfigureAwait(false);
+        return eventBatch.StoredEvents
+            .Select((storedEvent, index) => new RecordedDomainEvent(
+                eventBatch.DomainEvents[index],
+                storedEvent.Sequence,
+                storedEvent.OccurredAtUtc))
+            .ToArray();
+    }
+
+    private async Task<(StoredEventEntity[] StoredEvents, IReadOnlyList<IDomainEvent> DomainEvents)> ReadEventBatchAsync(
+        GameSessionId id,
+        long fromVersion,
+        CancellationToken cancellationToken)
+    {
         var storedEvents = await _dbContext.StoredEvents.AsNoTracking()
             .Where(e => e.StreamId == id.Value && e.Sequence > fromVersion)
             .OrderBy(e => e.Sequence)
@@ -328,10 +348,10 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
 
         if (storedEvents.Length == 0)
         {
-            return Array.Empty<IDomainEvent>();
+            return (storedEvents, Array.Empty<IDomainEvent>());
         }
 
-        return _payloadLoader.LoadEvents(storedEvents);
+        return (storedEvents, _payloadLoader.LoadEvents(storedEvents));
     }
 
     private async Task<GameSessionStore?> LoadStoreAsync(GameSessionId id, CancellationToken cancellationToken)

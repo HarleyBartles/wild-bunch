@@ -3,7 +3,7 @@ using WildBunch.Domain.Events;
 namespace WildBunch.Application.Projections;
 
 /// <summary>
-/// Full audit projection: the complete event log derived from domain events.
+/// Full audit projection: the complete event log derived from recorded domain events.
 /// This is a read-only projection — it does not mutate aggregate state.
 /// See ADR-0028.
 /// </summary>
@@ -12,7 +12,7 @@ public sealed record FullAuditProjection(
     IReadOnlyList<AuditEntry> Entries) : IProjectionResult;
 
 public sealed record AuditEntry(
-    int Sequence,
+    long Sequence,
     string EventType,
     string Summary,
     DateTime OccurredAtUtc);

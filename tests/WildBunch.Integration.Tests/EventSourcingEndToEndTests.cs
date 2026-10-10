@@ -144,7 +144,8 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         Assert.Equal(19m, hud.WalletCash); // 25 - 6 = 19
         Assert.Equal(4, hud.InventoryItems.Single(i => i.ItemKind == DomainItemKind.Food).Quantity); // 1 + 3 = 4
 
-        var audit = auditProjector.Project(events);
+        var recordedEvents = await repo.GetRecordedEventStreamAsync(session.Id);
+        var audit = auditProjector.Project(recordedEvents);
         Assert.Equal(8, audit.Entries.Count);
         Assert.Equal("PlayerSetupCompleted", audit.Entries[0].EventType);
         Assert.Equal("TownActionContextEntered", audit.Entries[6].EventType);

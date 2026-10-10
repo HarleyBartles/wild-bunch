@@ -1,4 +1,5 @@
 using System.Reflection;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
@@ -122,7 +123,7 @@ public sealed class ProjectionTests
             }
         };
 
-        var audit = projector.Project(events);
+        var audit = projector.Project(events.Select((domainEvent, index) => new RecordedDomainEvent(domainEvent, index + 1, DateTime.UnixEpoch)).ToArray());
 
         Assert.Equal(2, audit.Entries.Count);
         Assert.Equal(1, audit.Entries[0].Sequence);
@@ -148,7 +149,7 @@ public sealed class ProjectionTests
             new DevSaloonOverrideConsumed()
         };
 
-        var audit = projector.Project(events);
+        var audit = projector.Project(events.Select((domainEvent, index) => new RecordedDomainEvent(domainEvent, index + 1, DateTime.UnixEpoch)).ToArray());
 
         Assert.Equal(3, audit.Entries.Count);
         Assert.Equal("DevSaloonOverrideForced", audit.Entries[0].EventType);

@@ -5,7 +5,7 @@ public sealed record SessionAuditDto(
     IReadOnlyList<SessionAuditEntryDto> Entries);
 
 public sealed record SessionAuditEntryDto(
-    int Sequence,
+    long Sequence,
     string EventType,
     string Summary,
     DateTime OccurredAtUtc);

@@ -1,3 +1,4 @@
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
@@ -52,7 +53,8 @@ public sealed class GameLogEntryLegacyProjectionTests
             }
         };
 
-        var audit = projector.Project(events);
+        var recordedEvents = events.Select((domainEvent, index) => new RecordedDomainEvent(domainEvent, index + 1, DateTime.UnixEpoch)).ToArray();
+        var audit = projector.Project(recordedEvents);
 
         // The audit projection has the same number of entries as events
         Assert.Equal(2, audit.Entries.Count);

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using WildBunch.Application.Abstractions;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
@@ -12,22 +13,20 @@ namespace WildBunch.Application.Projections;
 /// This is a pure function over the event stream - no aggregate mutation.
 /// See ADR-0028.
 /// </summary>
-public sealed class FullAuditProjector : IDomainEventProjector<FullAuditProjection>
+public sealed class FullAuditProjector
 {
-    public FullAuditProjection Project(IReadOnlyList<IDomainEvent> events)
+    public FullAuditProjection Project(IReadOnlyList<RecordedDomainEvent> events)
     {
         ArgumentNullException.ThrowIfNull(events);
 
         var entries = new List<AuditEntry>();
-        var sequence = 0;
-        foreach (var e in events)
+        foreach (var recordedEvent in events)
         {
-            sequence++;
             entries.Add(new AuditEntry(
-                sequence,
-                e.GetType().Name,
-                Summarize(e),
-                DateTime.UtcNow));
+                recordedEvent.Sequence,
+                recordedEvent.Event.GetType().Name,
+                Summarize(recordedEvent.Event),
+                recordedEvent.OccurredAtUtc));
         }
 
         return new FullAuditProjection(Guid.Empty, entries);

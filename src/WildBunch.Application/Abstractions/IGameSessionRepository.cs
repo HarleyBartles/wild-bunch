@@ -21,4 +21,9 @@ public interface IGameSessionRepository
     /// Used for replay-from-events and for loading events after a snapshot.
     /// </summary>
     Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads typed events with their persisted stream sequence and occurrence metadata for audit queries.
+    /// </summary>
+    Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default);
 }

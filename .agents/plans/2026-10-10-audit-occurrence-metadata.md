@@ -29,6 +29,8 @@
 - Keep the existing 404 behavior for a missing session, the development-environment guard, the `/api/dev/sessions/{id}/audit` route, and the existing summary text.
 - Do not add event fields, migrations, Domain timestamps, a new public route, or player-facing audit output. No ADR amendment is needed: this implements ADR-0028's existing separation between domain facts and persistence-owned envelope metadata.
 
+**Execution ruling, 2026-10-10:** The first RED is the PostgreSQL-backed developer audit endpoint with independently assigned persisted timestamps. This proves the complete metadata path through the production decoder, projection and serialized response; a second repository-only forwarding test would repeat the same behavior without adding an independent oracle.
+
 ## Review focus
 
 - Distinct fixed timestamps and sequences must survive persistence decoding, projection, handler mapping and the existing HTTP response unchanged.
@@ -50,31 +52,20 @@
 
 **Expected:** The roadmap represents the merged `.57` result accurately and the next bounded row 08 outcome has a committed implementation plan.
 
-### Task 2: Prove persisted metadata at the repository boundary
+### Task 2: Carry persisted metadata through the audit read
 
-**Files:** `src/WildBunch.Application/Abstractions/IGameSessionRepository.cs`, the new Application recorded-event abstraction, `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`, `tests/WildBunch.Integration.Tests/EventStorePersistenceTests.cs`, and `tests/WildBunch.Application.Tests/TestDoubles/InMemoryGameSessionRepository.cs`.
+**Files:** `src/WildBunch.Application/Abstractions/IGameSessionRepository.cs`, the new Application recorded-event abstraction, `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`, `src/WildBunch.Application/Projections/FullAuditProjector.cs`, `FullAuditProjection.cs`, `src/WildBunch.Application/Dev/Queries/GetSessionAuditHandler.cs`, `SessionAuditDto.cs`, `tests/WildBunch.Application.Tests/TestDoubles/InMemoryGameSessionRepository.cs`, `tests/WildBunch.Application.Tests/Execution/GameSessionCommandHandlerTests.cs`, audit projector/handler tests, `tests/WildBunch.Integration.Tests/Dev/DevEndpointTests.cs`, and `tests/WildBunch.Integration.Tests/EventSourcingEndToEndTests.cs`.
 
-- [ ] Add a repository-level behavior test with at least two persisted events carrying distinct, deliberately chosen timestamps; assert ordered typed facts remain paired with their exact sequence and envelope values.
-- [ ] Run the focused test before implementation and confirm it fails because the repository contract does not expose occurrence metadata.
-- [ ] Add the Application read value and repository method; decode using the production payload loader and return each typed event with its persisted sequence and `OccurredAtUtc`.
-- [ ] Keep `GetEventStreamAsync` behavior available for current replay and gameplay callers; avoid introducing a second event-decoding implementation.
-- [ ] Update the in-memory repository only as needed to satisfy the production interface and meaningful handler behavior tests.
-
-**Expected:** The Application can consume ordered facts and their stored occurrence metadata without depending on Persistence entities or putting envelope data on Domain events.
-
-### Task 3: Make audit projection and API output deterministic
-
-**Files:** `src/WildBunch.Application/Projections/FullAuditProjector.cs`, `FullAuditProjection.cs`, `src/WildBunch.Application/Dev/Queries/GetSessionAuditHandler.cs`, `SessionAuditDto.cs`, `tests/WildBunch.Application.Tests/Projections/FullAuditProjectorTests.cs`, `tests/WildBunch.Application.Tests/Dev/GetSessionAuditHandlerTests.cs`, and `tests/WildBunch.Integration.Tests/Dev/DevEndpointTests.cs`.
-
-- [ ] Convert audit projection to recorded-event inputs, use persisted sequence and occurrence time directly, and preserve event type/summary behavior.
-- [ ] Remove the bare-event projector overload and its `DateTime.UtcNow` fallback; no test should rely on equal output from a fabricated timestamp.
-- [ ] Strengthen a handler test with exact sequence and timestamp assertions using independently supplied records.
-- [ ] Strengthen the PostgreSQL-backed developer endpoint scenario by assigning distinct stored envelope times and asserting the returned entries preserve them across repeated requests.
-- [ ] Retain meaningful missing-session and non-development authorization tests; do not add route-absence or source-shape tests.
+- [x] Add a PostgreSQL-backed behavior test through the existing developer audit route with independently assigned envelope timestamps; run it before implementation and confirm it fails because the read returns `UtcNow`.
+- [x] Add the Application read value and repository method; decode using the production payload loader and return each typed event with its persisted sequence and `OccurredAtUtc`.
+- [x] Keep `GetEventStreamAsync` behavior available for current replay and gameplay callers; avoid introducing a second event-decoding implementation.
+- [x] Change the full-audit projector to consume recorded events only, preserve their stored sequence/time, and retain current summary text. Remove any bare-event overload that could fabricate metadata.
+- [x] Map the existing audit handler and DTO to the recorded values without changing session-not-found or environment-guard behavior.
+- [x] Add an independent projector assertion with a nontrivial sequence and fixed timestamp, and make the in-memory repository provide deterministic recorded metadata to its consumer tests.
 
 **Expected:** The existing developer audit endpoint reports stable timestamps and original stream positions from persisted envelopes on repeated reads.
 
-### Task 4: Reconcile dispositions and validate
+### Task 3: Reconcile dispositions and validate
 
 **Files:** `.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-application-test-followup.md`, and all implementation/test files above.
 
