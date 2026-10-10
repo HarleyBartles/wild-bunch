@@ -658,6 +658,94 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Fact]
+    public void PendingDevTravelOverrideCodec_PreservesVersionOnePayload()
+    {
+        const string foePayload = """{"forcedCategory":3,"foeProfile":{"speed":7,"fightStrength":9,"minimumBribe":6.5},"encounterMessage":"A rider blocks the trail."}""";
+        const string quietPayload = """{"forcedCategory":0,"foeProfile":null,"encounterMessage":null}""";
+        var serializer = new GameSessionJsonSerializer();
+
+        var foeOverride = serializer.DeserializePendingDevTravelOverride(foePayload);
+        var quietOverride = serializer.DeserializePendingDevTravelOverride(quietPayload);
+
+        Assert.Equal(DevTravelOverride.ForFoe(new JourneyFoeProfile(7, 9, 6.5m), "A rider blocks the trail."), foeOverride);
+        Assert.Equal(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet), quietOverride);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(foePayload), JsonNode.Parse(serializer.SerializePendingDevTravelOverride(foeOverride)!)));
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(quietPayload), JsonNode.Parse(serializer.SerializePendingDevTravelOverride(quietOverride)!)));
+        Assert.Null(serializer.SerializePendingDevTravelOverride(null));
+    }
+
+    [Fact]
+    public void PendingDevSaloonOverrideCodec_PreservesVersionOnePayload()
+    {
+        const string suspectPayload = """{"forcedKind":0,"forcedSuspectId":{"value":"saloon-suspect"},"forcedCitizenRoleKey":null}""";
+        const string citizenPayload = """{"forcedKind":1,"forcedSuspectId":null,"forcedCitizenRoleKey":"barber"}""";
+        var serializer = new GameSessionJsonSerializer();
+
+        var suspectOverride = serializer.DeserializePendingDevSaloonOverride(suspectPayload);
+        var citizenOverride = serializer.DeserializePendingDevSaloonOverride(citizenPayload);
+
+        Assert.Equal(DevSaloonOverride.ForSuspect(new SuspectId("saloon-suspect")), suspectOverride);
+        Assert.Equal(DevSaloonOverride.ForCitizen("barber"), citizenOverride);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(suspectPayload), JsonNode.Parse(serializer.SerializePendingDevSaloonOverride(suspectOverride)!)));
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(citizenPayload), JsonNode.Parse(serializer.SerializePendingDevSaloonOverride(citizenOverride)!)));
+        Assert.Null(serializer.SerializePendingDevSaloonOverride(null));
+    }
+
+    [Fact]
+    public async Task SaveAndLoadPendingDevTravelOverride_PreservesFoeSelectionForNextTravelDay()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateDiarySession();
+        var preview = new TravelResolver().PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId!.Value,
+            new TownId("openpass"),
+            session.Player.Inventory,
+            session.TravelRules);
+        var foeProfile = new JourneyFoeProfile(7, 9, 6.5m);
+        var expectedOverride = DevTravelOverride.ForFoe(foeProfile, "A rider blocks the trail.");
+
+        Assert.True(preview.Success);
+        session.StartJourney(preview.Preview!);
+        session.ForceDevTravelOverride(expectedOverride);
+        await PersistAsync(repository, unitOfWork, session);
+
+        var reloaded = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(expectedOverride, reloaded!.PendingDevTravelOverride);
+        var advanceResult = reloaded.AdvanceJourneyDay();
+        Assert.Equal(JourneyStatus.Interrupted, advanceResult.Status);
+        var pendingEncounter = Assert.IsType<JourneyEncounterState>(Assert.Single(reloaded.TravelDiaryDays).PendingEncounter);
+        Assert.Equal(expectedOverride.EncounterMessage, pendingEncounter.Message);
+        Assert.Equal(foeProfile, pendingEncounter.FoeProfile);
+    }
+
+    [Fact]
+    public async Task SaveAndLoadPendingDevSaloonOverride_PreservesSuspectSelectionForNextLookAround()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateSessionWithSaloonSuspect();
+        var suspectId = new SuspectId("saloon-suspect");
+        var expectedOverride = DevSaloonOverride.ForSuspect(suspectId);
+
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(expectedOverride);
+        await PersistAsync(repository, unitOfWork, session);
+
+        var reloaded = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(expectedOverride, reloaded!.PendingDevSaloonOverride);
+        Assert.True(reloaded.LookAroundSaloon().Success);
+        var spotted = Assert.Single(reloaded.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, spotted.PersonOfInterestKind);
+        Assert.Equal(suspectId, spotted.SuspectId);
+    }
+
+    [Fact]
     public async Task SaveAfterDryTravelRoundTripsHorseAndCanteenState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
