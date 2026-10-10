@@ -8,6 +8,7 @@
 
 - `2026-06-27` - Chose an event-backed archive state that preserves an abandoned playthrough instead of deleting it; the initial single-player flow also aimed to leave one active playthrough after starting another.
 - `2026-10-08` - Factual correction and partial supersession: the current setup path archives sessions it finds active, but the database does not enforce a global uniqueness constraint and per-stream concurrency does not prove a global one-active guarantee. ADR-0042 establishes the planned per-user invariant and immediate start-over archival.
+- `2026-10-10` - Corrected the implementation-shaped setup behavior: setup must reject while a playthrough is active and must not archive it. Only the separately confirmed Start Over operation archives; creating the replacement is a later operation. This correction supersedes the setup-path behavior described below, while preserving event-backed terminal archival and retained history.
 
 ## Decision Type
 
@@ -27,7 +28,7 @@ Starting over should retire the current playthrough without erasing the record o
 
 Archival is a durable lifecycle change recorded by a `PlaythroughArchived` event. An archived playthrough remains in history and cannot become active again under this decision. Archival is not deletion.
 
-The original single-player rule intended at most one active playthrough in the application store. The current setup path stages archival of sessions it finds active alongside the new session, but this is application-level behavior and the database does not enforce global uniqueness across competing starts. ADR-0042 replaces that global description with the accepted, planned per-user invariant and requires confirmed start-over to archive immediately, independently of whether a replacement is created.
+The original single-player rule intended at most one active playthrough in the application store. The implementation described in the 2026-10-08 history note staged archival of sessions it found active alongside the new session, but this was application-level behavior and the database did not enforce global uniqueness across competing starts. The 2026-10-10 correction supersedes that setup behavior: setup rejects while a playthrough is active, and only confirmed Start Over archives. ADR-0042 replaces the global description with the accepted, planned per-user invariant and requires confirmed start-over to archive immediately, independently of whether a replacement is created.
 
 ## Rationale and Alternatives
 
