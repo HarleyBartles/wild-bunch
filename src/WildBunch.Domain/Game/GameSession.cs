@@ -603,8 +603,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 Player.RemoveQuantity(ItemKind.HorseFeed, -horseFeedDelta);
         }
 
-        if (snapshot.HorseState is { } horseState)
-            Player.SetHorseState(horseState);
+        if (snapshot.HorseState is { } horseState && Player.HasItem(ItemKind.Horse))
+        {
+            if (horseState.IsDeadFor(TravelRules))
+                Player.RemoveQuantity(ItemKind.Horse, 1);
+            else
+                Player.SetHorseState(horseState);
+        }
     }
 
     /// <summary>
