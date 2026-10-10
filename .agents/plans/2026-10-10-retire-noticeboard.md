@@ -1,0 +1,88 @@
+# Retire the unbuilt noticeboard and fake sheriff records
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task.
+
+**Goal:** Remove the thin noticeboard and fake sheriff-records feature from stable 0.1.0 while preserving wanted-poster reading in the Sheriff Office.
+
+**Architecture:** The player-facing sheriff interaction is wanted posters, read in the Sheriff Office; one poster read reveals one clue. There is no second noticeboard, public-square or private-records interaction in this release. Remove the noticeboard and local-record clue sources, authored public-notice clue, action/API/UI paths, and tests that protect those shells. Keep the existing `ReadWantedPosters` Domain/Application/API/Web flow and its truthful Sheriff Office context. Do not add a Town Square context or relocate the removed clue onto wanted posters. `InvestigationPerformed` keeps its current single-clue shape; no event upcaster or compatibility reader is needed for retired pre-alpha playtest data.
+
+**Data boundary:** The baseline specification already settles that pre-0.1.0 playthroughs are disposable and schema migration history must remain intact. Inspect the existing forward migration delivered for row 10 and verify it invalidates incompatible pre-alpha event histories before application replay. Reuse that migration coverage when sufficient; otherwise extend the established versioned migration to discard disposable pre-0.1.0 playthrough data and its dependent events/caches. Preserve the database schema, applied migration history and unrelated data. Do not retain obsolete source/event replay support to save these playtests, and do not drop or rebuild the database.
+
+**Specification and row:** `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`, PG-005; `docs/features.md`, PG-005; roadmap row 11. This is the first row 11 slice; later row 11 work repairs saloon observation/take-in and culprit release.
+
+**Execution strategy:** Inline, as one removal slice across Domain, generated content, Application, HTTP, persistence migration, browser and their behavior tests. Inspect current source and tests JIT, write a failing behavioral proof first, then remove the unsupported path without changing wanted-poster behavior.
+
+## Constraints
+
+- Keep wanted posters in the Sheriff Office and preserve the existing one-poster/one-clue interaction and player-facing result.
+- Retire `InspectNoticeBoard`, `CheckSheriffRecords` and the `NoticeBoard`/`LocalRecords` clue sources where they exist only for those interactions; remove the authored public-notice clue from new games.
+- Do not create or imply a Town Square context, move public notices to wanted posters, or introduce another clue source to compensate for the removal.
+- Do not change the singular clue event contract, add event upcasters, or retain removed enum/event behavior solely for disposable pre-0.1.0 playtests.
+- Apply the established forward-migration policy before removing any persisted type required to deserialize old sessions; prove fresh sessions and the retained poster flow still work after migration.
+- Leave saloon gossip, saloon observation, prologue knowledge, telegraph exclusion, poster circulation and all later row 11 gameplay decisions unchanged.
+- Do not add private records, new clues, automatic deductions, time/cost rules or unrelated gameplay.
+
+## Task 1: Confirm behavior and data boundary
+
+**Files:** Inspect the existing wanted-poster and noticeboard Domain/Application/API/Web owners, generated-case content, migrations and their behavioral tests; modify only the tests that directly prove the settled contract.
+
+- [ ] First strengthen a behavioral test showing the current live model exposes an unsupported noticeboard/records path, and demonstrate the expected failure before removal.
+- [ ] Identify the actual Sheriff Office poster route and its current clue/result contract; add or retain a behavioral test proving one poster read reveals one clue through that context.
+- [ ] Trace which persisted event/source types the retiring path introduces and verify whether the row 10 forward migration already discards their containing pre-0.1.0 sessions before replay.
+- [ ] Do not add tests that assert method, enum, file or endpoint declarations are absent; test user-visible and persisted behavior instead.
+
+## Task 2: Remove the unsupported Domain and generated-content feature
+
+**Files:** Modify the current Domain investigation/action/source owners and generated new-game case builder; update Domain and GameContent tests at their existing behavior owners.
+
+- [ ] Remove the `InspectNoticeBoard` and `CheckSheriffRecords` Domain interactions and their action availability, source-spent rules and exclusive result types.
+- [ ] Remove `NoticeBoard` and `LocalRecords` source definitions when no retained behavior consumes them; remove the authored public-notice clue from newly generated cases.
+- [ ] Preserve `ReadWantedPosters` in the Sheriff Office, its single-clue discovery behavior, source provenance, event and player result.
+- [ ] Keep `InvestigationPerformed` at its existing event shape. Do not add multiple clue IDs or upcasters for this retirement.
+- [ ] Prove a generated game still supports the retained prologue, saloon gossip, observation and wanted-poster paths without generating a noticeboard clue.
+
+## Task 3: Remove Application and HTTP entry points
+
+**Files:** Modify Application registrations/handlers and API route mapping; update Application and integration tests.
+
+- [ ] Remove commands, handlers and routes that exist only for noticeboard inspection or sheriff-record checking.
+- [ ] Keep the existing wanted-poster command, handler, route and result unchanged.
+- [ ] With a valid persisted game, prove requests to retired operations cannot append events or alter reads; prove the retained wanted-poster HTTP interaction still succeeds.
+- [ ] Avoid tests whose only assertion is that a route or service registration is missing.
+
+## Task 4: Remove browser controls and source copy
+
+**Files:** Modify the current town/sheriff surface, API client, TanStack Query mutation/query ownership and affected Web behavior tests.
+
+- [ ] Remove noticeboard and sheriff-record controls, copy, mutation paths and unavailable-action labels from the player UI.
+- [ ] Keep wanted posters available only in the Sheriff Office interaction and preserve pending, error and refresh behavior for that flow.
+- [ ] Exercise the routed Sheriff Office poster journey and verify no noticeboard or records interaction is offered to a player.
+
+## Task 5: Apply the disposable-data migration boundary and verify
+
+**Files:** Modify the existing persistence migration only if inspection proves its current pre-0.1.0 invalidation does not cover sessions containing removed source/event values; update its PostgreSQL behavioral tests if needed.
+
+- [ ] Ensure migration runs before application replay can encounter removed pre-alpha event/source types. Reuse the existing row 10 invalidation if it already covers all disposable pre-0.1.0 playthroughs.
+- [ ] Where migration coverage must change, prove with populated PostgreSQL data that affected disposable sessions and dependent event/cache rows are removed while the schema, migration history and unrelated data remain, then prove a fresh session can be created, saved and reloaded.
+- [ ] Do not preserve compatibility readers or fixtures for removed playtest history.
+- [ ] Run focused Domain, GameContent, Application, API, PostgreSQL and Web behavior checks, verify version `0.1.0-dev.71`, then run `py -3 tools/run.py ci --check` on the final candidate.
+
+## Task 6: Review and deliver
+
+- [ ] Review the complete branch against PG-005, the history/migration boundary, relevant ADRs, event-sourcing doctrine, unslop profiles and changed-concern/code-review guidance.
+- [ ] Confirm wanted-poster behavior remains in the Sheriff Office; the noticeboard, fake records and authored notice clue are gone from new play; removed pre-alpha history has no compatibility machinery; no unrelated knowledge source changed.
+- [ ] Run an independent whole-branch review. Resolve substantive findings with meaningful behavior proof and re-review the corrected diff.
+- [ ] Commit with the check-only hook, publish a PR to `develop`, verify exact-head hosted canonical CI success and merge under the active goal.
+- [ ] In the next fresh worktree, record PR/source/merge/exact-head/develop-gate evidence and retire this `.71` plan after checking its complete scope.
+
+## Acceptance
+
+- A player can read one wanted-poster clue in the Sheriff Office through the existing flow.
+- Stable 0.1.0 exposes no noticeboard, public-square notice or fake sheriff-records interaction, and new games generate no public-notice clue.
+- Event sourcing retains its existing single-clue event shape; disposable pre-0.1.0 sessions are invalidated by the established explicit migration policy rather than preserved through legacy replay code.
+- Migration leaves the schema and applied migration history intact and permits fresh sessions; the retained poster path works after migration.
+- Local and exact-head hosted canonical gates pass before merge; the successor records the develop push gate.
+
+## Explicit exclusions
+
+No Town Square context, public notices, private sheriff records, new clue sources, newspaper, telegraph, lawman, automatic deduction, saloon encounter, named take-in, fine, bounty, culprit release, inventory, travel or infrastructure feature.
