@@ -1,4 +1,5 @@
 import type { GameSessionDto, TownDto } from "../api/types";
+import { StartFlowPhase } from "../api/types";
 import { InventoryPanel } from "./InventoryPanel";
 import { StoreOffersPanel } from "./StoreOffersPanel";
 import { TravelPanel } from "./TravelPanel";
@@ -25,6 +26,14 @@ export function FieldReportPanel({
   onBuyOffer,
   onTurnResult,
 }: FieldReportPanelProps) {
+  if (
+    session.startFlowPhase !== StartFlowPhase.GameStarted ||
+    session.inventory === null ||
+    session.player.health === null
+  ) {
+    return null;
+  }
+
   return (
     <Grid>
       <StatusCard>

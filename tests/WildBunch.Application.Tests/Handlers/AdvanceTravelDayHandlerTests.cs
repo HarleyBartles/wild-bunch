@@ -32,7 +32,7 @@ public sealed class AdvanceTravelDayHandlerTests
         Assert.False(string.IsNullOrWhiteSpace(result.TrailEvent!.Title));
         Assert.Contains("I ", result.TrailEvent.Message, StringComparison.OrdinalIgnoreCase);
 
-        Assert.True(result.CurrentSession.Inventory.Items.First(item => item.Kind == ItemKind.Food).Quantity >= 2);
+        Assert.True(result.CurrentSession.Inventory!.Items.First(item => item.Kind == ItemKind.Food).Quantity >= 2);
     }
 
     [Fact]

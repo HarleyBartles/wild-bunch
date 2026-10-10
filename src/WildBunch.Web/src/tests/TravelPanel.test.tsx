@@ -195,7 +195,7 @@ function createNoHorseSession(overrides: Partial<GameSessionDto> = {}): GameSess
   return {
     ...session,
     inventory: {
-      ...session.inventory,
+      ...session.inventory!,
       horseState: null,
     },
     journey: {
@@ -348,7 +348,7 @@ describe("TravelPanel", () => {
     const onTurnResult = vi.fn().mockResolvedValue(undefined);
     const session = createSession({
       inventory: {
-        ...createSession().inventory,
+        ...createSession().inventory!,
         items: [{ kind: 7, quantity: 4, horseState: null, canteenState: null }],
       },
       journey: {

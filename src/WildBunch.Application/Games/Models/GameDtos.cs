@@ -17,7 +17,7 @@ public sealed record GameSessionDto(
     PlayerDto Player,
     WorldDto World,
     CaseFileDto CaseFile,
-    InventoryDto Inventory,
+    InventoryDto? Inventory,
     GameClockDto Clock,
     PursuitStateDto PursuitState,
     TravelJourneyDto? Journey,
@@ -44,7 +44,7 @@ public sealed record ActiveSaloonWantedSuspectDto(
 public sealed record PlayerDto(
     string Name,
     string? CurrentTownId,
-    int Health);
+    int? Health);
 
 public sealed record InventoryDto(
     WalletDto Wallet,

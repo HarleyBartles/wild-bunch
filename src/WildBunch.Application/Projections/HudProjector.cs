@@ -17,6 +17,10 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
     public HudProjection Project(IReadOnlyList<IDomainEvent> events)
     {
         ArgumentNullException.ThrowIfNull(events);
+        if (!events.OfType<GameStarted>().Any())
+        {
+            throw new InvalidOperationException("A HUD projection requires a GameStarted event.");
+        }
 
         Guid sessionId = Guid.Empty;
         GameStatus status = GameStatus.Active;

@@ -80,7 +80,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
         Assert.Equal(resolveResult.CurrentSession.Player.Health, resolvedDay.CurrentHealth);
         Assert.Equal(
-            resolveResult.CurrentSession.Inventory.Items.Where(item => item.Kind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo).Sum(item => item.Quantity),
+            resolveResult.CurrentSession.Inventory!.Items.Where(item => item.Kind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo).Sum(item => item.Quantity),
             resolvedDay.CurrentAmmo);
         Assert.Equal(2, resolvedDay.EncounterResolution!.AmmoSpent);
         Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("forced the rider off the trail", StringComparison.OrdinalIgnoreCase)));
@@ -105,7 +105,7 @@ public sealed class ResolveJourneyEncounterHandlerTests
 
         Assert.True(resolveResult.Success);
         var resolvedDay = Assert.Single(resolveResult.TravelDiary!.Days);
-        Assert.Equal(20m - bribeAmount, resolveResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(20m - bribeAmount, resolveResult.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(-bribeAmount, resolvedDay.EncounterResolution!.WalletDelta);
         Assert.Equal(1, resolvedDay.Entries.Count(entry => entry.Contains("let me pass", StringComparison.OrdinalIgnoreCase)));
     }

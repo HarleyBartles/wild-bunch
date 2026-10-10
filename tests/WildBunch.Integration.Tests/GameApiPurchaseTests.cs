@@ -34,8 +34,8 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(result);
         Assert.True(result!.Success);
         Assert.Equal("Purchased 2 Food for $4.00.", result.Message);
-        Assert.Equal(21m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(6, result.CurrentSession.Inventory.Items.Single(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
+        Assert.Equal(21m, result.CurrentSession.Inventory!.Wallet.Cash);
+        Assert.Equal(6, result.CurrentSession.Inventory!.Items.Single(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
         Assert.Equal(createdSession.LogEntries.Count + 1, result.CurrentSession.LogEntries.Count);
         Assert.Equal(WildBunch.Domain.Game.GameLogEntryKind.Purchase, result.CurrentSession.LogEntries.Last().Kind);
     }
@@ -72,7 +72,7 @@ public sealed class GameApiPurchaseTests
         Assert.False(result!.Success);
         Assert.Equal("You must be in that town to buy there.", result.Message);
         Assert.Equal(createdSession.Player.CurrentTownId, result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
     }
 
     [Fact]
@@ -100,8 +100,8 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(result);
         Assert.False(result!.Success);
         Assert.Equal("Not enough cash.", result.Message);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(3, result.CurrentSession.Inventory.Items.Single(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
+        Assert.Equal(3, result.CurrentSession.Inventory!.Items.Single(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public sealed class GameApiPurchaseTests
         Assert.NotNull(result);
         Assert.False(result!.Success);
         Assert.Equal("That item is not offered at this store.", result.Message);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(createdSession.LogEntries.Count, result.CurrentSession.LogEntries.Count);
     }
 }

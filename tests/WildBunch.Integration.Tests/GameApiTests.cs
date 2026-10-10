@@ -74,7 +74,7 @@ public sealed class GameApiTests
         Assert.NotNull(fetchedSession);
         Assert.Equal(createdSession.Id, fetchedSession!.Id);
         Assert.Equal(createdSession.Player.Name, fetchedSession.Player.Name);
-        Assert.Equal(createdSession.Inventory.Wallet.Cash, fetchedSession.Inventory.Wallet.Cash);
+        Assert.Equal(createdSession.Inventory!.Wallet.Cash, fetchedSession.Inventory!.Wallet.Cash);
         Assert.Equal(createdSession.CaseFile.OpeningLead, fetchedSession.CaseFile.OpeningLead);
         Assert.Empty(fetchedSession.CaseFile.DiscoveredSuspects);
 
@@ -103,8 +103,8 @@ public sealed class GameApiTests
 
         Assert.NotNull(createdSession);
         scenario.Fixture.AssertCreatedSession(createdSession!);
-        var startingFood = createdSession!.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity;
-        var startingHorseFeed = createdSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity;
+        var startingFood = createdSession!.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity;
+        var startingHorseFeed = createdSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity;
 
         // Discover the first connected town dynamically — no hardcoded town names.
         var startingTownId = createdSession.Player.CurrentTownId;
@@ -162,10 +162,10 @@ public sealed class GameApiTests
         Assert.Equal(expectedDays, turnResult.CurrentSession.Journey!.RemainingDays);
         Assert.Equal(rideDayDistance, turnResult.CurrentSession.Journey.RemainingRideDayDistance);
         Assert.Equal(0, turnResult.CurrentSession.Journey.DaysTravelled);
-        Assert.Equal(startingFood, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
-        Assert.Equal(startingHorseFeed, turnResult.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
+        Assert.Equal(startingFood, turnResult.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
+        Assert.Equal(startingHorseFeed, turnResult.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
 
-        var startingCanteenCharges = createdSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges;
+        var startingCanteenCharges = createdSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges;
 
         // Advance each ride day until the journey completes. The loop covers the active days
         // (days 1 through expectedDays-1); the final advance after the loop arrives at the destination.
@@ -192,9 +192,9 @@ public sealed class GameApiTests
             Assert.Equal(expectedDays - day, advance.CurrentSession.Journey!.RemainingDays);
             Assert.Equal(rideDayDistance - day, advance.CurrentSession.Journey.RemainingRideDayDistance);
             Assert.Equal(day, advance.CurrentSession.Journey.DaysTravelled);
-            Assert.Equal(startingFood - day, advance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
-            Assert.Equal(startingHorseFeed, advance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
-            Assert.Equal(startingCanteenCharges - (canteenChargesPerDay * day), advance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+            Assert.Equal(startingFood - day, advance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food).Quantity);
+            Assert.Equal(startingHorseFeed, advance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
+            Assert.Equal(startingCanteenCharges - (canteenChargesPerDay * day), advance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
             // The first advance opens the travel diary with the journey's opening narration.
             if (day == 1)
@@ -235,11 +235,11 @@ public sealed class GameApiTests
         Assert.Equal(JourneyStatus.Completed, finalAdvance.TravelDiary.Days[^1].Status);
 
         // Food consumption is one per ride day, capped at zero when supplies run out.
-        var finalFoodItem = finalAdvance.CurrentSession.Inventory.Items.FirstOrDefault(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food);
+        var finalFoodItem = finalAdvance.CurrentSession.Inventory!.Items.FirstOrDefault(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food);
         var finalFoodQuantity = finalFoodItem?.Quantity ?? 0;
         Assert.Equal(Math.Max(0, startingFood - requiredFood), finalFoodQuantity);
-        Assert.Equal(startingHorseFeed, finalAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
-        Assert.Equal(startingCanteenCharges - requiredCanteenCharges, finalAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        Assert.Equal(startingHorseFeed, finalAdvance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.HorseFeed).Quantity);
+        Assert.Equal(startingCanteenCharges - requiredCanteenCharges, finalAdvance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
 
         var payload = await finalAdvanceResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
@@ -453,7 +453,7 @@ public sealed class GameApiTests
         Assert.Equal("foe", blockedAdvance.Journey.PendingEncounter!.Kind);
         Assert.Equal(3, blockedAdvance.Journey.PendingEncounter.Choices.Count);
         Assert.Equal(new[] { "run", "fight", "bribe" }, blockedAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id));
-        Assert.Equal(10, blockedAdvance.CurrentSession.Inventory.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
+        Assert.Equal(10, blockedAdvance.CurrentSession.Inventory!.Items.First(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Canteen).CanteenState!.Charges);
         Assert.Equal(firstDestinationArrivalDay + 1, blockedAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, blockedAdvance.CurrentSession.Clock.Turn);
         var secondDestinationPayload = await firstAdvanceResponse.Content.ReadAsStringAsync();
@@ -468,7 +468,7 @@ public sealed class GameApiTests
         Assert.DoesNotContain("annoyance", secondDestinationPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("shaken", secondDestinationPayload, StringComparison.OrdinalIgnoreCase);
 
-        var bribeAmount = blockedAdvance.CurrentSession.Inventory.Wallet.Cash;
+        var bribeAmount = blockedAdvance.CurrentSession.Inventory!.Wallet.Cash;
         var resolveResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/travel/encounter/resolve",
             new { ChoiceId = "bribe", BribeAmount = bribeAmount });

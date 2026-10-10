@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { formatGameStatus } from "../ui/formatters";
 import { formatClockBeat } from "../ui/beatFormatters";
 import { useGameSession } from "../state/useGameSession";
+import { StartFlowPhase } from "../api/types";
 
 interface HudProps {
   onOpenJournal: () => void;
@@ -32,6 +33,14 @@ export function Hud({ onOpenJournal, onOpenGameSettings }: HudProps) {
         </HudActions>
       </HudBar>
     );
+  }
+
+  if (
+    session.startFlowPhase !== StartFlowPhase.GameStarted ||
+    session.inventory === null ||
+    session.player.health === null
+  ) {
+    return null;
   }
 
   const cash = session.inventory.wallet.cash;

@@ -1,5 +1,6 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Projections;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 
 namespace WildBunch.Api.Games;
@@ -18,6 +19,7 @@ public static class ProjectionEndpoints
         projections.MapGet("/hud", GetHudProjectionAsync)
             .WithName("GetHudProjection")
             .Produces<HudProjection>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound);
 
         return games;
@@ -37,6 +39,11 @@ public static class ProjectionEndpoints
         }
 
         var events = await repository.GetEventStreamAsync(sessionId, 0, cancellationToken).ConfigureAwait(false);
+        if (!events.OfType<GameStarted>().Any())
+        {
+            return Results.NoContent();
+        }
+
         var projection = projector.Project(events);
         return Results.Ok(projection with { SessionId = id });
     }

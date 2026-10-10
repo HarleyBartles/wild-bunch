@@ -31,7 +31,7 @@ public sealed class TurnInToSheriffHandlerTests
         Assert.Equal("Mira Cline", firstResult.TargetName);
         Assert.Equal(WarrantDisposition.DeadOrAlive, firstResult.Disposition);
         Assert.Equal(2500m, firstResult.BountyAmount);
-        Assert.Equal(2525m, firstResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(2525m, firstResult.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Single(repository.Sessions.Single().CaseFile.SheriffTurnInSettlements);
         Assert.True(repository.Sessions.Single().CaseFile.SheriffTurnInSettlements[0].IsAlive);
         Assert.Equal(1, repository.StoreCalls);
@@ -39,7 +39,7 @@ public sealed class TurnInToSheriffHandlerTests
 
         Assert.False(secondResult.Success);
         Assert.Equal(SheriffTurnInOutcome.Rejected, secondResult.Outcome);
-        Assert.Equal(2525m, secondResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(2525m, secondResult.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);

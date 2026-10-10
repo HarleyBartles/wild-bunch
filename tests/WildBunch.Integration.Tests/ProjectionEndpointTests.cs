@@ -72,6 +72,15 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
 
         // Step 1: setup
         var setupResponse = await _client.CreateSetupOnlyGameAsync(scenario);
+        Assert.Equal("Ranger Vale", setupResponse.Player.Name);
+        Assert.Null(setupResponse.Player.CurrentTownId);
+        Assert.Null(setupResponse.Player.Health);
+        Assert.Null(setupResponse.Inventory);
+        Assert.Null(setupResponse.HudProjection);
+
+        var setupHudResponse = await _client.GetAsync($"/api/games/{setupResponse.Id}/projections/hud");
+        Assert.Equal(HttpStatusCode.NoContent, setupHudResponse.StatusCode);
+        Assert.Empty(await setupHudResponse.Content.ReadAsStringAsync());
 
         // Step 2: view prologue
         var prologueResponse = await _client.PostAsync(
@@ -97,22 +106,11 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
     }
 
     /// <summary>
-    /// Regression: ViewPrologueHandler previously fetched the event stream and
-    /// built HUD/diary projections INSIDE the ExecuteWithRetryAsync lambda,
-    /// before the just-emitted PrologueViewed event was stored. The returned
-    /// DTO's projections were based on the previous committed stream. Fix:
-    /// follow TravelToTownHandler pattern — run ExecuteWithRetryAsync first,
-    /// then fetch/project after events are committed.
-    ///
-    /// The diary projector does not create entries for PrologueViewed (it only
-    /// handles gameplay events starting from GameStarted). So this test verifies
-    /// that the returned DTO has non-null projections built from the committed
-    /// stream, and that the session state reflects PrologueViewed. The key
-    /// regression is that the handler does not throw and returns projections
-    /// from the post-commit stream.
+    /// The prologue response represents the committed setup phase without
+    /// manufacturing a gameplay HUD before GameStarted.
     /// </summary>
     [Fact]
-    public async Task ViewPrologue_ReturnedDto_IncludesHudProjectionFromCommittedStream()
+    public async Task ViewPrologue_ReturnedDtoOmitsHudUntilGameStarts()
     {
         var scenario = BoringScenarioBuilder.MountedTravelReady();
         scenario.AssertReady();
@@ -120,17 +118,16 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
         // Step 1: setup
         var setupResponse = await _client.CreateSetupOnlyGameAsync(scenario);
 
-        // Step 2: view prologue — the returned DTO must include its HUD projection
-        // built from the committed event stream (after PrologueViewed is stored).
+        // Step 2: view prologue — the response retains setup state but no gameplay HUD.
         var prologueResponse = await _client.PostAsync(
             $"/api/games/{setupResponse.Id}/prologue-viewed", content: null);
         prologueResponse.EnsureSuccessStatusCode();
         var prologueSession = await prologueResponse.Content.ReadFromJsonAsync<GameSessionDto>();
         ArgumentNullException.ThrowIfNull(prologueSession);
 
-        // HUD must be built without throwing from the committed stream.
-        Assert.NotNull(prologueSession!.HudProjection);
-        // Session state must reflect the just-emitted PrologueViewed event.
+        Assert.Null(prologueSession!.HudProjection);
+        Assert.Null(prologueSession.Inventory);
+        Assert.Null(prologueSession.Player.Health);
         Assert.Equal(StartFlowPhase.PrologueViewed, prologueSession.StartFlowPhase);
     }
 }

@@ -126,8 +126,8 @@ internal static class ScenarioSeedCatalog
             RequireEqual("NoHorseLightEasy", "start-game.entropy", GameEntropy.Boring, session.GameEntropy);
             RequireEqual("NoHorseLightEasy", "start-game.health", 1250, session.Player.Health);
             // Transitional: all difficulties now get horse+saddle.
-            Require("NoHorseLightEasy", "start-game.inventory.horseItem", session.Inventory.Items.Any(item => item.Kind == ItemKind.Horse), "expected the starting inventory to include a horse (transitional default).");
-            Require("NoHorseLightEasy", "start-game.inventory.saddleItem", session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle), "expected the starting inventory to include a saddle (transitional default).");
+            Require("NoHorseLightEasy", "start-game.inventory.horseItem", session.Inventory!.Items.Any(item => item.Kind == ItemKind.Horse), "expected the starting inventory to include a horse (transitional default).");
+            Require("NoHorseLightEasy", "start-game.inventory.saddleItem", session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle), "expected the starting inventory to include a saddle (transitional default).");
         },
         AssertTravelPreviewContract: (session, destinationTownId, preview) =>
         {
@@ -312,7 +312,7 @@ internal static class ScenarioSeedCatalog
             $"expected current town {session.Player.CurrentTownId} to be in the world");
 
         RequireEqual(scenarioName, "start-game.health", 1000, session.Player.Health);
-        RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory.Wallet.Cash);
+        RequireEqual(scenarioName, "start-game.wallet.cash", 25m, session.Inventory!.Wallet.Cash);
         Require(scenarioName, "start-game.world.towns", session.World.Towns.Count >= 5 && session.World.Towns.Count <= 10, $"expected town count 5-10, got {session.World.Towns.Count}");
         Require(scenarioName, "start-game.world.trails", session.World.Trails.Count > 0, "expected at least one trail");
 
@@ -432,10 +432,10 @@ internal static class ScenarioSeedCatalog
             "CanonicalMountedStandard",
             $"entropy={session.GameEntropy}",
             "start=default-playable-start",
-            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
-            $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
-            $"items={session.Inventory.Items.Count}",
+            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"wallet={session.Inventory!.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
+            $"items={session.Inventory!.Items.Count}",
             $"towns={session.World.Towns.Count}",
             $"preview={DescribeMountedPreview(preview)}");
 
@@ -446,10 +446,10 @@ internal static class ScenarioSeedCatalog
             "CanonicalStartingTown",
             $"entropy={session.GameEntropy}",
             "start=default-playable-start",
-            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
-            $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
-            $"items={session.Inventory.Items.Count}",
+            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"wallet={session.Inventory!.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
+            $"items={session.Inventory!.Items.Count}",
             $"towns={session.World.Towns.Count}",
             "services=starting-town",
             $"preview={DescribeMountedPreview(preview)}");
@@ -468,10 +468,10 @@ internal static class ScenarioSeedCatalog
             "HighRiskFoeInterruptRoute",
             $"entropy={session.GameEntropy}",
             "start=default-playable-start",
-            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
-            $"wallet={session.Inventory.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
-            $"items={session.Inventory.Items.Count}",
+            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"wallet={session.Inventory!.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
+            $"items={session.Inventory!.Items.Count}",
             $"towns={session.World.Towns.Count}",
             $"routes=count={connectedCount}",
             $"preview={DescribeMountedPreview(preview)}");
@@ -484,8 +484,8 @@ internal static class ScenarioSeedCatalog
             "NoHorseLightEasy",
             $"entropy={session.GameEntropy}",
             $"difficulty={session.GameDifficulty}",
-            $"horse={DescribeHorseState(session.Inventory.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory.Items.Any(item => item.Kind == ItemKind.Saddle))}",
+            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
+            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
             $"health={session.Player.Health}",
             $"towns={session.World.Towns.Count}",
             $"travel={preview?.Preview?.TravelMode.ToString().ToLowerInvariant() ?? "missing"}",
@@ -508,7 +508,7 @@ internal static class ScenarioSeedCatalog
 
     private static dynamic RequireItem(string scenarioName, GameSessionDto session, ItemKind kind)
     {
-        var item = session.Inventory.Items.SingleOrDefault(entry => entry.Kind == kind);
+        var item = session.Inventory!.Items.SingleOrDefault(entry => entry.Kind == kind);
         Require(scenarioName, $"start-game.inventory.{kind.ToString().ToLowerInvariant()}", item is not null, $"expected the starting inventory to include {kind}.");
         return item!;
     }

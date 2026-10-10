@@ -2,7 +2,6 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
-using WildBunch.Application.Projections;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
 using WildBunch.GameContent.Abstractions;
@@ -19,17 +18,14 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
     private const string SupersededByNewPlaythrough = "superseded-by-new-playthrough";
 
     private readonly INewGameFactory _newGameFactory;
-    private readonly HudProjector _hudProjector;
 
     public CompletePlayerSetupHandler(
         INewGameFactory newGameFactory,
         IGameSessionRepository gameSessionRepository,
-        IGameSessionUnitOfWork gameSessionUnitOfWork,
-        HudProjector hudProjector)
+        IGameSessionUnitOfWork gameSessionUnitOfWork)
         : base(gameSessionRepository, gameSessionUnitOfWork)
     {
         _newGameFactory = newGameFactory;
-        _hudProjector = hudProjector;
     }
 
     // Setup-flow handler: creates the session, does not require GameStarted.
@@ -78,12 +74,7 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
         }
         newSession.MarkEventsCommitted();
 
-        // 6. Return the DTO with start flow phase.
-        var dto = GameSessionMapper.ToDto(newSession);
-        var events = await GameSessionRepository.GetEventStreamAsync(
-            newSession.Id, 0, cancellationToken).ConfigureAwait(false);
-        var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
-
-        return dto with { HudProjection = hud };
+        // 6. Return the setup DTO without gameplay-only projections.
+        return GameSessionMapper.ToDto(newSession);
     }
 }

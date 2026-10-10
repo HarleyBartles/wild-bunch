@@ -105,10 +105,12 @@ public static class GameSessionMapper
             gameDifficulty,
             entropy,
             startFlowPhase,
-            ToDto(player),
+            ToDto(player, startFlowPhase >= StartFlowPhase.GameStarted),
             ToDto(world),
             ToDto(caseFile),
-            InventoryMapper.ToDto(player, TravelRulesProfile.For(gameDifficulty)),
+            startFlowPhase >= StartFlowPhase.GameStarted
+                ? InventoryMapper.ToDto(player, TravelRulesProfile.For(gameDifficulty))
+                : null,
             new GameClockDto(clock.Day, clock.Turn, clock.TimeOfDay.ToString(), BeatLabelRenderer.Render(clock.TimeOfDay, clock.Day)),
             new PursuitStateDto(pursuitState.Heat),
             journey,
@@ -118,11 +120,11 @@ public static class GameSessionMapper
             caseFile.KnownWarrants.Count > 0 ? WantedPosterMapper.ToDto(caseFile.KnownWarrants) : Array.Empty<WantedPosterDto>(),
             hudProjection);
 
-    private static PlayerDto ToDto(DomainPlayer player)
+    private static PlayerDto ToDto(DomainPlayer player, bool gameStarted)
         => new(
             player.Name,
             player.CurrentTownId?.Value,
-            player.Health);
+            gameStarted ? player.Health : null);
 
     internal static WorldDto ToDto(DomainWorld world)
         => new(

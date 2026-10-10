@@ -33,13 +33,14 @@ export function TravelActions({
   onResolveEncounter,
 }: TravelActionsProps) {
   const journey = session.journey;
+
+  if (!journey || session.inventory === null) {
+    return null;
+  }
+
   const firearmAmmo = session.inventory.items
     .filter((item) => item.kind === revolverAmmoKind || item.kind === rifleAmmoKind)
     .reduce((total, item) => total + item.quantity, 0);
-
-  if (!journey) {
-    return null;
-  }
 
   const disabled = busy || refreshing;
   const pendingEncounter = journey.pendingEncounter;
