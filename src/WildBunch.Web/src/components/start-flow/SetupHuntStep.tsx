@@ -10,7 +10,6 @@ interface SetupHuntStepProps {
   gameDifficulty: GameDifficulty;
   gameEntropy: GameEntropy;
   seedDraft: string;
-  seedDirty: boolean;
   decodeError: string | null;
   onPlayerNameChange: (value: string) => void;
   onGameDifficultyChange: (difficulty: GameDifficulty) => void;

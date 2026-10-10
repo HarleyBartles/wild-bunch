@@ -227,3 +227,7 @@ The table below gives each assessed application/configuration/guidance file an o
 ## Dated row 08 disposition, 2026-10-10
 
 **WB-20:** The casebook renders supplied warrant and clue records directly, including clue provenance/anchors and recorded turn-in outcomes. It no longer ranks fallback clues, derives discovery provenance from text, joins settlement by display name, or emits resolved/possible-match identity copy. Captured wanted posters are filtered by the warrant/poster ID shared by the source contracts. A rendered behavior test covers two same-name warrant records, one settled record, and a separate unnamed feature clue. No browser-backed journey is claimed because the repository has no browser/e2e harness.
+
+## Dated row 09 disposition, 2026-10-10
+
+**WB-05:** The setup form now owns one seed draft, generates a UUID for a fresh setup visit and reset, validates and normalizes the submitted draft, and keeps invalid input on the setup step with a visible error. API setup rejects missing or malformed seeds and unsupported difficulty/entropy values before creating a session. The replay acceptance verifies a submitted non-default UUID in the persisted session and setup event. This disposition does not resolve WB-06: restoring setup inputs from an existing session and binding the prologue to authoritative session facts remain separate concerns.

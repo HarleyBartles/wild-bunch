@@ -300,6 +300,9 @@ describe("StartFlow", () => {
 
     const nameInput = await screen.findByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
+    const seedInput = screen.getByLabelText(/world seed/i);
+    await user.clear(seedInput);
+    await user.type(seedInput, "A1234567-B123-C123-D123-E123456789AB");
 
     // Select Challenging (difficulty 2) and Wild (gameEntropy 3)
     await user.click(screen.getByRole("button", { name: /^challenging$/i }));
@@ -314,7 +317,7 @@ describe("StartFlow", () => {
 
     const setupRequest = mockedSetupGame.mock.calls[0][0];
     expect(setupRequest.playerName).toBe("Ranger Vale");
-    expect(setupRequest.seedCode).toBeTruthy();
+    expect(setupRequest.seedCode).toBe("a1234567-b123-c123-d123-e123456789ab");
     expect(setupRequest.gameDifficulty).toBe(2);
     expect(setupRequest.gameEntropy).toBe(3);
 
@@ -341,6 +344,43 @@ describe("StartFlow", () => {
     });
 
     expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "t-town" });
+  });
+
+  it("keeps a name-only quick start on defaults and submits the visit seed", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    const seedInput = await screen.findByLabelText(/world seed/i);
+    const visitSeed = (seedInput as HTMLInputElement).value;
+    expect(visitSeed).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+    await user.type(screen.getByLabelText(/your name/i), "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => expect(mockedSetupGame).toHaveBeenCalledTimes(1));
+    expect(mockedSetupGame.mock.calls[0][0]).toMatchObject({
+      playerName: "Ranger Vale",
+      gameDifficulty: 0,
+      gameEntropy: 1,
+      seedCode: visitSeed.toLowerCase(),
+    });
+  });
+
+  it("does not submit setup when the edited seed is invalid", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    await user.type(await screen.findByLabelText(/your name/i), "Ranger Vale");
+    const seedInput = screen.getByLabelText(/world seed/i);
+    await user.clear(seedInput);
+    await user.type(seedInput, "not-a-uuid");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/seed/i);
+    expect(mockedSetupGame).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
   });
 
   it("shows the creating step after selecting a town", async () => {
