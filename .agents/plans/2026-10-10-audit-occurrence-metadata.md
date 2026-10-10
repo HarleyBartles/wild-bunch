@@ -74,7 +74,7 @@
 - [x] Re-read ADR-0028 and verify this change follows its existing persistence-envelope ownership; leave the ADR and feature matrix unchanged unless source inspection establishes a durable decision or feature assessment changed.
 - [x] Review the full diff against the spec, repository boundaries, event upcasting, audit authorization, test anti-pattern guidance and this plan.
 - [x] Run `dotnet test tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter FullyQualifiedName~FullAuditProjector` and `dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~EventStorePersistenceTests|FullyQualifiedName~DevEndpointTests"`; ensure the local PostgreSQL test dependency is running before integration tests.
-- [ ] Use the check-only pre-commit hook as the canonical fail-fast gate. Do not rerun `py -3 tools/run.py ci --check` immediately before or after a successful hooked commit.
+- [x] Use the check-only pre-commit hook as the canonical fail-fast gate. Do not rerun `py -3 tools/run.py ci --check` immediately before or after a successful hooked commit.
 - [ ] Push and open a PR to `develop`; verify hosted canonical CI on the exact PR head, merge under the active epic authorization, and verify the exact develop push gate.
 - [ ] Record actual source/merge SHAs and both hosted gate runs in the next successor handoff; sync the shared checkout and retire only this verified merged worktree and branch.
 
