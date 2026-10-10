@@ -17,7 +17,7 @@ import { useGameSession } from "../state/useGameSession";
  */
 export function usePhaseRouteSync(): void {
   const { phase, hasSession } = useGamePhase();
-  const { sessionLoading } = useGameSession();
+  const { sessionLoading, sessionRestoreStatus } = useGameSession();
   const location = useLocation();
   const navigate = useNavigate();
   const prevPhaseRef = useRef(phase);
@@ -26,7 +26,12 @@ export function usePhaseRouteSync(): void {
     // Skip sync while the session is still being fetched from the backend.
     // This prevents redirecting a stale deep-linked URL before we know
     // whether the player has a session.
-    if (sessionLoading) {
+    if (
+      sessionLoading ||
+      sessionRestoreStatus === "loading" ||
+      sessionRestoreStatus === "failed" ||
+      sessionRestoreStatus === "missing"
+    ) {
       return;
     }
 
@@ -49,7 +54,7 @@ export function usePhaseRouteSync(): void {
       search: isArrival ? { arrived: "1" } : undefined,
     });
     prevPhaseRef.current = phase;
-  }, [phase, hasSession, sessionLoading, location.pathname, navigate]);
+  }, [phase, hasSession, sessionLoading, sessionRestoreStatus, location.pathname, navigate]);
 }
 
 function phaseToUrlPrefix(phase: string): string | null {

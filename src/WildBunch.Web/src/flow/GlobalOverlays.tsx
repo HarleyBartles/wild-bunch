@@ -16,7 +16,7 @@ interface GlobalOverlaysProps {
 }
 
 export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysProps) {
-  const { journal, wantedPosters, loading, error, archivePlaythrough, archiving } =
+  const { journal, wantedPosters, loading, error, setError, archivePlaythrough, archiving } =
     useGameSession();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -85,7 +85,14 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
               <strong>Start Over</strong>
               <p>Archive this playthrough and begin again from the start.</p>
             </SettingsCopy>
-            <Button type="button" $variant="secondary" onClick={() => setConfirmOpen(true)}>
+            <Button
+              type="button"
+              $variant="secondary"
+              onClick={() => {
+                setError("");
+                setConfirmOpen(true);
+              }}
+            >
               Start Over
             </Button>
           </SettingsRow>
@@ -99,8 +106,10 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         confirmLabel="Archive and start over"
         cancelLabel="Keep riding"
         busy={archiving}
+        errorMessage={error}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {
+          setError("");
           void archivePlaythrough()
             .then(() => {
               setConfirmOpen(false);

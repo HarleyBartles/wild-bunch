@@ -5,6 +5,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
+import { HttpRequestError } from "../api/httpClient";
 import {
   AvailableActionKind,
   JourneyStatus,
@@ -19,6 +20,7 @@ import {
   getJournal,
   getTownStoreOffers,
   buyStoreItem,
+  setupGame,
   checkLocalRecords,
   gatherLocalGossip,
   inspectNoticeBoard,
@@ -59,6 +61,7 @@ vi.mock("../dev/devApi", () => ({
 }));
 
 const mockedGetGame = vi.mocked(getGame);
+const mockedSetupGame = vi.mocked(setupGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
@@ -328,6 +331,65 @@ function primeMocks() {
 }
 
 describe("AppShell", () => {
+  it("keeps a saved game out of setup when its initial read fails", async () => {
+    primeMocks();
+    mockedGetGame.mockRejectedValue(new TypeError("Failed to fetch"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town");
+
+    renderShell();
+
+    expect(
+      await screen.findByRole("heading", { name: /couldn't open your saved game/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /set up your hunt/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("banner", { name: /game status/i })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+    expect(window.location.pathname).toBe("/town");
+    expect(mockedSetupGame).not.toHaveBeenCalled();
+  });
+
+  it("retries the saved session id and resumes its server-reported phase", async () => {
+    primeMocks();
+    mockedGetGame
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(createSession());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/");
+
+    renderShell();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: /try again/i }));
+
+    expect(await screen.findByRole("banner", { name: /game status/i })).toBeInTheDocument();
+    expect(mockedGetGame).toHaveBeenNthCalledWith(1, "game-1");
+    expect(mockedGetGame).toHaveBeenNthCalledWith(2, "game-1");
+    await waitFor(() => expect(window.location.pathname).toBe("/town"));
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+  });
+
+  it("requires an explicit choice before leaving a confirmed missing saved game", async () => {
+    primeMocks();
+    mockedGetGame.mockRejectedValue(new HttpRequestError("Saved playthrough was not found.", 404));
+    window.localStorage.setItem("wild-bunch.current-game-id", "missing-game");
+    window.history.replaceState({}, "", "/");
+
+    renderShell();
+
+    expect(
+      await screen.findByRole("heading", { name: /saved playthrough wasn't found/i }),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("missing-game");
+    expect(screen.queryByRole("heading", { name: /set up your hunt/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("banner", { name: /game status/i })).not.toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /start a new game/i }));
+
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull();
+    expect(await screen.findByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+  });
+
   it("renders the persistent HUD with player name and clock once a session hydrates", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
@@ -359,6 +421,7 @@ describe("AppShell", () => {
     await waitFor(() => {
       expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^case file$/i }));
 
@@ -400,6 +463,7 @@ describe("AppShell", () => {
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
 
@@ -416,6 +480,7 @@ describe("AppShell", () => {
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
     const drawer = await screen.findByRole("region", { name: /developer overlay/i });
@@ -435,6 +500,7 @@ describe("AppShell", () => {
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
     expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
@@ -482,6 +548,7 @@ describe("AppShell", () => {
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
     const drawer = await screen.findByRole("region", { name: /developer overlay/i });
@@ -511,6 +578,7 @@ describe("AppShell", () => {
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
     const drawer = await screen.findByRole("region", { name: /developer overlay/i });

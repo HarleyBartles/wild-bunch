@@ -204,4 +204,18 @@ describe("usePhaseRouteSync", () => {
     });
     expect(window.location.pathname).toBe("/town/store");
   });
+
+  it("does not redirect a saved-session deep link when its read fails", async () => {
+    mockedGetGame.mockRejectedValue(new TypeError("Failed to fetch"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    const { queryClient } = renderWithRouter("/town");
+
+    await waitFor(() => {
+      expect(queryClient.getQueryState(["session", "game-1"])?.status).toBe("error");
+    });
+
+    expect(window.location.pathname).toBe("/town");
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+  });
 });
