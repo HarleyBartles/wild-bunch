@@ -36,9 +36,10 @@ public static class GameSessionEndpoints
             .Produces<WorldMapDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
-        games.MapGet("prologue", GetPrologueAsync)
+        games.MapGet("{id:guid}/prologue", GetPrologueAsync)
             .WithName("GetPrologue")
-            .Produces<PrologueDto>(StatusCodes.Status200OK);
+            .Produces<PrologueDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
 
         games.MapGet("{id:guid}", GetGameAsync)
             .WithName("GetGame")
@@ -145,20 +146,20 @@ public static class GameSessionEndpoints
     }
 
     private static async Task<IResult> GetPrologueAsync(
+        Guid id,
         GetPrologueHandler handler,
-        GameDifficulty? gameDifficulty = null,
-        string? seedCode = null,
-        GameEntropy? gameEntropy = null,
         string? variantId = null,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetPrologueQuery(
-            gameDifficulty ?? GameDifficulty.Standard,
-            seedCode,
-            gameEntropy ?? GameEntropy.Classic,
-            variantId);
-        var dto = await handler.HandleAsync(query, cancellationToken);
-        return Results.Ok(dto);
+        try
+        {
+            var dto = await handler.HandleAsync(new GetPrologueQuery(id, variantId), cancellationToken);
+            return Results.Ok(dto);
+        }
+        catch (GameSessionNotFoundException)
+        {
+            return Results.NotFound();
+        }
     }
 
     private static async Task<IResult> GetGameAsync(

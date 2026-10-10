@@ -15,12 +15,23 @@ public static class RequestValidation
             errors["playerName"] = ["Player name is required."];
         }
 
-        if (!string.IsNullOrWhiteSpace(request?.SeedCode))
+        if (request is null || string.IsNullOrWhiteSpace(request.SeedCode))
         {
-            if (!StartingWorldDescriptorCodeValidator.TryValidate(request.SeedCode, out var errorMessage))
-            {
-                errors["seedCode"] = [errorMessage ?? "Seed code is invalid."];
-            }
+            errors["seedCode"] = ["Seed code is required."];
+        }
+        else if (!StartingWorldDescriptorCodeValidator.TryValidate(request.SeedCode, out var errorMessage))
+        {
+            errors["seedCode"] = [errorMessage ?? "Seed code is invalid."];
+        }
+
+        if (request is not null && !Enum.IsDefined(request.GameDifficulty))
+        {
+            errors["gameDifficulty"] = ["Game difficulty is not supported."];
+        }
+
+        if (request is not null && !Enum.IsDefined(request.GameEntropy))
+        {
+            errors["gameEntropy"] = ["Game entropy is not supported."];
         }
 
         return WriteResult(errors, out result);

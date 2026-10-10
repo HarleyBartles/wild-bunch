@@ -45,14 +45,12 @@ function StatefulSetupHuntStep({
   const [difficulty, setDifficulty] = useState<GameDifficulty>(initialDifficulty);
   const [gameEntropy, setGameEntropy] = useState<GameEntropy>(initialGameEntropy);
   const [seedDraft, setSeedDraft] = useState(initialSeedDraft);
-  const [seedDirty, setSeedDirty] = useState(false);
   return (
     <SetupHuntStep
       playerName={playerName}
       gameDifficulty={difficulty}
       gameEntropy={gameEntropy}
       seedDraft={seedDraft}
-      seedDirty={seedDirty}
       decodeError={null}
       onPlayerNameChange={(value) => {
         setPlayerName(value);
@@ -68,7 +66,6 @@ function StatefulSetupHuntStep({
       }}
       onSeedDraftChange={(value) => {
         setSeedDraft(value);
-        setSeedDirty(true);
         onSeedDraftChange(value);
       }}
       onRandomizeSeed={onRandomizeSeed}
@@ -83,7 +80,6 @@ function renderStep(
     gameDifficulty: GameDifficulty;
     gameEntropy: GameEntropy;
     seedDraft: string;
-    seedDirty: boolean;
     decodeError: string | null;
     stateful: boolean;
     onPlayerNameChange: (value: string) => void;
@@ -125,7 +121,6 @@ function renderStep(
         gameDifficulty={overrides.gameDifficulty ?? 0}
         gameEntropy={overrides.gameEntropy ?? 1}
         seedDraft={overrides.seedDraft ?? "00000000-0000-0000-0000-000000000000"}
-        seedDirty={overrides.seedDirty ?? false}
         decodeError={overrides.decodeError ?? null}
         onPlayerNameChange={handlers.onPlayerNameChange}
         onGameDifficultyChange={handlers.onGameDifficultyChange}

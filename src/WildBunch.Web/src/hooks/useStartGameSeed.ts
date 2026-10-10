@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { GameDifficulty, GameEntropy, GameSessionDto } from "../api/types";
-import { createCanonicalSeedState, type GameSetupSeedState } from "../ui/gameSetupSeedCodec";
+import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 
 interface UseStartGameSeedArgs {
   session: GameSessionDto | null;
@@ -11,15 +11,14 @@ export interface UseStartGameSeedResult {
   playerName: string;
   gameDifficulty: GameDifficulty;
   gameEntropy: GameEntropy;
-  seedState: GameSetupSeedState;
   seedDraft: string;
-  seedDirty: boolean;
   decodeError: string | null;
   setPlayerName: (value: string) => void;
   setSeedDraft: (value: string) => void;
   setGameDifficulty: (difficulty: GameDifficulty) => void;
   setGameEntropy: (gameEntropy: GameEntropy) => void;
   randomizeSeed: () => void;
+  validateSeedDraft: () => Promise<string | null>;
 }
 
 export function useStartGameSeed({
@@ -29,9 +28,7 @@ export function useStartGameSeed({
   const [playerName, setPlayerName] = useState("");
   const [gameDifficulty, setGameDifficulty] = useState<GameDifficulty>(0);
   const [gameEntropy, setGameEntropy] = useState<GameEntropy>(1);
-  const [seedState, setSeedState] = useState(createCanonicalSeedState());
-  const [seedDraft, setSeedDraft] = useState(createCanonicalSeedState().seedCode);
-  const [seedDirty, setSeedDirty] = useState(false);
+  const [seedDraft, setSeedDraft] = useState<string>(() => crypto.randomUUID());
   const [decodeError, setDecodeError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,23 +40,15 @@ export function useStartGameSeed({
       return;
     }
 
-    const resetSeed = createCanonicalSeedState();
     setGameDifficulty(0);
     setGameEntropy(1);
-    setSeedState(resetSeed);
-    setSeedDraft(resetSeed.seedCode);
-    setSeedDirty(false);
+    setSeedDraft(crypto.randomUUID());
     setDecodeError(null);
   }, [resetToken]);
-
-  useEffect(() => {
-    setSeedDraft(seedState.seedCode);
-  }, [seedState.seedCode]);
 
   function handleSeedDraftChange(value: string) {
     setDecodeError(null);
     setSeedDraft(value);
-    setSeedDirty(true);
   }
 
   function handleGameDifficultyChange(difficulty: GameDifficulty) {
@@ -73,24 +62,31 @@ export function useStartGameSeed({
 
   function randomizeSeed() {
     setDecodeError(null);
-    setSeedDirty(false);
-    const randomSeed = crypto.randomUUID();
-    setSeedState({ seedCode: randomSeed });
-    setSeedDraft(randomSeed);
+    setSeedDraft(crypto.randomUUID());
+  }
+
+  async function validateSeedDraft() {
+    try {
+      const seedCode = await encodeGameSetupSeed({ seedCode: seedDraft });
+      setDecodeError(null);
+      return seedCode;
+    } catch (error) {
+      setDecodeError(error instanceof Error ? error.message : "Seed code is invalid.");
+      return null;
+    }
   }
 
   return {
     playerName,
     gameDifficulty,
     gameEntropy,
-    seedState,
     seedDraft,
-    seedDirty,
     decodeError,
     setPlayerName,
     setSeedDraft: handleSeedDraftChange,
     setGameDifficulty: handleGameDifficultyChange,
     setGameEntropy: handleGameEntropyChange,
     randomizeSeed,
+    validateSeedDraft,
   };
 }

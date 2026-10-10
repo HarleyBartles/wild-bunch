@@ -1,4 +1,7 @@
+using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Game;
 using WildBunch.GameContent.Prologue;
 
 namespace WildBunch.Application.Games.Queries;
@@ -10,12 +13,21 @@ namespace WildBunch.Application.Games.Queries;
 /// </summary>
 public sealed class GetPrologueHandler
 {
-    public Task<PrologueDto> HandleAsync(GetPrologueQuery query, CancellationToken cancellationToken = default)
+    private readonly IGameSessionReadRepository _repository;
+
+    public GetPrologueHandler(IGameSessionReadRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<PrologueDto> HandleAsync(GetPrologueQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var trueCulpritDescriptor = PrologueDescriptorResolver.ResolveTrueCulpritDescriptor(
-            query.GameDifficulty, query.SeedCode, query.GameEntropy);
+        var sessionId = new GameSessionId(query.GameSessionId);
+        var session = await _repository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+            ?? throw new GameSessionNotFoundException(sessionId);
+        var trueCulpritDescriptor = PrologueDescriptorResolver.ResolveTrueCulpritDescriptor(session.CaseFile);
 
         var variant = query.VariantId is null
             ? PrologueContent.Variants[0]
@@ -29,6 +41,6 @@ public sealed class GetPrologueHandler
             PrologueContent.StorySoFarPrimaryAction,
             variant.Id);
 
-        return Task.FromResult(dto);
+        return dto;
     }
 }

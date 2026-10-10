@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { useGamePhase } from "../hooks/useGamePhase";
 import { useGameSession } from "../state/useGameSession";
 import { useStartFlow } from "../hooks/useStartFlow";
-import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 import { FlowSurface, FlowNotice, FlowError } from "../components/ui/sharedStyled";
 import { SetupHuntStep } from "../components/start-flow/SetupHuntStep";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
@@ -48,7 +47,10 @@ export function PreSessionSurface() {
   const effectiveStep = deriveEffectiveStep(phase, flow.step);
 
   async function handleSetupComplete() {
-    const seedCode = await encodeGameSetupSeed(flow.seedState);
+    const seedCode = await flow.validateSeedDraft();
+    if (!seedCode) {
+      return;
+    }
     const trimmedName = flow.playerName.trim();
     await handleSetupGame({
       playerName: trimmedName,
@@ -86,7 +88,6 @@ export function PreSessionSurface() {
           gameDifficulty={flow.gameDifficulty}
           gameEntropy={flow.gameEntropy}
           seedDraft={flow.seedDraft}
-          seedDirty={flow.seedDirty}
           decodeError={flow.decodeError}
           onPlayerNameChange={flow.setPlayerName}
           onGameDifficultyChange={flow.setGameDifficulty}
@@ -98,12 +99,7 @@ export function PreSessionSurface() {
       )}
 
       {effectiveStep === "story" && (
-        <StorySoFarStep
-          onContinue={handlePrologueViewed}
-          seedCode={flow.seedState.seedCode}
-          gameDifficulty={flow.gameDifficulty}
-          gameEntropy={flow.gameEntropy}
-        />
+        <StorySoFarStep onContinue={handlePrologueViewed} sessionId={session?.id ?? ""} />
       )}
 
       {effectiveStep === "town" && (

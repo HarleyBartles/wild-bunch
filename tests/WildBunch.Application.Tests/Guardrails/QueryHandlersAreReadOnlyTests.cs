@@ -30,6 +30,7 @@ public sealed class QueryHandlersAreReadOnlyTests
         var worldMapHandler = new GetWorldMapHandler(readRepository);
         var storeOffersHandler = new GetTownStoreOffersHandler(readRepository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
         var travelPreviewHandler = new PreviewTravelHandler(readRepository, new WildBunch.Domain.Travel.TravelResolver());
+        var prologueHandler = new GetPrologueHandler(readRepository);
 
         _ = await gameSessionHandler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
         _ = await journalHandler.HandleAsync(new GetJournalQuery(session.Id.Value));
@@ -37,6 +38,7 @@ public sealed class QueryHandlersAreReadOnlyTests
         _ = await worldMapHandler.HandleAsync(new GetWorldMapQuery(session.Id.Value));
         _ = await storeOffersHandler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "pinecross"));
         _ = await travelPreviewHandler.HandleAsync(new PreviewTravelQuery(session.Id.Value, "redmesa"));
+        _ = await prologueHandler.HandleAsync(new GetPrologueQuery(session.Id.Value));
 
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);

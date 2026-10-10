@@ -24,7 +24,7 @@ public sealed class PlayerSetupReplayAcceptanceTests
     {
         const string playerName = "Ranger Vale";
         const string recordedSalt = "player-genesis-known-salt";
-        var seedCode = SeedWorldResolver.CreateCanonicalSeedCode().ToString("D");
+        const string seedCode = "a1234567-b123-c123-d123-e123456789ab";
         var saltFactory = new CountingSaltSourceFactory(recordedSalt);
         using var factory = PostgreSqlApiFactory.WithSaltSourceFactory(saltFactory);
         using var client = factory.CreateClient();
@@ -70,7 +70,7 @@ public sealed class PlayerSetupReplayAcceptanceTests
         Assert.Equal(SaltSourceMode.Fixed, worldGenerated.SaltSource.Mode);
         Assert.Equal(recordedSalt, worldGenerated.SaltSource.Salt);
         Assert.Equal(GameEntropy.Classic, worldGenerated.GameEntropy);
-        Assert.Equal(8, worldGenerated.World.Towns.Count);
+        Assert.Equal(seedCode, snapshotPath.SeedCode);
         Assert.All(worldGenerated.World.Towns, town => Assert.NotNull(town.Layout));
         Assert.NotNull(worldGenerated.CaseFile);
         Assert.Equal(snapshotPath.CaseFile.TrueCulpritId.Value, caseFileGenerated.CaseFile.TrueCulpritId);

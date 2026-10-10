@@ -1,10 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Api;
 using WildBunch.Api.Games;
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Travel;
 using WildBunch.Integration.Tests.TestInfrastructure;
+using WildBunch.Persistence;
 
 namespace WildBunch.Integration.Tests;
 
@@ -32,6 +36,50 @@ public sealed class GameApiValidationTests
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertValidationProblemAsync(response, "seedCode");
+        await AssertNoSessionsAsync(factory);
+    }
+
+    [Fact]
+    public async Task PostSetupWithoutSeedReturnsValidationProblemAndDoesNotCreateSession()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/games/setup", new { PlayerName = "Ranger Vale" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertValidationProblemAsync(response, "seedCode");
+        await AssertNoSessionsAsync(factory);
+    }
+
+    [Fact]
+    public async Task PostSetupWithUnsupportedDifficultyReturnsValidationProblemAndDoesNotCreateSession()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/games/setup",
+            new SetupGameRequest("Ranger Vale", (GameDifficulty)99, "11111111-1111-4111-8111-111111111111"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertValidationProblemAsync(response, "gameDifficulty");
+        await AssertNoSessionsAsync(factory);
+    }
+
+    [Fact]
+    public async Task PostSetupWithUnsupportedEntropyReturnsValidationProblemAndDoesNotCreateSession()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/games/setup",
+            new SetupGameRequest("Ranger Vale", SeedCode: "11111111-1111-4111-8111-111111111111", GameEntropy: (GameEntropy)99));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertValidationProblemAsync(response, "gameEntropy");
+        await AssertNoSessionsAsync(factory);
     }
 
     [Fact]
@@ -199,5 +247,12 @@ public sealed class GameApiValidationTests
             Assert.Contains(key, validationProblem.Errors.Keys);
             Assert.NotEmpty(validationProblem.Errors[key]);
         }
+    }
+
+    private static async Task AssertNoSessionsAsync(PostgreSqlApiFactory factory)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+        Assert.Equal(0, await dbContext.GameSessions.CountAsync());
     }
 }
