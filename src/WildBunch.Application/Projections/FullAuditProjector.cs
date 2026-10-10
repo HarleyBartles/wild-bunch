@@ -75,14 +75,11 @@ public sealed class FullAuditProjector
         TownActionContext.Store => "the store",
         TownActionContext.Stable => "the stable",
         TownActionContext.Jail => "the jail",
-        TownActionContext.TownSquare => "the town square",
         _ => FormatEnumName(context)
     };
 
     private static string FormatInvestigationSource(InvestigationSourceKind sourceKind) => sourceKind switch
     {
-        InvestigationSourceKind.NoticeBoard => "the notice board",
-        InvestigationSourceKind.LocalRecords => "local records",
         InvestigationSourceKind.LocalGossip => "local gossip",
         InvestigationSourceKind.StableLedger => "the stable ledger",
         InvestigationSourceKind.SheriffWarrants => "sheriff warrants",

@@ -41,7 +41,7 @@ public sealed class InvestigationSourceHandlerTests
     }
 
     [Fact]
-    public async Task GatherLocalGossipLoadsSessionSavesSuccessfulMutationEvenWithoutNoticeBoardService()
+    public async Task GatherLocalGossipLoadsAndSavesTheSessionMutation()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();

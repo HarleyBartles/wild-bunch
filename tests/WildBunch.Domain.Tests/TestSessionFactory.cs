@@ -417,7 +417,7 @@ public static class TestSessionFactory
     /// <summary>
     /// Creates a session with a single public clue matching the given source kind.
     /// The clue is in <see cref="CaseFile.PublicClues"/> and NOT in <see cref="CaseFile.KnownClues"/>.
-    /// The town supports NoticeBoard, Telegraph, and Lodging services.
+    /// Services and service availability are supplied by the town fixture.
     /// </summary>
     public static GameSession CreateWithPublicClue(InvestigationSourceKind sourceKind, string description)
     {

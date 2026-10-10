@@ -159,29 +159,13 @@ internal static class SeedCaseBuilder
                 $"A poster links the alias {DescribePrimaryAlias(suspects[0])} to {DescribePersonWithFeature(features[0].PrimaryFeature, "a rider")}.",
                 suspects[0].Id,
                 InvestigationTargetKind.GangMember,
-                "notice board",
+                "sheriff office",
                 "Public wanted poster",
                 InvestigationSourceKind.SheriffWarrants,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
                         new ClueSubjectAnchor(DescribePrimaryAlias(suspects[0]), Alias: DescribePrimaryAlias(suspects[0]), Feature: features[0].PrimaryFeature.Language.HasForm)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CasePublicClues,
-                2,
-                ClueKind.Record,
-                $"A public notice describes {DescribeUnnamedRider(features[1].PrimaryFeature)}.",
-                suspects[1].Id,
-                InvestigationTargetKind.Suspected,
-                "sheriff record",
-                "Public notice",
-                InvestigationSourceKind.LocalRecords,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor(features[1].PrimaryFeature.Language.HasForm, Feature: features[1].PrimaryFeature.Language.HasForm)
                     })),
             CreateClue(
                 source,

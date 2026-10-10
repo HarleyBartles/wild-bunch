@@ -45,8 +45,6 @@ public sealed class ActionAvailabilityResolverTests
                 AvailableActionKind.ViewJournal,
                 AvailableActionKind.ReadWantedPosters,
                 AvailableActionKind.BuySupplies,
-                AvailableActionKind.InspectNoticeBoard,
-                AvailableActionKind.CheckSheriffRecords,
                 AvailableActionKind.GatherLocalGossip,
                 AvailableActionKind.LookAroundSaloon
             },
@@ -54,7 +52,7 @@ public sealed class ActionAvailabilityResolverTests
     }
 
     [Fact]
-    public void TownWithNoticeBoardExposesReadWantedPosters()
+    public void TownExposesWantedPostersAndSaloonGossip()
     {
         var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
@@ -62,13 +60,11 @@ public sealed class ActionAvailabilityResolverTests
         var result = resolver.Resolve(CreateContext(session));
 
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
     }
 
     [Fact]
-    public void TownWithoutNoticeBoardStillExposesBaselineInvestigationActions()
+    public void TownExposesBaselineInvestigationActions()
     {
         var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
@@ -78,8 +74,6 @@ public sealed class ActionAvailabilityResolverTests
         // ReadWantedPosters is always available - every town has a sheriff's office.
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
     }
 
@@ -112,8 +106,6 @@ public sealed class ActionAvailabilityResolverTests
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
     }
 
@@ -135,8 +127,6 @@ public sealed class ActionAvailabilityResolverTests
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ResolveTravelEncounter);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
     }
 
     [Fact]

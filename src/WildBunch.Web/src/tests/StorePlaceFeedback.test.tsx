@@ -18,9 +18,7 @@ import {
   getGame,
   getJournal,
   getTownStoreOffers,
-  checkLocalRecords,
   gatherLocalGossip,
-  inspectNoticeBoard,
   confrontSaloonPersonOfInterest,
   lookAroundSaloon,
   readWantedPosters,
@@ -38,8 +36,6 @@ vi.mock("../api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
@@ -63,8 +59,6 @@ const mockedBuyStoreItem = vi.mocked(buyStoreItem);
 const mockedSetupGame = vi.mocked(setupGame);
 const mockedStartGameWithTown = vi.mocked(startGameWithTown);
 const mockedMarkPrologueViewed = vi.mocked(markPrologueViewed);
-const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
-const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
@@ -216,16 +210,6 @@ function primeMocks() {
     message: "Read wanted posters",
     currentJournal: createJournal(),
     wantedPosters: [],
-  });
-  mockedInspectNoticeBoard.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedCheckLocalRecords.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
   });
   mockedGatherLocalGossip.mockResolvedValue({
     success: true,

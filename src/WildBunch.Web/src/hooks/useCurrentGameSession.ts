@@ -7,9 +7,7 @@ import {
   type SetupGameRequest,
 } from "../api/types";
 import {
-  actionIsCheckLocalRecords,
   actionIsGatherLocalGossip,
-  actionIsInspectNoticeBoard,
   actionIsLookAroundSaloon,
   actionIsWantedPosters,
 } from "../utils/actionTypePredicates";
@@ -88,8 +86,6 @@ export function useCurrentGameSession() {
     travelMutation,
     acknowledgeArrivalMutation,
     readWantedPostersMutation,
-    inspectNoticeBoardMutation,
-    checkLocalRecordsMutation,
     gatherLocalGossipMutation,
     lookAroundSaloonMutation,
     confrontSaloonMutation,
@@ -115,8 +111,6 @@ export function useCurrentGameSession() {
   }, [gameId, state.pendingSetup, setupGameMutation]);
 
   const investigationPending =
-    inspectNoticeBoardMutation.isPending ||
-    checkLocalRecordsMutation.isPending ||
     gatherLocalGossipMutation.isPending ||
     lookAroundSaloonMutation.isPending ||
     confrontSaloonMutation.isPending;
@@ -136,8 +130,6 @@ export function useCurrentGameSession() {
   const loading = busyMode !== "idle";
 
   const canReadWantedPosters = actions.some(actionIsWantedPosters);
-  const canInspectNoticeBoard = actions.some(actionIsInspectNoticeBoard);
-  const canCheckLocalRecords = actions.some(actionIsCheckLocalRecords);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
   const canConfrontSaloonPersonOfInterest = Boolean(
@@ -238,20 +230,6 @@ export function useCurrentGameSession() {
     }
     await readWantedPostersMutation.mutateAsync();
   }, [gameId, canReadWantedPosters, readWantedPostersMutation]);
-
-  const handleInspectNoticeBoard = useCallback(async () => {
-    if (!gameId || !canInspectNoticeBoard) {
-      return;
-    }
-    await inspectNoticeBoardMutation.mutateAsync();
-  }, [gameId, canInspectNoticeBoard, inspectNoticeBoardMutation]);
-
-  const handleCheckLocalRecords = useCallback(async () => {
-    if (!gameId || !canCheckLocalRecords) {
-      return;
-    }
-    await checkLocalRecordsMutation.mutateAsync();
-  }, [gameId, canCheckLocalRecords, checkLocalRecordsMutation]);
 
   const handleGatherLocalGossip = useCallback(async () => {
     if (!gameId || !canGatherLocalGossip) {
@@ -362,8 +340,6 @@ export function useCurrentGameSession() {
     error: state.error,
     resetToken: state.resetToken,
     canReadWantedPosters,
-    canInspectNoticeBoard,
-    canCheckLocalRecords,
     canGatherLocalGossip,
     canLookAroundSaloon,
     canConfrontSaloonPersonOfInterest,
@@ -377,8 +353,6 @@ export function useCurrentGameSession() {
     handleTravel,
     handleAcknowledgeArrival,
     handleReadWantedPosters,
-    handleInspectNoticeBoard,
-    handleCheckLocalRecords,
     handleGatherLocalGossip,
     handleLookAroundSaloon,
     handleConfrontSaloonPersonOfInterest,

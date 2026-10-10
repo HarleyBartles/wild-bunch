@@ -49,7 +49,7 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         open={openOverlay === "wanted"}
         eyebrow="Sheriff Office"
         title="Wanted posters"
-        description="Posters read from town notice boards."
+        description="Posters read from the sheriff's office."
         onClose={() => onOpenOverlay(null)}
       >
         <WantedPosterSurface wantedPosters={wantedPosters} />

@@ -2034,68 +2034,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
     }
 
-    public CaseInvestigationResult InspectNoticeBoard()
-    {
-        if (IsArchived)
-        {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
-        }
-
-        var beatSpent = Clock.TimeOfDay;
-        EnterActionContext(TownActionContext.TownSquare);
-        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TownSquare, CurrentTown.TownName);
-
-        var context = new InvestigationContext(
-            CaseFile,
-            CurrentTownSlotIndex,
-            CurrentTownVisitCount,
-            SaltSource: null,
-            CurrentTown.TownId,
-            CurrentTown.TownName,
-            beatNarration,
-            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard),
-            IsSourceAvailable: true);
-        var outcome = _investigationLoop.InspectNoticeBoard(context);
-        ProduceEvent(outcome.Event);
-        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
-    }
-
-    public CaseInvestigationResult CheckSheriffRecords()
-    {
-        if (IsArchived)
-        {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
-        }
-
-        var beatSpent = Clock.TimeOfDay;
-        EnterActionContext(TownActionContext.SheriffOffice);
-        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.SheriffOffice, CurrentTown.TownName);
-
-        var context = new InvestigationContext(
-            CaseFile,
-            CurrentTownSlotIndex,
-            CurrentTownVisitCount,
-            SaltSource: null,
-            CurrentTown.TownId,
-            CurrentTown.TownName,
-            beatNarration,
-            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords),
-            IsSourceAvailable: true);
-        var outcome = _investigationLoop.CheckSheriffRecords(context);
-        ProduceEvent(outcome.Event);
-        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
-    }
-
     public void AppendTravelDiaryDay(TravelDiaryDayState travelDiaryDay)
     {
         ArgumentNullException.ThrowIfNull(travelDiaryDay);

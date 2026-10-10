@@ -45,42 +45,6 @@ public sealed class InvestigationEventSourcingTests
     }
 
     [Fact]
-    public void InspectNoticeBoardProducesInvestigationPerformedEvent()
-    {
-        var session = TestSessionFactory.CreateWithPublicClue(
-            InvestigationSourceKind.NoticeBoard, "A civic notice on the board.");
-
-        var result = session.InspectNoticeBoard();
-
-        Assert.True(result.Success);
-        Assert.True(result.SessionChanged);
-        // TownActionContextEntered (TownSquare) + InvestigationPerformed
-        Assert.Equal(2, session.UncommittedEvents.Count);
-        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
-        Assert.Equal(InvestigationSourceKind.NoticeBoard, e.SourceKind);
-        Assert.NotNull(e.ClueId);
-    }
-
-    [Fact]
-    public void CheckSheriffRecordsProducesInvestigationPerformedEvent()
-    {
-        var session = TestSessionFactory.CreateWithPublicClue(
-            InvestigationSourceKind.LocalRecords, "A sheriff ledger note.");
-
-        var result = session.CheckSheriffRecords();
-
-        Assert.True(result.Success);
-        Assert.True(result.SessionChanged);
-        // TownActionContextEntered (SheriffOffice) + InvestigationPerformed
-        Assert.Equal(2, session.UncommittedEvents.Count);
-        Assert.IsType<TownActionContextEntered>(session.UncommittedEvents[0]);
-        var e = Assert.IsType<InvestigationPerformed>(session.UncommittedEvents[1]);
-        Assert.Equal(InvestigationSourceKind.LocalRecords, e.SourceKind);
-        Assert.NotNull(e.ClueId);
-    }
-
-    [Fact]
     public void ReadWantedPostersProducesEventWithWarrantAndClue()
     {
         var session = TestSessionFactory.CreateWithPublicWarrantAndClue(

@@ -24,34 +24,37 @@
 
 ## Task 1: Retire Domain, generated content and HTTP paths
 
-**Files:** Modify the current Domain investigation/action/source owners, generated new-game case builder, Application registrations/handlers and API route mapping; update Domain, GameContent, Application and integration tests at their existing behavior owners.
+**Files:** Modify the current Domain investigation/action/source owners, generated new-game case builder, Application registrations/handlers, API route mapping, feature matrix and Sheriff Office asset guidance; update Domain, GameContent, Application, integration and Web tests at their existing behavior owners.
 
-- [ ] Add the intended negative assertion to the actual available-actions API behavior test and run it first; the RED must show that a valid current game offers `InspectNoticeBoard` or `CheckSheriffRecords`.
-- [ ] Remove the `InspectNoticeBoard` and `CheckSheriffRecords` Domain interactions and their action availability, source-spent rules, exclusive results, commands, handlers and routes.
-- [ ] Remove `NoticeBoard` and `LocalRecords` source definitions when no retained behavior consumes them; remove the authored public-notice clue from newly generated cases.
-- [ ] Preserve `ReadWantedPosters` in the Sheriff Office, its one-clue discovery behavior, source provenance, command, route, event and player result. Keep `InvestigationPerformed` at its current single-clue shape.
-- [ ] With a valid persisted game, prove the retired HTTP operations cannot append events or alter reads. Prove the retained poster action still surfaces one clue and its existing player-safe result.
-- [ ] Verify the row 10 `RetirePreAlphaRiflePlaythroughs` forward migration deletes disposable pre-0.1.0 sessions and dependent rows before replay; reuse its existing populated PostgreSQL coverage if it meets this contract. Do not add a noticeboard-specific migration, compatibility reader or legacy fixture if this migration already invalidates those sessions.
-- [ ] Demonstrate a generated game retains prologue, saloon gossip, observation and wanted-poster paths without the authored public-notice clue. Do not add tests that assert declarations are absent; test the available actions, route behavior, generated player knowledge and persisted results.
+- [x] Add the intended negative assertion to the actual available-actions API behavior test and run it first; the RED must show that a valid current game offers `InspectNoticeBoard` or `CheckSheriffRecords`.
+- [x] Remove the `InspectNoticeBoard` and `CheckSheriffRecords` Domain interactions and their action availability, source-spent rules, exclusive results, commands, handlers and routes.
+- [x] Remove `NoticeBoard` and `LocalRecords` source definitions when no retained behavior consumes them; remove the authored public-notice clue from newly generated cases.
+- [x] Remove the unused roster clue-source tags that described the retired noticeboard and fake records surfaces; do not preserve dead source metadata.
+- [x] Preserve `ReadWantedPosters` in the Sheriff Office, its one-clue discovery behavior, source provenance, command, route, event and player result. Keep `InvestigationPerformed` at its current single-clue shape.
+- [x] With a valid persisted game, prove the retired HTTP operations cannot append events or alter reads. Prove the retained poster action still surfaces one clue and its existing player-safe result.
+- [x] Verify the row 10 `RetirePreAlphaRiflePlaythroughs` forward migration deletes disposable pre-0.1.0 sessions and dependent rows before replay; reuse its existing populated PostgreSQL coverage if it meets this contract. Do not add a noticeboard-specific migration, compatibility reader or legacy fixture if this migration already invalidates those sessions.
+- [x] Add a dated clarification to ADR-0010 because its context still describes public notices as current; preserve its planned lawman evidence decision and record the 0.1.0 removal without rewriting history.
+- [x] Update PG-005 in `docs/features.md` from planned removal to the delivered 0.1.0 boundary, and align Sheriff Office asset guidance with wanted posters rather than a separate noticeboard cue.
+- [x] Demonstrate a generated game retains prologue, saloon gossip, observation and wanted-poster paths without the authored public-notice clue. Do not add tests that assert declarations are absent; test the available actions, route behavior, generated player knowledge and persisted results.
 
 ## Task 2: Retire browser controls and source copy
 
 **Files:** Modify the town/sheriff surface, API client, TanStack Query mutations and affected Web behavior tests.
 
-- [ ] Add the player-surface assertion first and witness RED: the Sheriff Office shows wanted posters alongside the unsupported local-record action/content.
-- [ ] Remove noticeboard and sheriff-record controls, copy, mutation paths and unavailable-action labels from the player UI.
-- [ ] Keep wanted posters available only through the Sheriff Office interaction and preserve its pending, error and affected-read refresh behavior.
-- [ ] Exercise the routed Sheriff Office poster journey and prove a player cannot see or invoke a noticeboard/records interaction.
+- [x] Add the player-surface assertion first and witness RED: the Sheriff Office shows wanted posters alongside the unsupported local-record action/content.
+- [x] Remove noticeboard and sheriff-record controls, copy, mutation paths and unavailable-action labels from the player UI.
+- [x] Keep wanted posters available only through the Sheriff Office interaction and preserve its pending, error and affected-read refresh behavior.
+- [x] Exercise the routed Sheriff Office poster journey and prove a player cannot see or invoke a noticeboard/records interaction.
 
 ## Task 3: Review and deliver
 
-- [ ] Confirm migration runs before application replay can encounter removed pre-alpha source values; where its existing PostgreSQL behavioral test does not prove an essential part of the settled data boundary, strengthen that behavior test before changing migration code.
-- [ ] Review the complete branch against PG-005, the history/migration boundary, relevant ADRs, event-sourcing doctrine, unslop profiles and changed-concern/code-review guidance.
-- [ ] Confirm wanted-poster behavior remains in the Sheriff Office; the noticeboard, fake records and authored public-notice clue are gone from new play; removed pre-alpha history has no compatibility machinery; no unrelated knowledge source changed.
-- [ ] Run focused Domain, GameContent, Application, API, PostgreSQL and Web behavior checks, verify version `0.1.0-dev.71`, then run `py -3 tools/run.py ci --check` on the final candidate.
-- [ ] Run an independent whole-branch review. Resolve substantive findings with meaningful behavior proof and re-review the corrected diff.
+- [x] Confirm migration runs before application replay can encounter removed pre-alpha source values; where its existing PostgreSQL behavioral test does not prove an essential part of the settled data boundary, strengthen that behavior test before changing migration code.
+- [x] Review the complete branch against PG-005, the history/migration boundary, relevant ADRs, event-sourcing doctrine, unslop profiles and changed-concern/code-review guidance.
+- [x] Confirm wanted-poster behavior remains in the Sheriff Office; the noticeboard, fake records and authored public-notice clue are gone from new play; removed pre-alpha history has no compatibility machinery; no unrelated knowledge source changed.
+- [x] Advance the single authored application version to `0.1.0-dev.72` for this merged PR; verify generated web identity and the complete canonical gate against that final candidate.
+- [x] Run an independent whole-branch review. Resolve substantive findings with meaningful behavior proof and re-review the corrected diff.
 - [ ] Commit with the check-only hook, publish a PR to `develop`, verify exact-head hosted canonical CI success and merge under the active goal.
-- [ ] In the next fresh worktree, record PR/source/merge/exact-head/develop-gate evidence and retire this `.71` plan after checking its complete scope.
+- [ ] In the next fresh worktree, record PR/source/merge/exact-head/develop-gate evidence and retire this `.72` plan after checking its complete scope.
 
 ## Acceptance
 

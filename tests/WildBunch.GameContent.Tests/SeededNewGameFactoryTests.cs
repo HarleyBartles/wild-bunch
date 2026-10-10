@@ -70,18 +70,17 @@ public sealed class SeededNewGameFactoryTests
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
             && clue.Description == session.CaseFile.OpeningLead.Description);
         Assert.Single(session.CaseFile.KnownClues);
-        // 4 base surface-tagged clues only; town-specific clues are a runtime/salt concern.
-        Assert.Equal(4, session.CaseFile.PublicClues.Count);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", StringComparison.Ordinal));
-        Assert.Equal(new[] { new SuspectId("suspect-1") }, session.CaseFile.PublicClues[0].LinkedSuspectIds);
-        Assert.Equal(new[] { new SuspectId("suspect-2") }, session.CaseFile.PublicClues[1].LinkedSuspectIds);
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A poster links the alias ", StringComparison.Ordinal));
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A public notice describes an unnamed rider who ", StringComparison.Ordinal));
+        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants
+            && clue.Description.StartsWith("A poster links the alias ", StringComparison.Ordinal)
+            && clue.Source == "sheriff office"
+            && clue.Context == "Public wanted poster"
+            && clue.LinkedSuspectIds.Contains(new SuspectId("suspect-1")));
+        Assert.DoesNotContain(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("A public notice describes an unnamed rider who ", StringComparison.Ordinal));
         Assert.Contains(
             session.CaseFile.PublicClues,
-            clue => clue.Description.StartsWith("Local gossip out of ", StringComparison.Ordinal)
+            clue => clue.SourceKind == InvestigationSourceKind.LocalGossip
+                && clue.Description.StartsWith("Local gossip out of ", StringComparison.Ordinal)
                 && clue.Description.Contains(" a rider who ", StringComparison.OrdinalIgnoreCase)
                 && clue.Description.Contains("kept to the rail spur after dark", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(session.CaseFile.KnownClues, clue => clue.Description.StartsWith("A witness tied the rider to ", StringComparison.Ordinal));
@@ -172,16 +171,7 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void CaseFile_PublicClues_HasFourBaseCluesNoTownSpecificOnes()
-    {
-        var factory = new SeededNewGameFactory();
-        var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
-
-        Assert.Equal(4, session.CaseFile.PublicClues.Count);
-    }
-
-    [Fact]
-    public void FrontierDescriptorAddsTownSpecificCivicCluesForTheNextVisitedTown()
+    public void FrontierDescriptorKeepsTheRetainedStartingClueSources()
     {
         var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 1, 3, 0, tail: 13));
         var factory = new SeededNewGameFactory();
@@ -189,8 +179,7 @@ public sealed class SeededNewGameFactoryTests
         var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
 
         Assert.Contains(session.Player.CurrentTownId!.Value.Value, SeedWorldFactory.NamePool.Select(n => n.Id));
-        // Town-specific civic clues are a runtime/salt concern; setup has only the base clue pool.
-        Assert.Equal(4, session.CaseFile.PublicClues.Count);
+        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
     }
 
     [Fact]

@@ -22,7 +22,7 @@ public sealed class CaseInvestigationFoundationTests
             "A rider answered to the nickname Grey Jay.",
             new[] { new SuspectId("suspect-gang") },
             InvestigationTargetKind.GangMember,
-            source: "notice board",
+            source: "sheriff office",
             context: "Alias match");
 
         var whereaboutsClue = new Clue(

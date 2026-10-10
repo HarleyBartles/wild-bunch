@@ -2,8 +2,6 @@ import styled from "styled-components";
 import { useNavigate } from "@tanstack/react-router";
 import { useGameSession } from "../../state/useGameSession";
 import { WantedPosterSurface } from "../../components/WantedPosterSurface";
-import { InvestigationSourceKind } from "../../api/types";
-import type { ClueDto } from "../../api/types";
 import {
   FlowSurface,
   FlowNotice,
@@ -14,7 +12,6 @@ import {
   Stack,
   Button,
   Muted,
-  ItemCard,
 } from "../../components/ui/sharedStyled";
 
 const PlaceHeader = styled.header`
@@ -32,24 +29,15 @@ const PlaceBody = styled.div`
   gap: 20px;
 `;
 
-const LeadMeta = styled.p`
-  margin: 4px 0 0;
-  font-size: 0.85rem;
-  color: var(--muted);
-`;
-
 export function SheriffPlace() {
   const navigate = useNavigate();
   const {
     session,
-    journal,
     wantedPosters,
     loading,
     busyMode,
     canReadWantedPosters,
-    canCheckLocalRecords,
     handleReadWantedPosters,
-    handleCheckLocalRecords,
     notice,
     error,
   } = useGameSession();
@@ -57,10 +45,6 @@ export function SheriffPlace() {
   if (!session) {
     return null;
   }
-
-  const sheriffLeads: ClueDto[] = (journal?.caseFile.knownClues ?? []).filter(
-    (clue) => clue.sourceKind === InvestigationSourceKind.LocalRecords,
-  );
 
   return (
     <FlowSurface $variant="place">
@@ -87,32 +71,6 @@ export function SheriffPlace() {
               <WantedPosterSurface wantedPosters={wantedPosters} />
             ) : (
               <Muted>No wanted posters read yet.</Muted>
-            )}
-          </Stack>
-        </Panel>
-        <Panel>
-          <PanelHead>
-            <h2>Local records</h2>
-          </PanelHead>
-          <Stack>
-            <Button
-              type="button"
-              onClick={handleCheckLocalRecords}
-              disabled={loading || !canCheckLocalRecords}
-            >
-              {busyMode === "investigating" ? "Checking..." : "Check local records"}
-            </Button>
-            {sheriffLeads.length > 0 ? (
-              <Stack>
-                {sheriffLeads.map((clue) => (
-                  <ItemCard key={clue.id}>
-                    <strong>{clue.description}</strong>
-                    {clue.sourceLabel ? <LeadMeta>Source: {clue.sourceLabel}</LeadMeta> : null}
-                  </ItemCard>
-                ))}
-              </Stack>
-            ) : (
-              <Muted>No leads from local records yet.</Muted>
             )}
           </Stack>
         </Panel>

@@ -53,8 +53,6 @@ vi.mock("../api/wildBunchApi", () => ({
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
   buyStoreItem: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),

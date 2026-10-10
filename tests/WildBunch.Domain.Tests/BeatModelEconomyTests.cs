@@ -26,11 +26,11 @@ public class BeatModelEconomyTests
     public void CrossLocationAction_AdvancesBeat()
     {
         var session = TestSessionFactory.CreateDefault();
-        session.InspectNoticeBoard(); // enters TownSquare
-        var turnAfterTownSquare = session.Clock.Turn;
+        session.GatherLocalGossip(); // enters Saloon
+        var turnAfterSaloon = session.Clock.Turn;
 
-        session.GatherLocalGossip(); // enters Saloon (different context)
-        Assert.Equal(turnAfterTownSquare + 1, session.Clock.Turn);
+        session.ReadWantedPosters(); // enters Sheriff Office
+        Assert.Equal(turnAfterSaloon + 1, session.Clock.Turn);
     }
 
     [Fact]
@@ -74,13 +74,13 @@ public class BeatModelEconomyTests
         var session = CreateSessionWithStore();
         var dayBefore = session.Clock.Day;
 
-        session.InspectNoticeBoard();      // beat 1: TownSquare
-        session.GatherLocalGossip();       // beat 2: Saloon
-        session.CheckSheriffRecords();     // beat 3: SheriffOffice
+        session.ReadWantedPosters(); // enters Sheriff Office
+        session.GatherLocalGossip(); // enters Saloon
         var offer = new TownStoreCatalogResolver()
             .Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(item => item.ItemKind == DomainItemKind.Food);
-        session.Purchase(offer, 1); // beat 4: Store (wraps to next day)
+        session.Purchase(offer, 1); // enters Store
+        session.ReadWantedPosters(); // returns to Sheriff Office and wraps to next day
 
         Assert.Equal(dayBefore + 1, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
@@ -93,13 +93,13 @@ public class BeatModelEconomyTests
         var session = CreateSessionWithStore();
         var heatBefore = session.PursuitState.Heat;
 
-        session.InspectNoticeBoard();
+        session.ReadWantedPosters();
         session.GatherLocalGossip();
-        session.CheckSheriffRecords();
         var offer = new TownStoreCatalogResolver()
             .Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
             .Offers.Single(item => item.ItemKind == DomainItemKind.Food);
-        session.Purchase(offer, 1); // wraps to next day
+        session.Purchase(offer, 1);
+        session.ReadWantedPosters(); // wraps to next day
 
         Assert.Equal(heatBefore + 1, session.PursuitState.Heat);
     }

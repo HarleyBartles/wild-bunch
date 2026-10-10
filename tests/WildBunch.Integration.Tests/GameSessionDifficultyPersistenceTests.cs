@@ -67,7 +67,7 @@ public sealed class GameSessionDifficultyPersistenceTests
         Assert.Equal(InvestigationSourceKind.SheriffWarrants, reloaded.PublicWarrants[0].Terms.SourceKind);
         Assert.Equal(new[] { OutlawGangIds.WildBunch }, reloaded.PublicWarrants[1].Terms.GangAffiliations);
         Assert.Null(reloaded.PublicWarrants[1].Terms.AdvancesGangPressureFor);
-        Assert.Equal(InvestigationSourceKind.LocalRecords, reloaded.PublicWarrants[1].Terms.SourceKind);
+        Assert.Equal(InvestigationSourceKind.SheriffWarrants, reloaded.PublicWarrants[1].Terms.SourceKind);
     }
 
     [Fact]
@@ -452,7 +452,7 @@ public sealed class GameSessionDifficultyPersistenceTests
                     InvestigationTargetKind.GangMember,
                     [OutlawGangIds.WildBunch],
                     null,
-                    InvestigationSourceKind.LocalRecords),
+                    InvestigationSourceKind.SheriffWarrants),
                 "Wanted as a member of the Wild Bunch.")
         };
 

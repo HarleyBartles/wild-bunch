@@ -226,7 +226,7 @@ function WantedPosterCard({ poster }: { poster: WantedPosterDto }) {
         <PosterContent>
           <PosterHeader>
             <div>
-              <Eyebrow>Public notice</Eyebrow>
+              <Eyebrow>Wanted poster</Eyebrow>
               <h4>{poster.targetDisplayName}</h4>
               <PosterHeadline>
                 {poster.quickView.headlineNameOrAlias} -{" "}
