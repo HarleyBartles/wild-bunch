@@ -23,7 +23,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateEasyLuckyFoodSession();
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -42,7 +42,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateEasyLuckyFoodSession();
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -62,7 +62,7 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateHighRiskSession();
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -86,7 +86,7 @@ public sealed class AdvanceTravelDayHandlerTests
             GameDifficulty: GameDifficulty.Challenging);
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
@@ -106,9 +106,9 @@ public sealed class AdvanceTravelDayHandlerTests
         repository.Seed(session);
 
         var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
         var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var secondAdvance = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
         Assert.NotNull(secondAdvance.CurrentSession.Journey);
@@ -131,9 +131,9 @@ public sealed class AdvanceTravelDayHandlerTests
         repository.Seed(session);
 
         var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
         var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         GameTurnResultDto? result = null;
         for (var day = 1; day <= 6; day++)

@@ -31,7 +31,7 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
         existingSession.MarkEventsCommitted();
         repository.Seed(existingSession);
         var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -78,7 +78,7 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
         secondExisting.MarkEventsCommitted();
         repository.Seed(secondExisting);
         var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -122,7 +122,7 @@ public sealed class CompletePlayerSetupOneActivePlaythroughTests
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
         var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {

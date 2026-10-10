@@ -64,46 +64,6 @@ public sealed class GameLogEntryLegacyProjectionTests
         Assert.Contains("2", audit.Entries[1].Summary);
     }
 
-    [Fact]
-    public void DiaryProjection_SupersedesLegacyLogEntries_ForPlayerFacingDiary()
-    {
-        // The diary projection derives the player-facing diary from events,
-        // superseding the legacy log entries for diary display.
-        var projector = new DiaryProjector();
-        var events = new IDomainEvent[]
-        {
-            new GameStarted
-            {
-                PlayerName = "Ranger Vale",
-                StartingTownId = new TownId("pinecross"),
-                StartingTownName = "Pinecross",
-                StartingHealth = 100,
-                StartingWallet = 25m,
-                StartingInventoryItems = Array.Empty<InventoryItem>(),
-                GameDifficulty = GameDifficulty.Standard,
-                SaltSource = SaltSource.CreateFixed("test"),
-                GameEntropy = GameEntropy.Classic
-            },
-            new StoreItemPurchased
-            {
-                TownId = new TownId("pinecross"),
-                ItemKind = ItemKind.Food,
-                DisplayName = "Trail Biscuits",
-                Quantity = 1,
-                UnitPrice = 2m,
-                TotalPrice = 2m,
-                WalletAfter = 23m
-            }
-        };
-
-        var diary = projector.Project(events);
-
-        // The diary projection has entries for each event
-        Assert.Equal(2, diary.Entries.Count);
-        Assert.Contains("Pinecross", diary.Entries[0].Summary);
-        Assert.Contains("store", diary.Entries[1].Summary, StringComparison.OrdinalIgnoreCase);
-    }
-
     /// <summary>
     /// Projector behavior: JournalLogProjector reproduces the legacy GameLogEntry
     /// sequence for a mixed event stream, including a Purchase entry for

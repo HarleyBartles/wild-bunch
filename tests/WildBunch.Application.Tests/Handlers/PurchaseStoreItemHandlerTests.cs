@@ -26,7 +26,7 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -52,7 +52,7 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -77,7 +77,7 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         // Rifle is a valid inventory kind but is not in the current Store catalog.
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
@@ -102,7 +102,7 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         await Assert.ThrowsAsync<TownNotFoundException>(() => handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -125,7 +125,7 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -144,14 +144,14 @@ public sealed class PurchaseStoreItemHandlerTests
     }
 
     [Fact]
-    public async Task PurchaseReturnsDtoWithHudAndDiaryProjections()
+    public async Task PurchaseReturnsDtoWithHudProjection()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
@@ -162,10 +162,7 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.True(result.Success);
         Assert.NotNull(result.CurrentSession.HudProjection);
         Assert.Equal(19m, result.CurrentSession.HudProjection!.WalletCash);
-        Assert.NotNull(result.CurrentSession.DiaryProjection);
-        Assert.NotEmpty(result.CurrentSession.DiaryProjection!.Entries);
         Assert.Equal(session.Id.Value, result.CurrentSession.HudProjection.SessionId);
-        Assert.Equal(session.Id.Value, result.CurrentSession.DiaryProjection.SessionId);
     }
 
     private static GameSession CreateSession()

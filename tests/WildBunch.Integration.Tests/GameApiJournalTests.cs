@@ -68,6 +68,30 @@ public sealed class GameApiJournalTests
     }
 
     [Fact]
+    public async Task GetJournalAfterPersistedInvestigationIncludesInvestigationMessage()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        scenario.AssertReady();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+
+        var investigateResponse = await client.PostAsync(
+            $"/api/games/{createdSession!.Id}/investigations/local-gossip/gather", content: null);
+        investigateResponse.EnsureSuccessStatusCode();
+
+        var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
+        Assert.Equal(HttpStatusCode.OK, journalResponse.StatusCode);
+        var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
+
+        Assert.NotNull(journal);
+        Assert.Contains(journal!.LogEntries, entry =>
+            entry.Kind == GameLogEntryKind.CaseUpdate &&
+            entry.Message.Contains("gossip", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task GetJournalAfterPurchaseIncludesPurchaseLogEntry()
     {
         using var factory = new PostgreSqlApiFactory();

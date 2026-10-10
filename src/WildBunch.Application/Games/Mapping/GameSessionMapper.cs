@@ -52,7 +52,6 @@ public static class GameSessionMapper
             session.TravelDiaryDays,
             logEntries,
             activeSaloonPoi,
-            null,
             null);
     }
 
@@ -81,7 +80,6 @@ public static class GameSessionMapper
                     session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
                     session.CaseFile)
                 : null,
-            null,
             null);
     }
 
@@ -100,8 +98,7 @@ public static class GameSessionMapper
         IReadOnlyList<DomainTravelDiaryDayState> travelDiaryDays,
         IReadOnlyList<DomainGameLogEntry> logEntries,
         ActiveSaloonPersonOfInterestDto? activeSaloonPersonOfInterest,
-        WildBunch.Application.Projections.HudProjection? hudProjection = null,
-        WildBunch.Application.Projections.DiaryProjection? diaryProjection = null)
+        WildBunch.Application.Projections.HudProjection? hudProjection = null)
         => new(
             id,
             status,
@@ -119,8 +116,7 @@ public static class GameSessionMapper
             logEntries.Select(ToDto).ToArray(),
             activeSaloonPersonOfInterest,
             caseFile.KnownWarrants.Count > 0 ? WantedPosterMapper.ToDto(caseFile.KnownWarrants) : Array.Empty<WantedPosterDto>(),
-            hudProjection,
-            diaryProjection);
+            hudProjection);
 
     private static PlayerDto ToDto(DomainPlayer player)
         => new(

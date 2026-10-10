@@ -20,19 +20,16 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
 
     private readonly INewGameFactory _newGameFactory;
     private readonly HudProjector _hudProjector;
-    private readonly DiaryProjector _diaryProjector;
 
     public CompletePlayerSetupHandler(
         INewGameFactory newGameFactory,
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
-        HudProjector hudProjector,
-        DiaryProjector diaryProjector)
+        HudProjector hudProjector)
         : base(gameSessionRepository, gameSessionUnitOfWork)
     {
         _newGameFactory = newGameFactory;
         _hudProjector = hudProjector;
-        _diaryProjector = diaryProjector;
     }
 
     // Setup-flow handler: creates the session, does not require GameStarted.
@@ -86,8 +83,7 @@ public sealed class CompletePlayerSetupHandler : GameSessionCommandHandler
         var events = await GameSessionRepository.GetEventStreamAsync(
             newSession.Id, 0, cancellationToken).ConfigureAwait(false);
         var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
-        var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
 
-        return dto with { HudProjection = hud, DiaryProjection = diary };
+        return dto with { HudProjection = hud };
     }
 }

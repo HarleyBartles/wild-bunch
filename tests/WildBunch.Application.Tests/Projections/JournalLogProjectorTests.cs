@@ -90,7 +90,7 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
-    public void SheriffTurnInSettled_ProducesNoLogEntry_MatchingLegacyApply()
+    public void SheriffTurnInSettled_AddsPlayerMessageAtRecordedDayAndTurn()
     {
         var projector = new JournalLogProjector();
         var events = new IDomainEvent[]
@@ -104,13 +104,225 @@ public sealed class JournalLogProjectorTests
                 IsAlive = true,
                 BountyAmount = 50m,
                 Message = "You turn Jesse Roe in for the bounty.",
-                Day = 1,
-                Turn = 0
+                Day = 4,
+                Turn = 2
             }
         };
         var log = projector.Project(events);
 
-        Assert.Single(log); // opening only; sheriff turn-in adds no legacy log entry
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("You turn Jesse Roe in for the bounty.", log[1].Message);
+        Assert.Equal(4, log[1].Day);
+        Assert.Equal(2, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestConfronted_CitizenFineAndRelease_IsRecordedAtEnteredActionTime()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 3,
+                Turn = 2,
+                TimeOfDay = TimeOfDay.Evening,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestConfronted
+            {
+                Message = "The butcher comes quietly. The sheriff releases him and fines you $5.00.",
+                TargetName = "the butcher",
+                PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration,
+                IsCitizen = true,
+                FineAmount = 5m
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("The butcher comes quietly. The sheriff releases him and fines you $5.00.", log[1].Message);
+        Assert.Equal(3, log[1].Day);
+        Assert.Equal(2, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestConfronted_RejectedAttempt_IsRecordedAtEnteredActionTime()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 3,
+                Turn = 2,
+                TimeOfDay = TimeOfDay.Evening,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestConfronted
+            {
+                Message = "There is no wanted notice for the rancher.",
+                TargetName = "the rancher",
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal("There is no wanted notice for the rancher.", log[1].Message);
+        Assert.Equal(3, log[1].Day);
+        Assert.Equal(2, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestConfronted_WhenWantedOutcomeHasDetailedEvents_DoesNotDuplicateSummary()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new WantedSuspectConfronted
+            {
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                Choice = WantedSuspectConfrontationChoice.Surrendered,
+                Outcome = WantedSuspectConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true,
+                Message = "Cole Tanner gives up without a fight."
+            },
+            new SheriffTurnInSettled
+            {
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                IsAlive = true,
+                BountyAmount = 50m,
+                Message = "The sheriff pays you $50.00.",
+                Day = 1,
+                Turn = 1
+            },
+            new SaloonPersonOfInterestConfronted
+            {
+                Message = "Cole Tanner gives up without a fight. The sheriff pays you $50.00.",
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Surrendered,
+                IsCitizen = false
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(3, log.Count);
+        Assert.Contains(log, entry => entry.Message == "Cole Tanner gives up without a fight.");
+        Assert.Contains(log, entry => entry.Message == "The sheriff pays you $50.00.");
+        Assert.DoesNotContain(log, entry => entry.Message.Contains("Cole Tanner gives up without a fight. The sheriff pays"));
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestSpotted_WhenRecordLogIsTrue_AddsCaseUpdate()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 2,
+                Turn = 1,
+                TimeOfDay = TimeOfDay.Afternoon,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = new TownId("pinecross"),
+                Message = "You spot a shady figure in the saloon.",
+                RecordLog = true
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("You spot a shady figure in the saloon.", log[1].Message);
+        Assert.Equal(2, log[1].Day);
+        Assert.Equal(1, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestSpotted_WhenRecordLogIsFalse_DoesNotAddJournalEntry()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 2,
+                Turn = 1,
+                TimeOfDay = TimeOfDay.Afternoon,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = new TownId("pinecross"),
+                Message = "You spot a townsfolk in the saloon.",
+                RecordLog = false
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Single(log);
+    }
+
+    [Fact]
+    public void WantedSuspectConfronted_AddsRecordedPlayerMessage()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new WantedSuspectConfronted
+            {
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                Choice = WantedSuspectConfrontationChoice.Surrendered,
+                Outcome = WantedSuspectConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true,
+                Message = "Cole Tanner gives up without a fight."
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("Cole Tanner gives up without a fight.", log[1].Message);
     }
 
     [Fact]

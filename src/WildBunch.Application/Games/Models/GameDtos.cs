@@ -25,8 +25,7 @@ public sealed record GameSessionDto(
     IReadOnlyList<GameLogEntryDto> LogEntries,
     ActiveSaloonPersonOfInterestDto? ActiveSaloonPersonOfInterest,
     IReadOnlyList<WantedPosterDto> WantedPosters,
-    HudProjection? HudProjection = null,
-    DiaryProjection? DiaryProjection = null)
+    HudProjection? HudProjection = null)
 {
     [JsonIgnore]
     public ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect

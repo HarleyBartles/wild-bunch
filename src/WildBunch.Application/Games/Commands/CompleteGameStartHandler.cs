@@ -19,19 +19,16 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
 {
     private readonly INewGameFactory _newGameFactory;
     private readonly HudProjector _hudProjector;
-    private readonly DiaryProjector _diaryProjector;
 
     public CompleteGameStartHandler(
         INewGameFactory newGameFactory,
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
-        HudProjector hudProjector,
-        DiaryProjector diaryProjector)
+        HudProjector hudProjector)
         : base(gameSessionRepository, gameSessionUnitOfWork)
     {
         _newGameFactory = newGameFactory;
         _hudProjector = hudProjector;
-        _diaryProjector = diaryProjector;
     }
 
     // Setup-flow handler: transitions session from StartingTownSelected to GameStarted.
@@ -76,8 +73,7 @@ public sealed class CompleteGameStartHandler : GameSessionCommandHandler
         var events = await GameSessionRepository.GetEventStreamAsync(
             command.SessionId, 0, cancellationToken).ConfigureAwait(false);
         var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
-        var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
 
-        return dto with { HudProjection = hud, DiaryProjection = diary };
+        return dto with { HudProjection = hud };
     }
 }

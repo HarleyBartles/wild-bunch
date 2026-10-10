@@ -118,7 +118,8 @@ Player-facing reads are safe projections/read models.
 
 Good shape:
 
-- Journal, HUD, diary, and case-file views derive from typed events or player-known aggregate state
+- The player's journal derives from typed events; journey-scoped views filter that same player-safe history rather than owning a second Diary/Journal history
+- HUD and case-file views derive from typed events or player-known aggregate state
 - full audit stays developer/replay-only
 - each projection names audience and hidden-truth policy
 
@@ -188,7 +189,7 @@ Stop mixing player-facing projection with technical audit.
 
 Use these audience boundaries:
 
-- player diary: curated authored record
+- player journal: one curated authored record; a journey view is a filtered view over the same history
 - HUD feed: immediate player-facing notices
 - case file: neutral evidence-shaped safe read model
 - full audit: developer/replay surface only

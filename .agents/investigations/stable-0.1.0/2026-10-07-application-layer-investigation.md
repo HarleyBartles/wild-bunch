@@ -117,6 +117,8 @@ There is no evidence that every file must move to a new vertical-slice tree. The
 
 **Proposed correction:** Define distinct purposes if both histories are intentional, or derive overlapping behavior from one curated owner. Preserve legitimate audience differences. Correct unsupported purchase narration and prove day/turn ordering and additional-message handling rather than forcing every event into every feed.
 
+**Dated disposition, 2026-10-10, row 08:** The baseline's player journal decision settles AP-15 as one semantic player history. The `.57` slice retires `DiaryProjector`, `DiaryProjection` and `/projections/diary`, leaving `JournalLogProjector` and `/journal` as the player-history owner. It transfers the missing sheriff settlement message at its event day/turn and unique saloon citizen-fine/rejected outcomes, retains `RecordLog` selection and avoids the duplicate saloon summary when detailed wanted/settlement events already represent the outcome. HUD, full audit and the detailed `TravelDiaryDay` projection remain separate audience/state outputs. The source, API, and web no longer carry the overlapping player Diary contract; meaningful coverage moves to journal behavior and the persisted `/journal` read test. No compatibility layer is required for local disposable playtests, while the existing migration chain remains intact.
+
 ### AP-16: Reference case projection is incomplete and unused in production
 
 **Classification:** Confirmed static reference-only debt. `Projections/CaseFileViewProjector.cs:27-35,66-90` uses supplied seed known clues/warrants, keeps all when there are no reveal events, and filters them once a reveal appears. It never handles generated case events, and accusation stays null. Production source has no caller, although tests exercise it.
@@ -303,8 +305,8 @@ The following tables preserve the exhaustive assessment. `Keep` means justified 
 | `src/WildBunch.Application/Games/Queries/PreviewTravelQuery.cs` | keep | Cohesive command/query contract or orchestration in its current folder. |
 | `src/WildBunch.Application/Projections/CaseFileViewProjection.cs` | Investigate | Domain-object projection type has no production consumer. |
 | `src/WildBunch.Application/Projections/CaseFileViewProjector.cs` | Investigate | Reference-only, incomplete case reconstruction. |
-| `src/WildBunch.Application/Projections/DiaryProjection.cs` | Investigate | Setup town fields cannot represent absence. |
-| `src/WildBunch.Application/Projections/DiaryProjector.cs` | Investigate | Setup defaults and distinct player history need contract decision. |
+| `src/WildBunch.Application/Projections/DiaryProjection.cs` | Consolidate | Retired with the `.57` single-journal slice; no player consumer remains. |
+| `src/WildBunch.Application/Projections/DiaryProjector.cs` | Consolidate | Retired with the `.57` single-journal slice; its unique player facts and useful tests move to the journal owner. |
 | `src/WildBunch.Application/Projections/FullAuditProjection.cs` | Keep | Developer-only audit result type. |
 | `src/WildBunch.Application/Projections/FullAuditProjector.cs` | Investigate | Fabricated occurrence timestamps on live dev audit route. |
 | `src/WildBunch.Application/Projections/HudProjection.cs` | Investigate | Setup fields cannot represent absent player/town. |

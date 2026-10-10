@@ -50,7 +50,6 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         services.AddSingleton<HudProjector>();
-        services.AddSingleton<DiaryProjector>();
         services.AddSingleton<FullAuditProjector>();
         var provider = services.BuildServiceProvider();
 
