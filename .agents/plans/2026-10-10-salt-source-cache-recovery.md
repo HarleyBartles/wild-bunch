@@ -35,10 +35,10 @@
 
 **Files:** Modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` and `Directory.Build.props`; delete `.agents/plans/2026-10-10-world-cache-recovery-from-generated-facts.md`; create this plan.
 
-- [ ] Confirm PR #238's exact source and merge SHAs and both hosted gate runs above.
-- [ ] Record `.53` delivery and this selected PS-05 SaltSource-consistency slice in row 07 and the roadmap dated delivery history.
-- [ ] Retire the completed `.53` plan and advance the single authored application version to `0.1.0-dev.54`.
-- [ ] Commit the planning handoff before editing source or tests.
+- [x] Confirm PR #238's exact source and merge SHAs and both hosted gate runs above.
+- [x] Record `.53` delivery and this selected PS-05 SaltSource-consistency slice in row 07 and the roadmap dated delivery history.
+- [x] Retire the completed `.53` plan and advance the single authored application version to `0.1.0-dev.54`.
+- [x] Commit the planning handoff before editing source or tests.
 
 **Expected:** The roadmap points to this plan, records verified `.53` delivery, and this plan states a bounded implementation and proof contract.
 
@@ -46,22 +46,24 @@
 
 **Files:** Modify `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs`; create a focused recovery helper under `src/WildBunch.Persistence/GameSessions`; add a PostgreSQL behavior test to `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`.
 
-- [ ] Create an event-backed session with a deterministic runtime SaltSource and persist it through the production repository.
-- [ ] Demonstrate that the chosen altered but valid SaltSource leads to a different next saloon person-of-interest fact than the generated event salt.
-- [ ] Change only the current-version `saltSource` component to that valid alternative; prove the current command loader uses the false salt and the new behavior assertion fails before production changes.
-- [ ] Compare the decoded component with the sole `WorldGenerated.SaltSource`; classify mismatch as invalid required cache and route command loading through existing full replay.
-- [ ] Assert the reloaded aggregate uses the exact recorded mode and salt, and the same saloon action produces the event-selected person; prove the read preserved component JSON/version, envelope watermarks and stored event metadata/payloads.
-- [ ] Perform an ordinary legal command and unit-of-work save; confirm a fresh load retains the recorded salt and the current-version component now matches it.
-- [ ] Corrupt authoritative WorldGenerated JSON while the component is mismatched and prove the event decode failure still escapes.
+- [x] Create an event-backed session with a deterministic runtime SaltSource and persist it through the production repository.
+- [x] Demonstrate that the chosen altered but valid SaltSource leads to a different next saloon person-of-interest fact than the generated event salt.
+- [x] Change only the current-version `saltSource` component to that valid alternative; before production changes, the test failed because the aggregate used `altered-cache-salt-10` instead of the event's `recorded-world-salt`.
+- [x] Compare the decoded component with the sole `WorldGenerated.SaltSource`; classify mismatch as invalid required cache and route command loading through existing full replay.
+- [x] Assert the reloaded aggregate uses the exact recorded mode and salt, and the same saloon action produces the event-selected person; prove the read preserved component JSON/version, envelope watermarks and stored event metadata/payloads.
+- [x] Perform an ordinary legal command and unit-of-work save; confirm a fresh load retains the recorded salt and the current-version component now matches it.
+- [x] Retain `WorldCacheRecovery_DoesNotHideInvalidWorldGeneratedPayload` as the existing PostgreSQL negative proof that event decoding fails before a cache comparison can recover; do not duplicate the same malformed-event scenario for this helper.
 
 **Expected:** A valid but contradictory salt cache cannot affect the next salt-driven action, query behavior is unchanged, reads do not write back, and ordinary save repairs the cache from replayed state.
+
+**Observed:** The pre-fix PostgreSQL test failed because command loading trusted `altered-cache-salt-10`; after the comparison, the focused behavior and adjacent fail-closed history tests passed (8 tests). No query path consumes `SaltSource`, so query-side behavior has no new load path to verify.
 
 ### Task 3: Verify, review and publish the slice
 
 **Files:** All implementation and planning paths in Tasks 1-2.
 
-- [ ] Run focused SaltSource cache recovery and adjacent replay/history tests with shared PostgreSQL ensured. Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; no migration is expected.
-- [ ] Review the complete branch against `develop`, event-sourcing doctrine, ADR-0028 and this plan; resolve all Critical and Important findings with witnessed RED/GREEN cycles. If reviewer-agent dispatch remains unavailable, disclose author self-review.
+- [x] Run focused SaltSource cache recovery and adjacent replay/history tests with shared PostgreSQL ensured (8 passed). Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; no new migration is expected. Two existing migrations are pending against the local database.
+- [x] Review the complete branch against `develop`, event-sourcing doctrine, ADR-0028 and this plan; resolve all Critical and Important findings with witnessed RED/GREEN cycles. Author self-review found no issue; a separate reviewer-agent was not dispatched under this runtime's no-subagent instruction.
 - [ ] Let the normal check-only pre-commit hook run the canonical staged-candidate gate for each implementation commit; do not rerun the full local gate immediately before or after a successful hooked commit. Hosted CI must pass on the exact PR head and on the develop merge commit.
 - [ ] Push and open a PR to `develop`; verify hosted CI passes for the exact PR head before merge, merge as authorized by the goal, then verify the exact develop push gate passes.
 - [ ] Record actual source/merge SHAs and CI evidence in the roadmap through the successor planning handoff, fast-forward the main checkout to merged `develop`, then remove this verified merged worktree and local/remote branch.

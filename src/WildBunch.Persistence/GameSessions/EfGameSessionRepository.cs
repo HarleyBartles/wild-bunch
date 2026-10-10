@@ -433,6 +433,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
         var entropy = _serializer.DeserializeSetup(entropyJson);
         var saltSourceJson = GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.SaltSource);
         var saltSource = _serializer.DeserializeSaltSource(saltSourceJson);
+        if (!SaltSourceCacheRecovery.MatchesGeneratedSaltSource(store.AllEvents, saltSource))
+        {
+            throw new InvalidRequiredComponentCacheShapeException(
+                GameSessionComponentNames.SaltSource,
+                "the cached salt source does not match its WorldGenerated event.");
+        }
+
         var townVisitStateJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.TownVisitState);
         var townVisitState = townVisitStateJson is null ? null : _serializer.DeserializeTownVisitState(townVisitStateJson);
         var journeyJson = GameSessionComponentPayloads.GetOptionalPayload(store.ComponentPayloads, GameSessionComponentNames.Journey);

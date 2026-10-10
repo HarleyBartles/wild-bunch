@@ -4527,6 +4527,137 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(JsonNode.DeepEquals(expectedWorldPayload, JsonNode.Parse(repairedPayload)));
     }
 
+    [Fact]
+    public async Task CommandLoad_ValidSaltSourceCacheMismatchRecoversBeforeSaltDrivenAction()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var recordedSaltSource = new SaltSource(SaltSourceMode.Runtime, "recorded-world-salt");
+        var session = CreateSession(saltSourceOverride: recordedSaltSource);
+        var referenceWithRecordedSalt = CreateSession(saltSourceOverride: recordedSaltSource);
+        Assert.True(referenceWithRecordedSalt.LookAroundSaloon().Success);
+        var expectedSpot = Assert.Single(referenceWithRecordedSalt.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+        var expectedFacts = (expectedSpot.SuspectId, expectedSpot.Descriptor, expectedSpot.PersonOfInterestKind, expectedSpot.CitizenRole);
+        var alteredSaltSource = Enumerable.Range(0, 100)
+            .Select(index => new SaltSource(SaltSourceMode.Runtime, $"altered-cache-salt-{index}"))
+            .First(candidateSaltSource =>
+            {
+                var candidate = CreateSession(saltSourceOverride: candidateSaltSource);
+                Assert.True(candidate.LookAroundSaloon().Success);
+                var candidateSpot = Assert.Single(candidate.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+                return expectedFacts != (candidateSpot.SuspectId, candidateSpot.Descriptor, candidateSpot.PersonOfInterestKind, candidateSpot.CitizenRole);
+            });
+        var referenceWithAlteredSalt = CreateSession(saltSourceOverride: alteredSaltSource);
+        Assert.True(referenceWithAlteredSalt.LookAroundSaloon().Success);
+        var alteredSpot = Assert.Single(referenceWithAlteredSalt.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.NotEqual(expectedFacts, (alteredSpot.SuspectId, alteredSpot.Descriptor, alteredSpot.PersonOfInterestKind, alteredSpot.CitizenRole));
+
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        PersistedComponentState[] beforeComponents;
+        PersistedDiaryDayState[] beforeDiaryDays;
+        PersistedEventState[] beforeEvents;
+        PersistedEnvelopeState beforeEnvelope;
+        await using (var context = fixture.CreateContext())
+        {
+            var saltComponent = await context.GameSessionComponents.SingleAsync(component =>
+                component.SessionId == session.Id.Value && component.ComponentName == "saltSource");
+            var alteredPayload = JsonNode.Parse(saltComponent.PayloadJson)!.AsObject();
+            alteredPayload["salt"] = alteredSaltSource.Salt;
+            saltComponent.PayloadJson = alteredPayload.ToJsonString();
+            await context.SaveChangesAsync();
+
+            beforeEnvelope = await context.GameSessions.AsNoTracking()
+                .Where(envelope => envelope.Id == session.Id.Value)
+                .Select(envelope => new PersistedEnvelopeState(
+                    envelope.SnapshotVersion,
+                    envelope.StreamVersion,
+                    envelope.TravelDiaryProjectionStreamVersion,
+                    envelope.TravelDiaryProjectionDayCount))
+                .SingleAsync();
+            beforeComponents = await context.GameSessionComponents.AsNoTracking()
+                .Where(component => component.SessionId == session.Id.Value)
+                .OrderBy(component => component.ComponentName)
+                .Select(component => new PersistedComponentState(component.ComponentName, component.ComponentVersion, component.PayloadJson))
+                .ToArrayAsync();
+            beforeDiaryDays = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .OrderBy(day => day.Sequence)
+                .Select(day => new PersistedDiaryDayState(day.Sequence, day.SchemaVersion, day.PayloadJson, day.RecordedAtUtc))
+                .ToArrayAsync();
+            beforeEvents = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new PersistedEventState(
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.SchemaVersion))
+                .ToArrayAsync();
+        }
+
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var recovered = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(recovered);
+        Assert.Equal(recordedSaltSource, recovered!.SaltSource);
+        Assert.True(recovered.LookAroundSaloon().Success);
+        var recoveredSpot = Assert.Single(recovered.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.Equal(expectedSpot.SuspectId, recoveredSpot.SuspectId);
+        Assert.Equal(expectedSpot.Descriptor, recoveredSpot.Descriptor);
+        Assert.Equal(expectedSpot.PersonOfInterestKind, recoveredSpot.PersonOfInterestKind);
+        Assert.Equal(expectedSpot.CitizenRole, recoveredSpot.CitizenRole);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var afterEnvelope = await context.GameSessions.AsNoTracking()
+                .Where(envelope => envelope.Id == session.Id.Value)
+                .Select(envelope => new PersistedEnvelopeState(
+                    envelope.SnapshotVersion,
+                    envelope.StreamVersion,
+                    envelope.TravelDiaryProjectionStreamVersion,
+                    envelope.TravelDiaryProjectionDayCount))
+                .SingleAsync();
+            var afterComponents = await context.GameSessionComponents.AsNoTracking()
+                .Where(component => component.SessionId == session.Id.Value)
+                .OrderBy(component => component.ComponentName)
+                .Select(component => new PersistedComponentState(component.ComponentName, component.ComponentVersion, component.PayloadJson))
+                .ToArrayAsync();
+            var afterDiaryDays = await context.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == session.Id.Value)
+                .OrderBy(day => day.Sequence)
+                .Select(day => new PersistedDiaryDayState(day.Sequence, day.SchemaVersion, day.PayloadJson, day.RecordedAtUtc))
+                .ToArrayAsync();
+            var afterEvents = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new PersistedEventState(
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.SchemaVersion))
+                .ToArrayAsync();
+
+            Assert.Equal(beforeEnvelope, afterEnvelope);
+            Assert.Equal(beforeComponents, afterComponents);
+            Assert.Equal(beforeDiaryDays, afterDiaryDays);
+            Assert.Equal(beforeEvents, afterEvents);
+        }
+
+        await PersistAsync(repository, unitOfWork, recovered);
+
+        var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Equal(recordedSaltSource, fresh!.SaltSource);
+        await using var repairedContext = fixture.CreateContext();
+        var repairedPayload = await repairedContext.GameSessionComponents.AsNoTracking()
+            .Where(component => component.SessionId == session.Id.Value && component.ComponentName == "saltSource")
+            .Select(component => component.PayloadJson)
+            .SingleAsync();
+        Assert.Equal(recordedSaltSource, new GameSessionJsonSerializer().DeserializeSaltSource(repairedPayload));
+    }
+
     [Theory]
     [InlineData("player", "wallet")]
     [InlineData("player", "inventory")]
@@ -5600,7 +5731,8 @@ public sealed class EfGameSessionRepositoryTests
         IEnumerable<Warrant>? knownWarrants = null,
         IEnumerable<Warrant>? publicWarrants = null,
         CaseFile? caseFileOverride = null,
-        World? worldOverride = null)
+        World? worldOverride = null,
+        SaltSource? saltSourceOverride = null)
     {
         var dustvale = new Town(new TownId("dustvale"), "Dustvale");
         var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
@@ -5663,7 +5795,7 @@ public sealed class EfGameSessionRepositoryTests
 
         var session = GameSession.StartSetup(
             "Ranger Vale", world, caseFile,
-            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", saltSourceOverride ?? DeterministicSaltSource);
         session.ViewPrologue("test-prologue-descriptor");
         session.SelectStartingTown(dustvale.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);
