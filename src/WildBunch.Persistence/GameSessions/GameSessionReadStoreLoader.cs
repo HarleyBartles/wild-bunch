@@ -144,6 +144,11 @@ public sealed class GameSessionReadStoreLoader
             var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Player));
 
             var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.World));
+            if (!WorldCacheRecovery.MatchesGeneratedWorld(store.AllEvents, world, _serializer))
+            {
+                return CreateReadStateFromEvents(store, logEntries);
+            }
+
             var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.Setup);
             var entropy = _serializer.DeserializeSetup(entropyJson);
             var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(
