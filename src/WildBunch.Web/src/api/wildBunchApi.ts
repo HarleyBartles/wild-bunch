@@ -1,5 +1,4 @@
 import type {
-  GameEntropy,
   AvailableActionDto,
   BuyStoreItemRequest,
   InvestigationActionResultDto,
@@ -12,7 +11,6 @@ import type {
   StartGameWithTownRequest,
   WorldMapDto,
   TownStoreOffersDto,
-  GameDifficulty,
   TravelRequest,
   TravelPreviewResultDto,
   SaloonPersonOfInterestConfrontationResultDto,
@@ -171,23 +169,8 @@ export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdenti
   return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle);
 }
 
-export function getPrologue(
-  seedCode?: string | null,
-  gameDifficulty?: GameDifficulty,
-  gameEntropy?: GameEntropy,
-) {
-  const params = new URLSearchParams();
-  if (seedCode) {
-    params.set("seedCode", seedCode);
-  }
-  if (gameDifficulty != null) {
-    params.set("gameDifficulty", String(gameDifficulty));
-  }
-  if (gameEntropy != null) {
-    params.set("gameEntropy", String(gameEntropy));
-  }
-  const query = params.toString();
-  return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);
+export function getPrologue(sessionId: string) {
+  return requestJson<PrologueDto>(`/api/games/${sessionId}/prologue`);
 }
 
 export function getWorldMap(sessionId: string) {

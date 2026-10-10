@@ -6,16 +6,22 @@ using WildBunch.GameContent.NewGame;
 namespace WildBunch.GameContent.Prologue;
 
 /// <summary>
-/// Resolves the player-visible true-culprit descriptor for the prologue from a seed code.
-/// Bridges the internal <see cref="SeedWorldResolver"/> and
-/// <see cref="GameSetupResolver"/> (both internal to WildBunch.GameContent.NewGame)
-/// to the Application layer, which cannot reference them directly.
-/// Uses the same <see cref="SaloonPersonOfInterestDescriptor.Describe"/> path used
-/// elsewhere for clues/suspects so there is one canonical formatter.
+/// Resolves a player-visible true-culprit descriptor for the prologue from settled case facts.
+/// Uses the same <see cref="SaloonPersonOfInterestDescriptor.Describe"/> path used elsewhere
+/// for clues and suspects so there is one canonical formatter. The seed overload remains for
+/// the existing acknowledgement event path.
 /// Does NOT expose TrueCulpritId, isTrueCulprit, or internal suspect ids.
 /// </summary>
 public static class PrologueDescriptorResolver
 {
+    public static string ResolveTrueCulpritDescriptor(CaseFile caseFile)
+    {
+        ArgumentNullException.ThrowIfNull(caseFile);
+
+        var trueCulprit = caseFile.Suspects.First(suspect => suspect.Id == caseFile.TrueCulpritId);
+        return SaloonPersonOfInterestDescriptor.Describe(trueCulprit, caseFile);
+    }
+
     /// <summary>
     /// Resolves the player-visible true-culprit descriptor for the prologue from a seed code.
     /// </summary>

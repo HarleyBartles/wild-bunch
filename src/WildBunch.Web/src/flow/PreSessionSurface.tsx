@@ -99,12 +99,7 @@ export function PreSessionSurface() {
       )}
 
       {effectiveStep === "story" && (
-        <StorySoFarStep
-          onContinue={handlePrologueViewed}
-          seedCode={flow.seedDraft}
-          gameDifficulty={flow.gameDifficulty}
-          gameEntropy={flow.gameEntropy}
-        />
+        <StorySoFarStep onContinue={handlePrologueViewed} sessionId={session?.id ?? ""} />
       )}
 
       {effectiveStep === "town" && (

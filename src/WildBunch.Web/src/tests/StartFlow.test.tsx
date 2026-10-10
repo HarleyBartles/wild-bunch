@@ -218,6 +218,20 @@ describe("StartFlow", () => {
     });
   });
 
+  it("loads the settled prologue for the saved session after a refresh", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "settled-session-42");
+    mockedGetGame.mockResolvedValue(createSession({ id: "settled-session-42", startFlowPhase: 1 }));
+
+    renderSurface();
+
+    expect(await screen.findByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockedGetPrologue).toHaveBeenCalledWith("settled-session-42");
+    });
+    expect(mockedSetupGame).not.toHaveBeenCalled();
+  });
+
   it("preserves the player name draft through the full flow", async () => {
     primeMocks();
     const user = userEvent.setup();

@@ -4,7 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
 import { getPrologue } from "../api/wildBunchApi";
-import type { GameEntropy, PrologueDto, GameDifficulty } from "../api/types";
+import type { PrologueDto } from "../api/types";
 
 vi.mock("../api/wildBunchApi", () => ({
   getPrologue: vi.fn(),
@@ -29,9 +29,7 @@ function createPrologue(overrides: Partial<PrologueDto> = {}): PrologueDto {
 
 function renderStep(
   overrides: {
-    seedCode?: string | null;
-    gameDifficulty?: GameDifficulty;
-    gameEntropy?: GameEntropy;
+    sessionId?: string;
     onContinue?: () => void;
   } = {},
 ) {
@@ -46,12 +44,7 @@ function renderStep(
 
   render(
     <QueryClientProvider client={queryClient}>
-      <StorySoFarStep
-        onContinue={onContinue}
-        seedCode={overrides.seedCode ?? "SEED-CODE-1"}
-        gameDifficulty={overrides.gameDifficulty}
-        gameEntropy={overrides.gameEntropy}
-      />
+      <StorySoFarStep onContinue={onContinue} sessionId={overrides.sessionId ?? "game-1"} />
     </QueryClientProvider>,
   );
 
@@ -171,18 +164,16 @@ describe("StorySoFarStep", () => {
     expect(onContinue).not.toHaveBeenCalled();
   });
 
-  it("passes the seedCode, gameDifficulty, and gameEntropy to getPrologue", async () => {
+  it("loads the prologue by the active session identity", async () => {
     mockedGetPrologue.mockResolvedValue(createPrologue());
 
     renderStep({
-      seedCode: "MY-SEED-42",
-      gameDifficulty: 2 as GameDifficulty,
-      gameEntropy: 3 as GameEntropy,
+      sessionId: "settled-session-42",
     });
 
     await screen.findByText(/black bart/i);
 
-    expect(mockedGetPrologue).toHaveBeenCalledWith("MY-SEED-42", 2, 3);
+    expect(mockedGetPrologue).toHaveBeenCalledWith("settled-session-42");
   });
 
   it("shows an in-world error state with a retry button when the prologue fetch fails", async () => {

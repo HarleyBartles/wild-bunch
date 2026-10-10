@@ -18,7 +18,7 @@
 - Name is required; Standard difficulty and Classic randomness remain defaults; players may start after entering only a name.
 - Every fresh visit to setup gets a new UUID, retained while settings are edited; a valid edited UUID is the value sent and persisted.
 - Invalid seed, blank name, or unsupported difficulty/randomness does not create a playthrough. No silent canonical-seed fallback is allowed for the resolved setup request.
-- Preserve the semantic sequence setup -> Go creates the settled playthrough -> prologue -> explicit starting-town choice -> free first arrival. Do not change prologue truth or town selection in this slice.
+- Preserve the semantic sequence setup -> Go creates the settled playthrough -> prologue -> explicit starting-town choice -> free first arrival. Keep the settled case lead unchanged and bind its read to the created session; do not change town selection in this slice.
 - Do not add auth, account ownership, idempotency mechanisms, new events, event-payload changes, world generation changes, or persistence schema changes.
 - Follow the event-sourcing, DDD, API validation, feature-matrix and testing playbooks. Do not preserve tautological seed truthiness tests.
 - Each epic PR uses its own fresh worktree, targets `develop`, advances the development version, and leaves this plan in Git history until a successor retires it.
@@ -47,8 +47,8 @@
 - Consumes: merged PR #251 source `7024113a5b49563fdc05a516ddb23026ebebdd98`, merge `66718c4ff2af8b30f7748f6ec8412ef2b24b6a0e`, exact-head hosted gate `38064117790`, and develop-push gate `38064444334`.
 - Produces: a committed `.66` plan from `develop` at `66718c4ff2af8b30f7748f6ec8412ef2b24b6a0e`, row 08 completed with evidence, and row 09 executing with this plan as its current JIT slice.
 
-- [ ] Record PR #251's source, merge and both hosted gate runs in row 08; confirm no player query under `Games/Queries` remains on `IGameSessionRepository`; mark row 08 complete and retire the `.65` plan in this first substantive commit.
-- [ ] Set the sole authored version to `0.1.0-dev.66`, advance row 09 to executing, and commit the plan, roadmap, version and predecessor retirement before source changes.
+- [x] Record PR #251's source, merge and both hosted gate runs in row 08; confirm no player query under `Games/Queries` remains on `IGameSessionRepository`; mark row 08 complete and retire the `.65` plan in this first substantive commit.
+- [x] Set the sole authored version to `0.1.0-dev.66`, advance row 09 to executing, and commit the plan, roadmap, version and predecessor retirement before source changes.
 
 ### Task 2: Prove and fix setup seed authority from field to persisted session
 
@@ -66,14 +66,14 @@
 - Consumes: `SetupGameRequest(PlayerName, GameDifficulty, SeedCode, GameEntropy)`, current setup-flow reset lifetime, and the existing `PlayerSetupCompleted` persistence/replay contract.
 - Produces: one setup draft seed whose UUID-shaped value is validated and normalized before request submission; invalid request facts produce validation failure before session creation.
 
-- [ ] Replace the truthiness-only seed assertion with behavior asserting the exact expected UUID submitted after editing the visible field; first run it against current code and confirm it fails because the request still uses `seedState` rather than `seedDraft`.
-- [ ] Add a browser-flow test that a fresh setup visit starts with a UUID, name-only submission uses Standard and Classic, and changing optional settings does not change that visit's seed. Prove a later setup reset receives a new UUID without relying on exact random output beyond UUID validity and inequality.
-- [ ] Add a negative browser scenario: invalid edited seed is visible as a useful field error, setup API is not called, and the player remains in setup. Add an API negative for missing/malformed UUID and unsupported difficulty or entropy proving no session is created.
-- [ ] Consolidate `seedState`, `seedDraft`, `seedDirty` and inert decode-error plumbing into the smallest truthful draft contract. Generate a UUID once on a new setup visit and on an explicit setup reset, not during render or when unrelated settings change. Submit the validated normalized draft value.
-- [ ] Require and validate name, UUID seed, supported `GameDifficulty`, and supported `GameEntropy` at the API boundary; preserve request defaults only where callers intentionally omit optional settings, not for the resolved seed. Do not create a session on invalid input.
-- [ ] Preserve `CompletePlayerSetupHandler` event flow. Verify the accepted request seed is the `GameSession.SeedCode` reconstructed from the event-backed setup facts, using an independent expected UUID. Do not add an event just to echo browser state.
-- [ ] Prove a refresh at the prologue phase requests the saved session's prologue and returns its established clue; keep the response player-safe and do not load a command aggregate in the query.
-- [ ] Run `npm --prefix src/WildBunch.Web test -- --run src/tests/StartFlow.test.tsx src/tests/SetupHuntStep.test.tsx`; after `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~GameApiValidationTests|FullyQualifiedName~PlayerSetupReplayAcceptanceTests"`. Falsify exact seed submission by temporarily submitting the prior seed state and falsify API validation by allowing the invalid request; each owning behavior test must fail, then restore and rerun.
+- [x] Replace the truthiness-only seed assertion with behavior asserting the exact expected UUID submitted after editing the visible field; first run it against current code and confirm it fails because the request still uses `seedState` rather than `seedDraft`.
+- [x] Add a browser-flow test that a fresh setup visit starts with a UUID, name-only submission uses Standard and Classic, and changing optional settings does not change that visit's seed. Prove a later setup reset receives a new UUID without relying on exact random output beyond UUID validity and inequality.
+- [x] Add a negative browser scenario: invalid edited seed is visible as a useful field error, setup API is not called, and the player remains in setup. Add an API negative for missing/malformed UUID and unsupported difficulty or entropy proving no session is created.
+- [x] Consolidate `seedState`, `seedDraft`, `seedDirty` and inert decode-error plumbing into the smallest truthful draft contract. Generate a UUID once on a new setup visit and on an explicit setup reset, not during render or when unrelated settings change. Submit the validated normalized draft value.
+- [x] Require and validate name, UUID seed, supported `GameDifficulty`, and supported `GameEntropy` at the API boundary; preserve request defaults only where callers intentionally omit optional settings, not for the resolved seed. Do not create a session on invalid input.
+- [x] Preserve `CompletePlayerSetupHandler` event flow. Verify the accepted request seed is the `GameSession.SeedCode` reconstructed from the event-backed setup facts, using an independent expected UUID. Do not add an event just to echo browser state.
+- [x] Prove a refresh at the prologue phase requests the saved session's prologue and returns its established clue; keep the response player-safe and do not load a command aggregate in the query.
+- [x] Run `npm --prefix src/WildBunch.Web test -- --run src/tests/StartFlow.test.tsx src/tests/SetupHuntStep.test.tsx`; after `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~GameApiValidationTests|FullyQualifiedName~PlayerSetupReplayAcceptanceTests"`. Falsify exact seed submission by temporarily submitting the prior seed state and falsify API validation by allowing the invalid request; each owning behavior test must fail, then restore and rerun. The session-scoped prologue behavior was also witnessed RED against the old route and passed with the corrected read path; the final focused tests include `StorySoFarStep` and `PrologueHiddenTruthTests`.
 
 ### Task 3: Reconcile decisions and deliver the setup-input slice
 
@@ -85,8 +85,8 @@
 **Interfaces:**
 - Consumes: the setup input, API validation and event-backed session behavior; produces: an independently reviewed `.66` PR to `develop` with hosted exact-head and develop-push gates.
 
-- [ ] Confirm this corrects submitted start facts and session-bound prologue truth without changing archive semantics, ownership or product feature dependencies; update PG-001 evidence to distinguish rendered UI behavior tests from browser-backed journey evidence.
-- [ ] Add a dated finding disposition only for behavior actually corrected, preserving the investigation's historical observation.
+- [x] Confirm this corrects submitted start facts and session-bound prologue truth without changing archive semantics, ownership or product feature dependencies; compare ADR-0014, ADR-0028 and ADR-0039 and retain them unchanged because the slice implements their existing CQRS, event-replay and settled-prologue decisions. Update PG-001 evidence to distinguish rendered UI behavior tests from browser-backed journey evidence.
+- [x] Add a dated finding disposition only for behavior actually corrected, preserving the investigation's historical observation.
 - [ ] Run focused behavior tests then `py -3 tools/run.py ci --check`; commit source through the canonical check-only hook. Obtain an independent whole-branch review and resolve any actionable findings with focused behavior proof.
 - [ ] Publish the reviewed PR to `develop`, verify the hosted gate passes on the exact source SHA, merge it, and verify develop-push CI passes on the merge SHA. Keep this plan in-tree through its PR; its successor records evidence and retires it in the successor's first substantive commit.
 
