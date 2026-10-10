@@ -98,8 +98,8 @@
 
 **Files:** this plan and the row 08 roadmap entry after verified merge.
 
-- [ ] Run `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, `py -3 tools/run.py ci --check`, `dotnet tool restore`, and `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; no event/schema migration is expected.
-- [ ] Build a fresh whole-branch review package and obtain an independent review against this plan, the spec, applicable backend/UI unslop profiles, ADR-0028 and PG-008; fix Critical/Important findings with RED/GREEN evidence, rerun the gate and get fresh review of changed behavior.
+- [x] Run `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, `py -3 tools/run.py ci --check`, `dotnet tool restore`, and `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; no event/schema migration is expected.
+- [x] Build a fresh whole-branch review package and obtain an independent review against this plan, the spec, applicable backend/UI unslop profiles, ADR-0028 and PG-008; fix Critical/Important findings with RED/GREEN evidence, rerun the gate and get fresh review of changed behavior.
 - [ ] Publish a Draft PR to `develop`, verify its exact source SHA, mark it ready only after review and the complete local gate pass, and wait for the exact-head hosted gate to pass before merge.
 - [ ] Merge only after independent review and exact-head CI pass; verify merge SHA and develop-push gate, then update row 08 with source/merge SHAs and both run IDs.
 - [ ] Retire the merged worktree/branch only after merge, gate, ancestry and worktree ownership are verified.
