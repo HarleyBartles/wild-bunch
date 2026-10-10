@@ -1,10 +1,10 @@
-# Make the setup seed submitted by the player authoritative
+# Make startup seed and prologue reflect the settled playthrough
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task.
 
-**Goal:** Make a player's visible setup seed the exact seed used to create the playthrough, while giving each fresh setup visit a new UUID and preserving quick start with the existing defaults.
+**Goal:** Make a player's visible setup seed the exact seed used to create the playthrough, give each fresh setup visit a new UUID, and keep the prologue bound to the case that setup settled, including after refresh.
 
-**Architecture:** The web setup draft owns one seed string. A fresh setup visit initializes it once with a UUID; user edits update that same value; submit validates and normalizes it before calling the existing setup command. The API validates the resolved request facts rather than silently accepting a missing seed or unsupported enum values. Successful setup persists the supplied seed through the existing event-backed path. This slice does not change the prologue query or the rest of the startup lifecycle.
+**Architecture:** The web setup draft owns one seed string. A fresh setup visit initializes it once with a UUID; user edits update that same value; submit validates and normalizes it before calling the existing setup command. The API validates resolved request facts rather than silently accepting a missing seed or unsupported enum values. Successful setup persists the supplied seed through the existing event-backed path. The prologue read is session-scoped and derives its player-safe culprit descriptor from the settled session case file; it never regenerates a case from browser setup values.
 
 **Tech Stack:** React, TypeScript, TanStack Query, ASP.NET minimal API, existing `CompletePlayerSetupHandler`, xUnit, Vitest and repository command bus.
 
@@ -30,7 +30,8 @@
 - A new setup visit is randomized once; rerenders and settings changes do not silently replace the seed.
 - Invalid intent is rejected at the web and API boundaries without creating a session.
 - Name-only quick start still uses Standard, Classic and the visit's generated UUID.
-- No prologue query or event behavior changes.
+- The prologue query reads the existing session through `IGameSessionReadRepository` and returns the same established case lead after refresh; the browser does not supply setup facts to that read.
+- Do not change `PrologueViewed` event shape or its historical consumers in this slice. The acknowledgement path remains separately governed by its current event contract.
 
 ---
 
@@ -55,7 +56,11 @@
 - Modify: `src/WildBunch.Web/src/hooks/useStartGameSeed.ts`, `src/WildBunch.Web/src/hooks/useStartFlow.ts`, `src/WildBunch.Web/src/flow/PreSessionSurface.tsx`, `src/WildBunch.Web/src/components/start-flow/SetupHuntStep.tsx`, and `src/WildBunch.Web/src/ui/gameSetupSeedCodec.ts` as inspection requires.
 - Test: `src/WildBunch.Web/src/tests/StartFlow.test.tsx`, `src/WildBunch.Web/src/tests/SetupHuntStep.test.tsx`, plus a focused hook test only if the real UI path cannot prove visit initialization behavior.
 - Modify: `src/WildBunch.Api/Games/Validation/RequestValidation.cs` if required to reject missing/unsupported resolved request facts.
+- Modify: `src/WildBunch.Api/Games/GameSessionEndpoints.cs` and the existing prologue query path to make that read session-scoped.
+- Modify: `src/WildBunch.Application/Games/Queries/GetPrologueHandler.cs` and `GetPrologueQuery.cs` to resolve the player-safe descriptor from the settled session case.
+- Modify: `src/WildBunch.Web/src/api/wildBunchApi.ts` and `src/WildBunch.Web/src/components/start-flow/StorySoFarStep.tsx` to query with the active session identity, not setup drafts.
 - Test: `tests/WildBunch.Integration.Tests/GameApiValidationTests.cs` and the setup acceptance test that can independently prove the persisted seed.
+- Test: `tests/WildBunch.Integration.Tests/PrologueHiddenTruthTests.cs` and focused prologue application/API behavior.
 
 **Interfaces:**
 - Consumes: `SetupGameRequest(PlayerName, GameDifficulty, SeedCode, GameEntropy)`, current setup-flow reset lifetime, and the existing `PlayerSetupCompleted` persistence/replay contract.
@@ -67,6 +72,7 @@
 - [ ] Consolidate `seedState`, `seedDraft`, `seedDirty` and inert decode-error plumbing into the smallest truthful draft contract. Generate a UUID once on a new setup visit and on an explicit setup reset, not during render or when unrelated settings change. Submit the validated normalized draft value.
 - [ ] Require and validate name, UUID seed, supported `GameDifficulty`, and supported `GameEntropy` at the API boundary; preserve request defaults only where callers intentionally omit optional settings, not for the resolved seed. Do not create a session on invalid input.
 - [ ] Preserve `CompletePlayerSetupHandler` event flow. Verify the accepted request seed is the `GameSession.SeedCode` reconstructed from the event-backed setup facts, using an independent expected UUID. Do not add an event just to echo browser state.
+- [ ] Prove a refresh at the prologue phase requests the saved session's prologue and returns its established clue; keep the response player-safe and do not load a command aggregate in the query.
 - [ ] Run `npm --prefix src/WildBunch.Web test -- --run src/tests/StartFlow.test.tsx src/tests/SetupHuntStep.test.tsx`; after `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter "FullyQualifiedName~GameApiValidationTests|FullyQualifiedName~PlayerSetupReplayAcceptanceTests"`. Falsify exact seed submission by temporarily submitting the prior seed state and falsify API validation by allowing the invalid request; each owning behavior test must fail, then restore and rerun.
 
 ### Task 3: Reconcile decisions and deliver the setup-input slice
@@ -79,7 +85,7 @@
 **Interfaces:**
 - Consumes: the setup input, API validation and event-backed session behavior; produces: an independently reviewed `.66` PR to `develop` with hosted exact-head and develop-push gates.
 
-- [ ] Confirm this corrects submitted start facts without changing the prologue/read contract, archive semantics, ownership or product feature dependencies; no ADR or feature-matrix update is expected unless inspection proves otherwise.
+- [ ] Confirm this corrects submitted start facts and session-bound prologue truth without changing archive semantics, ownership or product feature dependencies; update PG-001 evidence to distinguish rendered UI behavior tests from browser-backed journey evidence.
 - [ ] Add a dated finding disposition only for behavior actually corrected, preserving the investigation's historical observation.
 - [ ] Run focused behavior tests then `py -3 tools/run.py ci --check`; commit source through the canonical check-only hook. Obtain an independent whole-branch review and resolve any actionable findings with focused behavior proof.
 - [ ] Publish the reviewed PR to `develop`, verify the hosted gate passes on the exact source SHA, merge it, and verify develop-push CI passes on the merge SHA. Keep this plan in-tree through its PR; its successor records evidence and retires it in the successor's first substantive commit.
@@ -94,4 +100,4 @@
 
 ## Explicit Exclusions
 
-Do not bind the prologue query to session truth in this plan; that is a distinct follow-on slice governed by the hunt-creation contract. Do not implement backend creation idempotency, browser command-pending lifecycle, start-over recovery, account/OIDC ownership, multiple simultaneous playthroughs, starting-town/map composition, or unrelated web composition cleanup. If any becomes a prerequisite for the visible seed behavior, stop and revise the plan rather than expanding silently.
+Do not change the `PrologueViewed` event shape, implement backend creation idempotency, browser command-pending lifecycle, start-over recovery, account/OIDC ownership, multiple simultaneous playthroughs, starting-town/map composition, or unrelated web composition cleanup. If any becomes a prerequisite for the visible seed behavior, stop and revise the plan rather than expanding silently.
