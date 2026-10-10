@@ -44,6 +44,7 @@ public sealed class DevEndpointTests
         var route = $"/api/dev/sessions/{created.Id}/audit";
         var occurrenceBase = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
         Dictionary<long, DateTime> expectedOccurrences;
+        Dictionary<long, string> expectedEventTypes;
 
         using (var scope = factory.Services.CreateScope())
         {
@@ -54,6 +55,7 @@ public sealed class DevEndpointTests
                 .ToArrayAsync();
 
             Assert.NotEmpty(storedEvents);
+            Assert.True(storedEvents.Select(storedEvent => storedEvent.EventType).Distinct().Count() > 1);
             foreach (var storedEvent in storedEvents)
             {
                 storedEvent.OccurredAtUtc = occurrenceBase.AddMinutes(storedEvent.Sequence);
@@ -63,6 +65,9 @@ public sealed class DevEndpointTests
             expectedOccurrences = storedEvents.ToDictionary(
                 storedEvent => storedEvent.Sequence,
                 storedEvent => storedEvent.OccurredAtUtc);
+            expectedEventTypes = storedEvents.ToDictionary(
+                storedEvent => storedEvent.Sequence,
+                storedEvent => storedEvent.EventType);
         }
 
         var firstRead = await client.GetFromJsonAsync<SessionAuditDto>(route);
@@ -75,6 +80,7 @@ public sealed class DevEndpointTests
         foreach (var entry in firstRead.Entries)
         {
             Assert.Equal(expectedOccurrences[entry.Sequence], entry.OccurredAtUtc);
+            Assert.Equal(expectedEventTypes[entry.Sequence], entry.EventType);
         }
 
         Assert.Equal(firstRead.Entries, secondRead.Entries);
