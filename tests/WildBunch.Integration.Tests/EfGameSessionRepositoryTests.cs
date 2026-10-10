@@ -866,6 +866,14 @@ public sealed class EfGameSessionRepositoryTests
         loaded.AdvanceJourneyDay();
 
         await PersistAsync(repository, unitOfWork, loaded);
+
+        await using (var staleSnapshotContext = fixture.CreateContext())
+        {
+            var envelope = await staleSnapshotContext.GameSessions.SingleAsync(entity => entity.Id == session.Id.Value);
+            envelope.SnapshotVersion = null;
+            await staleSnapshotContext.SaveChangesAsync();
+        }
+
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
