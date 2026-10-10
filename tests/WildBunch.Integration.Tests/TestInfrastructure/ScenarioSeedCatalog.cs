@@ -249,12 +249,13 @@ internal static class ScenarioSeedCatalog
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.travelDiary", blockedAdvance.TravelDiary is not null && blockedAdvance.TravelDiary.Days.Count == 1, "expected one diary day for the interrupted first day.");
 
         // Check diary names the destination town (whatever it is)
-        var openingNarration = blockedAdvance.TravelDiary!.Days[0].OpeningNarration;
-        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.openingNarration",
-            openingNarration is not null && openingNarration.Contains(destinationTownName, StringComparison.OrdinalIgnoreCase),
+        var departure = blockedAdvance.TravelDiary!.JourneyEntries.SingleOrDefault(
+            entry => entry.Message.Contains($"toward {destinationTownName}", StringComparison.OrdinalIgnoreCase));
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.departure",
+            departure is not null,
             $"expected the diary to name the destination town '{destinationTownName}'.");
-        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.openingNarration",
-            openingNarration is not null && openingNarration.Contains("by mounted travel", StringComparison.OrdinalIgnoreCase),
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.departure",
+            departure is not null && departure.Message.Contains("by mounted travel", StringComparison.OrdinalIgnoreCase),
             "expected the diary to reflect mounted travel before the interruption.");
 
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.success", resolved.Success, "expected the public encounter resolution to succeed.");

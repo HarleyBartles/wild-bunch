@@ -118,3 +118,7 @@ Paths below are relative to `src/WildBunch.Web/src`. These rows supplement the e
 ## Dated row 08 disposition, 2026-10-10, WB-20
 
 Added a rendered `CaseFileSurface` behavior test with an unnamed clue, authored source/context/anchors, and two same-name warrant records where only one has a settlement. It proves the clue stays independent, both records and the settled outcome remain visible, and the old resolved-to inference is absent. `AppShell` retains overlay behavior without requiring retired deduction copy. No repository browser/e2e harness exists for a real API-backed journey; the Web command-bus gate passed all 303 Vitest tests and the production build.
+
+## Dated row 08 disposition, 2026-10-10, WB-21
+
+`TravelDiaryNotebook` now renders the same `JournalEntryTimeline` as the full journal, using the latest journey's event-projected entries. `TravelDiaryDayCard` shows typed resource/outcome facts without composing choice-based success prose. `TravelPanel.test.tsx` proves a three-round failed-fight message and ammo count are rendered while the old one-round victory claim is absent; that assertion was witnessed failing with the old summary restored. The persisted API proof for both views is owned by `GameApiTests.HighRiskTravelCanPauseResolveAndResumeWithoutSkippingTheTrail`.

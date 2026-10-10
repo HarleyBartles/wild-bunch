@@ -23,6 +23,39 @@ public sealed class JournalLogProjectorTests
         GameEntropy = GameEntropy.Classic
     };
 
+    private static TravelJourneySnapshot JourneySnapshot(int sequence) => new(
+        JourneySequence: sequence,
+        OriginTownId: new TownId("pinecross"),
+        DestinationTownId: new TownId("dustfork"),
+        OriginTownName: "Pinecross",
+        DestinationTownName: "Dust Fork",
+        RouteProfile: new TravelRouteProfile("pinecross-dustfork", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 6m, 3m, 2m, []),
+        TravelMode: TravelMode.Mounted,
+        Status: JourneyStatus.Active,
+        MountedTravelAvailable: true,
+        WaterSecure: true,
+        RideDayDistance: 6m,
+        RemainingRideDayDistance: 3m,
+        ExpectedDays: 3,
+        RemainingDays: 2,
+        CanteenChargesPerDay: 1,
+        RequiredCanteenCharges: 2,
+        AvailableCanteenCharges: 4,
+        CanteenReserveCharges: 1,
+        DelayMarginDays: 0,
+        DelayRisk: false,
+        RequiredFood: 2,
+        AvailableFood: 5,
+        RequiredHorseFeed: 1,
+        AvailableHorseFeed: 3,
+        HorseState: null,
+        OpeningNarration: "The long road east waits.",
+        DaysTravelled: 1,
+        DelayDays: 0,
+        CurrentDayPlan: null,
+        PendingEncounter: null,
+        Warnings: []);
+
     [Fact]
     public void GameStarted_ProducesSingleOpeningEntryWithLegacyText()
     {
@@ -356,11 +389,11 @@ public sealed class JournalLogProjectorTests
         var events = new IDomainEvent[]
         {
             GameStartedEvent(),
-            new JourneyStarted { JourneySnapshot = null!, DiaryMessage = "You set out.", PursuitHeat = 0 },
+            new JourneyStarted { JourneySnapshot = JourneySnapshot(1), DiaryMessage = "You set out.", PursuitHeat = 0 },
             new TravelDayAdvanced
             {
                 Day = 2,
-                JourneySnapshot = null!,
+                JourneySnapshot = JourneySnapshot(1),
                 HealthDelta = 0,
                 PursuitHeat = 0,
                 DayOutcome = TravelDayOutcome.Ongoing,
@@ -395,6 +428,47 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
+    public void TravelEntries_KeepTheirRecordedJourneySequenceAcrossMultipleJourneys()
+    {
+        var firstJourney = JourneySnapshot(1);
+        var secondJourney = JourneySnapshot(2);
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new JourneyStarted { JourneySnapshot = firstJourney, DiaryMessage = "The first road begins.", PursuitHeat = 0 },
+            new TravelDayAdvanced
+            {
+                Day = 2,
+                JourneySnapshot = firstJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Ongoing,
+                DiaryMessage = "I cross the first ridge.",
+                HorseLostMessage = string.Empty
+            },
+            new JourneyStarted { JourneySnapshot = secondJourney, DiaryMessage = "The second road begins.", PursuitHeat = 0 },
+            new TravelDayAdvanced
+            {
+                Day = 4,
+                JourneySnapshot = secondJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Ongoing,
+                DiaryMessage = "I cross the second ridge.",
+                HorseLostMessage = string.Empty
+            }
+        };
+
+        var entries = new JournalLogProjector().Project(events);
+
+        Assert.Null(entries.Single(entry => entry.Kind == GameLogEntryKind.Opening).JourneySequence);
+        Assert.Equal(
+            new[] { ("The first road begins.", (int?)1), ("I cross the first ridge.", (int?)1), ("The second road begins.", (int?)2), ("I cross the second ridge.", (int?)2) },
+            entries.Where(entry => entry.Kind == GameLogEntryKind.Travel)
+                .Select(entry => (entry.Message, entry.JourneySequence)));
+    }
+
+    [Fact]
     public void EmptyMessagesAndHorseLostMessage_AreSkippedOrEmittedExactlyAsLegacy()
     {
         var projector = new JournalLogProjector();
@@ -404,7 +478,7 @@ public sealed class JournalLogProjectorTests
             new TravelDayAdvanced
             {
                 Day = 2,
-                JourneySnapshot = null!,
+                JourneySnapshot = JourneySnapshot(1),
                 HealthDelta = 0,
                 PursuitHeat = 0,
                 DayOutcome = TravelDayOutcome.Ongoing,

@@ -114,7 +114,7 @@ public static class GameSessionMapper
             new GameClockDto(clock.Day, clock.Turn, clock.TimeOfDay.ToString(), BeatLabelRenderer.Render(clock.TimeOfDay, clock.Day)),
             new PursuitStateDto(pursuitState.Heat),
             journey,
-            TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(gameDifficulty)),
+            TravelDiaryMapper.ToDto(travelDiaryDays, logEntries, TravelRulesProfile.For(gameDifficulty)),
             logEntries.Select(ToDto).ToArray(),
             activeSaloonPersonOfInterest,
             caseFile.KnownWarrants.Count > 0 ? WantedPosterMapper.ToDto(caseFile.KnownWarrants) : Array.Empty<WantedPosterDto>(),
@@ -163,11 +163,7 @@ public static class GameSessionMapper
             suspect.Status);
 
     private static GameLogEntryDto ToDto(DomainGameLogEntry logEntry)
-        => new(
-            logEntry.Kind,
-            logEntry.Message,
-            logEntry.Day,
-            logEntry.Turn);
+        => JournalMapper.ToEntryDto(logEntry);
 
     private static ActiveSaloonPersonOfInterestDto? ToActiveSaloonPersonOfInterestDto(
         SuspectId? activeSaloonPersonOfInterestId,

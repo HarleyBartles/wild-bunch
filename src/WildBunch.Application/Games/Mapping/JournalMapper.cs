@@ -29,7 +29,7 @@ public static class JournalMapper
                 snapshot.KnownClues.Select(CaseReadMapper.ToDto).ToArray(),
                 activeWarrants.Select(ToDto).ToArray(),
                 WantedPosterMapper.ToDto(activeWarrants)),
-            snapshot.LogEntries.Select(ToDto).ToArray());
+            snapshot.LogEntries.Select(ToEntryDto).ToArray());
     }
 
     private static IReadOnlyList<Warrant> ExcludeCapturedWarrants(
@@ -58,7 +58,7 @@ public static class JournalMapper
             warrant.Terms.Disposition,
             warrant.Terms.BountyAmount);
 
-    private static GameLogEntryDto ToDto(GameLogEntry logEntry)
+    internal static GameLogEntryDto ToEntryDto(GameLogEntry logEntry)
         => new(
             logEntry.Kind,
             logEntry.Message,

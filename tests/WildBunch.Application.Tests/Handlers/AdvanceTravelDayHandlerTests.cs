@@ -48,8 +48,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.StartsWith("I ", StringComparison.Ordinal));
-        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you found", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.TravelDiary!.JourneyEntries, entry => entry.Message.StartsWith("I ", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.TravelDiary.JourneyEntries, entry => entry.Message.Contains("you found", StringComparison.OrdinalIgnoreCase));
         Assert.True(diaryDay.CurrentFood >= 2);
         Assert.Equal(0, diaryDay.CurrentAmmo);
         Assert.Equal(result.CurrentSession.Player.Health, diaryDay.CurrentHealth);
@@ -69,9 +69,8 @@ public sealed class AdvanceTravelDayHandlerTests
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, result.JourneyStatus);
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Single(diaryDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.TravelDiary.JourneyEntries, entry => entry.Message == "A hard-eyed rider cuts across my path.");
+        Assert.DoesNotContain(result.TravelDiary.JourneyEntries, entry => entry.Message.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -92,10 +91,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
         Assert.NotNull(result.TravelDiary);
         var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("went lame", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I kept moving", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("lame", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(result.TravelDiary!.JourneyEntries, entry => entry.Message.Contains("Your horse went lame", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.TravelDiary.JourneyEntries, entry => entry.Message.Contains("One trail day passes on foot", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

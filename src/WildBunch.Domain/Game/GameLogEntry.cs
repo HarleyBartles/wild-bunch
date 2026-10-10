@@ -9,4 +9,4 @@ namespace WildBunch.Domain.Game;
 /// and read-model DTOs; the authoritative source of game history is the typed
 /// domain event stream.
 /// </summary>
-public sealed record GameLogEntry(GameLogEntryKind Kind, string Message, int Day, int Turn);
+public sealed record GameLogEntry(GameLogEntryKind Kind, string Message, int Day, int Turn, int? JourneySequence = null);
