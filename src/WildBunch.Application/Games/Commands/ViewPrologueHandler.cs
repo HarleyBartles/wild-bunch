@@ -15,17 +15,14 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class ViewPrologueHandler : GameSessionCommandHandler
 {
     private readonly HudProjector _hudProjector;
-    private readonly DiaryProjector _diaryProjector;
 
     public ViewPrologueHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
-        HudProjector hudProjector,
-        DiaryProjector diaryProjector)
+        HudProjector hudProjector)
         : base(gameSessionRepository, gameSessionUnitOfWork)
     {
         _hudProjector = hudProjector;
-        _diaryProjector = diaryProjector;
     }
 
     // Setup-flow handler: views prologue before GameStarted.
@@ -53,8 +50,7 @@ public sealed class ViewPrologueHandler : GameSessionCommandHandler
         var events = await GameSessionRepository.GetEventStreamAsync(
             sessionId, 0, cancellationToken).ConfigureAwait(false);
         var hud = _hudProjector.Project(events) with { SessionId = dto.Id };
-        var diary = _diaryProjector.Project(events) with { SessionId = dto.Id };
 
-        return dto with { HudProjection = hud, DiaryProjection = diary };
+        return dto with { HudProjection = hud };
     }
 }

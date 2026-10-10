@@ -1,3 +1,4 @@
+using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 
@@ -52,12 +53,21 @@ public sealed class JournalLogProjector
                     entries.Add(new GameLogEntry(GameLogEntryKind.CaseUpdate, wc.Message, day, turn));
                     break;
 
-                case SheriffTurnInSettled:
-                    // Legacy Apply adds no log entry for sheriff turn-in.
+                case SaloonPersonOfInterestConfronted confrontation:
+                    // Delegated wanted outcomes already have typed narration events; only unique saloon-level results belong here.
+                    if (confrontation.Outcome is SaloonPersonOfInterestConfrontationOutcome.Rejected
+                        or SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration)
+                    {
+                        entries.Add(new GameLogEntry(GameLogEntryKind.CaseUpdate, confrontation.Message, day, turn));
+                    }
                     break;
 
-                case SaloonPersonOfInterestConfronted:
-                    // No log entry.
+                case SheriffTurnInSettled settlement:
+                    entries.Add(new GameLogEntry(
+                        GameLogEntryKind.CaseUpdate,
+                        settlement.Message,
+                        settlement.Day,
+                        settlement.Turn));
                     break;
 
                 case JourneyStarted js:

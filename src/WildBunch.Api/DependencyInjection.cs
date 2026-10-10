@@ -76,7 +76,6 @@ public static class DependencyInjection
         // Only HUD and diary are exposed through the player-facing API.
         // FullAuditProjector is a developer/replay surface, not player-facing.
         services.AddSingleton<HudProjector>();
-        services.AddSingleton<DiaryProjector>();
         services.AddSingleton<FullAuditProjector>();
 
         // Dev-only services (gated by DevRoleGuard, separated from player-facing APIs)

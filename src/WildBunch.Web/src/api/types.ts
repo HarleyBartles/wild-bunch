@@ -538,21 +538,6 @@ export interface HudInventoryItem {
   quantity: number;
 }
 
-export interface DiaryProjection {
-  sessionId: string;
-  day: number;
-  turn: number;
-  currentTownId: string;
-  currentTownName: string;
-  entries: DiaryEntry[];
-}
-
-export interface DiaryEntry {
-  day: number;
-  turn: number;
-  summary: string;
-}
-
 export interface JourneyTrailEventDto {
   id: JourneyTrailEventId;
   kind: JourneyTrailEventKind;
@@ -587,7 +572,6 @@ export interface GameSessionDto {
   wantedPosters: WantedPosterDto[];
   activeSaloonWantedSuspect?: ActiveSaloonWantedSuspectDto | null;
   hudProjection?: HudProjection | null;
-  diaryProjection?: DiaryProjection | null;
 }
 
 export interface ActiveSaloonPersonOfInterestDto {

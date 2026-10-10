@@ -18,7 +18,7 @@ public sealed class CompletePlayerSetupHandlerTests
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
         var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -43,7 +43,7 @@ public sealed class CompletePlayerSetupHandlerTests
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
         var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -62,7 +62,7 @@ public sealed class CompletePlayerSetupHandlerTests
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
         var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -76,12 +76,12 @@ public sealed class CompletePlayerSetupHandlerTests
     }
 
     [Fact]
-    public async Task SetupReturnsDtoWithHudAndDiaryProjections()
+    public async Task SetupReturnsDtoWithHudProjection()
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
         var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
@@ -91,11 +91,8 @@ public sealed class CompletePlayerSetupHandlerTests
             GameEntropy = WildBunch.Domain.Travel.GameEntropy.Classic,
         });
 
-        // HUD/diary projections are returned, but the HUD player name
-        // is only populated after GameStarted (not during setup phase).
+        // The HUD player name is only populated after GameStarted, not during setup.
         Assert.NotNull(result.HudProjection);
-        Assert.NotNull(result.DiaryProjection);
         Assert.Equal(result.Id, result.HudProjection!.SessionId);
-        Assert.Equal(result.Id, result.DiaryProjection!.SessionId);
     }
 }

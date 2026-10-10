@@ -23,7 +23,7 @@ public sealed class TravelToTownHandlerTests
         var session = CreateSession();
         repository.Seed(session);
         var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
@@ -54,7 +54,7 @@ public sealed class TravelToTownHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "dryridge"));
 
@@ -75,7 +75,7 @@ public sealed class TravelToTownHandlerTests
         var session = CreateSession(emptyInventory: true);
         repository.Seed(session);
         var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 

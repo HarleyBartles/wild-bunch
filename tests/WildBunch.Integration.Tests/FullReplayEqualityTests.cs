@@ -38,7 +38,6 @@ public sealed class FullReplayEqualityTests : IClassFixture<PostgreSqlPersistenc
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         services.AddSingleton<HudProjector>();
-        services.AddSingleton<DiaryProjector>();
         services.AddSingleton<FullAuditProjector>();
         services.AddSingleton<TravelDiaryDayProjector>();
         services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry([]));

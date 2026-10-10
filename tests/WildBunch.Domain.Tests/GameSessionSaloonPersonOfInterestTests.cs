@@ -28,7 +28,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var logCountBeforeConfront = GameSessionLogProjection.Project(session).Count;
 
         var confrontation = session.ConfrontSaloonPersonOfInterest();
-        var logCountAfterConfront = GameSessionLogProjection.Project(session).Count;
+        var journalAfterConfront = GameSessionLogProjection.Project(session);
         var repeatLookAround = session.LookAroundSaloon();
 
         Assert.True(lookAround.Success);
@@ -41,7 +41,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(suspectId, out _));
         Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
-        Assert.Equal(logCountBeforeConfront, logCountAfterConfront);
+        Assert.Equal(logCountBeforeConfront + 1, journalAfterConfront.Count);
+        Assert.Equal(confrontation.Message, journalAfterConfront[^1].Message);
 
         Assert.True(repeatLookAround.Success);
         Assert.Equal("You look around the saloon again, but nobody of interest is here.", repeatLookAround.Message);
@@ -137,6 +138,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var logCountBeforeConfront = GameSessionLogProjection.Project(session).Count;
 
         var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle);
+        var journal = GameSessionLogProjection.Project(session);
 
         Assert.False(result.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, result.Outcome);
@@ -146,7 +148,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
-        Assert.Equal(logCountBeforeConfront, GameSessionLogProjection.Project(session).Count);
+        Assert.Equal(logCountBeforeConfront + 1, journal.Count);
+        Assert.Equal(result.Message, journal[^1].Message);
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(activePersonOfInterest, out _));
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(new SuspectId("suspect-2"), out _));
     }
@@ -284,7 +287,9 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Null(result.IsAlive);
         Assert.Null(result.IsSecured);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, result.PersonOfInterestKind);
-        Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
+        var journal = GameSessionLogProjection.Project(session);
+        Assert.Equal(initialLogCount + 1, journal.Count);
+        Assert.Equal(result.Message, journal[^1].Message);
         Assert.Equal(0m, session.Player.Wallet.Cash);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
@@ -304,7 +309,9 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.True(repeatLookAround.Success);
         Assert.Contains("a stranger with", repeatLookAround.Message);
         Assert.DoesNotContain("town clerk", repeatLookAround.Message);
-        Assert.Equal(initialLogCount, GameSessionLogProjection.Project(session).Count);
+        var journalAfterRepeatLookAround = GameSessionLogProjection.Project(session);
+        Assert.Equal(initialLogCount + 1, journalAfterRepeatLookAround.Count);
+        Assert.Equal(result.Message, journalAfterRepeatLookAround[^1].Message);
     }
 
     [Fact]
