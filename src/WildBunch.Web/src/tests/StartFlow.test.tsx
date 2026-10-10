@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
+import { HttpRequestError } from "../api/httpClient";
 import { PreSessionSurface } from "../flow/PreSessionSurface";
 import type { GameSessionDto } from "../api/types";
 import {
@@ -330,6 +331,8 @@ describe("StartFlow", () => {
     });
 
     const setupRequest = mockedSetupGame.mock.calls[0][0];
+    const setupOperationId = mockedSetupGame.mock.calls[0][1];
+    expect(setupOperationId).toMatch(/^[0-9a-f-]{36}$/i);
     expect(setupRequest.playerName).toBe("Ranger Vale");
     expect(setupRequest.seedCode).toBe("a1234567-b123-c123-d123-e123456789ab");
     expect(setupRequest.gameDifficulty).toBe(2);
@@ -358,6 +361,161 @@ describe("StartFlow", () => {
     });
 
     expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "t-town" });
+    expect(mockedStartGameWithTown.mock.calls[0][2]).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(window.localStorage.getItem("wild-bunch.pending-first-arrival:game-1")).toBeNull();
+  });
+
+  it("retries a pending setup after refresh with the same operation ID and exact payload", async () => {
+    primeMocks();
+    const pendingOperation = {
+      operationId: "8b883c75-4e2e-4e82-90b4-95cb3867ae51",
+      request: {
+        playerName: "Ranger Vale",
+        gameDifficulty: 2,
+        gameEntropy: 3,
+        seedCode: "a1234567-b123-c123-d123-e123456789ab",
+      },
+    };
+    window.localStorage.setItem(
+      "wild-bunch.pending-setup-operation",
+      JSON.stringify(pendingOperation),
+    );
+    mockedGetGame.mockResolvedValue(createSession({ startFlowPhase: 1 }));
+
+    renderSurface();
+
+    await waitFor(() => {
+      expect(mockedSetupGame).toHaveBeenCalledWith(
+        pendingOperation.request,
+        pendingOperation.operationId,
+      );
+    });
+    expect(await screen.findByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    expect(window.localStorage.getItem("wild-bunch.pending-setup-operation")).toBeNull();
+  });
+
+  it("keeps and retries the exact setup operation after an uncertain response", async () => {
+    primeMocks();
+    mockedSetupGame.mockRejectedValueOnce(new Error("connection lost"));
+    const user = userEvent.setup();
+    const pending = {
+      operationId: "8b883c75-4e2e-4e82-90b4-95cb3867ae51",
+      request: {
+        playerName: "Ranger Vale",
+        gameDifficulty: 2 as const,
+        gameEntropy: 3 as const,
+        seedCode: "a1234567-b123-c123-d123-e123456789ab",
+      },
+    };
+    window.localStorage.setItem("wild-bunch.pending-setup-operation", JSON.stringify(pending));
+    renderSurface();
+
+    expect(await screen.findByText("connection lost")).toBeInTheDocument();
+    const savedPending = window.localStorage.getItem("wild-bunch.pending-setup-operation");
+    expect(savedPending).not.toBeNull();
+    const firstCall = mockedSetupGame.mock.calls[0];
+    expect(screen.getByLabelText(/your name/i)).toHaveValue("Ranger Vale");
+    expect(screen.getByLabelText(/your name/i)).toBeDisabled();
+    expect(screen.getByRole("button", { name: /retry setup/i })).toBeEnabled();
+    expect(firstCall).toEqual([pending.request, pending.operationId]);
+
+    await user.click(screen.getByRole("button", { name: /retry setup/i }));
+
+    expect(await screen.findByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    expect(mockedSetupGame).toHaveBeenCalledTimes(2);
+    expect(mockedSetupGame.mock.calls[1]).toEqual(firstCall);
+    expect(window.localStorage.getItem("wild-bunch.pending-setup-operation")).toBeNull();
+  });
+
+  it("uses a new operation ID after a definitive setup rejection is corrected", async () => {
+    primeMocks();
+    mockedSetupGame.mockRejectedValueOnce(new HttpRequestError("Invalid setup", 400));
+    const user = userEvent.setup();
+    renderSurface();
+
+    await user.type(await screen.findByLabelText(/your name/i), "Ranger Vale");
+    const seedInput = screen.getByLabelText(/world seed/i);
+    await user.clear(seedInput);
+    await user.type(seedInput, "11111111-1111-4111-8111-111111111111");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    expect(await screen.findByText("Invalid setup")).toBeInTheDocument();
+    const rejectedOperationId = mockedSetupGame.mock.calls[0][1];
+    expect(window.localStorage.getItem("wild-bunch.pending-setup-operation")).toBeNull();
+    expect(screen.getByLabelText(/your name/i)).toBeEnabled();
+
+    const playerNameInput = screen.getByLabelText(/your name/i);
+    await user.clear(playerNameInput);
+    await user.type(playerNameInput, "Clint Eastwood");
+    await user.clear(seedInput);
+    await user.type(seedInput, "22222222-2222-4222-8222-222222222222");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    expect(await screen.findByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    expect(mockedSetupGame).toHaveBeenCalledTimes(2);
+    expect(mockedSetupGame.mock.calls[1][0]).toMatchObject({
+      playerName: "Clint Eastwood",
+      seedCode: "22222222-2222-4222-8222-222222222222",
+    });
+    expect(mockedSetupGame.mock.calls[1][1]).not.toBe(rejectedOperationId);
+  });
+
+  it("retries a pending first arrival with its original town and operation ID", async () => {
+    primeMocks();
+    const pending = {
+      operationId: "fab21f5d-7f89-4382-9520-24a5b4f558d5",
+      sessionId: "saved-session",
+      townId: "dust-fork",
+    };
+    window.localStorage.setItem("wild-bunch.current-game-id", pending.sessionId);
+    window.localStorage.setItem(
+      `wild-bunch.pending-first-arrival:${pending.sessionId}`,
+      JSON.stringify(pending),
+    );
+    mockedGetGame.mockResolvedValue(createSession({ id: pending.sessionId, startFlowPhase: 2 }));
+    mockedStartGameWithTown.mockResolvedValue(
+      createSession({ id: pending.sessionId, startFlowPhase: 4 }),
+    );
+
+    renderSurface();
+
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(phaserMockState.games.length).toBeGreaterThan(0));
+    phaserMockState.games[0].config.scene.selectTown(pending.townId);
+
+    await waitFor(() => expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1));
+    expect(mockedStartGameWithTown).toHaveBeenCalledWith(
+      pending.sessionId,
+      { startingTownId: pending.townId },
+      pending.operationId,
+    );
+    expect(
+      window.localStorage.getItem(`wild-bunch.pending-first-arrival:${pending.sessionId}`),
+    ).toBeNull();
+  });
+
+  it("keeps a definitive first-arrival conflict when the server already shows a started game", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    renderSurface();
+
+    await user.type(await screen.findByLabelText(/your name/i), "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+    await screen.findByRole("heading", { name: /the story so far/i });
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+    await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 });
+    await waitFor(() => expect(phaserMockState.games.length).toBeGreaterThan(0));
+
+    const conflict = new HttpRequestError("The starting town can only be selected once.", 409);
+    mockedStartGameWithTown.mockRejectedValue(conflict);
+    mockedGetGame.mockResolvedValue(createSession({ id: "game-1", startFlowPhase: 4 }));
+    phaserMockState.games[0].config.scene.selectTown("t-town");
+
+    expect(await screen.findByText(conflict.message)).toBeInTheDocument();
+    expect(screen.queryByText(/new game started/i)).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("wild-bunch.pending-first-arrival:game-1")).toBeNull();
   });
 
   it("keeps a name-only quick start on defaults and submits the visit seed", async () => {

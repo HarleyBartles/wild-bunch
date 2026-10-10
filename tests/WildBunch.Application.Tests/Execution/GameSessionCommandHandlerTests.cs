@@ -1,6 +1,7 @@
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Execution;
 using WildBunch.Application.Games.Exceptions;
+using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
@@ -170,6 +171,11 @@ public sealed class GameSessionCommandHandlerTests
         public Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<GameSession>>(_sessions.Values.Where(s => s.Status == status).ToArray());
 
+        public Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken ct = default)
+            => Task.FromResult<StartupOperation?>(null);
+
+        public void StoreStartupOperation(StartupOperation operation) { }
+
         public Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken ct = default)
         {
             Attempts++;
@@ -213,6 +219,11 @@ public sealed class GameSessionCommandHandlerTests
 
         public Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<GameSession>>(_sessions.Values.Where(s => s.Status == status).ToArray());
+
+        public Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken ct = default)
+            => Task.FromResult<StartupOperation?>(null);
+
+        public void StoreStartupOperation(StartupOperation operation) { }
 
         public Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken ct = default)
             => throw new ConcurrencyException(session.Id, 0, 1);

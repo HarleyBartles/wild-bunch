@@ -16,6 +16,7 @@
 
 - `Directory.Build.props` remains the only authored application version source; this PR uses `0.1.0-dev.68`.
 - Setup creates a session only when no active playthrough exists. It never archives or otherwise changes an active session. Confirmed Start Over archives first as its own event-backed operation; replacement setup follows separately.
+- The current anonymous deployment enforces at most one active session globally with a PostgreSQL partial unique index, including concurrent distinct setup operations. This is a temporary pre-ownership boundary, not the per-user rule in ADR-0042.
 - A setup retry with the same operation ID and same canonical request returns the same session. Reusing that ID with a different request conflicts. A different operation ID while an active session exists conflicts without mutating it.
 - First arrival remains one atomic command that selects the town and completes the free arrival. A same-ID, same-request retry returns the original session state without appending events. Reusing the ID with a different town conflicts; a new ID after arrival conflicts even when the town is unchanged.
 - A persisted operation record contains no game facts and does not replace event replay. Do not store a serialized response that becomes stale after later gameplay.
@@ -64,8 +65,8 @@
 
 **Files:**
 - Create: Application startup-operation model/repository abstraction and Persistence EF entity/configuration.
-- Modify: `src/WildBunch.Persistence/WildBunchDbContext.cs`, `EfGameSessionUnitOfWork.cs`, service registration and model snapshot.
-- Create: a forward EF migration for the startup-operation table and unique operation-ID constraint.
+- Modify: `src/WildBunch.Persistence/WildBunchDbContext.cs`, `GameSessionEntityConfiguration.cs`, `EfGameSessionUnitOfWork.cs`, service registration and model snapshot.
+- Create: forward EF migrations for startup-operation persistence and the race-safe single-active-session constraint.
 - Modify: setup and game-start command records/handlers and API endpoints in `src/WildBunch.Api/Games/GameSessionEndpoints.cs`.
 - Replace: `tests/WildBunch.Application.Tests/Handlers/CompletePlayerSetupOneActivePlaythroughTests.cs` behavior that protects setup auto-archival.
 - Add: falsifiable application and PostgreSQL integration behavior tests under the owning test projects.
@@ -74,17 +75,18 @@
 - Consumes: setup and game-start commands with operation identity, the existing event-sourced session repository and shared unit of work.
 - Produces: persisted operation lookup/add behavior, API conflict responses, and atomic event-plus-operation commits for setup/arrival.
 
-- [ ] Add failing behavior tests proving exact setup retry returns the same session with no duplicate events; changed payload under that key conflicts; and a distinct setup operation while active preserves the existing event stream and status.
-- [ ] Add failing behavior tests proving only an already committed `PlaythroughArchived` permits a new setup operation.
-- [ ] Add failing behavior tests proving exact arrival retry appends no events, changed town under the same operation ID conflicts, and a new operation after arrival conflicts even for the same town.
-- [ ] Add a failing PostgreSQL persistence test proving the operation record and event stream commit or roll back together and survive fresh context/load reconstruction.
-- [ ] Add a failing concurrent duplicate-operation test proving unique-key contention resolves to one operation and one event append; reload after the losing transaction using a clean tracker.
-- [ ] Implement a scoped `StartupOperation` record with ID, kind, canonical SHA-256 request fingerprint and session ID. Define canonicalization explicitly and include every semantic command input; exclude transport-only metadata.
-- [ ] Ensure the existing unit-of-work transaction commits receipt and event append atomically. Handle only the named operation-ID unique violation as an operation race, clear tracked state after rollback, and resolve the existing receipt; do not swallow unrelated database failures.
-- [ ] Require and validate an operation ID at the HTTP boundary. Missing/malformed IDs return 400; changed-payload reuse and illegal new operations return 409 without event mutation.
-- [ ] Make setup reject an active session instead of auto-archiving it. Preserve the existing archive event and start-over command as the only archive path.
-- [ ] Make first arrival reject a new operation after the phase transition. Resolve exact retries by operation receipt and return event-derived current session state, preserving the originally selected town in event history.
-- [ ] Run focused application and PostgreSQL integration tests, proving each new negative test fails before implementation and passes afterward.
+- [x] Add failing behavior tests proving exact setup retry returns the same session with no duplicate events; changed payload under that key conflicts; and a distinct setup operation while active preserves the existing event stream and status.
+- [x] Add failing behavior tests proving only an already committed `PlaythroughArchived` permits a new setup operation.
+- [x] Add failing behavior tests proving exact arrival retry appends no events, changed town under the same operation ID conflicts, and a new operation after arrival conflicts even for the same town.
+- [x] Add a failing PostgreSQL persistence test proving the operation record and event stream commit or roll back together and survive fresh context/load reconstruction.
+- [x] Add a failing concurrent duplicate-operation test proving unique-key contention resolves to one operation and one event append; reload after the losing transaction using a clean tracker.
+- [x] Implement a scoped `StartupOperation` record with ID, kind, canonical SHA-256 request fingerprint and session ID. Define canonicalization explicitly and include every semantic command input; exclude transport-only metadata.
+- [x] Ensure the existing unit-of-work transaction commits receipt and event append atomically. Handle only the named operation-ID unique violation as an operation race, clear tracked state after rollback, and resolve the existing receipt; do not swallow unrelated database failures.
+- [x] Require and validate an operation ID at the HTTP boundary. Missing/malformed IDs return 400; changed-payload reuse and illegal new operations return 409 without event mutation.
+- [x] Make setup reject an active session instead of auto-archiving it. Preserve the existing archive event and start-over command as the only archive path.
+- [x] Enforce the temporary anonymous global at-most-one-active-session rule in PostgreSQL so distinct concurrent setup operations cannot both succeed.
+- [x] Make first arrival reject a new operation after the phase transition. Resolve exact retries by operation receipt and return event-derived current session state, preserving the originally selected town in event history.
+- [x] Run focused application and PostgreSQL integration tests, proving each new negative test fails before implementation and passes afterward.
 
 ### Task 3: Make the browser retry the same pending setup and arrival
 
@@ -98,13 +100,13 @@
 - Consumes: server-required operation IDs and conflict/error contracts.
 - Produces: an operation ID per intentional setup/arrival action; a persisted pending setup containing that ID and exact form values; retry/resolution that cannot silently create another setup.
 
-- [ ] Add a failing browser behavior test proving a lost setup response followed by refresh resends the same operation ID and exact form payload, then adopts the resulting server session and clears pending state.
-- [ ] Add a failing browser behavior test proving a new setup visit with no pending submission generates a fresh seed and a new operation ID.
-- [ ] Add a failing browser behavior test proving an uncertain setup result retains the pending operation and blocks a second intentional setup until resolution; definitive validation errors allow correction with a new operation.
-- [ ] Add a failing browser behavior test proving first-arrival retry uses the same ID/town after uncertainty and uses event-derived session state after success.
-- [ ] Implement the narrow pending-operation storage and HTTP transport. Keep all game facts in server responses and never infer success from error text.
-- [ ] Preserve the one-map semantic flow and existing saved-session bootstrap/reconciliation from PR #253.
-- [ ] Run focused web tests and the web command-bus target.
+- [x] Add a failing browser behavior test proving a lost setup response followed by refresh resends the same operation ID and exact form payload, then adopts the resulting server session and clears pending state.
+- [x] Add a failing browser behavior test proving a new setup visit with no pending submission generates a fresh seed and a new operation ID.
+- [x] Add a failing browser behavior test proving an uncertain setup result retains the pending operation and blocks a second intentional setup until resolution; definitive validation errors allow correction with a new operation.
+- [x] Add a failing browser behavior test proving first-arrival retry uses the same ID/town after uncertainty and uses event-derived session state after success.
+- [x] Implement the narrow pending-operation storage and HTTP transport. Keep all game facts in server responses and never infer success from error text.
+- [x] Preserve the one-map semantic flow and existing saved-session bootstrap/reconciliation from PR #253.
+- [x] Run focused web tests and the web command-bus target.
 
 ### Task 4: Reconcile evidence and deliver the slice
 
@@ -117,8 +119,8 @@
 - Consumes: committed source, focused and full validation, independent whole-branch review, exact PR head and hosted gate.
 - Produces: reviewed `.68` PR to `develop`, with operation retry and lifecycle evidence and no broadened account or infrastructure scope.
 
-- [ ] Ensure the local PostgreSQL cluster with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`; run focused persistence/API/web tests, then the canonical `py -3 tools/run.py ci --check` gate.
-- [ ] Inspect generated migration and fresh-database behavior; do not claim proof from a stale local schema. Preserve the migration chain.
+- [x] Ensure the local PostgreSQL cluster with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`; run focused persistence/API/web tests, then the canonical `py -3 tools/run.py ci --check` gate.
+- [x] Inspect generated migrations and fresh-database behavior; do not claim proof from a stale local schema. Preserve the migration chain.
 - [ ] Review the full diff for strict CQRS, event-only game truth, transaction atomicity, unsafe retries, stale predecessor references, and change-detector tests. Correct issues and rerun relevant tests.
 - [ ] Run an independent whole-branch review, address findings, and commit with the check-only hook.
 - [ ] Publish the PR to `develop`, verify the exact source SHA and clean mergeability, make it ready for hosted CI, require the canonical hosted gate to pass on that exact SHA, then merge.

@@ -2,6 +2,7 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Projections;
+using WildBunch.Application.Games.Commands;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
@@ -13,6 +14,8 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
     private readonly Dictionary<GameSessionId, GameSession> _sessions = new();
     private readonly Dictionary<GameSessionId, GameSession> _pendingSessions = new();
     private readonly Dictionary<GameSessionId, List<IDomainEvent>> _eventStreams = new();
+    private readonly Dictionary<Guid, StartupOperation> _startupOperations = new();
+    private readonly Dictionary<Guid, StartupOperation> _pendingStartupOperations = new();
 
     public int StoreCalls { get; private set; }
 
@@ -46,6 +49,17 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
     {
         var matching = _sessions.Values.Where(s => s.Status == status).ToArray();
         return Task.FromResult<IReadOnlyList<GameSession>>(matching);
+    }
+
+    public Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken cancellationToken = default)
+    {
+        _startupOperations.TryGetValue(operationId, out var operation);
+        return Task.FromResult(operation);
+    }
+
+    public void StoreStartupOperation(StartupOperation operation)
+    {
+        _pendingStartupOperations.Add(operation.OperationId, operation);
     }
 
     Task<GameSessionReadModel?> IGameSessionReadRepository.GetByIdAsync(GameSessionId id, CancellationToken cancellationToken)
@@ -142,7 +156,13 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             _sessions[pending.Key] = pending.Value;
         }
 
+        foreach (var operation in _pendingStartupOperations)
+        {
+            _startupOperations[operation.Key] = operation.Value;
+        }
+
         _pendingSessions.Clear();
+        _pendingStartupOperations.Clear();
         return Task.CompletedTask;
     }
 

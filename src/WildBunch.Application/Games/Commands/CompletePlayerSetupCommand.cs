@@ -9,6 +9,7 @@ namespace WildBunch.Application.Games.Commands;
 /// </summary>
 public sealed record CompletePlayerSetupCommand
 {
+    public required Guid OperationId { get; init; }
     public required string PlayerName { get; init; }
     public required GameDifficulty GameDifficulty { get; init; }
     public required GameEntropy GameEntropy { get; init; }

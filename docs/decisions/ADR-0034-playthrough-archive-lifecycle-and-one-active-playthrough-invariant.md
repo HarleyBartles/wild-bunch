@@ -9,6 +9,7 @@
 - `2026-06-27` - Chose an event-backed archive state that preserves an abandoned playthrough instead of deleting it; the initial single-player flow also aimed to leave one active playthrough after starting another.
 - `2026-10-08` - Factual correction and partial supersession: the current setup path archives sessions it finds active, but the database does not enforce a global uniqueness constraint and per-stream concurrency does not prove a global one-active guarantee. ADR-0042 establishes the planned per-user invariant and immediate start-over archival.
 - `2026-10-10` - Corrected the implementation-shaped setup behavior: setup must reject while a playthrough is active and must not archive it. Only the separately confirmed Start Over operation archives; creating the replacement is a later operation. This correction supersedes the setup-path behavior described below, while preserving event-backed terminal archival and retained history.
+- `2026-10-10` - Persistence correction: while the game remains anonymous, PostgreSQL now enforces one active playthrough globally, including concurrent distinct setup requests. This is a temporary pre-ownership constraint; it does not implement ADR-0042's planned per-user ownership or lifecycle.
 
 ## Decision Type
 
@@ -28,7 +29,7 @@ Starting over should retire the current playthrough without erasing the record o
 
 Archival is a durable lifecycle change recorded by a `PlaythroughArchived` event. An archived playthrough remains in history and cannot become active again under this decision. Archival is not deletion.
 
-The original single-player rule intended at most one active playthrough in the application store. The implementation described in the 2026-10-08 history note staged archival of sessions it found active alongside the new session, but this was application-level behavior and the database did not enforce global uniqueness across competing starts. The 2026-10-10 correction supersedes that setup behavior: setup rejects while a playthrough is active, and only confirmed Start Over archives. ADR-0042 replaces the global description with the accepted, planned per-user invariant and requires confirmed start-over to archive immediately, independently of whether a replacement is created.
+The original single-player rule intended at most one active playthrough in the application store. The implementation described in the 2026-10-08 history note staged archival of sessions it found active alongside the new session, but this was application-level behavior and the database did not enforce global uniqueness across competing starts. The 2026-10-10 correction supersedes that setup behavior: setup rejects while a playthrough is active, and only confirmed Start Over archives. The anonymous application now enforces this temporary global limit with a PostgreSQL partial unique index, including concurrent distinct setup operations. ADR-0042 remains the planned per-user ownership and active-playthrough rule; this temporary index is not user-scoped enforcement.
 
 ## Rationale and Alternatives
 
@@ -36,7 +37,7 @@ Deleting an abandoned playthrough would destroy its event history and prevent la
 
 ## Consequences
 
-An archive event remains part of the session's history and replay. The current source path does not establish race-safe global uniqueness; do not treat its query-and-archive sequence as a database guarantee. Ownership and active-session selection for hosted play follow the planned user-scoped decision in ADR-0042.
+An archive event remains part of the session's history and replay. The PostgreSQL index guarantees at most one active session in the current anonymous application. Ownership and active-session selection for hosted play follow the planned user-scoped decision in ADR-0042.
 
 ## Successors and Surviving Scope
 

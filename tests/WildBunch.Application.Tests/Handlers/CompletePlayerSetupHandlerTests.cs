@@ -20,6 +20,7 @@ public sealed class CompletePlayerSetupHandlerTests
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
             SeedCode = "00000000-0000-0000-0000-000000000000",
@@ -44,6 +45,7 @@ public sealed class CompletePlayerSetupHandlerTests
 
         await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Easy,
             SeedCode = "00000000-0000-0000-0000-000000000000",
@@ -62,6 +64,7 @@ public sealed class CompletePlayerSetupHandlerTests
 
         await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
             SeedCode = "00000000-0000-0000-0000-000000000000",
@@ -80,6 +83,7 @@ public sealed class CompletePlayerSetupHandlerTests
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
             SeedCode = "00000000-0000-0000-0000-000000000000",

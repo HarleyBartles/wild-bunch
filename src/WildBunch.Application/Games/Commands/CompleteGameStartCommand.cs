@@ -8,6 +8,7 @@ namespace WildBunch.Application.Games.Commands;
 /// </summary>
 public sealed record CompleteGameStartCommand
 {
+    public required Guid OperationId { get; init; }
     public required GameSessionId SessionId { get; init; }
     public required string StartingTownId { get; init; }
 }

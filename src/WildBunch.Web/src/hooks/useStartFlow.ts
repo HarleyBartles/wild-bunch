@@ -1,6 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { GameEntropy, GameSessionDto, GameDifficulty } from "../api/types";
 import { useStartGameSeed } from "./useStartGameSeed";
+import { readPendingFirstArrivalOperation } from "../utils/startupOperationStorage";
 
 export type StartFlowStep = "name" | "story" | "town" | "creating";
 
@@ -35,6 +36,12 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
   const seed = useStartGameSeed({ session, resetToken });
   const [step, setStep] = useState<StartFlowStep>("name");
   const [selectedTownId, setSelectedTownId] = useState<string | null>(null);
+  const sessionId = session?.id;
+
+  useEffect(() => {
+    if (!sessionId) return;
+    setSelectedTownId(readPendingFirstArrivalOperation(sessionId)?.townId ?? null);
+  }, [sessionId]);
 
   const advance = useCallback(() => {
     setStep((current) => {

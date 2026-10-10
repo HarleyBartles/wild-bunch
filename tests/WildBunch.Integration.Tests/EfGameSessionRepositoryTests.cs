@@ -1347,6 +1347,7 @@ public sealed class EfGameSessionRepositoryTests
         }
 
         var orphanSession = CreateJourneyHistorySession();
+        orphanSession.ArchivePlaythrough("test-orphan-session");
         await PersistAsync(repairRepository, repairUnitOfWork, orphanSession);
         var orphanPayload = repairedRows[0].PayloadJson;
         await using (var context = fixture.CreateContext())
@@ -2091,6 +2092,7 @@ public sealed class EfGameSessionRepositoryTests
         var citizenSpot = Assert.Single(citizenSession.AllEvents.OfType<SaloonPersonOfInterestSpotted>());
         Assert.Null(citizenSpot.SuspectId);
         Assert.Equal(SaloonPersonOfInterestKind.Citizen, citizenSpot.PersonOfInterestKind);
+        citizenSession.ArchivePlaythrough("test-citizen-session");
         await PersistAsync(CreateRepository(fixture, out var citizenUnitOfWork), citizenUnitOfWork, citizenSession);
         var citizenReload = await CreateRepository(fixture, out _).GetByIdAsync(citizenSession.Id);
         Assert.NotNull(citizenReload);
