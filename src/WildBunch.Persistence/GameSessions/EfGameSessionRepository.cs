@@ -419,6 +419,13 @@ public sealed class EfGameSessionRepository : IGameSessionRepository
     {
         var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Player));
         var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.World));
+        if (!WorldCacheRecovery.MatchesGeneratedWorld(store.AllEvents, world, _serializer))
+        {
+            throw new InvalidRequiredComponentCacheShapeException(
+                GameSessionComponentNames.World,
+                "the cached world does not match its WorldGenerated event.");
+        }
+
         var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.CaseFile));
         var clock = _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Clock));
         var pursuitState = _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.PursuitState));

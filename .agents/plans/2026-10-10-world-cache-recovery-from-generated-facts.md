@@ -35,10 +35,10 @@
 
 **Files:** Modify `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` and `Directory.Build.props`; delete `.agents/plans/2026-10-10-malformed-diary-cache-recovery.md`; create this plan.
 
-- [ ] Confirm PR #237’s exact source and merge SHAs and both hosted gate runs above.
-- [ ] Record `.52` delivery and this selected PS-04 World-cache consistency slice in row 07 and the roadmap dated delivery history.
-- [ ] Retire the completed `.52` plan and advance the single authored application version to `0.1.0-dev.53`.
-- [ ] Commit the planning handoff before editing source or tests.
+- [x] Confirm PR #237’s exact source and merge SHAs and both hosted gate runs above.
+- [x] Record `.52` delivery and this selected PS-04 World-cache consistency slice in row 07 and the roadmap dated delivery history.
+- [x] Retire the completed `.52` plan and advance the single authored application version to `0.1.0-dev.53`.
+- [x] Commit the planning handoff before editing source or tests (`beaaad9`).
 
 **Expected:** The roadmap points to this committed plan, records verified `.52` delivery, and the plan states a bounded implementation and proof contract.
 
@@ -46,21 +46,21 @@
 
 **Files:** Modify `src/WildBunch.Persistence/GameSessions/EfGameSessionRepository.cs` and `src/WildBunch.Persistence/GameSessions/GameSessionReadStoreLoader.cs`; create `src/WildBunch.Persistence/GameSessions/WorldCacheRecovery.cs` and add a focused behavior test to `tests/WildBunch.Integration.Tests/EfGameSessionRepositoryTests.cs`.
 
-- [ ] Create a normal event-backed session with at least two generated towns, multiple trails and a town layout, then change only the current-version `world` component JSON so one recorded trail is missing while the JSON remains valid.
-- [ ] Before changing production code, load through fresh command, player and journal repository scopes. Confirm the current implementation returns the incomplete cached world and that the new assertion fails because the event-established trail or layout facts are absent or altered.
-- [ ] Add `WorldCacheRecovery.MatchesGeneratedWorld(IReadOnlyList<IDomainEvent> events, World world, GameSessionJsonSerializer serializer)`. It requires one `WorldGenerated` event and compares its recorded `WorldSnapshot` with `WorldSnapshot.FromDomain(world)` using the serializer’s existing canonical World JSON shape. This includes towns, trails, IDs, routes, enums, dimensions, layouts, nullable layout fields and tile-grid values; do not use a generic reflection comparator.
-- [ ] Route a mismatch through the existing event replay path in both command and player-read loaders. Do not catch event decode, upcasting or projector errors as cache failures.
-- [ ] Assert command and player/journal reads return the complete event-established map and layouts, and that rows, component version/payload, envelope stream/snapshot versions and stored event identities/types/payloads/versions remain unchanged on reads.
-- [ ] Perform one ordinary legal command and unit-of-work save from the recovered aggregate; use a fresh scope to assert the stored World component now contains the full event-established map and legal continuation remains possible.
-- [ ] Add an invalid-WorldGenerated-history negative with a damaged component and prove the original event-history failure escapes rather than being replaced by a cache-recovery result.
+- [x] Create an event-backed session with four towns, three trails and populated town layouts, then remove one trail from the current-version `world` component JSON while keeping the JSON valid.
+- [x] Before production changes, prove the new PostgreSQL regression fails because the player read returns the incomplete cached world.
+- [x] Add `WorldCacheRecovery.MatchesGeneratedWorld(IReadOnlyList<IDomainEvent> events, World world, GameSessionJsonSerializer serializer)`. It requires one `WorldGenerated` event and compares its recorded World snapshot with the decoded cache through the serializer’s canonical World JSON shape, including ordered towns and trails, maps, town layouts, nullable layout data, salts and tile grids.
+- [x] Route a mismatch through existing event replay in both command and player-read loaders. Event decoding, upcasting and projection failures remain outside cache recovery.
+- [x] Assert command, player and journal reads preserve the complete event-established world and leave every component row, diary row, envelope watermark and stored event identity/type/payload/version unchanged.
+- [x] Perform one ordinary food purchase and unit-of-work save from the recovered aggregate; a fresh load and stored component confirm the full World cache is repaired and play can continue.
+- [x] Add an invalid `WorldGenerated` JSON negative with a damaged World component and prove the authoritative event decode error escapes; both new PostgreSQL tests pass, and the recovery assertion failed before the fix at the missing-world comparison.
 
-**Expected:** The focused PostgreSQL tests fail before the fix for the returned missing trail and pass after it. A structurally valid but inconsistent World cache is read-only recovered from the recorded fact and repaired only by normal save. Matching World caches keep the existing fast path.
+**Expected:** The focused PostgreSQL tests fail before the fix for the returned missing trail and pass after it. A structurally valid but inconsistent World cache is read-only recovered from the recorded fact and repaired only by normal save. World equality includes the serializer's complete current payload shape.
 
 ### Task 3: Verify, review and publish the slice
 
 **Files:** All implementation and planning paths in Tasks 1-2.
 
-- [ ] Run `dotnet test tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter FullyQualifiedName~WorldCacheRecovery` and adjacent event replay/cache recovery coverage. Start shared PostgreSQL with `tools/postgres-dev.ps1 ensure` and run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; no migration is expected.
+- [x] Run focused `WorldCacheRecovery` and adjacent cache recovery/replay coverage (18 passed). Run `dotnet ef migrations list --project src/WildBunch.Persistence --startup-project src/WildBunch.Api`; this slice adds no migration. The local database reports two already-pending migrations (`AddTravelDiaryProjectionWatermark`, `RetireUnusedSessionSchemaArtifacts`), which are unchanged by this slice.
 - [ ] Review the complete branch against `develop`, event-sourcing doctrine, ADR-0028 and this plan; resolve all Critical and Important findings with witnessed RED/GREEN cycles. If fresh reviewer dispatch remains unavailable, disclose the author self-review fallback.
 - [ ] Let the normal check-only pre-commit hook run the canonical staged-candidate gate for each implementation commit; do not rerun the full local gate immediately before or after a successful hooked commit. Hosted CI must pass on the exact PR head and on the develop merge commit.
 - [ ] Push and open a PR to `develop`; verify hosted CI passes for the exact PR head before merge, merge as authorized by the goal, then verify the exact develop push gate passes.
