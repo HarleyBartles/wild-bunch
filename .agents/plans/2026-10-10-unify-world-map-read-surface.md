@@ -41,30 +41,30 @@
 
 ## Task 2: Expose one Application/API world-map contract
 
-**Files:** `src/WildBunch.Application/Games/Queries/GetStartingTownMapHandler.cs`, `src/WildBunch.Application/Games/Queries/GetStartingTownMapQuery.cs`, `src/WildBunch.Application/Games/Queries/GetWorldMapHandler.cs`, `src/WildBunch.Application/Games/Queries/GetWorldMapQuery.cs`, `src/WildBunch.Application/Games/Queries/GetStartingTownsHandler.cs`, `src/WildBunch.Application/Games/Queries/GetStartingTownsQuery.cs`, `src/WildBunch.Application/Games/Models/StartingTownMapDto.cs`, `src/WildBunch.Application/Games/Models/WorldMapDto.cs`, `src/WildBunch.Application/Games/Models/StartingTownDto.cs`, `src/WildBunch.Api/Games/GameSessionEndpoints.cs`, `src/WildBunch.Api/DependencyInjection.cs`, `src/WildBunch.GameContent/NewGame/StartingTownCatalog.cs`, `src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs`, `src/WildBunch.GameContent/NewGame/SeedWorldMapLayout.cs`, `src/WildBunch.GameContent/NewGame/MapGenerator.cs`, `tests/WildBunch.Application.Tests/Handlers/GetWorldMapHandlerTests.cs`, `tests/WildBunch.Application.Tests/Handlers/GetStartingTownMapHandlerTests.cs`, `tests/WildBunch.Application.Tests/Handlers/GetStartingTownsHandlerTests.cs`, `tests/WildBunch.Integration.Tests/WorldMapEndpointTests.cs`, `tests/WildBunch.Integration.Tests/StartingTownMapEndpointTests.cs`, and `tests/WildBunch.Integration.Tests/ProjectionEndpointTests.cs`.
+**Files:** Application map queries and DTOs, API game endpoints and registrations, seeded-world map generation and static catalog, web map types and consumers, focused application/integration/browser tests, and `LICENSE-ASSETS.md`.
 
-- [ ] Rename the Application query, handler and response types to describe the session world map, then retain exactly one `GET /api/games/{id}/world-map` route backed by that use case.
-- [ ] Remove `GET /starting-towns` and `GET /{id}/starting-town-map` plus their handler registrations; `rg` confirms the static list has no runtime caller and the second route is an alias to the same handler.
-- [ ] Retire `StartingTownCatalog`, the canonical-world factory path and the parameterless map-town projection only if the complete consumer search still shows they exist solely for the removed static catalog; remove or correct comments that describe the obsolete start-screen world.
-- [ ] Retain the real missing-session and hidden-truth assertions on the supported world-map route; remove fixed map counts, duplicate-alias equality, and catalog-comparison tests that only restate the implementation.
-- [ ] Strengthen the Application handler test to compare the returned map towns/trails with the independently loaded setup session's generated `World`, including identities and coordinates, so a static canonical map cannot satisfy the test.
-- [ ] Update the existing PostgreSQL setup-to-start integration flow to get its selected town from `GET /world-map` before sending the existing start command; preserve the existing first-arrival behavior assertions and prove the route-read assertion fails if that setup read is unavailable.
-- [ ] Run the focused Application and PostgreSQL integration lanes; do not add a separate route-absence test or duplicate first-arrival test.
+- [x] Rename the Application query, handler and response types to describe the session world map, then retain exactly one `GET /api/games/{id}/world-map` route backed by that use case.
+- [x] Remove `GET /starting-towns` and `GET /{id}/starting-town-map` plus their handler registrations; `rg` confirms the static list has no runtime caller and the second route is an alias to the same handler.
+- [x] Retire `StartingTownCatalog` and the parameterless map-town projection; retain the canonical-world fixture used by starting-town policy tests and correct comments that described the obsolete start-screen world.
+- [x] Retain the real missing-session and hidden-truth assertions on the supported world-map route; remove fixed map counts, duplicate-alias equality, and catalog-comparison tests that only restate the implementation. Remove the retired catalog from the creative-content inventory.
+- [x] Strengthen the Application handler test to compare the returned map towns/trails with the independently loaded setup session's generated `World`, including identities and coordinates. The test failed when projection was mutated to use canonical coordinates, then passed after restoring the session-world projection.
+- [x] Update the existing PostgreSQL setup-to-start integration flow to get its selected town from `GET /world-map` before sending the existing start command; assert the session map remains the same after start. The test failed when the map route was temporarily renamed, then passed after restoration.
+- [x] Run the focused Application and PostgreSQL integration lanes; no route-absence or duplicate first-arrival test was added.
 
 ## Task 3: Make both browser flows consume the shared map
 
 **Files:** `src/WildBunch.Web/src/api/types.ts`, `src/WildBunch.Web/src/api/wildBunchApi.ts`, `src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx`, `src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx`, `src/WildBunch.Web/src/flow/TravelPrepSurface.tsx`, `src/WildBunch.Web/src/tests/StartingTownStep.test.tsx`, `src/WildBunch.Web/src/tests/PhaserMapHost.test.tsx`, `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx`, `src/WildBunch.Web/src/tests/StartFlow.test.tsx`, and any test mocks that still name the retired client functions.
 
-- [ ] Use the single `WorldMapDto`/world-map client for starting-town selection and travel; give both React Query reads the same `world-map` key scoped by session ID.
-- [ ] Rename the shared map scene/type to `WorldMap` where the current `StartingTownMap` name claims the wrong lifecycle; keep the existing Phaser rendering and phase-specific selectable-town rules unchanged.
-- [ ] Remove `getStartingTownMap`, `getStartingTowns`, and test-only mocks/imports that have no remaining runtime consumer.
-- [ ] Preserve player-visible setup selection and travel destination behavior with focused component tests against the same map DTO; do not assert source names or query-key strings as a substitute for behavior.
-- [ ] Run the web type-check and focused map/start/travel tests, confirming no setup component requests the retired catalog or duplicate route.
+- [x] Use the single `WorldMapDto`/world-map client for starting-town selection and travel; both React Query reads share the `world-map` key scoped by session ID.
+- [x] Rename the shared map scene/type to `WorldMap` where the current `StartingTownMap` name claims the wrong lifecycle; preserve existing Phaser rendering and phase-specific selectable-town rules.
+- [x] Remove `getStartingTownMap`, `getStartingTowns`, and test-only mocks/imports that have no remaining runtime consumer.
+- [x] Preserve player-visible setup selection and travel destination behavior with existing component tests against the shared map DTO; no source-name or query-key assertion substitutes for behavior.
+- [x] Run the web format/lint/type-check/test/build lane: 42 files and 302 tests passed; production build succeeded. No setup component requests the retired catalog or duplicate route.
 
 ## Task 4: Review and publish the slice
 
-- [ ] Run focused Application, Integration and Web tests, then run `py -3 tools/run.py ci --check` on the intended staged/committed candidate; ensure the shared PostgreSQL service is healthy before integration tests.
-- [ ] Compare the final diff with ADR-0039, PG-003 and the row 08 specification; confirm whether any feature-matrix or ADR update is required and record the answer in the plan review checklist.
+- [ ] Run `py -3 tools/run.py ci --check` on the intended staged/committed candidate; the focused Application, Integration and Web lanes have passed and PostgreSQL was healthy.
+- [ ] Compare the final diff with ADR-0039, PG-003 and the row 08 specification; record that the slice implements ADR-0039 and PG-003 without changing their durable decision or feature promise, so neither ADR nor feature matrix requires an update.
 - [ ] Perform a fresh whole-branch review against the final plan, applicable backend/web/code-review profiles, actual ADRs, and feature matrix; resolve Critical/Important findings and re-review the resulting head.
 - [ ] Publish a Draft PR to `develop`, verify its exact head and scope, set it ready for hosted checks, and wait for the exact-head canonical gate to pass.
 - [ ] Merge to `develop` only after the required review and exact-head gate pass; verify the develop push gate on the merge commit, then update the roadmap with the source SHA, merge SHA, both run IDs and the next row 08 target in the next substantive successor slice.

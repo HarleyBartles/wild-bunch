@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { StartingTownStep } from "../components/start-flow/StartingTownStep";
-import { getStartingTownMap } from "../api/wildBunchApi";
-import type { StartingTownMapDto } from "../api/types";
+import { getWorldMap } from "../api/wildBunchApi";
+import type { WorldMapDto } from "../api/types";
 
 vi.mock("phaser", () => {
   class Game {
@@ -24,17 +24,17 @@ vi.mock("phaser", () => {
 });
 
 vi.mock("../api/wildBunchApi", () => ({
-  getStartingTownMap: vi.fn(),
+  getWorldMap: vi.fn(),
 }));
 
-const mockedGetStartingTownMap = vi.mocked(getStartingTownMap);
+const mockedGetWorldMap = vi.mocked(getWorldMap);
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
 
-function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTownMapDto {
+function createMapData(overrides: Partial<WorldMapDto> = {}): WorldMapDto {
   return {
     towns: [
       { id: "t-town", name: "Tumbleweed", x: 150, y: 500 },
@@ -76,7 +76,7 @@ function renderStep(
 
 describe("StartingTownStep", () => {
   it("renders towns fetched from the backend", async () => {
-    mockedGetStartingTownMap.mockResolvedValue(createMapData());
+    mockedGetWorldMap.mockResolvedValue(createMapData());
 
     renderStep();
 
@@ -86,7 +86,7 @@ describe("StartingTownStep", () => {
   });
 
   it("renders the Phaser map host", async () => {
-    mockedGetStartingTownMap.mockResolvedValue(createMapData());
+    mockedGetWorldMap.mockResolvedValue(createMapData());
 
     renderStep();
 
@@ -96,7 +96,7 @@ describe("StartingTownStep", () => {
   });
 
   it("shows the loading state copy while the map is fetching", () => {
-    mockedGetStartingTownMap.mockReturnValue(new Promise(() => {}));
+    mockedGetWorldMap.mockReturnValue(new Promise(() => {}));
 
     renderStep();
 
@@ -104,7 +104,7 @@ describe("StartingTownStep", () => {
   });
 
   it("shows the loading state copy when the fetch resolves to an empty town list", async () => {
-    mockedGetStartingTownMap.mockResolvedValue({ towns: [], trails: [] });
+    mockedGetWorldMap.mockResolvedValue({ towns: [], trails: [] });
 
     renderStep();
 
@@ -114,7 +114,7 @@ describe("StartingTownStep", () => {
   });
 
   it("renders the heading copy from the copy doc", async () => {
-    mockedGetStartingTownMap.mockResolvedValue(createMapData());
+    mockedGetWorldMap.mockResolvedValue(createMapData());
 
     renderStep();
 
@@ -124,7 +124,7 @@ describe("StartingTownStep", () => {
   });
 
   it("renders the body copy from the copy doc", async () => {
-    mockedGetStartingTownMap.mockResolvedValue(createMapData());
+    mockedGetWorldMap.mockResolvedValue(createMapData());
 
     renderStep();
 
@@ -141,7 +141,7 @@ describe("StartingTownStep", () => {
   });
 
   it("does not render a Back button", async () => {
-    mockedGetStartingTownMap.mockResolvedValue(createMapData());
+    mockedGetWorldMap.mockResolvedValue(createMapData());
 
     renderStep();
 
@@ -150,7 +150,7 @@ describe("StartingTownStep", () => {
   });
 
   it("renders the map legend copy below the map", async () => {
-    mockedGetStartingTownMap.mockResolvedValue(createMapData());
+    mockedGetWorldMap.mockResolvedValue(createMapData());
 
     renderStep();
 

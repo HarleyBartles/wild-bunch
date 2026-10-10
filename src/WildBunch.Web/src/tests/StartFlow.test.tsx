@@ -10,8 +10,7 @@ import {
   getAvailableActions,
   getJournal,
   getPrologue,
-  getStartingTowns,
-  getStartingTownMap,
+  getWorldMap,
   setupGame,
   markPrologueViewed,
   startGameWithTown,
@@ -63,8 +62,7 @@ vi.mock("../api/wildBunchApi", () => ({
   acknowledgeTravelArrival: vi.fn(),
   advanceTravelDay: vi.fn(),
   getPrologue: vi.fn(),
-  getStartingTowns: vi.fn(),
-  getStartingTownMap: vi.fn(),
+  getWorldMap: vi.fn(),
 }));
 
 const mockedSetupGame = vi.mocked(setupGame);
@@ -74,8 +72,7 @@ const mockedGetGame = vi.mocked(getGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetPrologue = vi.mocked(getPrologue);
-const mockedGetStartingTowns = vi.mocked(getStartingTowns);
-const mockedGetStartingTownMap = vi.mocked(getStartingTownMap);
+const mockedGetWorldMap = vi.mocked(getWorldMap);
 
 beforeAll(async () => {
   // Preload the lazy town-selection step so it resolves quickly during
@@ -194,11 +191,7 @@ function primeMocks() {
     primaryAction: "Ride on",
     variantId: "variant-1",
   });
-  mockedGetStartingTowns.mockResolvedValue([
-    { id: "t-town", name: "Tumbleweed" },
-    { id: "dust-fork", name: "Dust Fork" },
-  ]);
-  mockedGetStartingTownMap.mockResolvedValue({
+  mockedGetWorldMap.mockResolvedValue({
     towns: [
       { id: "t-town", name: "Tumbleweed", x: 150, y: 500 },
       { id: "dust-fork", name: "Dust Fork", x: 450, y: 400 },

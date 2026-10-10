@@ -717,26 +717,21 @@ export interface PrologueDto {
   variantId: string;
 }
 
-export interface StartingTownDto {
-  id: string;
-  name: string;
-}
-
-export interface StartingTownMapTownDto {
+export interface WorldMapTownDto {
   id: string;
   name: string;
   x: number;
   y: number;
 }
 
-export interface StartingTownMapTrailDto {
+export interface WorldMapTrailDto {
   id: string;
   fromTownId: string;
   toTownId: string;
   rideDayDistance: number;
 }
 
-export interface StartingTownMapDto {
-  towns: StartingTownMapTownDto[];
-  trails: StartingTownMapTrailDto[];
+export interface WorldMapDto {
+  towns: WorldMapTownDto[];
+  trails: WorldMapTrailDto[];
 }

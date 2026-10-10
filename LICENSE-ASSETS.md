@@ -30,7 +30,6 @@ The following files and directories were inspected and identified as containing 
 - `src/WildBunch.GameContent/NewGame/SeedWorld.cs`
 - `src/WildBunch.GameContent/NewGame/SeedWorldFactory.cs`
 - `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs`
-- `src/WildBunch.GameContent/NewGame/StartingTownCatalog.cs`
 - `src/WildBunch.GameContent/NewGame/StartingWorldDescriptorCodeValidator.cs`
 - `src/WildBunch.GameContent/NewGame/TownLayoutGenerator.cs`
 - `src/WildBunch.Domain/Game/BeatNarration.cs`

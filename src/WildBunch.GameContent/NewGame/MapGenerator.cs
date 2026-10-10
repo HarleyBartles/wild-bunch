@@ -101,8 +101,7 @@ internal static class MapGenerator
 
         // Town is a sealed record — with-expressions produce new Town instances with layouts.
         // World is a sealed class (not a record) — construct a new World with the modified
-        // towns and the existing trails. Layouts are gameplay-only: the canonical start-screen
-        // world (CreateCanonicalWorld) does not go through MapGenerator and needs no layouts.
+        // towns and the existing trails. Layouts are gameplay-only and are attached to each generated session world.
         var entropyPolicy = EntropyPolicy.For(entropy);
         var townsWithLayouts = world.Towns.Select((town, index) =>
             {

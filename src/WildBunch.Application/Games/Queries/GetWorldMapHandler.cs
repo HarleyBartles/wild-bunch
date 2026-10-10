@@ -6,16 +6,16 @@ using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.Application.Games.Queries;
 
-public sealed class GetStartingTownMapHandler
+public sealed class GetWorldMapHandler
 {
     private readonly IGameSessionRepository _gameSessionRepository;
 
-    public GetStartingTownMapHandler(IGameSessionRepository gameSessionRepository)
+    public GetWorldMapHandler(IGameSessionRepository gameSessionRepository)
     {
         _gameSessionRepository = gameSessionRepository;
     }
 
-    public async Task<StartingTownMapDto> HandleAsync(GetStartingTownMapQuery query, CancellationToken cancellationToken = default)
+    public async Task<WorldMapDto> HandleAsync(GetWorldMapQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
 
@@ -27,10 +27,8 @@ public sealed class GetStartingTownMapHandler
             throw new GameSessionNotFoundException(sessionId);
         }
 
-        // The world already carries the coordinates from the map generation pipeline.
-        // No layout palette lookup is needed.
         var towns = SeedWorldMapLayout.GetMapTowns(session.World)
-            .Select(town => new StartingTownMapTownDto(
+            .Select(town => new WorldMapTownDto(
                 town.Id,
                 town.Name,
                 town.X,
@@ -38,13 +36,13 @@ public sealed class GetStartingTownMapHandler
             .ToArray();
 
         var trails = SeedWorldMapLayout.GetMapTrails(session.World)
-            .Select(trail => new StartingTownMapTrailDto(
+            .Select(trail => new WorldMapTrailDto(
                 trail.Id,
                 trail.FromTownId,
                 trail.ToTownId,
                 trail.RideDayDistance))
             .ToArray();
 
-        return new StartingTownMapDto(towns, trails);
+        return new WorldMapDto(towns, trails);
     }
 }

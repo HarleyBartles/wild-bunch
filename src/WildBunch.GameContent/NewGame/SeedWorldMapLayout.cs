@@ -17,12 +17,6 @@ public static class SeedWorldMapLayout
             .ToArray();
     }
 
-    public static IReadOnlyList<SeedMapTown> GetMapTowns()
-    {
-        var world = SeedWorldFactory.CreateCanonicalWorld();
-        return GetMapTowns(world);
-    }
-
     public static IReadOnlyList<SeedMapTrailEdge> GetMapTrails(World world)
     {
         return world.Trails

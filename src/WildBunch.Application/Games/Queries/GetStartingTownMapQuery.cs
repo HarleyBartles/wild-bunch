@@ -1,3 +1,0 @@
-namespace WildBunch.Application.Games.Queries;
-
-public sealed record GetStartingTownMapQuery(Guid SessionId);

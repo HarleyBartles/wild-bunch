@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import { PhaserMapHost, StartingTownMapScene } from "../components/start-flow/PhaserMapHost";
-import type { StartingTownMapDto } from "../api/types";
+import { PhaserMapHost, WorldMapScene } from "../components/start-flow/PhaserMapHost";
+import type { WorldMapDto } from "../api/types";
 import Phaser from "phaser";
 
 const mockState = vi.hoisted(() => ({
   games: [] as Array<{
-    config: { scene: StartingTownMapScene };
+    config: { scene: WorldMapScene };
     destroyed: boolean;
     destroy: () => void;
   }>,
@@ -37,7 +37,7 @@ afterEach(() => {
   mockState.games.length = 0;
 });
 
-function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTownMapDto {
+function createMapData(overrides: Partial<WorldMapDto> = {}): WorldMapDto {
   return {
     towns: [
       { id: "t-town", name: "Tumbleweed", x: 150, y: 500 },
@@ -51,7 +51,7 @@ function createMapData(overrides: Partial<StartingTownMapDto> = {}): StartingTow
 
 function renderHost(
   overrides: {
-    mapData?: StartingTownMapDto;
+    mapData?: WorldMapDto;
     selectedTownId?: string | null;
     onTownSelected?: (townId: string) => void;
   } = {},
@@ -114,7 +114,7 @@ describe("PhaserMapHost", () => {
     renderHost({ selectedTownId: "dust-fork" });
 
     const scene = mockState.games[0].config.scene;
-    expect(scene).toBeInstanceOf(StartingTownMapScene);
+    expect(scene).toBeInstanceOf(WorldMapScene);
     expect(scene.selectedTownId).toBe("dust-fork");
   });
 
@@ -134,7 +134,6 @@ describe("PhaserMapHost truth boundary", () => {
     expect((scene as unknown as Record<string, unknown>).api).toBeUndefined();
     expect((scene as unknown as Record<string, unknown>).requestJson).toBeUndefined();
     expect((scene as unknown as Record<string, unknown>).fetch).toBeUndefined();
-    expect((scene as unknown as Record<string, unknown>).getStartingTownMap).toBeUndefined();
   });
 
   it("selectTown only calls onTownSelected and does not call fetch or any API", () => {

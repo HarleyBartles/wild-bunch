@@ -10,8 +10,7 @@ import type {
   ResolveJourneyEncounterRequest,
   SetupGameRequest,
   StartGameWithTownRequest,
-  StartingTownDto,
-  StartingTownMapDto,
+  WorldMapDto,
   TownStoreOffersDto,
   GameDifficulty,
   TravelRequest,
@@ -191,14 +190,6 @@ export function getPrologue(
   return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);
 }
 
-export function getStartingTowns() {
-  return requestJson<StartingTownDto[]>("/api/games/starting-towns");
-}
-
-export function getStartingTownMap(sessionId: string) {
-  return requestJson<StartingTownMapDto>(`/api/games/${sessionId}/starting-town-map`);
-}
-
 export function getWorldMap(sessionId: string) {
-  return requestJson<StartingTownMapDto>(`/api/games/${sessionId}/world-map`);
+  return requestJson<WorldMapDto>(`/api/games/${sessionId}/world-map`);
 }

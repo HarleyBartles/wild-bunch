@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { useQuery } from "@tanstack/react-query";
-import { getStartingTownMap } from "../../api/wildBunchApi";
+import { getWorldMap } from "../../api/wildBunchApi";
 import { PhaserMapHost } from "./PhaserMapHost";
 
 interface StartingTownStepProps {
@@ -15,8 +15,8 @@ export function StartingTownStep({
   onSelectTown,
 }: StartingTownStepProps) {
   const mapQuery = useQuery({
-    queryKey: ["starting-town-map", sessionId],
-    queryFn: () => getStartingTownMap(sessionId),
+    queryKey: ["world-map", sessionId],
+    queryFn: () => getWorldMap(sessionId),
     staleTime: Infinity,
     retry: false,
     enabled: !!sessionId, // Don't fetch if sessionId is empty

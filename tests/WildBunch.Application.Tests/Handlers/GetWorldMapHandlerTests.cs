@@ -14,29 +14,42 @@ namespace WildBunch.Application.Tests.Handlers;
 public sealed class GetWorldMapHandlerTests
 {
     [Fact]
-    public async Task ReturnsAllSeededTownsAndTrails()
+    public async Task ProjectsTheLoadedSetupWorldTownAndTrailFacts()
     {
-        var (handler, sessionId) = CreateHandlerWithSession();
-        var result = await handler.HandleAsync(new GetStartingTownMapQuery(sessionId));
-        Assert.Equal(8, result.Towns.Count);
-        Assert.NotEmpty(result.Trails);
+        var (handler, session) = CreateHandlerWithSession();
+        var result = await handler.HandleAsync(new GetWorldMapQuery(session.Id.Value));
+
+        Assert.Equal(
+            session.World.Towns.Select(town => (town.Id.Value, town.Name, town.MapX, town.MapY)),
+            result.Towns.Select(town => (town.Id, town.Name, town.X, town.Y)));
+        Assert.Equal(
+            session.World.Trails.Select(trail => (
+                trail.Id.Value,
+                trail.FromTownId.Value,
+                trail.ToTownId.Value,
+                trail.RideDayDistance)),
+            result.Trails.Select(trail => (
+                trail.Id,
+                trail.FromTownId,
+                trail.ToTownId,
+                trail.RideDayDistance)));
     }
 
     [Fact]
     public async Task ThrowsForMissingSession()
     {
         var repo = new InMemoryGameSessionRepository();
-        var handler = new GetStartingTownMapHandler(repo);
+        var handler = new GetWorldMapHandler(repo);
         await Assert.ThrowsAsync<GameSessionNotFoundException>(() =>
-            handler.HandleAsync(new GetStartingTownMapQuery(Guid.NewGuid())));
+            handler.HandleAsync(new GetWorldMapQuery(Guid.NewGuid())));
     }
 
-    private static (GetStartingTownMapHandler Handler, Guid SessionId) CreateHandlerWithSession()
+    private static (GetWorldMapHandler Handler, GameSession Session) CreateHandlerWithSession()
     {
         var repo = new InMemoryGameSessionRepository();
         var session = CreateTestSession();
         repo.Seed(session);
-        return (new GetStartingTownMapHandler(repo), session.Id.Value);
+        return (new GetWorldMapHandler(repo), session);
     }
 
     private static GameSession CreateTestSession()
@@ -49,9 +62,6 @@ public sealed class GetWorldMapHandlerTests
         var session = GameSession.StartSetup(
             "Test Player", world, caseFile, difficulty.Difficulty, GameEntropy.Boring, seedCodeText, saltSource);
         session.ViewPrologue("test-prologue-descriptor");
-        session.SelectStartingTown(world.Towns.First().Id);
-        var (wallet, inventory) = factory.ResolveStartingResources(difficulty.Difficulty);
-        session.CompleteGameStart(wallet, inventory);
         return session;
     }
 

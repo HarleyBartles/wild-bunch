@@ -78,6 +78,13 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
         Assert.Null(setupResponse.Inventory);
         Assert.Null(setupResponse.HudProjection);
 
+        var worldMapResponse = await _client.GetAsync($"/api/games/{setupResponse.Id}/world-map");
+        Assert.Equal(HttpStatusCode.OK, worldMapResponse.StatusCode);
+        var setupWorldMap = await worldMapResponse.Content.ReadFromJsonAsync<WorldMapDto>();
+        Assert.NotNull(setupWorldMap);
+        Assert.NotEmpty(setupWorldMap!.Towns);
+        Assert.NotEmpty(setupWorldMap.Trails);
+
         var setupHudResponse = await _client.GetAsync($"/api/games/{setupResponse.Id}/projections/hud");
         Assert.Equal(HttpStatusCode.NoContent, setupHudResponse.StatusCode);
         Assert.Empty(await setupHudResponse.Content.ReadAsStringAsync());
@@ -89,7 +96,7 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
 
         // Step 3: complete game start — the returned DTO must include HUD
         // projection with GameStarted state (player name, wallet, town, health).
-        var townId = setupResponse.World.Towns.First().Id;
+        var townId = setupWorldMap.Towns.First().Id;
         var startResponse = await _client.PostAsJsonAsync(
             $"/api/games/{setupResponse.Id}/start",
             new StartGameWithTownRequest(townId));
@@ -103,6 +110,17 @@ public sealed class ProjectionEndpointTests : IClassFixture<PostgreSqlApiFactory
         Assert.True(startedSession.HudProjection.Health > 0, "Health should be set from GameStarted");
         Assert.True(startedSession.HudProjection.WalletCash > 0, "Wallet should be set from GameStarted");
         Assert.Equal(townId, startedSession.HudProjection.CurrentTownId.Value);
+
+        var startedWorldMapResponse = await _client.GetAsync($"/api/games/{setupResponse.Id}/world-map");
+        Assert.Equal(HttpStatusCode.OK, startedWorldMapResponse.StatusCode);
+        var startedWorldMap = await startedWorldMapResponse.Content.ReadFromJsonAsync<WorldMapDto>();
+        Assert.NotNull(startedWorldMap);
+        Assert.Equal(
+            setupWorldMap.Towns.Select(town => (town.Id, town.Name, town.X, town.Y)),
+            startedWorldMap!.Towns.Select(town => (town.Id, town.Name, town.X, town.Y)));
+        Assert.Equal(
+            setupWorldMap.Trails.Select(trail => (trail.Id, trail.FromTownId, trail.ToTownId, trail.RideDayDistance)),
+            startedWorldMap.Trails.Select(trail => (trail.Id, trail.FromTownId, trail.ToTownId, trail.RideDayDistance)));
     }
 
     /// <summary>
