@@ -11,6 +11,7 @@
 - `2026-06-24` - Replaced the dedicated `GameSessionLogEntries` table and its write/read paths with journal projection from the event stream; commit `6cdd23e` records the removal.
 - `2026-07-18` - Full event replay became the production state-reconstruction path, rather than an unimplemented future migration.
 - `2026-10-08` - Editorial clarification: immutable event history is the source for reconstruction, current caches serve ordinary state reads and are rebuilt from ordered history when invalid. ADR-0038 partially supersedes the child command/event protocol described by earlier wording.
+- `2026-10-10` - Correction: event payloads contain established domain facts only; occurrence timestamps and other envelope metadata belong to Persistence. Three Domain events had exposed a computed current timestamp that leaked into serialized payloads; registered upcasters remove it from historical payloads without rewriting event rows.
 
 ## Decision Type
 

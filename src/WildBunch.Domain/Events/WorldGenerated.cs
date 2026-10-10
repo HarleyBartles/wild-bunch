@@ -19,5 +19,4 @@ public sealed record WorldGenerated : IDomainEvent
     public required GameEntropy GameEntropy { get; init; }
     public required WorldSnapshot World { get; init; }
     public CaseFileSnapshot? CaseFile { get; init; }
-    public DateTimeOffset OccurredAt => DateTimeOffset.UtcNow;
 }
