@@ -19,45 +19,46 @@
 - A wanted person with a wrong declared identity is released by the sheriff, the player pays the existing capped $10 fine, and no bounty or roundup progress is awarded. Preserve public-target concealment; do not leak the actual wanted identity through the response or event narration.
 - A citizen always comes quietly regardless of inventory or declared wanted identity, is released by the sheriff and incurs the same wallet-capped $10 fine. No citizen becomes a wanted suspect, receives a bounty, or advances roundup.
 - Correctly named, gun-backed wanted take-in continues through the normal sheriff settlement, pays the warrant bounty once, and counts only through the existing lawful settlement event path.
+- Retire the obsolete `ConfrontSaloonWantedSuspect` command/method if a fresh production-reference search confirms it has no route or dispatcher. It has no public-name input and must not remain as an alternate take-in contract; keep observation coverage that still protects the shared saloon selection behavior.
 - Keep saloon resistance, escape, injury, gunfight, death and lawman recognition deferred. Do not alter trail combat or the five-of-six culprit gate in this slice.
 - No compatibility reader/upcaster is required for the retired pre-alpha histories. Confirm the established forward migration invalidates those sessions before replay; do not add new legacy support.
 
 ## Task 1: Prove and correct domain behavior
 
-**Files:** `src/WildBunch.Domain/Game/BountyLoop.cs`, `BountyLoopContexts.cs`, `GameSession.cs`, saloon outcome/result/event types under `src/WildBunch.Domain/Cases` and `Events`; `tests/WildBunch.Domain.Tests/GameSessionSaloonPersonOfInterestTests.cs`, `GameSessionSaloonWantedSuspectLoopTests.cs`, `GameSessionBountyLoopCoordinatorTests.cs` and `EventSourcing/BountySaloonEventSourcingTests.cs`.
+**Files:** `src/WildBunch.Domain/Game/BountyLoop.cs`, `BountyLoopContexts.cs`, `GameSession.cs`, saloon outcome/result/event types under `src/WildBunch.Domain/Cases` and `Events`; `tests/WildBunch.Domain.Tests/GameSessionSaloonPersonOfInterestTests.cs` and the applicable event-sourcing, settlement and presence-cache behavior tests.
 
-- [ ] Replace tests that protect fabricated flight or treat citizen cooperation as a wrong-identity result with independent behavioral cases for blank declaration, no gun, owned unloaded gun, correct identity, wrong identity, citizen and capped wallet.
-- [ ] For each new behavior assertion, temporarily break the owning behavior and witness the assertion fail for that reason; restore the implementation before continuing. Do not add assertions that merely compare current state to its replayed copy.
-- [ ] Separate firearm ownership from `FirearmThreatAvailable` (which means a usable loaded weapon for combat). Do not change that capability's meaning for travel combat.
-- [ ] Reject an absent declaration without creating a result fact or consuming the active person. Produce the settled no-gun refusal as an explicit event-backed outcome without mutating wanted-presence to `GoneToGround`.
-- [ ] Represent citizen cooperation/release and wanted wrong-name release with truthful outcomes and absolute wallet facts; apply/replay each wallet result exactly once and keep the original identity hidden when declaration is wrong.
-- [ ] Preserve the successful correct-name sheriff settlement, bounty amount, one-time payment and event-derived roundup facts. Remove or update only tests that require the superseded no-ammo/no-name flight branch; keep valid identity, legality, privacy and replay negatives.
-- [ ] Exercise the normal public player path for observation and take-in; developer overrides may control setup only where the test also demonstrates the player command and outcome rather than treating the override as player behavior.
+- [x] Replace tests that protect fabricated flight or treat citizen cooperation as a wrong-identity result with independent behavioral cases for blank declaration, no gun, owned unloaded gun, correct identity, wrong identity, citizen and capped wallet.
+- [x] Prove behavior assertions against the old behavior and with a focused provider mutation; restore the implementation before continuing. Do not add assertions that merely compare current state to its replayed copy.
+- [x] Separate firearm ownership from `FirearmThreatAvailable` (which means a usable loaded weapon for combat). Do not change that capability's meaning for travel combat.
+- [x] Reject an absent declaration without creating a result fact or consuming the active person. Produce the settled no-gun refusal as an explicit event-backed outcome without mutating wanted-presence to `GoneToGround`.
+- [x] Represent citizen cooperation/release and wanted wrong-name release with truthful outcomes and absolute wallet facts; apply/replay each wallet result exactly once and keep the original identity hidden when declaration is wrong.
+- [x] Preserve the successful correct-name sheriff settlement, bounty amount, one-time payment and event-derived roundup facts. Remove or update only tests that require the superseded no-ammo/no-name flight branch; keep valid identity, legality, privacy and replay negatives.
+- [x] Exercise the normal public player path for observation and take-in; developer overrides control deterministic setup only, while player commands determine outcomes.
 
 ## Task 2: Carry the corrected outcome through persistence and player API
 
-**Files:** `src/WildBunch.Application/Games/Commands` and mapping for the saloon command, `src/WildBunch.Api/Games` saloon endpoint/contract, `tests/WildBunch.Application.Tests/Handlers/ConfrontSaloonWantedSuspectHandlerTests.cs`, `tests/WildBunch.Integration.Tests/Acceptance/SaloonConfrontationAcceptanceTests.cs`, and focused persistence/event-replay tests.
+**Files:** Existing saloon command and API contracts, `src/WildBunch.Application/Projections/JournalLogProjector.cs`, `tests/WildBunch.Integration.Tests/Acceptance/SaloonConfrontationAcceptanceTests.cs`, and focused PostgreSQL repository/event-replay tests. The unused `ConfrontSaloonWantedSuspect` command and its tests are retired under Task 1 after confirming they have no production route.
 
-- [ ] Keep the existing player command and its declared identity input; do not add client-supplied target identity or outcome selection.
-- [ ] Prove PostgreSQL save/reload and event replay for refusal, citizen fine, wrong-name fine and correctly named bounty using event payload facts as independent expected values. Verify retry/re-entry cannot charge the same fine or bounty twice.
-- [ ] Keep the command result truthful for the established statuses and avoid leaking `TrueCulpritId`, hidden release state, or actual wanted identity after a wrong declaration.
-- [ ] Update or retire only API/application tests that assert the old invalid no-gun flight semantics; do not create source-shape/change-detector tests.
+- [x] Keep the existing player command and its declared identity input; do not add client-supplied target identity or outcome selection.
+- [x] Prove PostgreSQL save/reload and event replay for refusal, citizen fine, wrong-name fine and correctly named bounty using event payload facts as independent expected values. Verify retry/re-entry cannot charge the same fine or bounty twice.
+- [x] Keep the command result truthful for the established statuses and avoid leaking `TrueCulpritId`, hidden release state, or actual wanted identity after a wrong declaration.
+- [x] Update or retire only API/application tests that assert the old invalid no-gun flight semantics; do not create source-shape/change-detector tests.
 
 ## Task 3: Make the player surface express the command contract
 
-**Files:** `src/WildBunch.Web/src/flow/places/SaloonPlace.tsx`, its owned styles or hooks only if needed, saloon action/query mapping and a focused player behavior test under `src/WildBunch.Web/src/tests/`.
+**Files:** `src/WildBunch.Web/src/flow/places/SaloonPlace.tsx`, `src/WildBunch.Web/src/state/GameSessionProvider.tsx`, and focused player behavior tests under `src/WildBunch.Web/src/tests/`.
 
-- [ ] Preserve observation as a feature-description display and provide only known wanted identities as declarations.
-- [ ] Make blank identity unavailable to submit (server rejection remains authoritative); render refusal, citizen release/fine, wrong-name release/fine and successful bounty outcomes from the returned server result without inventing capture or flight narration.
-- [ ] Test the player-visible observation-to-declaration-to-result journey, including refusal and a citizen result, with focused behavior assertions. Do not rely on broad `AppShell` smoke coverage or assert exact implementation markup beyond the interaction contract.
+- [x] Preserve observation as a feature-description display and provide only known wanted identities as declarations. Resolve a selected poster only when its handle is actually selected; do not imply the first poster is a player's choice.
+- [x] Make blank identity unavailable to submit (server rejection remains authoritative); render refusal, citizen release/fine, wrong-name release/fine and successful bounty outcomes from the returned server result without inventing capture or flight narration.
+- [x] Test the player-visible observation-to-declaration-to-result journey, including refusal and a citizen result, with focused behavior assertions. Do not rely on broad `AppShell` smoke coverage or assert exact implementation markup beyond the interaction contract.
 
 ## Task 4: Truthful planning/source records and delivery
 
-- [ ] Correct the two dated investigation-contract clarifications identified above without rewriting historical claims; update `docs/features.md` PG-006 assessment to describe the delivered boundary and remaining five-of-six gate work.
-- [ ] Reconfirm the ADR comparison against the final diff. Leave ADRs unchanged unless implementation uncovers a genuinely new or corrected durable decision; if so, amend/supersede it in this PR.
-- [ ] Confirm the row 10 pre-alpha history invalidation boundary already removes incompatible playthroughs before replay. Add no migration unless this check finds that the selected event/contract changes can reach persisted history despite that boundary.
-- [ ] Advance the authored application version to `0.1.0-dev.73`; build generated projections through the repository command bus and verify generated web identity. Do not hand-edit generated mirrors.
-- [ ] Run focused domain/application/API/persistence/web lanes in fail-fast order, then `py -3 tools/run.py ci --check`. Ensure local PostgreSQL with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure` before the canonical gate.
+- [x] Correct the two dated investigation-contract clarifications identified above without rewriting historical claims; update `docs/features.md` PG-006 assessment to describe the delivered boundary and remaining five-of-six gate work.
+- [x] Reconfirm the ADR comparison against the final diff. Leave ADRs unchanged because implementation preserves the consulted durable decisions.
+- [x] Confirm the row 10 pre-alpha history invalidation boundary already removes incompatible playthroughs before replay. Add no migration unless this check finds that the selected event/contract changes can reach persisted history despite that boundary.
+- [x] Advance the authored application version to `0.1.0-dev.73`; build generated projections through the repository command bus and verify generated web identity. Do not hand-edit generated mirrors.
+- [x] Run focused domain/application/API/persistence/web lanes in fail-fast order, then `py -3 tools/run.py ci --check`. Ensure local PostgreSQL with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure` before the canonical gate.
 - [ ] Review the whole branch against the PG-006 contract, relevant ADRs, unslop profiles and changed-concern guidance. Resolve substantive findings with behavior proof and re-review the corrected diff.
 - [ ] Commit with the check-only hook, publish a PR to `develop`, require exact-head hosted canonical CI to pass, merge under the active goal, and verify the post-merge develop gate.
 - [ ] In the next fresh worktree, record PR/source/merge/exact-head/develop-gate evidence in row 11 and retire this plan after checking its complete scope.

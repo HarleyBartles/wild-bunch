@@ -72,11 +72,11 @@ public sealed class FullAuditProjectorTests
             },
             new SaloonPersonOfInterestConfronted
             {
-                Message = "Wrong declaration.",
+                Message = "The stranger comes quietly. The sheriff releases them and fines you $25.00.",
                 TargetSuspectId = null,
                 TargetName = "the stranger",
                 PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
-                Outcome = SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.CitizenReleased,
                 FineAmount = 25m,
                 WalletBefore = 100m,
                 WalletAfter = 75m,

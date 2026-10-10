@@ -31,7 +31,7 @@ internal sealed record SaloonConfrontationContext(
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Warrant> KnownWarrants,
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates,
-    bool FirearmThreatAvailable,
+    bool HasRevolver,
     decimal PlayerCash,
     decimal CitizenDeclarationFine,
     bool IsJourneyModal,

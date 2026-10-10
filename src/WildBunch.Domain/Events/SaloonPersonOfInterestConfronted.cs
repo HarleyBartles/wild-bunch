@@ -3,10 +3,10 @@ using WildBunch.Domain.Cases;
 namespace WildBunch.Domain.Events;
 
 /// <summary>
-/// Fact: a saloon person of interest was confronted. Covers citizen/wrong-declaration
-/// paths and rejection paths that clear the active saloon person. When the confrontation
-/// delegates to ResolveWantedSuspectConfrontation or SettleSheriffTurnIn, those produce
-/// their own events; this event covers only the saloon-person-level outcome.
+/// Fact: a saloon person of interest was challenged. Covers citizen release, wrong-name
+/// release, wanted-person refusal, and rejection paths that clear the active saloon person.
+/// Successful wanted settlement is represented by its confrontation and sheriff-settlement
+/// events, with this event recording the saloon-level result.
 /// Carries only public data. See ADR-0028 and BUNCH-80.
 /// </summary>
 public sealed record SaloonPersonOfInterestConfronted : IDomainEvent

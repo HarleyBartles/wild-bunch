@@ -534,9 +534,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
 
-        if (e.FineAmount is { } fine && fine > 0m)
+        if (e.WalletAfter is { } walletAfter)
         {
-            Player.AdjustCash(-fine);
+            Player.SetCash(walletAfter);
         }
 
         _version++;
@@ -1784,7 +1784,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CaseFile.Suspects,
             CaseFile.KnownWarrants,
             CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
-            Player.GetCapabilities(TravelRules).FirearmThreatAvailable,
+            Player.HasItem(ItemKind.Revolver),
             Player.Wallet.Cash,
             CitizenDeclarationFine,
             IsJourneyModal(),
@@ -1837,64 +1837,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 IsAlive = true,
                 IsSecured = true
             });
-            return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(
-                WantedSuspectConfrontationResult.Surrendered(
-                    request.DeclaredWantedIdentityHandle,
-                    request.WarrantTargetName,
-                    settlementResult.Disposition ?? WarrantDisposition.AliveOnly,
-                    request.ArmedWantedMessage)) with
-            {
-                Message = settlementMessage
-            };
+            return SaloonPersonOfInterestConfrontationResult.Surrendered(
+                request.DeclaredWantedIdentityHandle,
+                request.WarrantTargetName,
+                settlementResult.Disposition ?? WarrantDisposition.AliveOnly,
+                settlementMessage);
         }
 
         return outcome.Result;
-    }
-
-    public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
-    {
-        if (IsArchived)
-        {
-            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
-        }
-
-        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
-        if (activeSaloonSuspectId is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                "There is no wanted suspect waiting in the saloon.",
-                declaredWantedIdentityHandle);
-        }
-
-        var targetSuspect = CaseFile.Suspects.FirstOrDefault(s => s.Id.Equals(activeSaloonSuspectId));
-        if (targetSuspect is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                "That person is not part of this case.",
-                declaredWantedIdentityHandle);
-        }
-
-        if (!TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
-        {
-            ProduceEvent(new SaloonPersonOfInterestConfronted
-            {
-                Message = $"There is no wanted notice for {targetSuspect.Name}.",
-                DeclaredWantedIdentityHandle = declaredWantedIdentityHandle,
-                TargetSuspectId = targetSuspect.Id,
-                TargetName = targetSuspect.Name,
-                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
-                Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
-            });
-            return WantedSuspectConfrontationResult.Rejected(
-                $"There is no wanted notice for {targetSuspect.Name}.",
-                declaredWantedIdentityHandle,
-                targetSuspect.Name,
-                sessionChanged: true);
-        }
-
-        // Delegate to ConfrontSaloonPersonOfInterest which now orchestrates through _bountyLoop.
-        return ResolveSaloonPersonOfInterestCompatibilityResult(
-            ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle));
     }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
@@ -2164,9 +2114,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal string? GetSaloonPoiIneligibilityReason(Suspect suspect)
         => _bountyLoop.GetSaloonPoiIneligibilityReason(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
-
-    private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)
-        => result.ToWantedSuspectResult();
 
     private bool IsJourneyModal()
         => Journey is not null;

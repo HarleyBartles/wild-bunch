@@ -17,7 +17,7 @@ namespace WildBunch.Integration.Tests.Acceptance;
 public sealed class SaloonConfrontationAcceptanceTests
 {
     [Fact]
-    public async Task PostSaloonLookAroundThenConfrontFleesTheSurfacedWantedSuspect()
+    public async Task PostSaloonLookAroundThenConfrontWithoutGunRecordsRefusalInsteadOfFlight()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateAuthenticatedClient();
@@ -46,21 +46,21 @@ public sealed class SaloonConfrontationAcceptanceTests
 
         Assert.Equal(HttpStatusCode.OK, confrontationResponse.StatusCode);
 
-        var result = await confrontationResponse.Content.ReadFromJsonAsync<WantedSuspectConfrontationResultDto>();
+        var result = await confrontationResponse.Content.ReadFromJsonAsync<SaloonPersonOfInterestConfrontationResultDto>();
         Assert.NotNull(result);
         Assert.True(result!.Success);
         Assert.Equal("warrant-1", result.DeclaredWantedIdentityHandle);
-        Assert.Equal("Mira Cline", result.TargetName);
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, result.Outcome);
+        Assert.Equal("a stranger with Raven-feather pin", result.TargetName);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Refused, result.Outcome);
         Assert.True(result.IsAlive);
         Assert.False(result.IsSecured);
         Assert.True(result.SessionChanged);
         Assert.Null(result.CurrentSession.ActiveSaloonWantedSuspect);
 
         var reloadedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
-        Assert.Equal(WantedSuspectPresenceState.GoneToGround, reloadedSession.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
+        Assert.Equal(WantedSuspectPresenceState.AvailableInTown, reloadedSession.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
         Assert.Null(reloadedSession.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
-        Assert.Single(reloadedSession.CaseFile.WantedSuspectConfrontations);
+        Assert.Empty(reloadedSession.CaseFile.WantedSuspectConfrontations);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class SaloonConfrontationAcceptanceTests
     }
 
     [Fact]
-    public async Task PostSaloonLookAroundThenConfrontCitizenAppliesAWalletCappedFineAndKeepsTheCitizenReusable()
+    public async Task PostSaloonLookAroundThenConfrontCitizenRecordsQuietReleaseAndWalletCappedFine()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateAuthenticatedClient();
@@ -131,7 +131,9 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.NotNull(result);
         Assert.True(result!.Success);
         Assert.True(result.IsCitizen);
-        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.CitizenReleased, result.Outcome);
+        Assert.True(result.IsAlive);
+        Assert.True(result.IsSecured);
         Assert.Equal(4m, result.FineAmount);
         Assert.Equal(4m, result.WalletBefore);
         Assert.Equal(0m, result.WalletAfter);
