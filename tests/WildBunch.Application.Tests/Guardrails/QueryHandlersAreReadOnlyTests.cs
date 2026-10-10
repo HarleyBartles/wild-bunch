@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Mapping;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
@@ -25,11 +26,14 @@ public sealed class QueryHandlersAreReadOnlyTests
         var gameSessionHandler = new GetGameSessionHandler(repository);
         var journalHandler = new GetJournalHandler(repository);
         var availableActionsHandler = new GetAvailableActionsHandler(repository, new WildBunch.Domain.Actions.ActionAvailabilityResolver());
-        var storeOffersHandler = new GetTownStoreOffersHandler(repository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var worldMapHandler = new GetWorldMapHandler(readRepository);
+        var storeOffersHandler = new GetTownStoreOffersHandler(readRepository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
 
         _ = await gameSessionHandler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
         _ = await journalHandler.HandleAsync(new GetJournalQuery(session.Id.Value));
         _ = await availableActionsHandler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+        _ = await worldMapHandler.HandleAsync(new GetWorldMapQuery(session.Id.Value));
         _ = await storeOffersHandler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "pinecross"));
 
         Assert.Equal(0, repository.StoreCalls);

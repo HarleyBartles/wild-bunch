@@ -49,7 +49,8 @@ public sealed class GetWorldMapHandlerTests
         var repo = new InMemoryGameSessionRepository();
         var session = CreateTestSession();
         repo.Seed(session);
-        return (new GetWorldMapHandler(repo), session);
+        IGameSessionReadRepository readRepository = repo;
+        return (new GetWorldMapHandler(readRepository), session);
     }
 
     private static GameSession CreateTestSession()

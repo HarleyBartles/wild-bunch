@@ -1,4 +1,5 @@
 using System.Text.Json;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
@@ -22,7 +23,8 @@ public sealed class GetTownStoreOffersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new GetTownStoreOffersHandler(repository, new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "redmesa"));
 
@@ -42,7 +44,8 @@ public sealed class GetTownStoreOffersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new GetTownStoreOffersHandler(repository, new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "dryfork"));
 
@@ -59,7 +62,8 @@ public sealed class GetTownStoreOffersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new GetTownStoreOffersHandler(repository, new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var exception = await Assert.ThrowsAsync<TownNotFoundException>(
             () => handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "missing")));
@@ -70,7 +74,8 @@ public sealed class GetTownStoreOffersHandlerTests
     [Fact]
     public async Task GetTownStoreOffersThrowsWhenGameMissing()
     {
-        var handler = new GetTownStoreOffersHandler(new InMemoryGameSessionRepository(), new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = new InMemoryGameSessionRepository();
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var exception = await Assert.ThrowsAsync<GameSessionNotFoundException>(
             () => handler.HandleAsync(new GetTownStoreOffersQuery(Guid.NewGuid(), "pinecross")));
