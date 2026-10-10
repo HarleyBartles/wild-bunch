@@ -10,5 +10,4 @@ namespace WildBunch.Domain.Events;
 public sealed record StartingTownSelected : IDomainEvent
 {
     public required TownId StartingTownId { get; init; }
-    public DateTimeOffset OccurredAt => DateTimeOffset.UtcNow;
 }

@@ -70,6 +70,9 @@ public static class DependencyInjection
     {
         var upcasters = new List<IEventUpcaster>();
         upcasters.Add(new WorldGeneratedV1ToV2Upcaster());
+        upcasters.Add(new WorldGeneratedV2ToV3Upcaster());
+        upcasters.Add(new CaseFileGeneratedV1ToV2Upcaster());
+        upcasters.Add(new StartingTownSelectedV1ToV2Upcaster());
         return upcasters;
     }
 }

@@ -45,7 +45,7 @@ public sealed class EfGameSessionRepositoryTests
     private sealed record PersistedEventState(long Sequence, Guid EventId, string EventType, string PayloadJson, int SchemaVersion);
 
     [Fact]
-    public async Task LegacyWorldGenerated_LoadsFromPersistedEvents_AndCurrentWritesUseV2()
+    public async Task LegacyWorldGeneratedV1_LoadsFromPersistedEvents_AndReadDoesNotRewriteHistory()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var writer = CreateRepository(fixture, out var writerUnitOfWork);
@@ -107,6 +107,66 @@ public sealed class EfGameSessionRepositoryTests
             .OrderByDescending(storedEvent => storedEvent.Sequence)
             .Select(storedEvent => storedEvent.EventType)
             .FirstAsync());
+    }
+
+    [Fact]
+    public async Task CurrentEventPayloads_KeepOccurrenceTimeInPersistenceEnvelope()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSession();
+        var expectedPlayerName = session.Player.Name;
+        var expectedTownIds = session.World.Towns.Select(town => town.Id.Value).ToArray();
+        var expectedCulpritId = session.CaseFile.TrueCulpritId.Value;
+        var repository = CreateRepository(fixture, out var unitOfWork);
+
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var staleSnapshotContext = fixture.CreateContext())
+        {
+            var envelope = await staleSnapshotContext.GameSessions.SingleAsync(entity => entity.Id == session.Id.Value);
+            envelope.SnapshotVersion = null;
+            await staleSnapshotContext.SaveChangesAsync();
+        }
+
+        await using var context = fixture.CreateContext();
+        var events = await context.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == session.Id.Value
+                && new[] { "WorldGenerated", "CaseFileGenerated", "StartingTownSelected" }.Contains(storedEvent.EventType))
+            .ToDictionaryAsync(
+                storedEvent => storedEvent.EventType,
+                storedEvent => new
+                {
+                    storedEvent.PayloadJson,
+                    storedEvent.SchemaVersion,
+                    storedEvent.OccurredAtUtc
+                });
+
+        Assert.Equal(3, events["WorldGenerated"].SchemaVersion);
+        Assert.Equal(2, events["CaseFileGenerated"].SchemaVersion);
+        Assert.Equal(2, events["StartingTownSelected"].SchemaVersion);
+        foreach (var storedEvent in events.Values)
+        {
+            var payload = JsonNode.Parse(storedEvent.PayloadJson)!.AsObject();
+            Assert.False(payload.ContainsKey("occurredAt"));
+            Assert.NotEqual(default, storedEvent.OccurredAtUtc);
+        }
+
+        var reloaded = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal(expectedPlayerName, reloaded!.Player.Name);
+        Assert.Equal(expectedTownIds, reloaded.World.Towns.Select(town => town.Id.Value));
+        Assert.Equal(expectedCulpritId, reloaded.CaseFile.TrueCulpritId.Value);
+        Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+
+        await using var verificationContext = fixture.CreateContext();
+        var persistedTimestamps = await verificationContext.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == session.Id.Value
+                && new[] { "WorldGenerated", "CaseFileGenerated", "StartingTownSelected" }.Contains(storedEvent.EventType))
+            .ToDictionaryAsync(storedEvent => storedEvent.EventType, storedEvent => storedEvent.OccurredAtUtc);
+        foreach (var (eventType, storedEvent) in events)
+        {
+            Assert.Equal(storedEvent.OccurredAtUtc, persistedTimestamps[eventType]);
+        }
     }
 
     [Fact]
@@ -5250,7 +5310,7 @@ public sealed class EfGameSessionRepositoryTests
         var worldEvent = await context.StoredEvents.SingleAsync(storedEvent =>
             storedEvent.StreamId == sessionId.Value && storedEvent.EventType == "WorldGenerated");
         var legacyPayload = JsonNode.Parse(worldEvent.PayloadJson)!.AsObject();
-        Assert.Equal(2, worldEvent.SchemaVersion);
+        Assert.Equal(3, worldEvent.SchemaVersion);
         Assert.NotNull(legacyPayload["caseFile"]);
         legacyPayload.Remove("caseFile");
         worldEvent.PayloadJson = legacyPayload.ToJsonString();
