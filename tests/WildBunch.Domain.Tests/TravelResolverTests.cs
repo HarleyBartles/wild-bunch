@@ -1,3 +1,4 @@
+using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
@@ -150,7 +151,7 @@ public sealed class TravelResolverTests
     [Fact]
     public void AdvanceJourneyDaySwitchesToFootImmediatelyWhenHorseDiesAndRecalculatesRemainingDays()
     {
-        var session = CreateProgressionSession(new HorseTravelState(1, 1, 0), TrailTerrain.Badlands, WaterFeature.None, canteenCharges: 0, trailRisk: TrailRisk.Moderate);
+        var session = CreateProgressionSession(new HorseTravelState(1, 1, 0), TrailTerrain.Badlands, WaterFeature.None, canteenCharges: 0, trailRisk: TrailRisk.Moderate, wallet: Wallet.Starting(100m));
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("midway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
@@ -167,7 +168,54 @@ public sealed class TravelResolverTests
         Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(1, result.Journey.RemainingDays);
-        Assert.Equal(new HorseTravelState(2, 2, 1), session.Player.Inventory.GetHorseState());
+        Assert.Null(session.Player.Inventory.GetHorseState());
+        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Saddle));
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Knife));
+
+        var storeResolver = new TownStoreCatalogResolver();
+        var horseOffer = storeResolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value)).Offers.Single(offer => offer.ItemKind == DomainItemKind.Horse);
+        Assert.False(session.Purchase(horseOffer, 1).Success);
+
+        var safetyLimit = 5;
+        while (session.Journey!.Status == JourneyStatus.Active && safetyLimit-- > 0)
+        {
+            session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+            session.AdvanceJourneyDay();
+        }
+
+        Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
+        Assert.True(session.AcknowledgeJourneyArrival().Success);
+        var arrivalHorseOffer = storeResolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value)).Offers.Single(offer => offer.ItemKind == DomainItemKind.Horse);
+        var replacementPurchase = session.Purchase(arrivalHorseOffer, 1);
+        Assert.True(replacementPurchase.Success, replacementPurchase.Message);
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+    }
+
+    [Fact]
+    public void TownArrivalRefillsAnOwnedCanteenWithoutCreatingOne()
+    {
+        var resolver = new TravelResolver();
+        var withCanteen = CreateArrivalSession(withCanteen: true);
+        var withCanteenPreview = resolver.PreviewJourney(withCanteen.World, withCanteen.Player.CurrentTownId!.Value, new TownId("midway"), withCanteen.Player.Inventory, withCanteen.TravelRules).Preview!;
+        withCanteen.StartJourney(withCanteenPreview);
+        withCanteen.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+
+        var ownedArrival = withCanteen.AdvanceJourneyDay();
+
+        Assert.Equal(JourneyStatus.Completed, ownedArrival.Status);
+        Assert.Equal(10, withCanteen.Player.Inventory.GetCanteenState()!.Charges);
+
+        var withoutCanteen = CreateArrivalSession(withCanteen: false);
+        var withoutCanteenPreview = resolver.PreviewJourney(withoutCanteen.World, withoutCanteen.Player.CurrentTownId!.Value, new TownId("midway"), withoutCanteen.Player.Inventory, withoutCanteen.TravelRules).Preview!;
+        withoutCanteen.StartJourney(withoutCanteenPreview);
+        withoutCanteen.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+
+        var unownedArrival = withoutCanteen.AdvanceJourneyDay();
+
+        Assert.Equal(JourneyStatus.Completed, unownedArrival.Status);
+        Assert.Equal(0, withoutCanteen.Player.Inventory.GetQuantity(DomainItemKind.Canteen));
+        Assert.Null(withoutCanteen.Player.Inventory.GetCanteenState());
     }
 
     [Fact]
@@ -1289,7 +1337,8 @@ public sealed class TravelResolverTests
         bool withSaddle = true,
         int canteenCharges = 2,
         TrailRisk trailRisk = TrailRisk.Low,
-        GameDifficulty GameDifficulty = GameDifficulty.Standard)
+        GameDifficulty GameDifficulty = GameDifficulty.Standard,
+        Wallet? wallet = null)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var midway = new Town(new TownId("midway"), "Midway");
@@ -1314,7 +1363,27 @@ public sealed class TravelResolverTests
             items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
         }
 
-        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty, saltSource: DeterministicSaltSource);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), new DomainInventory(items), GameDifficulty, saltSource: DeterministicSaltSource);
+    }
+
+    private static GameSession CreateArrivalSession(bool withCanteen)
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var midway = new Town(new TownId("midway"), "Midway");
+        var world = new DomainWorld(
+            new[] { pinecross, midway },
+            new[] { new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.River, 0.5m) });
+        var items = new List<DomainInventoryItem>
+        {
+            new(DomainItemKind.Food, 3),
+            new(DomainItemKind.Knife, 1)
+        };
+        if (withCanteen)
+        {
+            items.Add(new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(0, 10)));
+        }
+
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, CreateCaseFile(), pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty.Standard, saltSource: DeterministicSaltSource);
     }
 
     private static DomainWorld CreateWorld()

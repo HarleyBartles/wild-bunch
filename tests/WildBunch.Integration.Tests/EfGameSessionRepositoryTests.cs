@@ -849,6 +849,34 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Fact]
+    public async Task SaveAfterHorseDeathRebuildsInventoryWithoutHorseAndPreservesTheRecordedEvent()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var resolver = new TravelResolver();
+        var session = CreateHorseDeathSession();
+
+        await PersistAsync(repository, unitOfWork, session);
+        var loaded = await repository.GetByIdAsync(session.Id);
+        Assert.NotNull(loaded);
+
+        var preview = resolver.PreviewJourney(loaded!.World, loaded.Player.CurrentTownId!.Value, new TownId("midway"), loaded.Player.Inventory, loaded.TravelRules).Preview!;
+        loaded.StartJourney(preview);
+        loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+        loaded.AdvanceJourneyDay();
+
+        await PersistAsync(repository, unitOfWork, loaded);
+        var reloaded = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(reloaded);
+        Assert.Equal(0, reloaded!.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+        Assert.Equal(1, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Saddle));
+        Assert.Equal(1, reloaded.Player.Inventory.GetQuantity(DomainItemKind.Knife));
+        var deathEvent = Assert.Single(reloaded.AllEvents.OfType<TravelDayAdvanced>());
+        Assert.Equal(new DomainHorseTravelState(2, 2, 1), deathEvent.JourneySnapshot.HorseState);
+    }
+
+    [Fact]
     public async Task SaveAfterHorseLossFallbackRoundTripsFootTravelAndHorseState()
     {
         using var fixture = new PostgreSqlPersistenceFixture();
@@ -6350,6 +6378,33 @@ public sealed class EfGameSessionRepositoryTests
         var session = GameSession.StartSetup(
             "Ranger Vale", world, caseFile,
             GameDifficulty.Challenging, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+        return session;
+    }
+
+    private static GameSession CreateHorseDeathSession()
+    {
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var midway = new Town(new TownId("midway"), "Midway");
+        var world = new WildBunch.Domain.World.World(
+            new[] { pinecross, midway },
+            new[]
+            {
+                new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, TrailRisk.Moderate, TrailTerrain.Badlands, WaterFeature.None, 2m)
+            });
+        var inventory = new DomainInventory(new[]
+        {
+            new DomainInventoryItem(DomainItemKind.Food, 3),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new DomainCanteenState(0, 10)),
+            new DomainInventoryItem(DomainItemKind.Horse, 1, new DomainHorseTravelState(1, 1, 0)),
+            new DomainInventoryItem(DomainItemKind.Saddle, 1),
+            new DomainInventoryItem(DomainItemKind.Knife, 1)
+        });
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, CreateCaseFile(),
+            GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
         session.ViewPrologue("test-prologue-descriptor");
         session.SelectStartingTown(pinecross.Id);
         session.CompleteGameStart(Wallet.Starting(25m), inventory);

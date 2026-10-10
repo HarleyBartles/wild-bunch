@@ -91,4 +91,18 @@ public sealed class InventoryTests
 
         Assert.Equal(1, inventory.GetQuantity(DomainItemKind.Food));
     }
+
+    [Fact]
+    public void RemovingMoreThanOwnedFailsWithoutChangingTheStack()
+    {
+        var inventory = new DomainInventory();
+        inventory.AddItem(DomainItemKind.Food, 2);
+
+        Assert.Throws<InvalidOperationException>(() => inventory.RemoveQuantity(DomainItemKind.Food, 3));
+
+        Assert.Equal(2, inventory.GetQuantity(DomainItemKind.Food));
+        inventory.RemoveQuantity(DomainItemKind.Food, 2);
+        Assert.Equal(0, inventory.GetQuantity(DomainItemKind.Food));
+        Assert.DoesNotContain(inventory.Items, item => item.Quantity < 0);
+    }
 }
