@@ -1224,7 +1224,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Player.GetHorseState(),
             Player.Wallet.Cash,
             Player.Health,
-            Player.GetQuantity(ItemKind.RevolverAmmo) + Player.GetQuantity(ItemKind.RifleAmmo));
+            Player.GetQuantity(ItemKind.RevolverAmmo));
 
         var result = _journeyLoop.AdvanceJourneyDay(context);
         foreach (var e in result.Events)
@@ -1650,7 +1650,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             bribeAmount,
             forcedRoll,
             Player.GetQuantity(ItemKind.RevolverAmmo),
-            Player.GetQuantity(ItemKind.RifleAmmo),
             Player.HasItem(ItemKind.Knife));
 
         var result = _journeyLoop.ResolveJourneyEncounter(context);
@@ -2253,25 +2252,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var availableRevolverAmmo = Player.GetQuantity(ItemKind.RevolverAmmo);
-        var availableRifleAmmo = Player.GetQuantity(ItemKind.RifleAmmo);
-        var availableAmmo = availableRevolverAmmo + availableRifleAmmo;
-        if (availableAmmo <= 0)
+        if (availableRevolverAmmo <= 0)
         {
             return 0;
         }
 
-        var bulletsToSpend = Math.Min(Math.Clamp(requestedBullets, 1, 6), availableAmmo);
+        var bulletsToSpend = Math.Min(Math.Clamp(requestedBullets, 1, 6), availableRevolverAmmo);
         var spent = 0;
 
         while (spent < bulletsToSpend && Player.GetQuantity(ItemKind.RevolverAmmo) > 0)
         {
             Player.RemoveQuantity(ItemKind.RevolverAmmo, 1);
-            spent++;
-        }
-
-        while (spent < bulletsToSpend && Player.GetQuantity(ItemKind.RifleAmmo) > 0)
-        {
-            Player.RemoveQuantity(ItemKind.RifleAmmo, 1);
             spent++;
         }
 

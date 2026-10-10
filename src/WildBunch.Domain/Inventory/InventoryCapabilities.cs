@@ -8,5 +8,4 @@ public sealed record InventoryCapabilities(
     bool CloseThreatAvailable,
     bool FirearmThreatAvailable,
     bool GunfightCapable,
-    bool RevolverUsable,
-    bool RifleUsable);
+    bool RevolverUsable);

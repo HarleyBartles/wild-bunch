@@ -6,8 +6,7 @@ public sealed class Inventory
     [
         ItemKind.Food,
         ItemKind.HorseFeed,
-        ItemKind.RevolverAmmo,
-        ItemKind.RifleAmmo
+        ItemKind.RevolverAmmo
     ];
 
     private readonly List<InventoryItem> _items;
@@ -147,6 +146,11 @@ public sealed class Inventory
 
     private static void ValidateAddItem(ItemKind kind, int quantity, HorseTravelState? horseState, CanteenState? canteenState)
     {
+        if (!Enum.IsDefined(kind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported item kind.");
+        }
+
         if (quantity < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity cannot be negative.");

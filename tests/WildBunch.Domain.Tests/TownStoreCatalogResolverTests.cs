@@ -23,8 +23,7 @@ public sealed class TownStoreCatalogResolverTests
                     (ItemKind.Horse, "Horse", 60m),
                     (ItemKind.Saddle, "Saddle", 20m),
                     (ItemKind.Revolver, "Revolver", 32m),
-                    (ItemKind.RevolverAmmo, "Revolver ammo", 4m),
-                    (ItemKind.RifleAmmo, "Rifle ammo", 6m)
+                    (ItemKind.RevolverAmmo, "Revolver ammo", 4m)
                 }),
             (
                 TownProsperity.Prosperous,
@@ -37,8 +36,7 @@ public sealed class TownStoreCatalogResolverTests
                     (ItemKind.Horse, "Horse", 60m),
                     (ItemKind.Saddle, "Saddle", 20m),
                     (ItemKind.Revolver, "Revolver", 35m),
-                    (ItemKind.RevolverAmmo, "Revolver ammo", 4m),
-                    (ItemKind.RifleAmmo, "Rifle ammo", 6m)
+                    (ItemKind.RevolverAmmo, "Revolver ammo", 4m)
                 }),
             (
                 TownProsperity.Poor,

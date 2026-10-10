@@ -47,11 +47,10 @@ internal sealed record ResolveJourneyEncounterContext(
     decimal? BribeAmount,
     ulong? ForcedRoll,
     int AvailableRevolverAmmo,
-    int AvailableRifleAmmo,
     bool HasKnife) : AdvanceJourneyDayContext(
         TravelRules, Salt, SaltMode, GameEntropy, ClockDay, CurrentHeat, Capabilities,
         AvailableFood, AvailableHorseFeed, CanteenState, HorseState,
-        PlayerCash, PlayerHealth, AvailableRevolverAmmo + AvailableRifleAmmo);
+        PlayerCash, PlayerHealth, AvailableRevolverAmmo);
 
 /// <summary>Read-only inputs for acknowledging journey arrival.</summary>
 internal sealed record AcknowledgeJourneyArrivalContext(

@@ -814,7 +814,6 @@ public sealed class TravelResolverTests
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Interrupted, result.Status);
         Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
-        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.RifleAmmo));
         Assert.NotNull(session.Journey!.PendingEncounter);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
@@ -1424,7 +1423,6 @@ public sealed class TravelResolverTests
         var availableFood = session.Player.Inventory.GetQuantity(DomainItemKind.Food);
         var availableHorseFeed = session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed);
         var availableRevolverAmmo = session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo);
-        var availableRifleAmmo = session.Player.Inventory.GetQuantity(DomainItemKind.RifleAmmo);
 
         for (ulong roll = 0; roll < 10_000; roll++)
         {
@@ -1436,7 +1434,6 @@ public sealed class TravelResolverTests
                 availableFood,
                 availableHorseFeed,
                 availableRevolverAmmo,
-                availableRifleAmmo,
                 roll);
 
             var sawRetaliation = !plan.Resolved && (plan.HealthDelta < 0 || plan.StolenItemKind is not null || plan.WalletDelta < -bribeAmount);

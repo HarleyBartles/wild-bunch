@@ -82,7 +82,6 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },

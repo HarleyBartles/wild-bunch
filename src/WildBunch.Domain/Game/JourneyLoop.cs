@@ -362,7 +362,7 @@ internal sealed class JourneyLoop
                 _journey.RemainingDays,
                 runtime.Health,
                 runtime.WalletCash,
-                runtime.RevolverAmmo + runtime.RifleAmmo,
+                runtime.RevolverAmmo,
                 context.CurrentHeat));
         var roll = context.ForcedRoll ?? JourneyEncounterResolutionEngine.Roll(rollSeed, "resolution");
         var dayEntries = new List<string>();
@@ -463,7 +463,7 @@ internal sealed class JourneyLoop
         TravelDiaryBaselineState startingState,
         List<string> dayEntries)
     {
-        var availableAmmo = runtime.RevolverAmmo + runtime.RifleAmmo;
+        var availableAmmo = runtime.RevolverAmmo;
         if (availableAmmo == 0 && !runtime.HasKnife)
         {
             return JourneyEncounterResolutionResult.Failed("You need a knife or firearm ammo to stand and fight.", _journey!.Status, _journey.ToSnapshot(baseContext.TravelRules));
@@ -556,7 +556,6 @@ internal sealed class JourneyLoop
             _journey!.FoodRemaining,
             _journey.HorseFeedRemaining,
             runtime.RevolverAmmo,
-            runtime.RifleAmmo,
             roll);
 
         if (plan.WalletDelta != 0m)
@@ -569,10 +568,6 @@ internal sealed class JourneyLoop
             if (plan.StolenItemKind == ItemKind.RevolverAmmo)
             {
                 runtime.RevolverAmmo = Math.Max(0, runtime.RevolverAmmo - plan.StolenItemQuantity);
-            }
-            else if (plan.StolenItemKind == ItemKind.RifleAmmo)
-            {
-                runtime.RifleAmmo = Math.Max(0, runtime.RifleAmmo - plan.StolenItemQuantity);
             }
         }
 
@@ -1240,7 +1235,7 @@ internal sealed class JourneyLoop
             _journey?.FoodRemaining ?? 0,
             _journey?.HorseFeedRemaining ?? 0,
             _journey?.AvailableCanteenCharges ?? 0,
-            runtime.RevolverAmmo + runtime.RifleAmmo,
+            runtime.RevolverAmmo,
             runtime.Health,
             context.CurrentHeat);
 
@@ -1292,7 +1287,7 @@ internal sealed class JourneyLoop
         currentResources ??= CaptureTravelResources(
             new AdvanceJourneyDayContext(
                 travelRules, runtime.Salt, runtime.SaltMode, runtime.GameEntropy, runtime.ClockDay, runtime.CurrentHeat,
-                new PlayerCapabilities(false, false), 0, 0, null, null, runtime.WalletCash, runtime.Health, runtime.RevolverAmmo + runtime.RifleAmmo),
+                new PlayerCapabilities(false, false), 0, 0, null, null, runtime.WalletCash, runtime.Health, runtime.RevolverAmmo),
             runtime);
         var combinedEntries = _travelDiaryDays[^1].Entries.Concat(newEntries).ToArray();
 
@@ -1407,7 +1402,6 @@ internal sealed class JourneyLoop
         public decimal WalletCash;
         public int Health;
         public int RevolverAmmo;
-        public int RifleAmmo;
         public bool HasKnife;
         public int CanteenCapacity;
         public string Salt;
@@ -1422,7 +1416,6 @@ internal sealed class JourneyLoop
             WalletCash = context.PlayerCash;
             Health = context.PlayerHealth;
             RevolverAmmo = context.AvailableAmmo;
-            RifleAmmo = 0;
             HasKnife = false;
             CanteenCapacity = context.CanteenState?.Capacity ?? 0;
             Salt = context.Salt;
@@ -1437,7 +1430,6 @@ internal sealed class JourneyLoop
             WalletCash = context.PlayerCash;
             Health = context.PlayerHealth;
             RevolverAmmo = context.AvailableRevolverAmmo;
-            RifleAmmo = context.AvailableRifleAmmo;
             HasKnife = context.HasKnife;
             CanteenCapacity = context.CanteenState?.Capacity ?? 0;
             Salt = context.Salt;
@@ -1451,10 +1443,7 @@ internal sealed class JourneyLoop
 
         public void SpendAmmo(int amount)
         {
-            var toSpend = Math.Min(amount, RevolverAmmo + RifleAmmo);
-            var fromRevolver = Math.Min(toSpend, RevolverAmmo);
-            RevolverAmmo -= fromRevolver;
-            RifleAmmo -= (toSpend - fromRevolver);
+            RevolverAmmo = Math.Max(0, RevolverAmmo - amount);
         }
     }
 

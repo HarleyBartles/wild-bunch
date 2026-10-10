@@ -85,7 +85,6 @@ function createSession(): GameSessionDto {
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 1, turn: 0, timeOfDay: "Morning" },
