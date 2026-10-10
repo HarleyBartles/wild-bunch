@@ -104,7 +104,7 @@ public sealed partial class GameSessionJsonSerializer
         public int AvailableFood { get; set; }
         public int RequiredHorseFeed { get; set; }
         public int AvailableHorseFeed { get; set; }
-        public DomainHorseTravelState? HorseState { get; set; }
+        public HorseTravelStateSnapshot? HorseState { get; set; }
         public string? OpeningNarration { get; set; }
         public int DaysTravelled { get; set; }
         public int DelayDays { get; set; }
@@ -139,7 +139,7 @@ public sealed partial class GameSessionJsonSerializer
                 AvailableFood = snapshot.AvailableFood,
                 RequiredHorseFeed = snapshot.RequiredHorseFeed,
                 AvailableHorseFeed = snapshot.AvailableHorseFeed,
-                HorseState = snapshot.HorseState,
+                HorseState = snapshot.HorseState is null ? null : HorseTravelStateSnapshot.FromDomain(snapshot.HorseState),
                 OpeningNarration = snapshot.OpeningNarration,
                 DaysTravelled = snapshot.DaysTravelled,
                 DelayDays = snapshot.DelayDays,
@@ -174,7 +174,7 @@ public sealed partial class GameSessionJsonSerializer
                 AvailableFood,
                 RequiredHorseFeed,
                 AvailableHorseFeed,
-                HorseState,
+                HorseState?.ToDomain(),
                 OpeningNarration,
                 DaysTravelled,
                 DelayDays,
@@ -213,9 +213,9 @@ public sealed partial class GameSessionJsonSerializer
         public TravelDayEncounterCategory Category { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
-        public JourneyTrailEventState? TrailEvent { get; set; }
-        public JourneyEncounterState? PendingEncounter { get; set; }
-        public TravelDiaryEncounterResolutionState? Resolution { get; set; }
+        public JourneyTrailEventSnapshot? TrailEvent { get; set; }
+        public JourneyEncounterSnapshot? PendingEncounter { get; set; }
+        public TravelDiaryEncounterResolutionSnapshot? Resolution { get; set; }
 
         public static TravelDayEncounterSnapshot FromDomain(TravelDayEncounterState encounter)
             => new()
@@ -224,9 +224,9 @@ public sealed partial class GameSessionJsonSerializer
                 Category = encounter.Category,
                 Title = encounter.Title,
                 Message = encounter.Message,
-                TrailEvent = encounter.TrailEvent,
-                PendingEncounter = encounter.PendingEncounter,
-                Resolution = encounter.Resolution
+                TrailEvent = encounter.TrailEvent is null ? null : JourneyTrailEventSnapshot.FromDomain(encounter.TrailEvent),
+                PendingEncounter = encounter.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(encounter.PendingEncounter),
+                Resolution = encounter.Resolution is null ? null : TravelDiaryEncounterResolutionSnapshot.FromDomain(encounter.Resolution)
             };
 
         public TravelDayEncounterState ToDomain()
@@ -235,9 +235,111 @@ public sealed partial class GameSessionJsonSerializer
                 Category,
                 Title,
                 Message,
-                TrailEvent,
-                PendingEncounter,
-                Resolution);
+                TrailEvent?.ToDomain(),
+                PendingEncounter?.ToDomain(),
+                Resolution?.ToDomain());
+    }
+
+    private sealed class JourneyTrailEventSnapshot
+    {
+        public JourneyTrailEventId Id { get; set; }
+        public JourneyTrailEventKind Kind { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public decimal WalletDelta { get; set; }
+        public int FoodDelta { get; set; }
+        public int CanteenChargeDelta { get; set; }
+        public int HorseHungerDelta { get; set; }
+        public int HorseThirstDelta { get; set; }
+        public int HorseExhaustionDelta { get; set; }
+        public int DelayDays { get; set; }
+        public int HeatIncrease { get; set; }
+
+        public static JourneyTrailEventSnapshot FromDomain(JourneyTrailEventState trailEvent)
+            => new()
+            {
+                Id = trailEvent.Id,
+                Kind = trailEvent.Kind,
+                Title = trailEvent.Title,
+                Message = trailEvent.Message,
+                WalletDelta = trailEvent.WalletDelta,
+                FoodDelta = trailEvent.FoodDelta,
+                CanteenChargeDelta = trailEvent.CanteenChargeDelta,
+                HorseHungerDelta = trailEvent.HorseHungerDelta,
+                HorseThirstDelta = trailEvent.HorseThirstDelta,
+                HorseExhaustionDelta = trailEvent.HorseExhaustionDelta,
+                DelayDays = trailEvent.DelayDays,
+                HeatIncrease = trailEvent.HeatIncrease
+            };
+
+        public JourneyTrailEventState ToDomain()
+            => new(
+                Id,
+                Kind,
+                Title,
+                Message,
+                WalletDelta,
+                FoodDelta,
+                CanteenChargeDelta,
+                HorseHungerDelta,
+                HorseThirstDelta,
+                HorseExhaustionDelta,
+                DelayDays,
+                HeatIncrease);
+    }
+
+    private sealed class TravelDiaryEncounterResolutionSnapshot
+    {
+        public string ChoiceId { get; set; } = string.Empty;
+        public string ChoiceLabel { get; set; } = string.Empty;
+        public int HealthDelta { get; set; }
+        public decimal WalletDelta { get; set; }
+        public int AmmoSpent { get; set; }
+        public int HeatIncrease { get; set; }
+        public int HorseExhaustionDelta { get; set; }
+        public bool ContinuedOnFoot { get; set; }
+
+        public static TravelDiaryEncounterResolutionSnapshot FromDomain(TravelDiaryEncounterResolutionState resolution)
+            => new()
+            {
+                ChoiceId = resolution.ChoiceId,
+                ChoiceLabel = resolution.ChoiceLabel,
+                HealthDelta = resolution.HealthDelta,
+                WalletDelta = resolution.WalletDelta,
+                AmmoSpent = resolution.AmmoSpent,
+                HeatIncrease = resolution.HeatIncrease,
+                HorseExhaustionDelta = resolution.HorseExhaustionDelta,
+                ContinuedOnFoot = resolution.ContinuedOnFoot
+            };
+
+        public TravelDiaryEncounterResolutionState ToDomain()
+            => new(
+                ChoiceId,
+                ChoiceLabel,
+                HealthDelta,
+                WalletDelta,
+                AmmoSpent,
+                HeatIncrease,
+                HorseExhaustionDelta,
+                ContinuedOnFoot);
+    }
+
+    private sealed class HorseTravelStateSnapshot
+    {
+        public int Hunger { get; set; }
+        public int Thirst { get; set; }
+        public int Exhaustion { get; set; }
+
+        public static HorseTravelStateSnapshot FromDomain(DomainHorseTravelState horseState)
+            => new()
+            {
+                Hunger = horseState.Hunger,
+                Thirst = horseState.Thirst,
+                Exhaustion = horseState.Exhaustion
+            };
+
+        public DomainHorseTravelState ToDomain()
+            => new(Hunger, Thirst, Exhaustion);
     }
 
     private sealed class JourneyEncounterSnapshot
@@ -382,11 +484,11 @@ public sealed partial class GameSessionJsonSerializer
         public decimal RemainingRideDayDistance { get; set; }
         public int StartingDaysRemaining { get; set; }
         public int RemainingDays { get; set; }
-        public DomainHorseTravelState? HorseStateBefore { get; set; }
-        public DomainHorseTravelState? HorseStateAfter { get; set; }
-        public JourneyTrailEventState? TrailEvent { get; set; }
-        public JourneyEncounterState? PendingEncounter { get; set; }
-        public TravelDiaryEncounterResolutionState? EncounterResolution { get; set; }
+        public HorseTravelStateSnapshot? HorseStateBefore { get; set; }
+        public HorseTravelStateSnapshot? HorseStateAfter { get; set; }
+        public JourneyTrailEventSnapshot? TrailEvent { get; set; }
+        public JourneyEncounterSnapshot? PendingEncounter { get; set; }
+        public TravelDiaryEncounterResolutionSnapshot? EncounterResolution { get; set; }
         public string? OpeningNarration { get; set; }
         public string? JourneyBeat { get; set; }
         public string? ResourceBeat { get; set; }
@@ -427,11 +529,11 @@ public sealed partial class GameSessionJsonSerializer
                 RemainingRideDayDistance = day.RemainingRideDayDistance,
                 StartingDaysRemaining = day.StartingDaysRemaining,
                 RemainingDays = day.RemainingDays,
-                HorseStateBefore = day.HorseStateBefore,
-                HorseStateAfter = day.HorseStateAfter,
-                TrailEvent = day.TrailEvent,
-                PendingEncounter = day.PendingEncounter,
-                EncounterResolution = day.EncounterResolution,
+                HorseStateBefore = day.HorseStateBefore is null ? null : HorseTravelStateSnapshot.FromDomain(day.HorseStateBefore),
+                HorseStateAfter = day.HorseStateAfter is null ? null : HorseTravelStateSnapshot.FromDomain(day.HorseStateAfter),
+                TrailEvent = day.TrailEvent is null ? null : JourneyTrailEventSnapshot.FromDomain(day.TrailEvent),
+                PendingEncounter = day.PendingEncounter is null ? null : JourneyEncounterSnapshot.FromDomain(day.PendingEncounter),
+                EncounterResolution = day.EncounterResolution is null ? null : TravelDiaryEncounterResolutionSnapshot.FromDomain(day.EncounterResolution),
                 OpeningNarration = day.OpeningNarration,
                 JourneyBeat = day.JourneyBeat,
                 ResourceBeat = day.ResourceBeat,
@@ -473,11 +575,11 @@ public sealed partial class GameSessionJsonSerializer
                 RemainingRideDayDistance,
                 StartingDaysRemaining,
                 RemainingDays,
-                HorseStateBefore,
-                HorseStateAfter,
-                TrailEvent,
-                PendingEncounter,
-                EncounterResolution,
+                HorseStateBefore?.ToDomain(),
+                HorseStateAfter?.ToDomain(),
+                TrailEvent?.ToDomain(),
+                PendingEncounter?.ToDomain(),
+                EncounterResolution?.ToDomain(),
                 OpeningNarration,
                 JourneyBeat,
                 ResourceBeat,

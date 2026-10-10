@@ -370,6 +370,9 @@ public sealed class EfGameSessionRepositoryTests
         loaded.StartJourney(preview.Preview!);
         loaded.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
         loaded.AdvanceJourneyDay();
+        var expectedDiaryEncounter = Assert.IsType<JourneyEncounterState>(Assert.Single(loaded.TravelDiaryDays).PendingEncounter);
+        var expectedDayPlanEncounter = Assert.IsType<JourneyEncounterState>(Assert.Single(loaded.Journey!.CurrentDayPlan!.Encounters).PendingEncounter);
+        AssertEquivalentJourneyEncounter(expectedDiaryEncounter, expectedDayPlanEncounter);
 
         await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
@@ -389,10 +392,22 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(0, reloaded.Journey.PendingEncounter.HiddenState.ChaseFatigue);
         Assert.Equal(0, reloaded.Journey.PendingEncounter.HiddenState.Annoyance);
         Assert.False(reloaded.Journey.PendingEncounter.HiddenState.Shaken);
+        AssertEquivalentJourneyEncounter(expectedDiaryEncounter, Assert.IsType<JourneyEncounterState>(Assert.Single(reloaded.TravelDiaryDays).PendingEncounter));
+        AssertEquivalentJourneyEncounter(expectedDayPlanEncounter, Assert.IsType<JourneyEncounterState>(Assert.Single(reloaded.Journey.CurrentDayPlan!.Encounters).PendingEncounter));
         var loadedJourney = loaded.Journey!;
         var loadedEncounter = loadedJourney.PendingEncounter!;
         var reloadedEncounter = reloaded.Journey.PendingEncounter!;
         Assert.Equal(loadedEncounter.FoeProfile, reloadedEncounter.FoeProfile);
+
+        var resolutionResult = reloaded.ResolveJourneyEncounter("run");
+        Assert.True(resolutionResult.Success);
+        var expectedResolution = Assert.IsType<TravelDiaryEncounterResolutionState>(Assert.Single(reloaded.TravelDiaryDays).EncounterResolution);
+
+        await PersistAsync(repository, unitOfWork, reloaded);
+        var resolvedReload = await repository.GetByIdAsync(session.Id);
+
+        Assert.NotNull(resolvedReload);
+        Assert.Equal(expectedResolution, Assert.Single(resolvedReload!.TravelDiaryDays).EncounterResolution);
 
         var dtoPayload = JsonSerializer.Serialize(GameSessionMapper.ToDto(reloaded));
         Assert.DoesNotContain("foeProfile", dtoPayload, StringComparison.OrdinalIgnoreCase);
@@ -480,11 +495,14 @@ public sealed class EfGameSessionRepositoryTests
         Assert.True(preview.Success);
         loaded.StartJourney(preview.Preview!);
         loaded.AdvanceJourneyDay();
+        var expectedDiaryDay = Assert.Single(loaded.TravelDiaryDays);
+        var expectedTrailEvent = Assert.IsType<JourneyTrailEventState>(expectedDiaryDay.TrailEvent);
 
         await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
 
         Assert.NotNull(reloaded);
+        Assert.Equal(expectedTrailEvent, Assert.Single(reloaded!.TravelDiaryDays).TrailEvent);
         Assert.Equal(loaded!.Player.Wallet.Cash, reloaded.Player.Wallet.Cash);
         Assert.NotNull(reloaded.Journey);
         Assert.Equal(1, reloaded.Journey!.RemainingDays);
@@ -515,6 +533,9 @@ public sealed class EfGameSessionRepositoryTests
         var expectedTerrain = expectedDiaryDay.Terrain;
         var expectedRouteWaterSecure = expectedDiaryDay.RouteWaterSecure;
         var expectedCanteenChargesPerDay = expectedDiaryDay.CanteenChargesPerDay;
+        var expectedHorseStateBefore = expectedDiaryDay.HorseStateBefore;
+        var expectedHorseStateAfter = expectedDiaryDay.HorseStateAfter;
+        var expectedJourneyHorseState = loaded.Journey!.HorseState;
 
         await PersistAsync(repository, unitOfWork, loaded);
         var reloaded = await repository.GetByIdAsync(session.Id);
@@ -524,11 +545,116 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(expectedTerrain, restoredDiaryDay.Terrain);
         Assert.Equal(expectedRouteWaterSecure, restoredDiaryDay.RouteWaterSecure);
         Assert.Equal(expectedCanteenChargesPerDay, restoredDiaryDay.CanteenChargesPerDay);
+        Assert.Equal(expectedHorseStateBefore, restoredDiaryDay.HorseStateBefore);
+        Assert.Equal(expectedHorseStateAfter, restoredDiaryDay.HorseStateAfter);
+        Assert.Equal(expectedJourneyHorseState, reloaded.Journey!.HorseState);
         var dto = GameSessionMapper.ToDto(reloaded!);
         Assert.NotNull(dto.TravelDiary);
         var diaryDay = Assert.Single(dto.TravelDiary!.Days);
         Assert.Contains(diaryDay.Entries, entry => entry.StartsWith("I ", StringComparison.Ordinal));
         Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void DeserializeTravelDiaryDay_ReadsVersionOneNestedTravelFacts()
+    {
+        const string persistedV1 = """
+            {
+              "trailEvent": {
+                "id": 1,
+                "kind": 0,
+                "title": "Lucky food cache",
+                "message": "A sack of provisions rests beside the trail.",
+                "walletDelta": 0,
+                "foodDelta": 2,
+                "canteenChargeDelta": 0,
+                "horseHungerDelta": 0,
+                "horseThirstDelta": 0,
+                "horseExhaustionDelta": 0,
+                "delayDays": 0,
+                "heatIncrease": 0
+              },
+              "pendingEncounter": {
+                "kind": "foe",
+                "message": "A rider blocks the trail.",
+                "choices": [
+                  { "id": "run", "label": "Run" },
+                  { "id": "fight", "label": "Fight" },
+                  { "id": "bribe", "label": "Bribe" }
+                ],
+                "foeProfile": { "speed": 7, "fightStrength": 9, "minimumBribe": 6.5 },
+                "resolutionAttempts": 1,
+                "hiddenState": {
+                  "bribeOffersMade": 2,
+                  "cumulativeBribePaid": 4.5,
+                  "bribeLockedOut": false,
+                  "chaseFatigue": 3,
+                  "annoyance": 1,
+                  "shaken": true
+                }
+              },
+              "encounterResolution": {
+                "choiceId": "run",
+                "choiceLabel": "Run",
+                "healthDelta": -2,
+                "walletDelta": 0,
+                "ammoSpent": 0,
+                "heatIncrease": 0,
+                "horseExhaustionDelta": 1,
+                "continuedOnFoot": false
+              }
+            }
+            """;
+
+        var serializer = new GameSessionJsonSerializer();
+        var day = serializer.DeserializeTravelDiaryDay(persistedV1);
+
+        var trailEvent = Assert.IsType<JourneyTrailEventState>(day.TrailEvent);
+        Assert.Equal(JourneyTrailEventId.LuckyFoodCache, trailEvent.Id);
+        Assert.Equal(JourneyTrailEventKind.Lucky, trailEvent.Kind);
+        Assert.Equal(2, trailEvent.FoodDelta);
+        var encounter = Assert.IsType<JourneyEncounterState>(day.PendingEncounter);
+        Assert.Equal("foe", encounter.Kind);
+        Assert.Equal(new JourneyEncounterChoiceState("run", "Run"), encounter.Choices[0]);
+        Assert.Equal(new JourneyFoeProfile(7, 9, 6.5m), encounter.FoeProfile);
+        Assert.Equal(new JourneyEncounterHiddenState(2, 4.5m, false, 3, 1, true), encounter.HiddenState);
+        Assert.Equal(new TravelDiaryEncounterResolutionState("run", "Run", -2, 0m, 0, 0, 1, false), day.EncounterResolution);
+    }
+
+    [Fact]
+    public void JourneySnapshot_RoundTripsNestedTravelDayEncounterValues()
+    {
+        var session = CreateDiarySession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("openpass"), session.Player.Inventory, session.TravelRules);
+
+        Assert.True(preview.Success);
+        session.StartJourney(preview.Preview!);
+        var baseline = session.Journey!.ToSnapshot(session.TravelRules);
+        var trailEvent = JourneyTrailEventState.CreateLucky(JourneyTrailEventId.LuckyFoodCache, "Trail provisions", "I found supplies.", foodDelta: 2);
+        var foe = JourneyEncounterState.CreateFoe("A rider blocks the trail.", new JourneyFoeProfile(7, 9, 6.5m));
+        var resolution = new TravelDiaryEncounterResolutionState("run", "Run", -2, 0m, 0, 0, 1, false);
+        var currentDayPlan = new TravelDayPlanState(
+            1,
+            new TravelDayEncounterState[]
+            {
+                new(0, TravelDayEncounterCategory.Lucky, "Trail provisions", "I found supplies.", trailEvent, null, resolution),
+                new(1, TravelDayEncounterCategory.Foe, "Hard-eyed rider", foe.Message, null, foe, null)
+            },
+            CurrentEncounterIndex: 1,
+            IsComplete: false);
+        var expectedSnapshot = baseline with { CurrentDayPlan = currentDayPlan, PendingEncounter = foe };
+        var serializer = new GameSessionJsonSerializer();
+
+        var restored = serializer.DeserializeJourneySnapshot(serializer.SerializeJourneySnapshot(expectedSnapshot));
+
+        Assert.NotNull(restored);
+        var restoredEncounters = restored!.CurrentDayPlan!.Encounters;
+        Assert.Equal(trailEvent, restoredEncounters[0].TrailEvent);
+        Assert.Equal(resolution, restoredEncounters[0].Resolution);
+        AssertEquivalentJourneyEncounter(foe, Assert.IsType<JourneyEncounterState>(restoredEncounters[1].PendingEncounter));
+        AssertEquivalentJourneyEncounter(foe, Assert.IsType<JourneyEncounterState>(restored.PendingEncounter));
+        Assert.Equal(baseline.HorseState, restored.HorseState);
     }
 
     [Fact]
@@ -5439,6 +5565,16 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(expected.Terms.GangAffiliations, actual.Terms.GangAffiliations);
         Assert.Equal(expected.Terms.AdvancesGangPressureFor, actual.Terms.AdvancesGangPressureFor);
         Assert.Equal(expected.Terms.SourceKind, actual.Terms.SourceKind);
+    }
+
+    private static void AssertEquivalentJourneyEncounter(JourneyEncounterState expected, JourneyEncounterState actual)
+    {
+        Assert.Equal(expected.Kind, actual.Kind);
+        Assert.Equal(expected.Message, actual.Message);
+        Assert.Equal(expected.Choices.Select(choice => (choice.Id, choice.Label)), actual.Choices.Select(choice => (choice.Id, choice.Label)));
+        Assert.Equal(expected.FoeProfile, actual.FoeProfile);
+        Assert.Equal(expected.ResolutionAttempts, actual.ResolutionAttempts);
+        Assert.Equal(expected.HiddenState, actual.HiddenState);
     }
 
     private static GameSession CreateLuckySession()
