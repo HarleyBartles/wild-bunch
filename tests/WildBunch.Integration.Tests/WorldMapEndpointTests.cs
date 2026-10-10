@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using WildBunch.Application.Games.Models;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
@@ -18,32 +19,15 @@ public sealed class WorldMapEndpointTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var map = await response.Content.ReadFromJsonAsync<StartingTownMapDto>();
+        var payload = await response.Content.ReadAsStringAsync();
+        var map = JsonSerializer.Deserialize<WorldMapDto>(payload, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         Assert.NotNull(map);
         Assert.NotEmpty(map!.Towns);
         Assert.NotEmpty(map.Trails);
-    }
-
-    [Fact]
-    public async Task GetWorldMapReturnsSameShapeAsStartingTownMap()
-    {
-        using var factory = new PostgreSqlApiFactory();
-        using var client = factory.CreateClient();
-        var sessionId = await CreateSessionAsync(client);
-
-        var worldMapResponse = await client.GetAsync($"/api/games/{sessionId}/world-map");
-        var startingTownMapResponse = await client.GetAsync($"/api/games/{sessionId}/starting-town-map");
-
-        Assert.Equal(HttpStatusCode.OK, worldMapResponse.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, startingTownMapResponse.StatusCode);
-
-        var worldMap = await worldMapResponse.Content.ReadFromJsonAsync<StartingTownMapDto>();
-        var startingTownMap = await startingTownMapResponse.Content.ReadFromJsonAsync<StartingTownMapDto>();
-
-        Assert.NotNull(worldMap);
-        Assert.NotNull(startingTownMap);
-        Assert.Equal(startingTownMap!.Towns.Count, worldMap!.Towns.Count);
-        Assert.Equal(startingTownMap.Trails.Count, worldMap.Trails.Count);
+        Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"suspectCount\"", payload, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

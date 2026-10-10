@@ -10,7 +10,7 @@ import {
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { TravelPrepSurface } from "../flow/TravelPrepSurface";
-import { StartingTownMapScene } from "../components/start-flow/PhaserMapHost";
+import { WorldMapScene } from "../components/start-flow/PhaserMapHost";
 import {
   AvailableActionKind,
   StartFlowPhase,
@@ -28,7 +28,7 @@ import {
 
 const mockState = vi.hoisted(() => ({
   games: [] as Array<{
-    config: { scene: StartingTownMapScene };
+    config: { scene: WorldMapScene };
     destroyed: boolean;
     destroy: () => void;
   }>,
@@ -60,7 +60,6 @@ vi.mock("../api/wildBunchApi", () => ({
   previewTravel: vi.fn(),
   travel: vi.fn(),
   getWorldMap: vi.fn(),
-  getStartingTownMap: vi.fn(),
   setupGame: vi.fn(),
   markPrologueViewed: vi.fn(),
   startGameWithTown: vi.fn(),
@@ -76,7 +75,6 @@ vi.mock("../api/wildBunchApi", () => ({
   readWantedPosters: vi.fn(),
   gatherLocalGossip: vi.fn(),
   getPrologue: vi.fn(),
-  getStartingTowns: vi.fn(),
 }));
 
 const mockedGetGame = vi.mocked(getGame);

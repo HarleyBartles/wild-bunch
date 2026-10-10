@@ -64,13 +64,11 @@ vi.mock("../api/wildBunchApi", () => ({
   advanceTravelDay: vi.fn(),
   resolveTravelEncounter: vi.fn(),
   getWorldMap: vi.fn(),
-  getStartingTownMap: vi.fn(),
   setupGame: vi.fn(),
   markPrologueViewed: vi.fn(),
   startGameWithTown: vi.fn(),
   archiveGame: vi.fn(),
   getPrologue: vi.fn(),
-  getStartingTowns: vi.fn(),
   previewTravel: vi.fn(),
 }));
 

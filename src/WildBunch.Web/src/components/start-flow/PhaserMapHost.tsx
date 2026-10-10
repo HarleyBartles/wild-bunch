@@ -1,31 +1,31 @@
 import { useEffect, useRef } from "react";
 import styled from "styled-components";
 import Phaser from "phaser";
-import type { StartingTownMapDto } from "../../api/types";
+import type { WorldMapDto } from "../../api/types";
 
 interface PhaserMapHostProps {
-  mapData: StartingTownMapDto;
+  mapData: WorldMapDto;
   selectedTownId: string | null;
   onTownSelected: (townId: string) => void;
   currentTownId?: string | null;
   selectableTownIds?: string[] | null;
 }
 
-export class StartingTownMapScene extends Phaser.Scene {
-  private readonly mapData: StartingTownMapDto;
+export class WorldMapScene extends Phaser.Scene {
+  private readonly mapData: WorldMapDto;
   public readonly selectedTownId: string | null;
   private readonly onTownSelected: (townId: string) => void;
   private readonly currentTownId: string | null;
   private readonly selectableTownIds: Set<string> | null;
 
   constructor(
-    mapData: StartingTownMapDto,
+    mapData: WorldMapDto,
     selectedTownId: string | null,
     onTownSelected: (townId: string) => void,
     currentTownId: string | null = null,
     selectableTownIds: string[] | null = null,
   ) {
-    super("starting-town-map");
+    super("world-map");
     this.mapData = mapData;
     this.selectedTownId = selectedTownId;
     this.onTownSelected = onTownSelected;
@@ -153,7 +153,7 @@ export function PhaserMapHost({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const scene = new StartingTownMapScene(
+    const scene = new WorldMapScene(
       mapData,
       selectedTownId,
       (townId: string) => onTownSelectedRef.current(townId),

@@ -31,18 +31,9 @@ public static class GameSessionEndpoints
             .Produces(StatusCodes.Status404NotFound)
             .ProducesValidationProblem();
 
-        games.MapGet("starting-towns", GetStartingTownsAsync)
-            .WithName("GetStartingTowns")
-            .Produces<IReadOnlyList<StartingTownDto>>(StatusCodes.Status200OK);
-
-        games.MapGet("{id:guid}/starting-town-map", GetStartingTownMapAsync)
-            .WithName("GetStartingTownMap")
-            .Produces<StartingTownMapDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
-
         games.MapGet("{id:guid}/world-map", GetWorldMapAsync)
             .WithName("GetWorldMap")
-            .Produces<StartingTownMapDto>(StatusCodes.Status200OK)
+            .Produces<WorldMapDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
         games.MapGet("prologue", GetPrologueAsync)
@@ -137,38 +128,14 @@ public static class GameSessionEndpoints
         }
     }
 
-    private static async Task<IResult> GetStartingTownsAsync(
-        GetStartingTownsHandler handler,
-        CancellationToken cancellationToken)
-    {
-        var towns = await handler.HandleAsync(new GetStartingTownsQuery(), cancellationToken);
-        return Results.Ok(towns);
-    }
-
-    private static async Task<IResult> GetStartingTownMapAsync(
-        Guid id,
-        GetStartingTownMapHandler handler,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var map = await handler.HandleAsync(new GetStartingTownMapQuery(id), cancellationToken);
-            return Results.Ok(map);
-        }
-        catch (GameSessionNotFoundException)
-        {
-            return Results.NotFound();
-        }
-    }
-
     private static async Task<IResult> GetWorldMapAsync(
         Guid id,
-        GetStartingTownMapHandler handler,
+        GetWorldMapHandler handler,
         CancellationToken cancellationToken)
     {
         try
         {
-            var map = await handler.HandleAsync(new GetStartingTownMapQuery(id), cancellationToken);
+            var map = await handler.HandleAsync(new GetWorldMapQuery(id), cancellationToken);
             return Results.Ok(map);
         }
         catch (GameSessionNotFoundException)

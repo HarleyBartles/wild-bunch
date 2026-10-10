@@ -78,8 +78,8 @@ public sealed class SeedWorldFactoryTests
     [Fact]
     public void CreateCanonicalWorldTownsHaveNullLayouts()
     {
-        // The canonical start-screen world does not go through MapGenerator and
-        // must not carry town hub layouts — layouts are gameplay-only.
+        // This deterministic policy-test fixture is not a generated session world,
+        // so it has no town hub layouts.
         var world = SeedWorldFactory.CreateCanonicalWorld();
 
         foreach (var town in world.Towns)
