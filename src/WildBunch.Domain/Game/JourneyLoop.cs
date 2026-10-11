@@ -340,12 +340,6 @@ internal sealed class JourneyLoop
             encounter = currentDayEncounter;
         }
 
-        if (encounter is not null && !ReferenceEquals(encounter, _journey.PendingEncounter))
-        {
-            _journey.UpdatePendingEncounter(encounter);
-        }
-
-        var startingState = RebuildCurrentTravelDiaryBaselineState();
         if (encounter is null)
         {
             return new JourneyLoopResult<JourneyEncounterResolutionResult>(
@@ -354,9 +348,16 @@ internal sealed class JourneyLoop
 
         if (encounter.Kind == "foe" && encounter.FoeProfile is null)
         {
-            encounter = RecoverFoeProfile(context, encounter);
+            return new JourneyLoopResult<JourneyEncounterResolutionResult>(
+                JourneyEncounterResolutionResult.Failed("This encounter cannot be resolved because its recorded foe details are unavailable.", _journey.Status, _journey.ToSnapshot(context.TravelRules)), []);
+        }
+
+        if (!ReferenceEquals(encounter, _journey.PendingEncounter))
+        {
             _journey.UpdatePendingEncounter(encounter);
         }
+
+        var startingState = RebuildCurrentTravelDiaryBaselineState();
 
         var resolvedChoiceId = context.ChoiceId.Trim().ToLowerInvariant();
         if (resolvedChoiceId == "bribe" && encounter.HiddenState?.BribeLockedOut == true)
@@ -1355,32 +1356,6 @@ internal sealed class JourneyLoop
             latestDay.StartingDaysRemaining,
             _journey.DelayDays - latestDay.DelayDays,
             startingResources);
-    }
-
-    private JourneyEncounterState RecoverFoeProfile(AdvanceJourneyDayContext context, JourneyEncounterState encounter)
-    {
-        if (_journey is null)
-        {
-            throw new InvalidOperationException("A journey is required to recover foe profile data.");
-        }
-
-        var generationContext = CreateTravelDayGenerationContext(context, new AdvanceDayRuntime(context), TravelDayPlanGenerator.CurrentVersion);
-        var fallbackSeed = string.Join(
-            "|",
-            _journey.Preview.RouteProfile.TrailId,
-            _journey.DaysTravelled,
-            _journey.DelayDays,
-            _journey.TravelMode,
-            _journey.RemainingRideDayDistance,
-            _journey.RemainingDays,
-            context.PlayerHealth,
-            context.PlayerCash,
-            context.CurrentHeat,
-            context.Salt,
-            encounter.Message);
-
-        var foeProfile = JourneyEncounterResolutionEngine.CreateFoeProfile(generationContext, context.TravelRules, fallbackSeed);
-        return encounter with { FoeProfile = foeProfile };
     }
 
     private TravelResourceSnapshot CaptureTravelResources(AdvanceJourneyDayContext context, AdvanceDayRuntime runtime)

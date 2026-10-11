@@ -25,11 +25,20 @@ public sealed class TravelResourceSettlementTests
 
         var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
         var forcedRoll = FindRetaliationRoll(session, encounter, stolenKind);
+        var startingHealth = session.Player.Health;
+        var startingCash = session.Player.Wallet.Cash;
 
-        session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: forcedRoll);
+        var result = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: forcedRoll);
 
         var resolution = Assert.Single(session.UncommittedEvents.OfType<JourneyEncounterResolved>());
         var expectedQuantity = startingQuantity - 1;
+        Assert.True(result.SessionChanged);
+        Assert.Equal("bribe", resolution.ChoiceId);
+        Assert.True(resolution.Resolved);
+        Assert.True(resolution.PlayerHealth < startingHealth);
+        Assert.Equal(resolution.PlayerHealth, session.Player.Health);
+        Assert.Equal(startingCash - 1m, resolution.WalletCash);
+        Assert.Equal(resolution.WalletCash, session.Player.Wallet.Cash);
         Assert.Equal(stolenKind, resolution.StolenItemKind);
         Assert.Equal(1, resolution.StolenItemQuantity);
         Assert.Equal(expectedQuantity, Quantity(resolution.JourneySnapshot, stolenKind));
@@ -38,8 +47,49 @@ public sealed class TravelResourceSettlementTests
 
         var history = setupEvents.Concat(session.CommittedEvents).Concat(session.UncommittedEvents).ToArray();
         var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, history);
+        Assert.Equal(resolution.PlayerHealth, replayed.Player.Health);
+        Assert.Equal(resolution.WalletCash, replayed.Player.Wallet.Cash);
         Assert.Equal(expectedQuantity, replayed.Player.Inventory.GetQuantity(stolenKind));
         Assert.Equal(expectedQuantity, Quantity(replayed.Journey!.ToSnapshot(replayed.TravelRules), stolenKind));
+    }
+
+    [Fact]
+    public void GeneratedDustLossAtZeroFoodRecordsOnlyAvailableFoodAndReplays()
+    {
+        for (var saltIndex = 1; saltIndex <= 128; saltIndex++)
+        {
+            var saltSource = new SaltSource(SaltSourceMode.Runtime, $"zero-food-dust-{saltIndex}");
+            var (session, preview) = TravelTestFactory.CreateHighRiskJourney(
+                startingFood: 0,
+                includeHorse: false,
+                saltSource: saltSource);
+            session.StartJourney(preview);
+            var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
+
+            session.AdvanceJourneyDay();
+
+            var dustLoss = session.UncommittedEvents
+                .OfType<TrailEventApplied>()
+                .FirstOrDefault(applied => applied.TrailEventId == JourneyTrailEventId.BadLuckFoodLoss);
+            if (dustLoss is null)
+            {
+                continue;
+            }
+
+            Assert.Equal(0, dustLoss.FoodDelta);
+            Assert.Equal(0, dustLoss.JourneySnapshot.AvailableFood);
+            Assert.Equal(0, session.Journey!.FoodRemaining);
+            Assert.Equal(0, session.Player.Inventory.GetQuantity(ItemKind.Food));
+
+            var history = setupEvents.Concat(session.CommittedEvents).Concat(session.UncommittedEvents).ToArray();
+            var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, history);
+            Assert.Equal(0, replayed.Journey!.FoodRemaining);
+            Assert.Equal(0, replayed.Journey.ToSnapshot(replayed.TravelRules).AvailableFood);
+            Assert.Equal(0, replayed.Player.Inventory.GetQuantity(ItemKind.Food));
+            return;
+        }
+
+        throw new Xunit.Sdk.XunitException("The normal travel command did not apply generated dust loss within 128 deterministic runtime salts.");
     }
 
     [Fact]
