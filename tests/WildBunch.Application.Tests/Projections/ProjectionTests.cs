@@ -54,6 +54,32 @@ public sealed class ProjectionTests
     }
 
     [Fact]
+    public void HudProjector_PlayerDied_ProjectsZeroHealthAndFailedStatus()
+    {
+        var events = new IDomainEvent[]
+        {
+            new GameStarted
+            {
+                PlayerName = "Ranger Vale",
+                StartingTownId = new TownId("pinecross"),
+                StartingTownName = "Pinecross",
+                StartingHealth = 10,
+                StartingWallet = 25m,
+                StartingInventoryItems = [],
+                GameDifficulty = GameDifficulty.Standard,
+                SaltSource = SaltSource.CreateFixed(string.Empty),
+                GameEntropy = GameEntropy.Classic
+            },
+            new PlayerDied { JourneySequence = 1, DiaryMessage = "I died on the trail." }
+        };
+
+        var hud = new HudProjector().Project(events);
+
+        Assert.Equal(GameStatus.Failed, hud.Status);
+        Assert.Equal(0, hud.Health);
+    }
+
+    [Fact]
     public void HudProjector_StoreItemPurchased_UpdatesWalletAndInventory()
     {
         var projector = new HudProjector();

@@ -8,4 +8,5 @@ public enum TravelDayOutcome
     Ongoing,
     Interrupted,
     Completed,
+    Failed,
 }

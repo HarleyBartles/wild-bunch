@@ -157,6 +157,9 @@ public sealed partial class GameSession
             case PlaythroughArchived pa:
                 session.Apply(pa);
                 break;
+            case PlayerDied pd:
+                session.Apply(pd);
+                break;
             case StoreItemPurchased p:
                 session.Apply(p);
                 break;
