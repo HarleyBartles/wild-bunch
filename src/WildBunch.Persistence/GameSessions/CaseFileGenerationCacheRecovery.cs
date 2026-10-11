@@ -29,7 +29,6 @@ internal static class CaseFileGenerationCacheRecovery
                 StringComparison.Ordinal)
             && generatedCaseFile.KillerReleaseThreshold == cachedCaseFile.KillerReleaseThreshold
             && string.Equals(generatedCaseFile.AccusationId, cachedCaseFile.Accusation?.Value, StringComparison.Ordinal)
-            && generatedCaseFile.KillerReleaseProgress == cachedCaseFile.KillerReleaseProgress
             && MatchesTurfAssignments(generatedCaseFile.SuspectTurfAssignments, cachedCaseFile.SuspectTurfAssignments);
     }
 

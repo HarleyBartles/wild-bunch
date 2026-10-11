@@ -143,7 +143,7 @@ public static class TestSessionFactory
 
     /// <summary>
     /// Creates a session identical to CreateWithConfrontableSaloonSuspect but with
-    /// the killer-release gate fully open (killerReleaseProgress = killerReleaseThreshold = 2).
+    /// the killer-release gate fully open through five qualifying sheriff settlements.
     /// The true culprit (suspect-2) is therefore eligible as a saloon POI candidate.
     /// Used by BUNCH-90 gate-aware true culprit eligibility tests.
     /// </summary>
@@ -155,7 +155,7 @@ public static class TestSessionFactory
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
 
-        var suspects = new[]
+        var suspects = new List<Suspect>
         {
             new Suspect(
                 new SuspectId("suspect-1"),
@@ -168,19 +168,51 @@ public static class TestSessionFactory
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
 
+        var warrants = new List<Warrant>();
+        for (var i = 3; i <= 7; i++)
+        {
+            var suspectId = new SuspectId($"suspect-{i}");
+            suspects.Add(new Suspect(suspectId, $"Gang Member {i}", SuspectTraits.Empty, SuspectStatus.AtLarge));
+            warrants.Add(new Warrant(
+                new WarrantId($"warrant-{i}"),
+                $"Gang Member {i}",
+                new WarrantTerms(
+                    WarrantDisposition.DeadOrAlive,
+                    100m,
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    "Sheriff",
+                    InvestigationTargetKind.GangMember,
+                    new[] { OutlawGangIds.WildBunch },
+                    OutlawGangIds.WildBunch,
+                    InvestigationSourceKind.SheriffWarrants),
+                "Wanted for gang activity.",
+                suspectId));
+        }
+
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
-            killerReleaseThreshold: 2,
-            killerReleaseProgress: 2,
-            knownWarrants: Array.Empty<Warrant>());
+            killerReleaseThreshold: 5,
+            knownWarrants: warrants);
 
         var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
+            Wallet.Starting(25m),
+            new DomainInventory(new[] { new InventoryItem(ItemKind.Revolver, 1) }),
+            GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
+        for (var i = 3; i <= 7; i++)
+        {
+            var suspectId = new SuspectId($"suspect-{i}");
+            session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+            session.MarkEventsCommitted();
+            session.LookAroundSaloon();
+            session.ConfrontSaloonPersonOfInterest($"warrant-{i}");
+        }
         session.MarkEventsCommitted();
         return session;
     }
@@ -608,7 +640,6 @@ public static class TestSessionFactory
             discoveredSuspectIds: originalCase.DiscoveredSuspectIds,
             publicClues: ReconstructPublicClues(originalCase),
             killerReleaseThreshold: originalCase.KillerReleaseThreshold,
-            killerReleaseProgress: originalCase.KillerReleaseProgress,
             knownWarrants: Array.Empty<Warrant>(),
             publicWarrants: ReconstructPublicWarrants(originalCase),
             suspectTurfAssignments: originalCase.SuspectTurfAssignments,

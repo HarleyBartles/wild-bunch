@@ -31,7 +31,7 @@ public sealed class JournalResolverTests
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.OpeningLead);
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.KillerReleaseState.IsReleased);
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.KillerReleaseState.Progress);
-        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredGangSettlements, result.KillerReleaseState.RequiredGangSettlements);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseSummary);
         Assert.Empty(result.DiscoveredSuspects);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.KnownClues.Count);

@@ -621,7 +621,6 @@ public class GameSessionEventSourcingTests
             discoveredSuspectIds: new[] { new SuspectId("suspect-1") },
             publicClues: new[] { publicClue },
             killerReleaseThreshold: 3,
-            killerReleaseProgress: 1,
             knownWarrants: new[] { knownWarrant },
             publicWarrants: new[] { publicWarrant },
             suspectTurfAssignments: new[] { new SuspectTurfAssignment(new SuspectId("suspect-1"), town.Id) },

@@ -34,46 +34,37 @@ public sealed class WantedPosterResolverTests
     }
 
     [Fact]
-    public void BoringMode_CulpritWarrantNotSurfacesUntilReleased()
+    public void BoringMode_CulpritIdentityCanSurfaceBeforeReleaseGateOpens()
     {
-        var caseFile = BuildTestCaseFile(killerReleased: false);
+        var caseFile = BuildTestCaseFile();
         var resolver = new WantedPosterResolver();
 
-        // Try all town/visit combos — culprit warrant should never surface.
         for (int town = 0; town < 8; town++)
         {
-            for (int visit = 0; visit < 5; visit++)
-            {
-                var warrant = resolver.Resolve(caseFile, town, visit, salt: null);
-                Assert.NotNull(warrant);
-                Assert.NotEqual(InvestigationTargetKind.TrueCulprit, warrant!.Terms.TargetKind);
-            }
-        }
-    }
-
-    [Fact]
-    public void BoringMode_AfterKillerReleased_CulpritWarrantCanSurface()
-    {
-        var caseFile = BuildTestCaseFile(killerReleased: true);
-        var resolver = new WantedPosterResolver();
-
-        // With the killer released, the culprit warrant is eligible and must be
-        // reachable across the full town/visit space.
-        var sawCulprit = false;
-        for (int town = 0; town < 8 && !sawCulprit; town++)
-        {
-            for (int visit = 0; visit < 8 && !sawCulprit; visit++)
+            for (int visit = 0; visit < 8; visit++)
             {
                 var warrant = resolver.Resolve(caseFile, town, visit, salt: null);
                 Assert.NotNull(warrant);
                 if (warrant!.Terms.TargetKind == InvestigationTargetKind.TrueCulprit)
                 {
-                    sawCulprit = true;
+                    Assert.False(caseFile.KillerReleaseState.IsReleased);
+                    return;
                 }
             }
         }
 
-        Assert.True(sawCulprit, "Culprit warrant should become eligible once the killer is released.");
+        Assert.Fail("The culprit warrant should be eligible before the release gate opens.");
+    }
+
+    [Fact]
+    public void BoringMode_CulpritIdentityEligibilityDoesNotDependOnReleaseProgress()
+    {
+        var caseFile = BuildTestCaseFile();
+        var resolver = new WantedPosterResolver();
+
+        var beforeRelease = resolver.Resolve(caseFile, townSlotIndex: 0, visitCount: 0, salt: null);
+        Assert.Equal(new WarrantId("warrant-culprit"), beforeRelease!.Id);
+        Assert.False(caseFile.KillerReleaseState.IsReleased);
     }
 
     [Fact]
@@ -97,8 +88,8 @@ public sealed class WantedPosterResolverTests
         var caseFile = BuildTestCaseFile();
         var resolver = new WantedPosterResolver();
 
-        // Reveal every non-culprit warrant (the only eligible ones while locked).
-        for (int i = 0; i < 7; i++)
+        // Every public warrant, including the culprit identity, is eligible.
+        for (int i = 0; i < 8; i++)
         {
             var warrant = resolver.Resolve(caseFile, townSlotIndex: i, visitCount: 0, salt: null);
             Assert.NotNull(warrant);
@@ -142,21 +133,27 @@ public sealed class WantedPosterResolverTests
     }
 
     [Fact]
-    public void SaltMode_CulpritWarrantNotSurfacesUntilReleased()
+    public void SaltMode_CulpritIdentityCanSurfaceBeforeReleaseGateOpens()
     {
-        var caseFile = BuildTestCaseFile(killerReleased: false);
+        var caseFile = BuildTestCaseFile();
         var resolver = new WantedPosterResolver();
-        var salt = SaltSource.CreateFixed("deadbeef");
+        var salt = SaltSource.CreateFixed("salt-1");
 
         for (int town = 0; town < 8; town++)
         {
-            for (int visit = 0; visit < 5; visit++)
+            for (int visit = 0; visit < 8; visit++)
             {
                 var warrant = resolver.Resolve(caseFile, town, visit, salt: salt);
                 Assert.NotNull(warrant);
-                Assert.NotEqual(InvestigationTargetKind.TrueCulprit, warrant!.Terms.TargetKind);
+                if (warrant!.Terms.TargetKind == InvestigationTargetKind.TrueCulprit)
+                {
+                    Assert.False(caseFile.KillerReleaseState.IsReleased);
+                    return;
+                }
             }
         }
+
+        Assert.Fail("The culprit warrant should be eligible before the release gate opens.");
     }
 
     [Fact]
@@ -172,7 +169,7 @@ public sealed class WantedPosterResolverTests
     /// plus seven gang-member warrants. The culprit warrant is only
     /// eligible once the killer trail is released.
     /// </summary>
-    private static CaseFile BuildTestCaseFile(bool killerReleased = false)
+    private static CaseFile BuildTestCaseFile()
     {
         var suspects = new[]
         {
@@ -222,8 +219,7 @@ public sealed class WantedPosterResolverTests
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("A pale scar cuts across the left cheek."),
             knownClues: Array.Empty<Clue>(),
-            killerReleaseThreshold: 2,
-            killerReleaseProgress: killerReleased ? 2 : 0,
+            killerReleaseThreshold: 5,
             publicWarrants: publicWarrants);
     }
 }

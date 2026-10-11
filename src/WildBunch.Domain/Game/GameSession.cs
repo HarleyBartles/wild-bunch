@@ -2102,8 +2102,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// <summary>
     /// A suspect is eligible as a saloon POI candidate if they are not the unreleased
     /// true killer. Any non-culprit suspect can walk into any saloon — no town presence,
-    /// warrant, or poster state gates. The true killer is gated out until the killer-release
-    /// gate opens. See BUNCH-106 realignment.
+    /// warrant, or poster state gates. The true killer is gated out until five other gang
+    /// members are settled. See BUNCH-106 realignment.
     /// </summary>
     internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
         => _bountyLoop.IsEligibleSaloonPersonOfInterestCandidate(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
