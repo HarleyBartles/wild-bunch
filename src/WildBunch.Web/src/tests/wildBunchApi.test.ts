@@ -51,6 +51,7 @@ describe("wildBunchApi", () => {
     expect(new Headers(init.headers).get("Idempotency-Key")).toBe(
       "8b883c75-4e2e-4e82-90b4-95cb3867ae51",
     );
+    expect(new Headers(init.headers).get("Content-Type")).toBe("application/json");
     expect(JSON.parse(init.body as string)).toEqual(request);
   });
 
@@ -69,6 +70,7 @@ describe("wildBunchApi", () => {
     expect(new Headers(init.headers).get("Idempotency-Key")).toBe(
       "fab21f5d-7f89-4382-9520-24a5b4f558d5",
     );
+    expect(new Headers(init.headers).get("Content-Type")).toBe("application/json");
     expect(JSON.parse(init.body as string)).toEqual({ startingTownId: "dust-fork" });
   });
 });

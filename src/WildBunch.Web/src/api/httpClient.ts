@@ -24,12 +24,12 @@ export function getApiBaseUrl() {
 }
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
+
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
     ...init,
+    headers,
   });
 
   const contentType = response.headers.get("content-type") ?? "";
