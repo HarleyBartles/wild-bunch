@@ -138,6 +138,8 @@ More seriously, the promised selectable DOM fallback is absent from [StartingTow
 
 **Dated disposition (2026-10-11):** ADR-0044 withdraws equivalent keyboard town selection from the 0.1.0 baseline while preserving React-owned selection state, Phaser's intent-only role and server-owned legality. The current source remains pointer-operated. The original evidence and unknown reason for the earlier removal remain part of this finding's history; the proposed restoration is no longer current work.
 
+**Dated disposition (2026-10-11, after ADR-0045):** ADR-0045 later restored accessible town selection as a 0.1.0 requirement. Current-code inspection then confirmed the map-level interaction remained unimplemented, and the user chose to exclude it from this baseline. ADR-0046 now supersedes ADR-0045 for 0.1.0; the shared map remains pointer-operated, with React-owned selection and server-owned legality intact. Preserve both earlier decisions as history; this is not an assertion that keyboard town selection was implemented and removed.
+
 ### A-12: The dev-enabled action ADR describes public phases that are dev-only and incompletely replayable
 
 **Affected:** ADR-0036, with ADR-0028's event-sourcing claim.

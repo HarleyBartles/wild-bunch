@@ -10,6 +10,7 @@
 - `2026-10-08` - The map transport changed from a global map and one-step confirmation to a session-derived map with staged setup and start; those endpoint and DTO shapes are historical. ADR-0039 supersedes the original setup-flow and initial-map assumptions. Accessible equivalent town selection remains an accepted decision, but the current implementation lacks it; the reason for that loss is unknown and no decision retires the requirement.
 - `2026-10-11` - ADR-0044 withdraws equivalent keyboard town selection from the 0.1.0 baseline while preserving this record's React/Phaser ownership and server-authority decisions. The reason the earlier interaction disappeared remains unknown.
 - `2026-10-11` - ADR-0045 restores equivalent keyboard and screen-reader town selection for 0.1.0 through the shared world-map interaction; React/Phaser ownership and server-authority decisions remain unchanged.
+- `2026-10-11` - ADR-0046 supersedes this record's map-level keyboard and screen-reader town-selection requirement for the 0.1.0 baseline. React/Phaser ownership, intent-only rendering, server-owned legality, and accessibility for other supported controls remain in force.
 
 ## Decision Type
 
@@ -21,6 +22,7 @@
 - `partially superseded by`: ADR-0039
 - `partially superseded by`: ADR-0044
 - `partially superseded by`: ADR-0045
+- `partially superseded by`: ADR-0046
 - `related to`: ADR-0022
 
 ## Context
@@ -33,7 +35,7 @@ React owns the playfield's server-state coordination, player-facing display, and
 
 At the time this decision was made, the equivalent keyboard and screen-reader interaction remained part of the accepted scope. ADR-0039 governs the current meaning of town selection: after the prologue the player chooses one town on the shared world map, and that selection performs the free first arrival.
 
-ADR-0045 supersedes ADR-0044's temporary pointer-only input scope and restores the equivalent keyboard and screen-reader interaction for the 0.1.0 baseline. React-owned selection state, Phaser's intent-only role and server-owned legality remain.
+ADR-0045 superseded ADR-0044's temporary pointer-only input scope and restored the equivalent keyboard and screen-reader interaction for the 0.1.0 baseline. ADR-0046 later supersedes that map-level accessibility requirement for 0.1.0; React-owned selection state, Phaser's intent-only role and server-owned legality remain.
 
 ## Rationale and Alternatives
 
@@ -41,8 +43,8 @@ Letting the canvas decide legality or call mutations would create a second clien
 
 ## Consequences
 
-Renderer changes may replace Phaser without changing state ownership or selection legality. The 2026-10-08 audit recorded that the town-selection UI lacked the then-accepted equivalent keyboard path and that its removal reason was unknown. ADR-0044 temporarily withdrew that input requirement; ADR-0045 restores it through shared semantic town controls.
+Renderer changes may replace Phaser without changing state ownership or selection legality. The 2026-10-08 audit recorded that the town-selection UI lacked the then-accepted equivalent keyboard path and that its removal reason was unknown. ADR-0044 temporarily withdrew that input requirement; ADR-0045 restored it through shared semantic town controls; ADR-0046 later excluded map-level keyboard and screen-reader town selection from the 0.1.0 baseline.
 
 ## Successors and Surviving Scope
 
-ADR-0039 supersedes the original map and setup-flow assumptions. React ownership, intent-only renderer input, server-owned selection legality and accessible-equivalent town selection remain in force. ADR-0044 is superseded by ADR-0045.
+ADR-0039 supersedes the original map and setup-flow assumptions. React ownership, intent-only renderer input and server-owned selection legality remain in force. ADR-0045's map-level keyboard and screen-reader town-selection requirement is superseded for 0.1.0 by ADR-0046; keyboard and focus behavior for other supported controls remains governed by their owners. ADR-0044 is superseded by ADR-0045, and ADR-0045 is partially superseded by ADR-0046.

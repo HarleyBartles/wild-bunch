@@ -2,11 +2,12 @@
 
 ## Status
 
-`live`
+`superseded`
 
 ## Dated History
 
 - `2026-10-11` - Restored equivalent keyboard and screen-reader town selection for the shared world map after confirming the earlier DOM town-button path had been removed without a deliberate decision.
+- `2026-10-11` - Superseded by ADR-0046 after current-code inspection confirmed map-level keyboard/screen-reader town selection is absent; adding it would be new 0.1.0 work, which the user chose to exclude.
 
 ## Decision Type
 
@@ -17,6 +18,7 @@
 - `partially supersedes`: ADR-0035
 - `related to`: ADR-0039
 - `supersedes`: ADR-0044
+- `superseded by`: ADR-0046
 
 ## Context
 
@@ -38,4 +40,4 @@ The shared map feature must be tested through both pointer and semantic keyboard
 
 ## Successors and Surviving Scope
 
-This record supersedes ADR-0044's pointer-only 0.1.0 restriction and restores the accessible-equivalent town-selection requirement from ADR-0035. ADR-0035's React-owned selection state, Phaser intent-only boundary and server-owned legality remain live. ADR-0039's setup, prologue, shared-map and one-shot free first-arrival flow remains live.
+This record superseded ADR-0044 when made. ADR-0046 later supersedes this release-scope decision. ADR-0035's React-owned selection state, Phaser intent-only boundary and server-owned legality remain live. ADR-0039's setup, prologue, shared-map and one-shot free first-arrival flow remains live.
