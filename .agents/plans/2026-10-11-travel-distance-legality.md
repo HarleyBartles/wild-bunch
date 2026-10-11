@@ -36,7 +36,7 @@
 
 ## Task 1: Recalculate travel pacing from remaining distance
 
-**Files:** Modify `src/WildBunch.Domain/Travel/TravelJourney.cs`; modify `tests/WildBunch.Domain.Tests/TravelResolverTests.cs`; modify `tests/WildBunch.Domain.Tests/EventSourcing/TravelReplayEqualityTests.cs`.
+**Files:** Modify `src/WildBunch.Domain/Travel/TravelJourney.cs`; modify `tests/WildBunch.Domain.Tests/TravelResolverTests.cs`; modify `tests/WildBunch.Domain.Tests/TravelTestFactory.cs`; modify `tests/WildBunch.Domain.Tests/EventSourcing/TravelReplayEqualityTests.cs`.
 
 **Interface:** `TravelJourney.RecalculatePacing(TravelMode)` preserves the current remaining distance, replaces progress days using `RouteProfile.CalculateRemainingDays(remainingDistance, newMode)`, and carries forward the non-progress days still present in `RemainingDays`. `AdvanceOneDay` reports completion only when both remaining days and distance are zero. Existing `JourneyLoop` completion branches consume that result, so no `JourneyCompleted` event or destination transition can occur before both conditions hold.
 
@@ -45,6 +45,7 @@
 **Steps:**
 
 - [ ] Replace the lame-horse and dead-horse stale-day assertions with the three-unit real command scenario and a non-null result assertion.
+- [ ] Add a setup-capturing critical-horse route fixture to `TravelTestFactory` so the replay test reuses one deterministic scenario instead of duplicating world and aggregate construction.
 - [ ] Add the pending-delay pacing assertion using a `TravelJourney` built from a valid preview, an existing delay, one progressed day and the mounted-to-foot transition.
 - [ ] Run `dotnet test WildBunch.sln --filter "FullyQualifiedName~TravelResolverTests|FullyQualifiedName~TravelReplayEqualityTests"` and verify the route scenario reaches the old mounted day limit with distance still outstanding and the delay assertion retains the wrong day count.
 - [ ] Update `RecalculatePacing` to preserve pending non-progress days while recalculating required progress days from the remaining distance and new pace.
