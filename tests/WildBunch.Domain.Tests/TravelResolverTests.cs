@@ -141,9 +141,12 @@ public sealed class TravelResolverTests
         var result = session.AdvanceJourneyDay();
 
         Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
-        Assert.Equal(TravelMode.Foot, result.Journey?.TravelMode ?? TravelMode.Foot);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(TravelMode.Foot, result.Journey.TravelMode);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.Equal(0.5m, session.Journey.RemainingRideDayDistance);
         Assert.Equal(1, session.Journey.RemainingDays);
-        Assert.Equal(1, result.Journey?.RemainingDays ?? 1);
+        Assert.Equal(1, result.Journey.RemainingDays);
         Assert.True(session.Player.Inventory.GetHorseState()!.IsLame);
         Assert.False(session.Player.Inventory.GetHorseState()!.CanProvideMountedTravel);
     }
@@ -166,6 +169,8 @@ public sealed class TravelResolverTests
         Assert.NotNull(result.Journey);
         Assert.Equal(TravelMode.Foot, session.Journey!.TravelMode);
         Assert.Equal(TravelMode.Foot, result.Journey!.TravelMode);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.Equal(0.5m, session.Journey.RemainingRideDayDistance);
         Assert.Equal(1, session.Journey.RemainingDays);
         Assert.Equal(1, result.Journey.RemainingDays);
         Assert.Null(session.Player.Inventory.GetHorseState());
@@ -190,6 +195,31 @@ public sealed class TravelResolverTests
         var replacementPurchase = session.Purchase(arrivalHorseOffer, 1);
         Assert.True(replacementPurchase.Success, replacementPurchase.Message);
         Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+    }
+
+    [Fact]
+    public void RecalculatingTravelPacingPreservesPendingDelayDays()
+    {
+        var session = CreateProgressionSession(
+            HorseTravelState.Healthy,
+            TrailTerrain.OpenRange,
+            WaterFeature.River,
+            rideDayDistance: 3m);
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId!.Value,
+            new TownId("midway"),
+            session.Player.Inventory).Preview!;
+        var journey = preview.ToJourney();
+
+        journey.AddDelayDays(1);
+        journey.AdvanceOneDay();
+        journey.RecalculatePacing(TravelMode.Foot);
+
+        Assert.Equal(2m, journey.RemainingRideDayDistance);
+        Assert.Equal(1, journey.DelayDays);
+        Assert.Equal(5, journey.RemainingDays);
     }
 
     [Fact]
@@ -1337,7 +1367,8 @@ public sealed class TravelResolverTests
         int canteenCharges = 2,
         TrailRisk trailRisk = TrailRisk.Low,
         GameDifficulty GameDifficulty = GameDifficulty.Standard,
-        Wallet? wallet = null)
+        Wallet? wallet = null,
+        decimal rideDayDistance = 1m)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var midway = new Town(new TownId("midway"), "Midway");
@@ -1345,7 +1376,7 @@ public sealed class TravelResolverTests
             new[] { pinecross, midway },
             new[]
             {
-                new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, trailRisk, terrain, waterFeature)
+                new Trail(new TrailId("trail-pine-midway"), pinecross.Id, midway.Id, trailRisk, terrain, waterFeature, rideDayDistance)
             });
 
         var caseFile = CreateCaseFile();

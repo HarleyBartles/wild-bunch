@@ -44,14 +44,14 @@
 
 **Steps:**
 
-- [ ] Replace the lame-horse and dead-horse stale-day assertions with the three-unit real command scenario and a non-null result assertion.
-- [ ] Add a setup-capturing critical-horse route fixture to `TravelTestFactory` so the replay test reuses one deterministic scenario instead of duplicating world and aggregate construction.
-- [ ] Add the pending-delay pacing assertion using a `TravelJourney` built from a valid preview, an existing delay, one progressed day and the mounted-to-foot transition.
-- [ ] Run `dotnet test WildBunch.sln --filter "FullyQualifiedName~TravelResolverTests|FullyQualifiedName~TravelReplayEqualityTests"` and verify the route scenario reaches the old mounted day limit with distance still outstanding and the delay assertion retains the wrong day count.
-- [ ] Update `RecalculatePacing` to preserve pending non-progress days while recalculating required progress days from the remaining distance and new pace.
-- [ ] Make `JourneyProgress.Completed` require both zero remaining days and zero remaining distance; leave `MarkCompleted` and event snapshots reachable only through that legal result.
-- [ ] Run the command-path scenario through actual completion and arrival acknowledgement; assert no earlier `JourneyCompleted`, no early town change and no dropped distance.
-- [ ] Rehydrate the captured setup, override, daily travel, completion and acknowledgement events; assert exact completion history and terminal journey state.
+- [x] Strengthen lame-horse and dead-horse scenarios with explicit active-phase, remaining-distance and non-null result assertions; add the separate three-unit command scenario.
+- [x] Add a setup-capturing critical-horse route fixture to `TravelTestFactory` so the replay test reuses one deterministic scenario instead of duplicating world and aggregate construction.
+- [x] Add the pending-delay pacing assertion using a `TravelJourney` built from a valid preview, an existing delay, one progressed day and the mounted-to-foot transition.
+- [x] Run `dotnet test WildBunch.sln --filter "FullyQualifiedName~TravelResolverTests|FullyQualifiedName~TravelReplayEqualityTests"` and verify the route scenario reaches the old mounted day limit with distance still outstanding and the delay assertion retains the wrong day count.
+- [x] Update `RecalculatePacing` to preserve pending non-progress days while recalculating required progress days from the remaining distance and new pace.
+- [x] Make `JourneyProgress.Completed` require both zero remaining days and zero remaining distance; leave `MarkCompleted` and event snapshots reachable only through that legal result.
+- [x] Run the command-path scenario through actual completion and arrival acknowledgement; assert no earlier `JourneyCompleted`, no early town change and no dropped distance.
+- [x] Rehydrate the captured setup, override, daily travel, completion and acknowledgement events; assert exact completion history and terminal journey state.
 
 ## Task 2: Expose only legal actions after terminal travel failure
 
@@ -63,14 +63,14 @@
 
 **Steps:**
 
-- [ ] Add the failed-journey action query to the actual terminal-death scenario and verify it currently offers `AdvanceTravelDay` by running `dotnet test WildBunch.sln --filter "FullyQualifiedName~TravelStarvationTests"`.
-- [ ] Resolve `JourneyStatus.Failed` through the same no-gameplay-action branch as completed arrival while preserving map and journal reads.
-- [ ] Run `dotnet test WildBunch.sln --filter "FullyQualifiedName~TravelResolverTests|FullyQualifiedName~TravelReplayEqualityTests|FullyQualifiedName~TravelStarvationTests|FullyQualifiedName~ActionAvailabilityResolverTests"`; confirm completed arrival and active/pending travel retain their existing action behavior.
+- [x] Add the failed-journey action query to the actual terminal-death scenario and verify it currently offers `AdvanceTravelDay` by running `dotnet test WildBunch.sln --filter "FullyQualifiedName~TravelStarvationTests"`.
+- [x] Resolve `JourneyStatus.Failed` through the same no-gameplay-action branch as completed arrival while preserving map and journal reads.
+- [x] Run `dotnet test WildBunch.sln --filter "FullyQualifiedName~TravelResolverTests|FullyQualifiedName~TravelReplayEqualityTests|FullyQualifiedName~TravelStarvationTests|FullyQualifiedName~ActionAvailabilityResolverTests"`; confirm completed arrival and active/pending travel retain their existing action behavior.
 
 ## Delivery
 
-- [ ] Update `docs/features.md` PG-007 assessment with the route-distance, delay-preservation, legal completion, failed-action and replay evidence; keep any genuinely unresolved PG-007 exits explicit.
-- [ ] Run `py -3 tools/run.py ci --check`, review the complete diff and commit through the normal check-only hook.
-- [ ] Request a fresh whole-branch review, resolve all actionable findings, and publish one ready PR to `develop` with exact-head hosted canonical-gate proof.
+- [x] Update `docs/features.md` PG-007 assessment with the route-distance, delay-preservation, legal completion, failed-action and replay evidence; keep any genuinely unresolved PG-007 exits explicit.
+- [x] Run `py -3 tools/run.py ci --check`, review the complete diff and commit through the normal check-only hook.
+- [x] Request a fresh whole-branch review and resolve the replay-state finding; publish one ready PR to `develop` with exact-head hosted canonical-gate proof.
 - [ ] Merge after the exact-head gate passes; verify the develop-push gate and fast-forward the main checkout.
 - [ ] Retire this plan in the first substantive successor PR and update the roadmap with verified source, merge, and hosted-gate evidence.

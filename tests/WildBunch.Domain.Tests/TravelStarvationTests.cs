@@ -1,4 +1,5 @@
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Actions;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
@@ -78,6 +79,14 @@ public sealed class TravelStarvationTests
         Assert.Equal(GameStatus.Failed, session.Status);
         Assert.Equal(JourneyStatus.Failed, session.Journey!.Status);
         Assert.Equal(distanceBefore, session.Journey.RemainingRideDayDistance);
+        var availableActions = new ActionAvailabilityResolver().Resolve(new ActionAvailabilityContext(
+            session.StartFlowPhase,
+            world,
+            session.Player.CurrentTownId,
+            session.Journey.ToSnapshot(session.TravelRules)));
+        Assert.Equal(
+            new[] { AvailableActionKind.ViewMap, AvailableActionKind.ViewJournal },
+            availableActions.Select(action => action.Kind));
         Assert.DoesNotContain(session.UncommittedEvents, e => e is JourneyCompleted);
         Assert.DoesNotContain(session.UncommittedEvents, e => e is TrailEventApplied or JourneyEncounterResolved);
         var fatalEvents = session.UncommittedEvents.ToArray();

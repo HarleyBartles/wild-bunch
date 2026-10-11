@@ -128,7 +128,12 @@ public sealed class TravelJourney
 
     public void RecalculatePacing(TravelMode travelMode)
     {
+        var remainingNonProgressDays = Math.Max(
+            0,
+            RemainingDays - Preview.RouteProfile.CalculateRemainingDays(RemainingRideDayDistance, TravelMode));
         TravelMode = travelMode;
+        RemainingDays = Preview.RouteProfile.CalculateRemainingDays(RemainingRideDayDistance, travelMode)
+            + remainingNonProgressDays;
     }
 
     public JourneyProgress AdvanceOneDay()
@@ -144,7 +149,9 @@ public sealed class TravelJourney
         DaysTravelled++;
         RemainingDays = Math.Max(0, RemainingDays - 1);
 
-        return new JourneyProgress(dailyProgress, RemainingDays == 0);
+        return new JourneyProgress(
+            dailyProgress,
+            RemainingDays == 0 && RemainingRideDayDistance == 0);
     }
 
     public void MarkCompleted()
