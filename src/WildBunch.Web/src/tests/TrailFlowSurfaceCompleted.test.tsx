@@ -265,6 +265,33 @@ describe("TrailFlowSurface completed-journey view", () => {
     });
   });
 
+  it("shows an unsuccessful arrival result while retaining the completed journey", async () => {
+    const completedSession = createCompletedJourneySession();
+    mockedGetGame.mockResolvedValue(completedSession);
+    vi.mocked(getAvailableActions).mockResolvedValue([]);
+    vi.mocked(getJournal).mockResolvedValue(createJournal());
+    mockedAcknowledgeTravelArrival.mockResolvedValue({
+      success: false,
+      message: "The arrival cannot be acknowledged yet.",
+      currentSession: completedSession,
+      journeyStatus: JourneyStatus.Completed,
+      journey: completedSession.journey,
+      trailEvent: null,
+      travelDiary: null,
+    });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    const user = userEvent.setup();
+    const { queryClient } = renderTrailFlow();
+    await user.click(await screen.findByRole("button", { name: /step into town/i }));
+
+    expect(await screen.findByText("The arrival cannot be acknowledged yet.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /you've arrived in dust fork/i }),
+    ).toBeInTheDocument();
+    expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(completedSession);
+  });
+
   it("keeps arrival acknowledgement pending and prevents a duplicate submission", async () => {
     const inTownSession = createInTownSession();
     const response = deferred<Awaited<ReturnType<typeof acknowledgeTravelArrival>>>();

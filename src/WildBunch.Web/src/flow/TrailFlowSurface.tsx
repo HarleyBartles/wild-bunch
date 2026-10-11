@@ -83,6 +83,9 @@ export function TrailFlowSurface() {
           {arrivalBelongsToCurrentGame && arrivalMutation.error ? (
             <FlowError>{arrivalMutation.error.message}</FlowError>
           ) : null}
+          {arrivalBelongsToCurrentGame && arrivalMutation.data && !arrivalMutation.data.success ? (
+            <FlowError>{arrivalMutation.data.message}</FlowError>
+          ) : null}
         </ArrivalCard>
       </FlowSurface>
     );
