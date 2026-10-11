@@ -22,6 +22,7 @@ import {
 import { useGameSessionMutations } from "./useGameSessionMutations";
 import { useGameSessionQueries } from "./useGameSessionQueries";
 import { useGameSessionState } from "./useGameSessionState";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
 
 type BusyMode =
   "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
@@ -72,7 +73,7 @@ export function useCurrentGameSession() {
       state.setStoredGameId(null);
       state.setWantedPosters([]);
       state.setDeclaredWantedIdentityHandle("");
-      queryClient.removeQueries({ queryKey: ["session", gameId] });
+      queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
       queryClient.removeQueries({ queryKey: ["actions", gameId] });
       queryClient.removeQueries({ queryKey: ["journal", gameId] });
     }
@@ -200,7 +201,7 @@ export function useCurrentGameSession() {
   const handleTravelTurnResult = useCallback(
     async (result: GameTurnResultDto) => {
       const activeGameId = result.currentSession.id;
-      queryClient.setQueryData(["session", activeGameId], result.currentSession);
+      queryClient.setQueryData(gameSessionQueryKey(activeGameId), result.currentSession);
       await invalidateGameQueries(activeGameId);
       setNotice(result.message);
     },
@@ -261,7 +262,7 @@ export function useCurrentGameSession() {
     setError("");
     setResetToken((current) => current + 1);
     if (gameId) {
-      queryClient.removeQueries({ queryKey: ["session", gameId] });
+      queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
       queryClient.removeQueries({ queryKey: ["actions", gameId] });
       queryClient.removeQueries({ queryKey: ["journal", gameId] });
     }
@@ -311,9 +312,9 @@ export function useCurrentGameSession() {
     (next: GameSessionDto | null) => {
       if (gameId) {
         if (next) {
-          queryClient.setQueryData(["session", gameId], next);
+          queryClient.setQueryData(gameSessionQueryKey(gameId), next);
         } else {
-          queryClient.removeQueries({ queryKey: ["session", gameId] });
+          queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
         }
       }
     },

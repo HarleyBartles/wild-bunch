@@ -1,16 +1,12 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getAvailableActions, getGame, getJournal } from "../api/wildBunchApi";
+import { getAvailableActions, getJournal } from "../api/wildBunchApi";
+import { gameSessionQueryOptions } from "../state/gameSessionQuery";
 
 type CockpitMode = "home" | "travel";
 
 export function useGameSessionQueries(gameId: string | null) {
-  const sessionQuery = useQuery({
-    queryKey: ["session", gameId],
-    queryFn: () => getGame(gameId as string),
-    enabled: Boolean(gameId),
-    retry: false,
-  });
+  const sessionQuery = useQuery(gameSessionQueryOptions(gameId));
 
   const actionsQuery = useQuery({
     queryKey: ["actions", gameId],

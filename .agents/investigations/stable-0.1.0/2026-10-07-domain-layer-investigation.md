@@ -145,7 +145,7 @@ Encounter resolution can replace/recover an old pending foe profile before valid
 
 Bribe resolution still reports nonzero heat increase in its plan/diary metadata while current pursuit heat remains unchanged (`JourneyEncounterResolutionEngine.cs:358-387`). This extends AP-19's narration honesty concern; do not reactivate retired trail heat merely to make old fields meaningful. Apply methods also assume valid event ordering and town identity: normal command production supplies them, but malformed-stream semantic rejection is not comprehensively specified. Settle the supported-history failure boundary without re-running commands or RNG during Apply.
 
-**Dated disposition, 2026-10-11:** The row 12 successor plan corrects this mismatch by requiring failed trail bribes to report zero heat increase while retaining unchanged absolute pursuit heat; ADR-0029 remains authoritative. The planned correction preserves the event and snapshot shape and does not add a compatibility path or history migration.
+**Dated disposition, 2026-10-11:** PR #264 delivered the correction: failed trail bribes report zero heat increase while absolute pursuit heat remains unchanged; ADR-0029 remains authoritative. The correction preserves the event and snapshot shape and adds no compatibility path or history migration.
 
 ## Behavioral proof direction
 
