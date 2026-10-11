@@ -1,6 +1,11 @@
 import styled from "styled-components";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { readWantedPosters } from "../../api/wildBunchApi";
+import type { WantedPostersResultDto } from "../../api/types";
 import { useGameSession } from "../../state/useGameSession";
+import { gameResourceQueryKeys, refreshGameResources } from "../../state/gameResourceQueries";
+import { actionIsWantedPosters } from "../../utils/actionTypePredicates";
 import { WantedPosterSurface } from "../../components/WantedPosterSurface";
 import {
   FlowSurface,
@@ -31,20 +36,26 @@ const PlaceBody = styled.div`
 
 export function SheriffPlace() {
   const navigate = useNavigate();
-  const {
-    session,
-    wantedPosters,
-    loading,
-    busyMode,
-    canReadWantedPosters,
-    handleReadWantedPosters,
-    notice,
-    error,
-  } = useGameSession();
+  const queryClient = useQueryClient();
+  const { session, wantedPosters, gameId, actions, loading } = useGameSession();
+  const canReadWantedPosters = actions.some(actionIsWantedPosters);
+  const readMutation = useMutation<WantedPostersResultDto, Error, { gameId: string }>({
+    mutationFn: ({ gameId: submittedGameId }) => readWantedPosters(submittedGameId),
+    onSuccess: async (result) => {
+      queryClient.setQueryData(
+        gameResourceQueryKeys.journal(result.currentJournal.id),
+        result.currentJournal,
+      );
+      await refreshGameResources(queryClient, result.currentJournal.id);
+    },
+  });
 
   if (!session) {
     return null;
   }
+
+  const notice = readMutation.data?.message ?? "";
+  const error = readMutation.error?.message ?? "";
 
   return (
     <FlowSurface $variant="place">
@@ -62,10 +73,12 @@ export function SheriffPlace() {
           <Stack>
             <Button
               type="button"
-              onClick={handleReadWantedPosters}
-              disabled={loading || !canReadWantedPosters}
+              onClick={() => {
+                if (gameId && canReadWantedPosters) readMutation.mutate({ gameId });
+              }}
+              disabled={loading || readMutation.isPending || !canReadWantedPosters}
             >
-              {busyMode === "reading" ? "Reading..." : "Read wanted posters"}
+              {readMutation.isPending ? "Reading..." : "Read wanted posters"}
             </Button>
             {wantedPosters.length > 0 ? (
               <WantedPosterSurface wantedPosters={wantedPosters} />

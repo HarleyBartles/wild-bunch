@@ -10,7 +10,6 @@ export function useGameSessionState() {
   const [pendingSetup, setPendingSetup] = useState<PendingSetupOperation | null>(
     readPendingSetupOperation,
   );
-  const [declaredWantedIdentityHandle, setDeclaredWantedIdentityHandle] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [resetToken, setResetToken] = useState(0);
@@ -20,8 +19,6 @@ export function useGameSessionState() {
     setStoredGameId,
     pendingSetup,
     setPendingSetup,
-    declaredWantedIdentityHandle,
-    setDeclaredWantedIdentityHandle,
     notice,
     setNotice,
     error,
