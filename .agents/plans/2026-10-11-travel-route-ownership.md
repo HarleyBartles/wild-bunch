@@ -22,6 +22,7 @@
 - Capture `gameId` and command-specific destination or encounter choice in each mutation's submitted variables.
 - Apply returned session data and refresh only resources for the game that submitted the command.
 - Distinguish unsuccessful gameplay results from rejected HTTP requests and show both at the owning travel surface.
+- Starting a later trail command clears prior command feedback so an older outcome cannot mask the newer result.
 - Keep departure gated by the fresh preview matching the selected origin and destination.
 - Keep one world map and the existing pointer-operated selection contract; do not add another map or keyboard map-selection feature.
 - Preserve setup, prologue, first-town arrival, archive, session restore, and gameplay rules outside this travel-route ownership slice.

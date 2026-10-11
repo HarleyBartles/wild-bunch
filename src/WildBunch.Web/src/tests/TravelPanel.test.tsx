@@ -487,6 +487,55 @@ describe("TravelPanel", () => {
     });
   });
 
+  it("shows encounter feedback instead of the older advance-day message", async () => {
+    const user = userEvent.setup();
+    const session = createSession();
+    const encounterSession = createSession({
+      journey: {
+        ...session.journey!,
+        pendingEncounter: {
+          kind: "Road encounter",
+          message: "A rider blocks the road.",
+          choices: [{ id: "run", label: "Run" }],
+        },
+      },
+    });
+    const resolvedSession = createSession({
+      journey: { ...session.journey!, daysTravelled: 1 },
+    });
+    mockedGetGame
+      .mockResolvedValueOnce(session)
+      .mockResolvedValueOnce(encounterSession)
+      .mockResolvedValue(resolvedSession);
+    mockedAdvanceTravelDay.mockResolvedValue({
+      success: true,
+      message: "The day ended at the roadside.",
+      currentSession: encounterSession,
+      journeyStatus: 0,
+      journey: encounterSession.journey,
+      travelDiary: encounterSession.travelDiary,
+    });
+    mockedResolveTravelEncounter.mockResolvedValue({
+      success: true,
+      message: "The rider lets me pass.",
+      currentSession: resolvedSession,
+      journeyStatus: 0,
+      journey: resolvedSession.journey,
+      travelDiary: resolvedSession.travelDiary,
+    });
+
+    renderTravelPanel(session);
+
+    await user.click(await screen.findByRole("button", { name: /advance travel day/i }));
+    expect(await screen.findByText("A rider blocks the road.")).toBeInTheDocument();
+    expect(await screen.findByText("The day ended at the roadside.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Run" }));
+
+    expect(await screen.findByText("The rider lets me pass.")).toBeInTheDocument();
+    expect(screen.queryByText("The day ended at the roadside.")).not.toBeInTheDocument();
+  });
+
   it("shows a rejected travel command locally and leaves the session unchanged", async () => {
     const user = userEvent.setup();
     const session = createSession();

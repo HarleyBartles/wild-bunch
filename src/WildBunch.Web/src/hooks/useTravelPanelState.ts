@@ -95,6 +95,8 @@ export function useTravelPanelState({
     message,
     actionError: actionError || null,
     advanceTravelDay: () => {
+      advanceMutation.reset();
+      resolveMutation.reset();
       advanceMutation.mutate({ gameId });
     },
     resolveTravelEncounter: (
@@ -104,6 +106,8 @@ export function useTravelPanelState({
         bribeAmount?: number | null;
       },
     ) => {
+      advanceMutation.reset();
+      resolveMutation.reset();
       resolveMutation.mutate({
         gameId,
         choiceId,
