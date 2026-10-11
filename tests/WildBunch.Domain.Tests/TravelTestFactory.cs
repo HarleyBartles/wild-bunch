@@ -140,7 +140,10 @@ internal static class TravelTestFactory
     /// Uses TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, distance 6m.
     /// Inventory: 3 Food, 1 Canteen (full 2), 1 Horse (Healthy), 1 Saddle, 1 Knife.
     /// </summary>
-    internal static (GameSession session, TravelPreview preview) CreateHighRiskJourney()
+    internal static (GameSession session, TravelPreview preview) CreateHighRiskJourney(
+        int startingFood = 3,
+        bool includeHorse = true,
+        SaltSource? saltSource = null)
     {
         // Mirror the CreateHighRiskSession pattern from AdvanceTravelDayHandlerTests
         // but in the Domain test project (no handler, just session + preview).
@@ -154,14 +157,19 @@ internal static class TravelTestFactory
                     TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, rideDayDistance: 6m)
             });
 
-        var inventory = new DomainInventory(new[]
+        var inventoryItems = new List<InventoryItem>
         {
-            new InventoryItem(ItemKind.Food, 3),
-            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(2)),
-            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
-            new InventoryItem(ItemKind.Saddle, 1),
-            new InventoryItem(ItemKind.Knife, 1),
-        });
+            new(ItemKind.Food, startingFood),
+            new(ItemKind.Canteen, 1, canteenState: CanteenState.Full(2))
+        };
+        if (includeHorse)
+        {
+            inventoryItems.Add(new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy));
+            inventoryItems.Add(new InventoryItem(ItemKind.Saddle, 1));
+            inventoryItems.Add(new InventoryItem(ItemKind.Knife, 1));
+        }
+
+        var inventory = new DomainInventory(inventoryItems);
 
         var caseFile = new CaseFile(
             accusation: null,
@@ -172,7 +180,7 @@ internal static class TravelTestFactory
         var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile,
             pinecross.Id, Wallet.Starting(25m), inventory,
             GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+            saltSource ?? SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
 
         var preview = ResolvePreview(session, dryfork.Id);

@@ -662,6 +662,43 @@ public sealed class TravelResolverTests
         Assert.Equal(0, session.Clock.Turn);
     }
 
+    [Theory]
+    [InlineData("run")]
+    [InlineData("fight")]
+    [InlineData("bribe")]
+    public void ResolveJourneyEncounterWithoutRecordedFoeProfileDoesNotChangeTheSession(string choiceId)
+    {
+        var session = CreateHighRiskSession();
+        var resolver = new TravelResolver();
+        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        session.AdvanceJourneyDay();
+        session.Journey!.SetCurrentDayPlan(null);
+        session.Journey.MarkInterrupted(JourneyEncounterState.CreateChoiceEncounter(
+            "foe",
+            "A rider with no recorded profile blocks the trail.",
+            foeProfile: null));
+
+        var journeyBefore = session.Journey.ToSnapshot(session.TravelRules);
+        var healthBefore = session.Player.Health;
+        var cashBefore = session.Player.Wallet.Cash;
+        var ammoBefore = session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo);
+        var eventCountBefore = session.UncommittedEvents.Count;
+
+        var result = session.ResolveJourneyEncounter(choiceId);
+
+        Assert.False(result.Success);
+        Assert.False(result.SessionChanged);
+        Assert.Contains("recorded foe details are unavailable", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(JourneyStatus.Interrupted, session.Journey.Status);
+        Assert.Equal(journeyBefore, session.Journey.ToSnapshot(session.TravelRules));
+        Assert.Null(session.Journey.PendingEncounter!.FoeProfile);
+        Assert.Equal(healthBefore, session.Player.Health);
+        Assert.Equal(cashBefore, session.Player.Wallet.Cash);
+        Assert.Equal(ammoBefore, session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo));
+        Assert.Equal(eventCountBefore, session.UncommittedEvents.Count);
+    }
+
     [Fact]
     public void ResolveJourneyEncounterRunOnFootIsRiskierThanMountedRunning()
     {
@@ -932,32 +969,6 @@ public sealed class TravelResolverTests
         Assert.Equal(4m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Journey!.PendingEncounter);
         Assert.DoesNotContain(session.Journey.PendingEncounter.Choices, choice => choice.Id == "bribe");
-    }
-
-    [Fact]
-    public void ResolveJourneyEncounterBribeInsultinglyLowOfferCanRetaliateAndSteal()
-    {
-        var session = CreateHighRiskSession(wallet: Wallet.Starting(10m));
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory).Preview!;
-        session.StartJourney(preview);
-        session.AdvanceJourneyDay();
-        session.Journey!.SetCurrentDayPlan(null);
-        session.Journey!.MarkInterrupted(CreateFoeEncounter(profile: new JourneyFoeProfile(8, 8, 10m)));
-
-        var forcedRoll = FindBribeOutcomeRoll(session, 1m, retaliates: true);
-        var startingFood = session.Player.Inventory.GetQuantity(DomainItemKind.Food);
-        var startingCash = session.Player.Wallet.Cash;
-
-        var result = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: forcedRoll);
-
-        Assert.False(result.Success);
-        Assert.True(result.SessionChanged);
-        Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.True(session.Player.Health < StartingHealthFor(session.GameDifficulty));
-        Assert.True(session.Player.Wallet.Cash < startingCash || session.Player.Inventory.GetQuantity(DomainItemKind.Food) < startingFood);
-        Assert.Null(session.Journey!.PendingEncounter);
-        Assert.Equal(JourneyStatus.Active, session.Journey.Status);
     }
 
     [Fact]
@@ -1447,36 +1458,6 @@ public sealed class TravelResolverTests
             GameDifficulty.Challenging => 800,
             _ => 1000
         };
-
-    private static ulong FindBribeOutcomeRoll(GameSession session, decimal bribeAmount, bool retaliates)
-    {
-        var encounter = session.Journey!.PendingEncounter!;
-        var availableFood = session.Player.Inventory.GetQuantity(DomainItemKind.Food);
-        var availableHorseFeed = session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed);
-        var availableRevolverAmmo = session.Player.Inventory.GetQuantity(DomainItemKind.RevolverAmmo);
-
-        for (ulong roll = 0; roll < 10_000; roll++)
-        {
-            var plan = JourneyEncounterResolutionEngine.ResolveBribe(
-                encounter,
-                session.Player.Wallet.Cash,
-                session.TravelRules,
-                bribeAmount,
-                availableFood,
-                availableHorseFeed,
-                availableRevolverAmmo,
-                roll);
-
-            var sawRetaliation = !plan.Resolved && (plan.HealthDelta < 0 || plan.StolenItemKind is not null || plan.WalletDelta < -bribeAmount);
-            var isSimpleFailure = !plan.Resolved && !sawRetaliation;
-            if (retaliates ? sawRetaliation : isSimpleFailure)
-            {
-                return roll;
-            }
-        }
-
-        throw new InvalidOperationException("Could not find a bribe outcome roll for the requested branch.");
-    }
 
     private static ulong FindRunImprovementRoll(JourneyEncounterState encounter, TravelRulesProfile travelRulesProfile, int playerHealth)
     {

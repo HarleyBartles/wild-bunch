@@ -132,7 +132,7 @@ internal static class JourneyEncounterResolutionEngine
     {
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var foeProfile = GetFoeProfile(encounter);
         var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
         var escapeBand = travelMode == TravelMode.Mounted && horseState is not null && !horseState.IsDeadFor(travelRulesProfile) && !horseState.IsLameFor(travelRulesProfile)
             ? 6 + Math.Max(0, 3 - horseState.Exhaustion)
@@ -205,7 +205,7 @@ internal static class JourneyEncounterResolutionEngine
     {
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var foeProfile = GetFoeProfile(encounter);
         var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
 
         var bulletSpend = availableAmmo <= 0
@@ -281,7 +281,7 @@ internal static class JourneyEncounterResolutionEngine
     {
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var foeProfile = GetFoeProfile(encounter);
         var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
 
         var offer = requestedBribe ?? travelRulesProfile.EncounterBribeCash;
@@ -394,17 +394,10 @@ internal static class JourneyEncounterResolutionEngine
                 : updatedEncounter.WithHiddenState(updatedHiddenState));
     }
 
-    private static JourneyFoeProfile GetFoeProfile(JourneyEncounterState encounter, TravelRulesProfile travelRulesProfile)
+    private static JourneyFoeProfile GetFoeProfile(JourneyEncounterState encounter)
     {
-        if (encounter.FoeProfile is not null)
-        {
-            return encounter.FoeProfile;
-        }
-
-        return new JourneyFoeProfile(
-            Speed: 5,
-            FightStrength: 5,
-            MinimumBribe: Math.Max(1m, travelRulesProfile.EncounterBribeCash));
+        return encounter.FoeProfile
+            ?? throw new InvalidOperationException("A hostile encounter requires its recorded foe profile.");
     }
 
     private static int ClampChance(int chance)
