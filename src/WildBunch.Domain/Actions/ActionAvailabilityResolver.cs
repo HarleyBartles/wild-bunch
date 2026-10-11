@@ -41,7 +41,7 @@ public sealed class ActionAvailabilityResolver
             {
                 availableActions.RemoveAll(action => action.Kind == source.ActionKind);
             }
-            if (journey.Status == JourneyStatus.Completed)
+            if (journey.Status is JourneyStatus.Completed or JourneyStatus.Failed)
             {
                 return availableActions;
             }

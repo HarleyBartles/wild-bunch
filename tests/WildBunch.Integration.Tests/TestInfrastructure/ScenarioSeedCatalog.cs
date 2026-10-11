@@ -220,7 +220,8 @@ internal static class ScenarioSeedCatalog
         GameTurnResultDto secondLegTravel,
         GameTurnResultDto blockedAdvance,
         GameTurnResultDto resolved,
-        GameTurnResultDto resumeAdvance)
+        GameTurnResultDto resumeAdvance,
+        GameTurnResultDto completedSecondLeg)
     {
         RequireEqual("HighRiskFoeInterruptRoute", "scenario.name", "HighRiskFoeInterruptRoute", fixture.Name);
 
@@ -266,9 +267,14 @@ internal static class ScenarioSeedCatalog
         Require("HighRiskFoeInterruptRoute", "travel-turn.resolved.logEntries", resolved.CurrentSession.LogEntries.Count > secondLegTravel.CurrentSession.LogEntries.Count, "expected the resolution to add durable log state.");
 
         Require("HighRiskFoeInterruptRoute", "travel-turn.resume.journeyRemains", resumeAdvance.CurrentSession.Journey is not null, "expected the journey to remain after resuming.");
-        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.currentTownId", destinationTownId, resumeAdvance.CurrentSession.Player.CurrentTownId);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.journeyStatus", JourneyStatus.Active, resumeAdvance.JourneyStatus);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.currentTownId", resumeAdvance.CurrentSession.Journey?.OriginTownId, resumeAdvance.CurrentSession.Player.CurrentTownId);
+        Require("HighRiskFoeInterruptRoute", "travel-turn.resume.remainingDistance", resumeAdvance.CurrentSession.Journey?.RemainingRideDayDistance > 0, "expected the route to remain incomplete while distance remains.");
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.clock.day", blockedAdvance.CurrentSession.Clock.Day + 1, resumeAdvance.CurrentSession.Clock.Day);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.resume.clock.turn", 0, resumeAdvance.CurrentSession.Clock.Turn);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.arrival.journeyStatus", JourneyStatus.Completed, completedSecondLeg.JourneyStatus);
+        RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.arrival.currentTownId", destinationTownId, completedSecondLeg.CurrentSession.Player.CurrentTownId);
+        Require("HighRiskFoeInterruptRoute", "travel-turn.arrival.afterResume", completedSecondLeg.CurrentSession.Clock.Day > resumeAdvance.CurrentSession.Clock.Day, "expected arrival only after additional route progress.");
     }
 
     public static SetupGameRequest CreateRequest(this ScenarioSeedFixture fixture, string playerName)

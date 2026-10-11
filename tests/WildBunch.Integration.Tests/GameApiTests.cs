@@ -501,11 +501,24 @@ public sealed class GameApiTests
 
         Assert.NotNull(resumeAdvance);
         Assert.NotNull(resumeAdvance!.CurrentSession.Journey);
-        Assert.Equal(secondDestination, resumeAdvance.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(JourneyStatus.Active, resumeAdvance.JourneyStatus);
+        Assert.Equal(resumeAdvance.CurrentSession.Journey!.OriginTownId, resumeAdvance.CurrentSession.Player.CurrentTownId);
+        Assert.True(resumeAdvance.CurrentSession.Journey.RemainingRideDayDistance > 0);
         Assert.Equal(firstDestinationArrivalDay + 2, resumeAdvance.CurrentSession.Clock.Day);
         Assert.Equal(0, resumeAdvance.CurrentSession.Clock.Turn);
 
-        scenario.Fixture.AssertHighRiskFoeInterruptRoute(createdSession!, secondDestinationTravel!, blockedAdvance!, resolved!, resumeAdvance!);
+        var secondDestinationArrival = await AdvanceUntilTownAsync(client, createdSession.Id, secondDestination);
+        Assert.Equal(JourneyStatus.Completed, secondDestinationArrival.JourneyStatus);
+        Assert.Equal(secondDestination, secondDestinationArrival.CurrentSession.Player.CurrentTownId);
+        Assert.True(secondDestinationArrival.CurrentSession.Clock.Day > resumeAdvance.CurrentSession.Clock.Day);
+
+        scenario.Fixture.AssertHighRiskFoeInterruptRoute(
+            createdSession!,
+            secondDestinationTravel!,
+            blockedAdvance!,
+            resolved!,
+            resumeAdvance!,
+            secondDestinationArrival);
 
         var reloadedSessionResponse = await client.GetAsync($"/api/games/{createdSession.Id}");
         Assert.Equal(HttpStatusCode.OK, reloadedSessionResponse.StatusCode);

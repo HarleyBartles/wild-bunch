@@ -910,7 +910,8 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(reloaded);
         Assert.NotNull(reloaded!.Journey);
         Assert.Equal(WildBunch.Domain.Travel.TravelMode.Foot, reloaded.Journey!.TravelMode);
-        Assert.Equal(1, reloaded.Journey.RemainingDays);
+        Assert.Equal(1.5m, reloaded.Journey.RemainingRideDayDistance);
+        Assert.Equal(3, reloaded.Journey.RemainingDays);
         Assert.Equal(new DomainHorseTravelState(0, 0, 2), reloaded.Player.Inventory.GetHorseState());
         Assert.Contains(GameSessionLogProjection.Project(reloaded), entry => entry.Kind == GameLogEntryKind.Travel && entry.Message.Contains("went lame", StringComparison.OrdinalIgnoreCase));
     }

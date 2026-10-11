@@ -66,6 +66,53 @@ internal static class TravelTestFactory
         return (session, preview, setupEvents);
     }
 
+    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
+        CreateThreeUnitJourneyWithCriticalHorseAndSetupEvents()
+    {
+        var origin = new Town(new TownId("horse-origin"), "Pinecross");
+        var destination = new Town(new TownId("horse-destination"), "Midway");
+        var world = new DomainWorld(
+            new[] { origin, destination },
+            new[]
+            {
+                new Trail(
+                    new TrailId("trail-critical-horse"),
+                    origin.Id,
+                    destination.Id,
+                    TrailRisk.Moderate,
+                    TrailTerrain.Badlands,
+                    WaterFeature.River,
+                    rideDayDistance: 3m)
+            });
+        var inventory = new DomainInventory(new[]
+        {
+            new InventoryItem(ItemKind.Food, 8),
+            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
+            new InventoryItem(ItemKind.Horse, 1, new HorseTravelState(2, 0, 0)),
+            new InventoryItem(ItemKind.Saddle, 1),
+            new InventoryItem(ItemKind.Knife, 1)
+        });
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: Array.Empty<Suspect>(),
+            trueCulpritId: new SuspectId("suspect-1"),
+            knownClues: Array.Empty<Clue>());
+        var session = TestSessionFactory.StartGameCanonical(
+            "Ranger Vale",
+            world,
+            caseFile,
+            origin.Id,
+            Wallet.Starting(25m),
+            inventory,
+            GameDifficulty.Standard,
+            SaltSource.CreateFixed(string.Empty));
+        session.MarkEventsCommitted();
+
+        var preview = ResolvePreview(session, destination.Id);
+        var setupEvents = RecaptureSetupEventsForReplay(session);
+        return (session, preview, setupEvents);
+    }
+
     /// <summary>
     /// Recaptures the full setup event stream for a session by re-running the canonical
     /// start flow (<see cref="TestSessionFactory.StartGameCanonical"/>) with the same

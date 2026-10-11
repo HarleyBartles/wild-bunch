@@ -94,6 +94,64 @@ public sealed class TravelReplayEqualityTests
     }
 
     [Fact]
+    public void Replay_HorseLossFootTravel_PreservesDistanceUntilArrival()
+    {
+        var (commandSession, preview, setupEvents) =
+            TravelTestFactory.CreateThreeUnitJourneyWithCriticalHorseAndSetupEvents();
+        var originTownId = commandSession.Player.CurrentTownId;
+        var destinationTownId = preview.DestinationTownId;
+        var start = commandSession.StartJourney(preview);
+        Assert.True(start.Success, start.Message);
+        Assert.Equal(TravelMode.Mounted, preview.TravelMode);
+
+        var expectedDistances = new[] { 2.5m, 2m, 1.5m, 1m, 0.5m, 0m };
+        var expectedRemainingDays = new[] { 5, 4, 3, 2, 1, 0 };
+        for (var dayIndex = 0; dayIndex < expectedDistances.Length; dayIndex++)
+        {
+            commandSession.ForceDevTravelOverride(
+                DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+            var step = commandSession.AdvanceJourneyDay();
+            Assert.True(step.Success, step.Message);
+            Assert.NotNull(step.Journey);
+            Assert.Equal(expectedDistances[dayIndex], step.Journey.RemainingRideDayDistance);
+            Assert.Equal(expectedRemainingDays[dayIndex], step.Journey.RemainingDays);
+
+            if (dayIndex < expectedDistances.Length - 1)
+            {
+                Assert.Equal(JourneyStatus.Active, step.Status);
+                Assert.Equal(originTownId, commandSession.Player.CurrentTownId);
+                Assert.DoesNotContain(
+                    commandSession.UncommittedEvents.OfType<JourneyCompleted>(),
+                    completed => completed.JourneySnapshot.RemainingRideDayDistance > 0);
+            }
+            else
+            {
+                Assert.Equal(JourneyStatus.Completed, step.Status);
+                Assert.Equal(destinationTownId, commandSession.Player.CurrentTownId);
+                Assert.Equal(0m, step.Journey.RemainingRideDayDistance);
+            }
+        }
+
+        Assert.Equal(6, commandSession.Journey!.DaysTravelled);
+        Assert.Single(commandSession.UncommittedEvents.OfType<JourneyCompleted>());
+        Assert.True(commandSession.AcknowledgeJourneyArrival().Success);
+        Assert.Null(commandSession.Journey);
+
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var replayed = GameSession.RehydrateFromEvents(commandSession.Id, commandSession.World, events);
+
+        Assert.Equal(commandSession.Player.CurrentTownId, replayed.Player.CurrentTownId);
+        Assert.Null(replayed.Journey);
+        var completedJourney = Assert.Single(replayed.CompletedJourneyHistory);
+        Assert.Equal(destinationTownId, completedJourney.DestinationTownId);
+        Assert.Equal(TravelMode.Foot, completedJourney.TravelMode);
+        Assert.Equal(6, completedJourney.DaysTravelled);
+        Assert.Equal(0m, completedJourney.RemainingRideDayDistance);
+        Assert.Equal(0, completedJourney.RemainingDays);
+        Assert.Equal(commandSession.Version, replayed.Version);
+    }
+
+    [Fact]
     public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
