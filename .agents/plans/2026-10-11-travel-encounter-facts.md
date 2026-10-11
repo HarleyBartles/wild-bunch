@@ -96,16 +96,18 @@
 
 **Files:** Update `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`; update `.agents/investigations/stable-0.1.0/2026-10-07-domain-layer-investigation.md`; update `.agents/investigations/stable-0.1.0/2026-10-07-domain-test-followup.md`; delete `.agents/plans/2026-10-11-travel-distance-legality.md`; update `Directory.Build.props` once to `0.1.0-dev.78`.
 
-**Interface:** The roadmap records PR #262's verified source, merge and exact-head/develop gates and identifies the current missing-profile slice. The dated investigation record preserves its 2026-10-10 noticeboard proposal, then clarifies that the user superseded it on 2026-10-11 before implementation: the noticeboard and fake sheriff-records surfaces are removed, wanted posters remain in the Sheriff Office, and no pre-alpha compatibility is retained. The roadmap classifies the `.77` plan as complete and retires it. The existing baseline spec and feature matrix already express this decision and need no duplicate edits.
+**Interface:** The roadmap records PR #262's verified source, merge and exact-head/develop gates, then tracks PR #263's missing-profile implementation source and hosted gate. The dated investigation record preserves its 2026-10-10 noticeboard proposal, then clarifies that the user superseded it on 2026-10-11 before implementation: the noticeboard and fake sheriff-records surfaces are removed, wanted posters remain in the Sheriff Office, and no pre-alpha compatibility is retained. The roadmap classifies the `.77` plan as complete and retires it. The existing baseline spec and feature matrix already express this decision and need no duplicate edits.
 
 **Behavior proof:** Run `py -3 tools/run.py ci --check`, validate generated version identity, inspect the full diff, and commit through the normal check-only hook. A fresh independent whole-branch review and exact-head hosted canonical gate must pass before merge to `develop`; verify the develop-push gate and fast-forward the main checkout afterward.
 
 **Steps:**
 
 - [x] Record the verified PR #262 delivery in row 12 and point it to this plan at `0.1.0-dev.78`.
+- [x] Record PR #263's implementation source `5964217828327e5ec15eb524729c416c27d13e20` and its passing exact-head hosted canonical gate run 38114022625 in row 12.
 - [x] Retire the merged `.77` plan in this first substantive successor and preserve its merged history in the roadmap.
 - [x] Append the dated Domain investigation correction without erasing the superseded proposal or changing its original date.
 - [x] Advance the sole authored version to `0.1.0-dev.78`; the production web build regenerated `dist/version.json` from `Directory.Build.props` and the web target check passed.
 - [x] Run `py -3 tools/run.py ci --check`; the fail-fast canonical gate passed on the complete implementation diff. Review the full diff and commit through the normal check-only hook.
-- [ ] Request a fresh independent whole-branch review, publish a PR to `develop`, and verify exact-head hosted CI before merge.
+- [x] Fresh independent whole-branch review found no findings on implementation commit `5964217828327e5ec15eb524729c416c27d13e20`; PR #263 was opened to `develop`, and exact-head hosted canonical gate 38114022625 passed.
+- [ ] Review and validate this roadmap evidence update on the resulting PR head, then merge only after its exact-head hosted gate passes.
 - [ ] Merge after green hosted CI, verify the develop-push gate, fast-forward the main checkout, and verify its clean state.
