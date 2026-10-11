@@ -48,13 +48,13 @@
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-11-travel-preview-resource-identity.md`
 
-- [ ] Add ADR-0046 with dated history, decision, rationale and consequences. Record that map-level keyboard/screen-reader town selection is absent, so adding it is new 0.1.0 work; preserve one shared pointer-operated map for this release.
-- [ ] Mark ADR-0045 superseded by ADR-0046 in its status/successor section and catalogue, without rewriting the decision it records.
-- [ ] Update PG-003's feature matrix, baseline contract, Workstream E, roadmap row 15 and detailed row-15 scope to remove the keyboard/screen-reader town-selection requirement and cite ADR-0046.
-- [ ] Keep accessibility expectations for existing supported controls, overlays and building navigation intact; remove only the unbuilt map-level town selector requirement.
-- [ ] Add a dated WB-14 disposition and test-follow-up note. Record why no map-selection test or implementation is added for this baseline; retain actual pointer-selection tests and map behavior obligations.
-- [ ] Update row 13 with PR #270 reviewed source `55ccfa21fd59be376bd6d97dbc9cfc5c2047d0f1`, merge `8bfb26e6975c25e19fda37749bf56b4d5584a4db`, identical source/merge tree `35a9b37835f22ca4de609e362f626a3a0319e21b`, exact-head gate `38131228340`, develop-push gate `38131620570`, and retire the completed travel-preview plan.
-- [ ] Advance `Directory.Build.props` from `0.1.0-dev.85` to `0.1.0-dev.86`.
+- [x] Add ADR-0046 with dated history, decision, rationale and consequences. Record that map-level keyboard/screen-reader town selection is absent, so adding it is new 0.1.0 work; preserve one shared pointer-operated map for this release.
+- [x] Mark ADR-0045 superseded by ADR-0046 in its status/successor section and catalogue, without rewriting the decision it records.
+- [x] Update PG-003's feature matrix, baseline contract, Workstream E, roadmap row 15 and detailed row-15 scope to remove the keyboard/screen-reader town-selection requirement and cite ADR-0046.
+- [x] Keep accessibility expectations for existing supported controls, overlays and building navigation intact; remove only the unbuilt map-level town selector requirement.
+- [x] Add a dated WB-14 disposition and test-follow-up note. Record why no map-selection test or implementation is added for this baseline; retain actual pointer-selection tests and map behavior obligations.
+- [x] Update row 13 with PR #270 reviewed source `55ccfa21fd59be376bd6d97dbc9cfc5c2047d0f1`, merge `8bfb26e6975c25e19fda37749bf56b4d5584a4db`, identical source/merge tree `35a9b37835f22ca4de609e362f626a3a0319e21b`, exact-head gate `38131228340`, develop-push gate `38131620570`, and retire the completed travel-preview plan.
+- [x] Advance `Directory.Build.props` from `0.1.0-dev.85` to `0.1.0-dev.86`.
 - [ ] Run the command-bus documentation checks and full `py -3 tools/run.py ci --check` gate on the committed implementation state.
 - [ ] Request an independent whole-branch review; resolve findings and re-review any changed diff.
 - [ ] Open a Draft PR targeting `develop`, verify body and exact head, mark ready, and merge after the exact-head hosted canonical gate passes.
