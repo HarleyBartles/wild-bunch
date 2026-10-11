@@ -88,7 +88,7 @@
 
 ## Delivery
 
-- [ ] Request a fresh independent review of the complete branch and address findings.
+- [x] Request a fresh independent review of the complete branch and address findings. No actionable findings; review report is in task scratch.
 - [ ] Publish one PR to `develop`; verify the exact-head hosted CI gate passes before merge.
 - [ ] Merge the PR to `develop`, verify the develop-push hosted gate passes, and update the main checkout.
 - [ ] Retire this plan in the first substantive successor PR and record its source, merge and CI evidence in the roadmap.
