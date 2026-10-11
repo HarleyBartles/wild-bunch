@@ -66,6 +66,6 @@
 - [x] Repair the malformed row-15 entry in the roadmap's `Prerequisites and outputs` table with the actual row dependency and output contract.
 - [x] Retire the completed `.95` predecessor plan and advance `Directory.Build.props` from `0.1.0-dev.95` to `0.1.0-dev.96`.
 - [x] Run `py -3 tools/run.py ci --check`, inspect the full diff, verify roadmap links and confirm the generated web version is `0.1.0-dev.96`.
-- [ ] Commit the completed implementation for PR publication to `develop`; the normal hook must validate the staged snapshot without changing or staging files.
+- [x] Commit the completed implementation for PR publication to `develop`; the normal hook must validate the staged snapshot without changing or staging files.
 
 **Validation:** `npm --prefix src/WildBunch.Web test -- src/tests/SaloonPlace.test.tsx src/tests/TravelRoutesPanel.test.tsx src/tests/TravelPrepSurface.test.tsx src/tests/TravelPanel.test.tsx`; manual browser evidence under `.agents/playbooks/ui-browser-check.md`; `py -3 tools/run.py ci --check`; `git diff --check`; generated web identity check.
