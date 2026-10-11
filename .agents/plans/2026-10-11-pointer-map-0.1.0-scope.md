@@ -55,7 +55,7 @@
 - [x] Add a dated WB-14 disposition and test-follow-up note. Record why no map-selection test or implementation is added for this baseline; retain actual pointer-selection tests and map behavior obligations.
 - [x] Update row 13 with PR #270 reviewed source `55ccfa21fd59be376bd6d97dbc9cfc5c2047d0f1`, merge `8bfb26e6975c25e19fda37749bf56b4d5584a4db`, identical source/merge tree `35a9b37835f22ca4de609e362f626a3a0319e21b`, exact-head gate `38131228340`, develop-push gate `38131620570`, and retire the completed travel-preview plan.
 - [x] Advance `Directory.Build.props` from `0.1.0-dev.85` to `0.1.0-dev.86`.
-- [ ] Run the command-bus documentation checks and full `py -3 tools/run.py ci --check` gate on the committed implementation state.
+- [x] Run the command-bus documentation checks and full `py -3 tools/run.py ci --check` gate on the implementation tree. The fail-fast pre-commit gate passed on the exact committed tree, including 333 web tests, 333 PostgreSQL integration tests, other .NET suites, Python tests, typecheck and production build.
 - [ ] Request an independent whole-branch review; resolve findings and re-review any changed diff.
 - [ ] Open a Draft PR targeting `develop`, verify body and exact head, mark ready, and merge after the exact-head hosted canonical gate passes.
 - [ ] In the successor plan, record this PR's reviewed source, merge/tree and both hosted gates, then fast-forward the primary checkout and clean only the verified merged worktree and branch.
