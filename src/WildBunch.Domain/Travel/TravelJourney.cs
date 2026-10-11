@@ -295,6 +295,18 @@ public sealed class TravelJourney
         FoodRemaining += quantity;
     }
 
+    public int RemoveAvailableFood(int requestedQuantity)
+    {
+        if (requestedQuantity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(requestedQuantity), "Requested food loss cannot be negative.");
+        }
+
+        var removedQuantity = Math.Min(FoodRemaining, requestedQuantity);
+        FoodRemaining -= removedQuantity;
+        return removedQuantity;
+    }
+
     public bool TryConsumeHorseFeed()
     {
         if (HorseFeedRemaining < 1)

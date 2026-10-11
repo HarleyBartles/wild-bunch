@@ -6,6 +6,8 @@
 
 **Architecture:** `TravelJourney` owns journey resource quantities; the event stream records actual outcomes and absolute snapshots reconstruct them. Apply bounded deltas to journey state before producing outcome events, then derive event quantities and player-facing narration from those applied deltas. Keep existing event shapes and replay semantics; do not add migrations or new travel mechanics.
 
+**Ruling:** Food and HorseFeed theft is reflected in `JourneySnapshot`; `StolenItem*` remains descriptive for those kinds, while only RevolverAmmo theft is applied additively because ammunition is not part of that snapshot. This avoids replay applying the same food/feed loss twice when a later `TrailEventApplied` snapshot already includes it. If this boundary is wrong, replay can diverge from the live journey or charge the player twice.
+
 **Tech Stack:** C#/.NET domain aggregate, immutable domain events and replay tests.
 
 **Spec:** `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`, `Travel and resource outcomes` and `PG-007`.
@@ -32,7 +34,7 @@
 
 ## Task 1: Record retaliation theft against journey resources
 
-**Files:** `src/WildBunch.Domain/Game/JourneyLoop.cs`, `src/WildBunch.Domain/Travel/TravelJourney.cs`, `tests/WildBunch.Domain.Tests/TravelResourceSettlementTests.cs`.
+**Files:** `src/WildBunch.Domain/Game/JourneyLoop.cs`, `src/WildBunch.Domain/Game/GameSession.cs`, `src/WildBunch.Domain/Events/JourneyEncounterResolved.cs`, `src/WildBunch.Domain/Travel/TravelJourney.cs`, `tests/WildBunch.Domain.Tests/TravelResourceSettlementTests.cs`.
 
 **Interfaces:** Consume the selected theft kind and quantity from `JourneyEncounterResolutionPlan`; produce a journey snapshot and `JourneyEncounterResolved` whose stolen-item fields and absolute resource snapshot describe the same loss.
 
@@ -40,11 +42,11 @@
 
 **Steps:**
 
-- [ ] Add focused failing behavior tests for Food theft and HorseFeed theft through `GameSession.ResolveJourneyEncounter`.
-- [ ] Run only the new tests and confirm each fails because theft is absent from the journey snapshot.
-- [ ] Apply the theft quantity to the matching `TravelJourney` resource before continuation and event production; preserve the existing event shape.
-- [ ] Replay the emitted events in the focused tests and prove the exact remaining resource quantity matches the live command result.
-- [ ] Run the domain test project and inspect the diff for accidental test-only hooks or unrelated travel edits.
+- [x] Add focused failing behavior tests for Food theft and HorseFeed theft through `GameSession.ResolveJourneyEncounter`.
+- [x] Run only the new tests and confirm each fails because theft is absent from the journey snapshot.
+- [x] Apply the theft quantity to the matching `TravelJourney` resource before continuation and event production; preserve the existing event shape.
+- [x] Replay the emitted events in the focused tests and prove the exact remaining resource quantity matches the live command result.
+- [x] Run the domain test project and inspect the diff for accidental test-only hooks or unrelated travel edits.
 
 ## Task 2: Bound trail-event losses and publish actual effects
 
@@ -56,12 +58,12 @@
 
 **Steps:**
 
-- [ ] Add failing normal-command tests for overlarge Food and canteen losses, including sequential same-day resource events.
-- [ ] Run the focused tests and confirm the current underflow or false event outcome fails for the intended assertion.
-- [ ] Apply each trail-event resource delta against the current remaining quantity, preserving non-resource effects and applying canteen capacity rules.
-- [ ] Build the event message and diary entry from actual deltas; do not claim nominal losses when the player had fewer resources.
-- [ ] Assert replayed snapshots and inventory match the emitted actual deltas without a second resource change.
-- [ ] Update PG-007 evidence while keeping its overall assessment partial for the unresolved travel slices.
+- [x] Add failing normal-command tests for overlarge Food and canteen losses, including sequential same-day resource events.
+- [x] Run the focused tests and confirm the current underflow or false event outcome fails for the intended assertion.
+- [x] Apply each trail-event resource delta against the current remaining quantity, preserving non-resource effects and applying canteen capacity rules.
+- [x] Build the event message and diary entry from actual deltas; do not claim nominal losses when the player had fewer resources.
+- [x] Assert replayed snapshots and inventory match the emitted actual deltas without a second resource change.
+- [x] Update PG-007 evidence while keeping its overall assessment partial for the unresolved travel slices.
 - [ ] Run focused domain tests, then `py -3 tools/run.py ci --check` and review the final diff.
 
 ## Delivery

@@ -249,11 +249,10 @@ internal sealed class JourneyLoop
                 var trailEventApplication = ApplyTrailEvent(
                     context, runtime,
                     currentEncounter.TrailEvent,
-                    travelDay.HorseLostMessage,
-                    currentEncounter.Message);
+                    travelDay.HorseLostMessage);
                 var trailEventMessage = PrependHorseLossMessage(
                     CombineHorseLossMessage(travelDay.HorseLostMessage, trailEventApplication.HorseLossMessage),
-                    currentEncounter.Message);
+                    trailEventApplication.Message);
                 dayEntries.Add(trailEventMessage);
                 lastTrailEvent = currentEncounter.TrailEvent;
             }
@@ -569,6 +568,14 @@ internal sealed class JourneyLoop
             {
                 runtime.RevolverAmmo = Math.Max(0, runtime.RevolverAmmo - plan.StolenItemQuantity);
             }
+            else if (plan.StolenItemKind == ItemKind.Food)
+            {
+                _journey!.RemoveAvailableFood(plan.StolenItemQuantity);
+            }
+            else if (plan.StolenItemKind == ItemKind.HorseFeed)
+            {
+                _journey!.ConsumeHorseFeed(plan.StolenItemQuantity);
+            }
         }
 
         if (plan.HealthDelta != 0)
@@ -686,9 +693,8 @@ internal sealed class JourneyLoop
                 var trailEventApplication = ApplyTrailEvent(
                     baseContext, runtime,
                     currentEncounter.TrailEvent,
-                    prefixHorseLostMessage: string.Empty,
-                    currentEncounter.Message);
-                var encounterMessage = PrependHorseLossMessage(trailEventApplication.HorseLossMessage, currentEncounter.Message);
+                    prefixHorseLostMessage: string.Empty);
+                var encounterMessage = PrependHorseLossMessage(trailEventApplication.HorseLossMessage, trailEventApplication.Message);
                 dayEntries.Add(encounterMessage);
             }
             else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
@@ -951,8 +957,7 @@ internal sealed class JourneyLoop
         AdvanceJourneyDayContext context,
         AdvanceDayRuntime runtime,
         JourneyTrailEventState trailEvent,
-        string prefixHorseLostMessage,
-        string encounterMessage)
+        string prefixHorseLostMessage)
     {
         ArgumentNullException.ThrowIfNull(trailEvent);
 
@@ -961,13 +966,20 @@ internal sealed class JourneyLoop
             runtime.WalletCash += trailEvent.WalletDelta;
         }
 
-        if (trailEvent.FoodDelta != 0)
+        var appliedFoodDelta = trailEvent.FoodDelta;
+        if (appliedFoodDelta < 0)
         {
-            _journey!.AdjustFood(trailEvent.FoodDelta);
+            appliedFoodDelta = -_journey!.RemoveAvailableFood(-appliedFoodDelta);
+        }
+        else if (appliedFoodDelta > 0)
+        {
+            _journey!.AdjustFood(appliedFoodDelta);
         }
 
+        var appliedCanteenChargeDelta = trailEvent.CanteenChargeDelta;
         if (trailEvent.CanteenChargeDelta != 0)
         {
+            var startingCharges = _journey!.AvailableCanteenCharges;
             var nextCharges = _journey!.AvailableCanteenCharges + trailEvent.CanteenChargeDelta;
             if (nextCharges < 0)
             {
@@ -978,7 +990,10 @@ internal sealed class JourneyLoop
                 nextCharges = Math.Min(runtime.CanteenCapacity, nextCharges);
             }
             _journey.SetCanteenCharges(nextCharges);
+            appliedCanteenChargeDelta = nextCharges - startingCharges;
         }
+
+        var appliedMessage = BuildAppliedTrailEventMessage(trailEvent, appliedFoodDelta, appliedCanteenChargeDelta);
 
         if (trailEvent.HorseHungerDelta != 0 || trailEvent.HorseThirstDelta != 0 || trailEvent.HorseExhaustionDelta != 0)
         {
@@ -1004,7 +1019,7 @@ internal sealed class JourneyLoop
 
         var fullDiaryMessage = PrependHorseLossMessage(
             CombineHorseLossMessage(prefixHorseLostMessage, horseLossMessage),
-            encounterMessage);
+            appliedMessage);
 
         var postEventSnapshot = _journey.ToSnapshot(context.TravelRules);
         runtime.AddEvent(new TrailEventApplied
@@ -1013,11 +1028,11 @@ internal sealed class JourneyLoop
             TrailEventKind = trailEvent.Kind,
             TrailEventId = trailEvent.Id,
             Title = trailEvent.Title,
-            Message = trailEvent.Message,
+            Message = appliedMessage,
             WalletDelta = trailEvent.WalletDelta,
             WalletCash = runtime.WalletCash,
-            FoodDelta = trailEvent.FoodDelta,
-            CanteenChargeDelta = trailEvent.CanteenChargeDelta,
+            FoodDelta = appliedFoodDelta,
+            CanteenChargeDelta = appliedCanteenChargeDelta,
             HorseHungerDelta = trailEvent.HorseHungerDelta,
             HorseThirstDelta = trailEvent.HorseThirstDelta,
             HorseExhaustionDelta = trailEvent.HorseExhaustionDelta,
@@ -1029,7 +1044,31 @@ internal sealed class JourneyLoop
             HorseLostMessage = horseLossMessage
         });
 
-        return new TrailEventApplicationResult(horseLossMessage);
+        return new TrailEventApplicationResult(horseLossMessage, appliedMessage);
+    }
+
+    private static string BuildAppliedTrailEventMessage(
+        JourneyTrailEventState trailEvent,
+        int appliedFoodDelta,
+        int appliedCanteenChargeDelta)
+    {
+        if (appliedFoodDelta == trailEvent.FoodDelta && appliedCanteenChargeDelta == trailEvent.CanteenChargeDelta)
+        {
+            return trailEvent.Message;
+        }
+
+        return trailEvent.Id switch
+        {
+            JourneyTrailEventId.BadLuckFoodLoss when appliedFoodDelta == 0 && appliedCanteenChargeDelta == 0
+                => "A dust storm swept through, but I had no remaining food or canteen water for it to take.",
+            JourneyTrailEventId.BadLuckFoodLoss
+                => $"A dust storm stripped away {-appliedFoodDelta} food and {-appliedCanteenChargeDelta} canteen charge(s).",
+            JourneyTrailEventId.LuckyFoodCache
+                => $"I found a cache of jerky and trail biscuits and gained {appliedFoodDelta} food.",
+            JourneyTrailEventId.LuckyWaterSeep
+                => $"I found a seep under the rocks and topped off my canteen by {appliedCanteenChargeDelta} charge(s).",
+            _ => trailEvent.Message
+        };
     }
 
     private string ApplyEncounterHorsePressure(TravelRulesProfile travelRules, AdvanceDayRuntime runtime, int exhaustionIncrease)
@@ -1388,7 +1427,7 @@ internal sealed class JourneyLoop
         return WalletBand.Flush;
     }
 
-    private sealed record TrailEventApplicationResult(string HorseLossMessage);
+    private sealed record TrailEventApplicationResult(string HorseLossMessage, string Message);
 
     private sealed record TravelDayAdvanceState(
         TravelDiaryBaselineState StartingState,
