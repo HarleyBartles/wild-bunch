@@ -7,8 +7,9 @@ import {
   createRouter,
   Outlet,
 } from "@tanstack/react-router";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { GameSessionProvider } from "../state/GameSessionProvider";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
 import { TravelPrepSurface } from "../flow/TravelPrepSurface";
 import { WorldMapScene } from "../components/start-flow/PhaserMapHost";
 import {
@@ -24,6 +25,7 @@ import {
   getJournal,
   getWorldMap,
   previewTravel,
+  travel,
 } from "../api/wildBunchApi";
 
 const mockState = vi.hoisted(() => ({
@@ -80,6 +82,7 @@ const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedPreviewTravel = vi.mocked(previewTravel);
 const mockedGetWorldMap = vi.mocked(getWorldMap);
+const mockedTravel = vi.mocked(travel);
 
 afterEach(() => {
   cleanup();
@@ -87,6 +90,15 @@ afterEach(() => {
   window.localStorage.clear();
   mockState.games.length = 0;
 });
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+}
 
 function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto {
   return {
@@ -100,6 +112,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       towns: [
         { id: "t-town", name: "Tumbleweed" },
         { id: "dust-fork", name: "Dust Fork" },
+        { id: "agua-fria", name: "Agua Fria" },
       ],
       trails: [
         {
@@ -110,6 +123,15 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
           terrain: 0,
           waterFeature: 1,
           rideDayDistance: 3,
+        },
+        {
+          id: "trail-2",
+          fromTownId: "t-town",
+          toTownId: "agua-fria",
+          risk: 1,
+          terrain: 0,
+          waterFeature: 1,
+          rideDayDistance: 4,
         },
       ],
     },
@@ -232,8 +254,12 @@ function primeMocks(session: GameSessionDto = createSession()) {
     towns: [
       { id: "t-town", name: "Tumbleweed", x: 150, y: 500 },
       { id: "dust-fork", name: "Dust Fork", x: 450, y: 400 },
+      { id: "agua-fria", name: "Agua Fria", x: 750, y: 400 },
     ],
-    trails: [{ id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 }],
+    trails: [
+      { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", rideDayDistance: 3 },
+      { id: "trail-2", fromTownId: "t-town", toTownId: "agua-fria", rideDayDistance: 4 },
+    ],
   });
 }
 
@@ -299,6 +325,177 @@ describe("TravelPrepSurface travel-mode display", () => {
       expect(screen.getByText(/on foot/i)).toBeInTheDocument();
     });
     expect(screen.queryByText(/on horseback/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("TravelPrepSurface preview identity", () => {
+  it("fetches a fresh preview when the active session changes for the selected destination", async () => {
+    primeMocks();
+    const firstPreview = deferred<TravelPreviewResultDto>();
+    const refreshedPreview = deferred<TravelPreviewResultDto>();
+    mockedPreviewTravel
+      .mockReturnValueOnce(firstPreview.promise)
+      .mockReturnValueOnce(refreshedPreview.promise);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const { queryClient } = renderPrep();
+
+    await waitFor(() => {
+      expect(mockState.games.length).toBeGreaterThan(0);
+    });
+    mockState.games[0].config.scene.selectTown("dust-fork");
+    await waitFor(() => {
+      expect(mockedPreviewTravel).toHaveBeenCalledTimes(1);
+    });
+    firstPreview.resolve(createPreview({ baselineRideDays: 2 }));
+
+    expect(await screen.findByText(/2-day ride/i)).toBeInTheDocument();
+
+    const sessionKey = gameSessionQueryKey("game-1");
+    const updatedAt = queryClient.getQueryState(sessionKey)?.dataUpdatedAt ?? Date.now();
+    queryClient.setQueryData(
+      sessionKey,
+      createSession({ clock: { day: 2, turn: 0, timeOfDay: "Morning" } }),
+      { updatedAt: updatedAt + 1000 },
+    );
+
+    await waitFor(() => {
+      expect(mockedPreviewTravel).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.queryByText(/2-day ride/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Calculating the ride...")).toBeInTheDocument();
+    refreshedPreview.resolve(createPreview({ baselineRideDays: 1 }));
+    expect(await screen.findByText(/1-day ride/i)).toBeInTheDocument();
+  });
+
+  it("does not restore an old origin's preview after the player changes towns", async () => {
+    primeMocks();
+    const loadingPreview = deferred<TravelPreviewResultDto>();
+    mockedPreviewTravel.mockReturnValue(loadingPreview.promise);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const { queryClient } = renderPrep();
+
+    await waitFor(() => {
+      expect(mockState.games.length).toBeGreaterThan(0);
+    });
+    mockState.games[0].config.scene.selectTown("dust-fork");
+    await waitFor(() => {
+      expect(mockedPreviewTravel).toHaveBeenCalledTimes(1);
+    });
+
+    const sessionKey = gameSessionQueryKey("game-1");
+    const updatedAt = queryClient.getQueryState(sessionKey)?.dataUpdatedAt ?? Date.now();
+    queryClient.setQueryData(
+      sessionKey,
+      createSession({ player: { name: "Ruth", currentTownId: "dust-fork", health: 9 } }),
+      { updatedAt: updatedAt + 1000 },
+    );
+
+    expect(await screen.findByRole("img", { name: /trail map/i })).toBeInTheDocument();
+    loadingPreview.resolve(createPreview());
+
+    expect(screen.queryByText("Prepare to ride")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /start the ride/i })).not.toBeInTheDocument();
+  });
+
+  it("shows a rejected preview message and keeps travel unavailable", async () => {
+    primeMocks();
+    mockedPreviewTravel.mockResolvedValue({
+      success: false,
+      message: "No route can be ridden today.",
+      preview: null,
+    });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    renderPrep();
+
+    await waitFor(() => {
+      expect(mockState.games.length).toBeGreaterThan(0);
+    });
+    mockState.games[0].config.scene.selectTown("dust-fork");
+
+    expect(await screen.findByText("No route can be ridden today.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /start the ride/i })).not.toBeInTheDocument();
+  });
+
+  it("shows transport failures and retries the preview on request", async () => {
+    primeMocks();
+    mockedPreviewTravel
+      .mockRejectedValueOnce(new Error("The trail could not be checked."))
+      .mockResolvedValueOnce(createPreview());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    renderPrep();
+
+    await waitFor(() => {
+      expect(mockState.games.length).toBeGreaterThan(0);
+    });
+    mockState.games[0].config.scene.selectTown("dust-fork");
+
+    expect(await screen.findByText("The trail could not be checked.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText(/2-day ride/i)).toBeInTheDocument();
+    expect(mockedPreviewTravel).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects a preview for a different origin and only travels with a matching preview", async () => {
+    primeMocks();
+    mockedPreviewTravel.mockResolvedValueOnce(createPreview({ originTownId: "dust-fork" }));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    renderPrep();
+
+    await waitFor(() => {
+      expect(mockState.games.length).toBeGreaterThan(0);
+    });
+    mockState.games[0].config.scene.selectTown("dust-fork");
+
+    expect(await screen.findByText(/preview no longer matches this route/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /start the ride/i })).not.toBeInTheDocument();
+    expect(mockedTravel).not.toHaveBeenCalled();
+
+    mockedPreviewTravel.mockResolvedValueOnce(createPreview());
+    mockedTravel.mockResolvedValue({
+      success: true,
+      message: "Ride started.",
+      currentSession: createSession({
+        player: { name: "Ruth", currentTownId: null, health: 9 },
+      }),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Pick another destination" }));
+    await waitFor(() => expect(mockState.games.length).toBeGreaterThan(1));
+    mockState.games[mockState.games.length - 1].config.scene.selectTown("dust-fork");
+    expect(await screen.findByRole("button", { name: /start the ride/i })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: /start the ride/i }));
+
+    await waitFor(() => {
+      expect(mockedTravel).toHaveBeenCalledWith("game-1", "dust-fork");
+    });
+  });
+
+  it("keeps the second destination selected when the first preview resolves last", async () => {
+    primeMocks();
+    const firstPreview = deferred<TravelPreviewResultDto>();
+    const secondPreview = deferred<TravelPreviewResultDto>();
+    mockedPreviewTravel
+      .mockReturnValueOnce(firstPreview.promise)
+      .mockReturnValueOnce(secondPreview.promise);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    renderPrep();
+
+    await waitFor(() => expect(mockState.games.length).toBeGreaterThan(0));
+    mockState.games[mockState.games.length - 1].config.scene.selectTown("dust-fork");
+    await waitFor(() => expect(mockedPreviewTravel).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Pick another destination" }));
+    await waitFor(() => expect(mockState.games.length).toBeGreaterThan(1));
+    mockState.games[mockState.games.length - 1].config.scene.selectTown("agua-fria");
+    await waitFor(() => expect(mockedPreviewTravel).toHaveBeenCalledTimes(2));
+
+    secondPreview.resolve(
+      createPreview({ destinationTownId: "agua-fria", destinationTownName: "Agua Fria" }),
+    );
+    expect(await screen.findByText("Agua Fria")).toBeInTheDocument();
+    firstPreview.resolve(createPreview());
+
+    expect(screen.getByText("Agua Fria")).toBeInTheDocument();
+    expect(screen.queryByText("Dust Fork")).not.toBeInTheDocument();
   });
 });
 
