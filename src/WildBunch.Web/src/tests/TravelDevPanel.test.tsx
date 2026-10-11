@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TravelDevPanel } from "../dev/panels/TravelDevPanel";
-import { GameSessionProvider } from "../state/GameSessionProvider";
+import { GameSessionContext } from "../state/GameSessionProvider";
 import { clearTravelOverride, forceTravelOverride, getTravelDevContext } from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
@@ -44,13 +44,23 @@ function renderPanel() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  render(
+  const renderForCurrentGame = () => (
     <QueryClientProvider client={queryClient}>
-      <GameSessionProvider>
+      <GameSessionContext.Provider
+        value={{ gameId: window.localStorage.getItem("wild-bunch.current-game-id") } as never}
+      >
         <TravelDevPanel />
-      </GameSessionProvider>
-    </QueryClientProvider>,
+      </GameSessionContext.Provider>
+    </QueryClientProvider>
   );
+  const result = render(renderForCurrentGame());
+  return {
+    ...result,
+    switchGame(id: string) {
+      seedGameId(id);
+      result.rerender(renderForCurrentGame());
+    },
+  };
 }
 
 function seedGameId(id: string) {
@@ -182,6 +192,44 @@ describe("TravelDevPanel", () => {
 
     await waitFor(() => {
       expect(mockedClear).toHaveBeenCalledWith("test-game-4");
+    });
+  });
+
+  it("does not submit travel draft values from the previous playthrough", async () => {
+    seedGameId("test-game-a");
+    mockedGetContext.mockResolvedValue({
+      sessionId: "test-game-a",
+      hasActiveJourney: true,
+      journeyStatus: "Active",
+      daysTravelled: 0,
+      remainingDays: 2,
+      pendingEncounterKind: null,
+      pendingEncounterMessage: null,
+      pendingFoeProfile: null,
+      pendingDevOverride: null,
+    });
+    mockedForce.mockResolvedValue(undefined);
+
+    const panel = renderPanel();
+    const user = userEvent.setup();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /force override/i })).toBeInTheDocument(),
+    );
+    await user.selectOptions(screen.getByDisplayValue("Foe"), "Lucky");
+    await user.type(screen.getByPlaceholderText("(default)"), "Game A only");
+
+    panel.switchGame("test-game-b");
+    await waitFor(() => expect(screen.getByDisplayValue("Foe")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /force override/i }));
+
+    await waitFor(() => {
+      expect(mockedForce).toHaveBeenCalledWith(
+        "test-game-b",
+        expect.objectContaining({
+          forcedCategory: "Foe",
+          encounterMessage: null,
+        }),
+      );
     });
   });
 });
