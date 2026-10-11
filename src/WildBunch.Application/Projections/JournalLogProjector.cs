@@ -118,6 +118,11 @@ public sealed class JournalLogProjector
                     if (!string.IsNullOrEmpty(jaa.DiaryMessage))
                         entries.Add(TravelEntry(jaa.DiaryMessage, day, turn, jaa.JourneySequence));
                     break;
+
+                case PlayerDied pd:
+                    if (!string.IsNullOrEmpty(pd.DiaryMessage))
+                        entries.Add(TravelEntry(pd.DiaryMessage, day, turn, pd.JourneySequence ?? 0));
+                    break;
             }
         }
 

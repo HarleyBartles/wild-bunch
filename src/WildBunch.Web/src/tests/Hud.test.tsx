@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { StartFlowPhase, type GameSessionDto } from "../api/types";
+import { GameStatus, StartFlowPhase, type GameSessionDto } from "../api/types";
 import { useGameSession } from "../state/useGameSession";
 import { createSession } from "./test-utils/factories";
 import { Hud } from "../shell/Hud";
@@ -55,5 +55,17 @@ describe("Hud", () => {
     expect(screen.getByRole("banner", { name: "Game status" })).toBeInTheDocument();
     expect(screen.getByText("9")).toBeInTheDocument();
     expect(screen.getByText("$14.00")).toBeInTheDocument();
+  });
+
+  it("shows failed status and zero health after the server records death", () => {
+    const session = createSession();
+    renderHud({
+      ...session,
+      status: GameStatus.Failed,
+      player: { ...session.player, health: 0 },
+    });
+
+    expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
   });
 });

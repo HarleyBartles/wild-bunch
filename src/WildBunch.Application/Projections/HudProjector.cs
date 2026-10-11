@@ -99,6 +99,11 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     }
                     break;
 
+                case PlayerDied:
+                    status = GameStatus.Failed;
+                    health = 0;
+                    break;
+
                 case JourneyCompleted jc:
                     currentTownId = jc.DestinationTownId;
                     currentTownName = jc.DestinationTownName;

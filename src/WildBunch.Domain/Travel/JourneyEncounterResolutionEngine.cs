@@ -149,6 +149,7 @@ internal static class JourneyEncounterResolutionEngine
             var healthDelta = travelMode == TravelMode.Foot
                 ? -Math.Max(1, travelRulesProfile.EncounterRunFootHealthLoss - Math.Max(0, escapeBand - foeProfile.Speed))
                 : 0;
+            healthDelta = BoundHealthDelta(playerHealth, healthDelta);
 
             var horseExhaustionDelta = travelMode == TravelMode.Mounted
                 ? Math.Max(1, travelRulesProfile.EncounterRunMountedHorseExhaustion)
@@ -171,6 +172,7 @@ internal static class JourneyEncounterResolutionEngine
         var failedHealthDelta = travelMode == TravelMode.Foot
             ? -Math.Max(travelRulesProfile.EncounterRunFootHealthLoss, travelRulesProfile.EncounterRunFootHealthLoss + foeProfile.Speed - escapeBand)
             : 0;
+        failedHealthDelta = BoundHealthDelta(playerHealth, failedHealthDelta);
 
         var failedHorseExhaustionDelta = travelMode == TravelMode.Mounted
             ? Math.Max(1, travelRulesProfile.EncounterRunMountedHorseExhaustion + 1)
@@ -256,7 +258,7 @@ internal static class JourneyEncounterResolutionEngine
         return new JourneyEncounterResolutionPlan(
             success,
             message,
-            -healthLoss,
+            BoundHealthDelta(playerHealth, -healthLoss),
             0m,
             bulletSpend,
             0,
@@ -407,6 +409,9 @@ internal static class JourneyEncounterResolutionEngine
 
     private static int ClampChance(int chance)
         => Math.Clamp(chance, 8, 92);
+
+    private static int BoundHealthDelta(int playerHealth, int healthDelta)
+        => Math.Max(0, playerHealth + healthDelta) - Math.Max(0, playerHealth);
 
     private static int RollPercent(ulong roll)
         => (int)(roll % 100);

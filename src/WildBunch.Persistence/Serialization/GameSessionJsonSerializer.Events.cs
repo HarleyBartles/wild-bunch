@@ -40,6 +40,7 @@ public sealed partial class GameSessionJsonSerializer
         nameof(PrologueViewed) => typeof(PrologueViewed),
         nameof(GameStarted) => typeof(GameStarted),
         nameof(PlaythroughArchived) => typeof(PlaythroughArchived),
+        nameof(PlayerDied) => typeof(PlayerDied),
         nameof(StoreItemPurchased) => typeof(StoreItemPurchased),
         nameof(InvestigationPerformed) => typeof(InvestigationPerformed),
         nameof(TownActionContextEntered) => typeof(TownActionContextEntered),

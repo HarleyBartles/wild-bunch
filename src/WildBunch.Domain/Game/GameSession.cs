@@ -347,6 +347,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void ProduceEvent<T>(T e) where T : IDomainEvent
     {
+        if (Status == GameStatus.Failed && e is not PlaythroughArchived)
+        {
+            throw new InvalidOperationException("This playthrough has ended.");
+        }
+
         ApplyProducedEvent(e);
         _uncommittedEvents.Add(e);
     }
@@ -365,6 +370,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 break;
             case PlaythroughArchived pa:
                 Apply(pa);
+                break;
+            case PlayerDied pd:
+                Apply(pd);
                 break;
             case StoreItemPurchased p:
                 Apply(p);
@@ -1123,6 +1131,23 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         _version++;
     }
 
+    internal void Apply(PlayerDied e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+        if (Player.Health != 0)
+        {
+            throw new InvalidOperationException("PlayerDied requires zero player health.");
+        }
+        if (Status != GameStatus.Active)
+        {
+            throw new InvalidOperationException("PlayerDied can only end an active playthrough.");
+        }
+
+        Status = GameStatus.Failed;
+        _journeyLoop.MarkFailed();
+        _version++;
+    }
+
     /// <summary>
     /// Applies a <see cref="StoreItemPurchased"/> event to mutate session state.
     /// This is the event-sourced mutation path for the purchase flow.
@@ -1173,13 +1198,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => _bountyLoop.TryGetWantedSuspectPresenceState(suspectId, out state);
 
     public void SetWantedSuspectPresenceState(SuspectId suspectId, WantedSuspectPresenceState state)
-        => _bountyLoop.SetWantedSuspectPresenceState(suspectId, state);
+    {
+        if (IsGameplayTerminal)
+        {
+            throw new InvalidOperationException(GameplayBlockMessage);
+        }
+
+        _bountyLoop.SetWantedSuspectPresenceState(suspectId, state);
+    }
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+            return TravelJourneyStepResult.Failed(GameplayBlockMessage);
         }
 
         ArgumentNullException.ThrowIfNull(preview);
@@ -1195,9 +1227,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourneyStepResult AdvanceJourneyDay()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+            return TravelJourneyStepResult.Failed(GameplayBlockMessage);
         }
 
         // Advance clock only when the journey will actually advance (not blocked
@@ -1231,7 +1263,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             ProduceEvent(e);
         }
+        RecordPlayerDeathIfNeeded();
         return result.Result;
+    }
+
+    private void RecordPlayerDeathIfNeeded()
+    {
+        if (Player.Health == 0 && Status == GameStatus.Active)
+        {
+            ProduceEvent(new PlayerDied
+            {
+                JourneySequence = Journey?.JourneySequence,
+                DiaryMessage = "I died on the trail. My journey ends here."
+            });
+        }
     }
 
     /// <summary>
@@ -1386,9 +1431,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public JourneyArrivalAcknowledgementResult AcknowledgeJourneyArrival()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return JourneyArrivalAcknowledgementResult.Failed(ArchivedBlockMessage);
+            return JourneyArrivalAcknowledgementResult.Failed(GameplayBlockMessage);
         }
 
         var context = new AcknowledgeJourneyArrivalContext(TravelRules);
@@ -1625,9 +1670,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         decimal? bribeAmount,
         ulong? forcedRoll)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return JourneyEncounterResolutionResult.Failed(ArchivedBlockMessage, JourneyStatus.Failed);
+            return JourneyEncounterResolutionResult.Failed(GameplayBlockMessage, JourneyStatus.Failed);
         }
 
         var caps = Player.GetCapabilities(TravelRules);
@@ -1657,14 +1702,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             ProduceEvent(e);
         }
+        RecordPlayerDeathIfNeeded();
         return result.Result;
     }
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return StorePurchaseResult.Failed(ArchivedBlockMessage);
+            return StorePurchaseResult.Failed(GameplayBlockMessage);
         }
 
         ArgumentNullException.ThrowIfNull(offer);
@@ -1695,9 +1741,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public ReadWantedPostersResult ReadWantedPosters()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return ReadWantedPostersResult.Failed(ArchivedBlockMessage);
+            return ReadWantedPostersResult.Failed(GameplayBlockMessage);
         }
 
         if (IsJourneyModal())
@@ -1725,9 +1771,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult LookAroundSaloon()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+            return CaseInvestigationResult.Failed(GameplayBlockMessage);
         }
 
         if (IsJourneyModal())
@@ -1768,9 +1814,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return SaloonPersonOfInterestConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+            return SaloonPersonOfInterestConfrontationResult.Rejected(GameplayBlockMessage, declaredWantedIdentityHandle);
         }
 
         var context = new SaloonConfrontationContext(
@@ -1853,9 +1899,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         WantedSuspectConfrontationChoice choice,
         string? declaredWantedIdentityHandle = null)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+            return WantedSuspectConfrontationResult.Rejected(GameplayBlockMessage, declaredWantedIdentityHandle);
         }
 
         var context = new WantedSuspectConfrontationContext(
@@ -1879,9 +1925,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+            return SheriffTurnInResult.Rejected(GameplayBlockMessage);
         }
 
         var context = new SheriffTurnInContext(
@@ -1901,9 +1947,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+            return SheriffTurnInResult.Rejected(GameplayBlockMessage);
         }
 
         // Enter SheriffOffice context BEFORE assessment. This emits a TownActionContextEntered
@@ -1955,9 +2001,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult GatherLocalGossip()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+            return CaseInvestigationResult.Failed(GameplayBlockMessage);
         }
 
         if (IsJourneyModal())
@@ -2119,7 +2165,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private bool IsJourneyModal()
         => Journey is not null;
 
-    private bool IsArchived => Status == GameStatus.Archived;
+    private bool IsGameplayTerminal => Status is GameStatus.Archived or GameStatus.Failed;
+    private string GameplayBlockMessage => Status == GameStatus.Failed
+        ? "This playthrough has ended."
+        : ArchivedBlockMessage;
 
     /// <summary>
     /// True when the session has not yet reached GameStarted. Gameplay commands

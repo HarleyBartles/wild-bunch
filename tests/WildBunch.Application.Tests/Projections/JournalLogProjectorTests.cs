@@ -70,6 +70,20 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
+    public void PlayerDied_AddsOneTravelEntryToTheCurrentJourney()
+    {
+        var log = new JournalLogProjector().Project(
+        [
+            GameStartedEvent(),
+            new PlayerDied { JourneySequence = 4, DiaryMessage = "I died on the trail." }
+        ]);
+
+        var deathEntry = Assert.Single(log, entry => entry.Message == "I died on the trail.");
+        Assert.Equal(GameLogEntryKind.Travel, deathEntry.Kind);
+        Assert.Equal(4, deathEntry.JourneySequence);
+    }
+
+    [Fact]
     public void StoreItemPurchased_ProducesPurchaseEntry_MatchingLegacyCommandPath()
     {
         var projector = new JournalLogProjector();
