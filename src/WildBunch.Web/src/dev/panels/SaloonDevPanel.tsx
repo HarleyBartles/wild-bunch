@@ -14,6 +14,15 @@ interface SaloonDevPanelProps {
 
 export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelProps) {
   const { gameId } = useGameSession();
+
+  if (!gameId) {
+    return <MutedText>No active session.</MutedText>;
+  }
+
+  return <SaloonDevPanelForGame key={gameId} gameId={gameId} />;
+}
+
+function SaloonDevPanelForGame({ gameId }: { gameId: string }) {
   const queryClient = useQueryClient();
 
   const [forcedKind, setForcedKind] = useState<PoiKind>("Suspect");
@@ -24,7 +33,7 @@ export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelPr
 
   const { data, isLoading } = useQuery({
     queryKey: ["dev-saloon-context", gameId],
-    queryFn: () => getSaloonDevContext(gameId as string),
+    queryFn: () => getSaloonDevContext(gameId),
     enabled: Boolean(gameId),
     retry: false,
   });
@@ -33,10 +42,6 @@ export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelPr
     () => (data?.suspects ?? []).filter((s) => s.isEligibleSaloonPoi),
     [data?.suspects],
   );
-
-  if (!gameId) {
-    return <MutedText>No active session.</MutedText>;
-  }
 
   if (isLoading) {
     return <MutedText>Loading saloon context...</MutedText>;

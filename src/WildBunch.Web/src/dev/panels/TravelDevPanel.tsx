@@ -16,6 +16,15 @@ const ENCOUNTER_CATEGORIES = [
 
 export function TravelDevPanel() {
   const { gameId } = useGameSession();
+
+  if (!gameId) {
+    return <MutedText>No active session.</MutedText>;
+  }
+
+  return <TravelDevPanelForGame key={gameId} gameId={gameId} />;
+}
+
+function TravelDevPanelForGame({ gameId }: { gameId: string }) {
   const queryClient = useQueryClient();
 
   const [category, setCategory] = useState<string>("Foe");
@@ -28,14 +37,10 @@ export function TravelDevPanel() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["dev-travel-context", gameId],
-    queryFn: () => getTravelDevContext(gameId as string),
+    queryFn: () => getTravelDevContext(gameId),
     enabled: Boolean(gameId),
     retry: false,
   });
-
-  if (!gameId) {
-    return <MutedText>No active session.</MutedText>;
-  }
 
   if (isLoading) {
     return <MutedText>Loading travel context...</MutedText>;
