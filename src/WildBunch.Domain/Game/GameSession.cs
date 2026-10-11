@@ -642,8 +642,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Player.SetCash(e.WalletCash);
         if (e.AmmoSpent > 0)
             SpendFirearmAmmo(e.AmmoSpent);
-        if (e.StolenItemKind is { } kind && e.StolenItemQuantity > 0)
-            Player.RemoveQuantity(kind, e.StolenItemQuantity);
+        if (e.StolenItemKind == ItemKind.RevolverAmmo && e.StolenItemQuantity > 0)
+            Player.RemoveQuantity(ItemKind.RevolverAmmo, e.StolenItemQuantity);
         PursuitState.SetHeat(e.PursuitHeat);
         SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
         _version++;
