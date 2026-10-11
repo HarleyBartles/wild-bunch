@@ -17,6 +17,14 @@ public sealed class TravelResourceSettlementTests
         var (session, encounter) = StartInterruptedJourney(
             stolenKind,
             startingFood: stolenKind == ItemKind.Food ? 3 : 0);
+        var dayPlan = session.Journey!.CurrentDayPlan!;
+        var nextEncounter = JourneyEncounterState.CreateFoe(
+            "A second rider waits farther down the trail.",
+            new JourneyFoeProfile(8, 8, 10m));
+        session.Journey.SetCurrentDayPlan(dayPlan with
+        {
+            Encounters = [.. dayPlan.Encounters, FoeDayEncounter(nextEncounter)]
+        });
         var startingQuantity = session.Journey!.FoodRemaining;
         if (stolenKind == ItemKind.HorseFeed)
         {
@@ -25,8 +33,21 @@ public sealed class TravelResourceSettlementTests
 
         var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
         var forcedRoll = FindRetaliationRoll(session, encounter, stolenKind);
+        var nonRetaliationRoll = FindNonRetaliationRoll(session, encounter);
+        var nonRetaliatingPlan = JourneyEncounterResolutionEngine.ResolveBribe(
+            encounter,
+            session.Player.Wallet.Cash,
+            session.TravelRules,
+            requestedBribe: 1m,
+            session.Journey.FoodRemaining,
+            session.Journey.HorseFeedRemaining,
+            session.Player.Inventory.GetQuantity(ItemKind.RevolverAmmo),
+            nonRetaliationRoll);
+        Assert.False(nonRetaliatingPlan.Resolved);
+        Assert.Equal(0, nonRetaliatingPlan.HeatIncrease);
         var startingHealth = session.Player.Health;
         var startingCash = session.Player.Wallet.Cash;
+        var startingHeat = session.PursuitState.Heat;
 
         var result = session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: forcedRoll);
 
@@ -41,16 +62,25 @@ public sealed class TravelResourceSettlementTests
         Assert.Equal(resolution.WalletCash, session.Player.Wallet.Cash);
         Assert.Equal(stolenKind, resolution.StolenItemKind);
         Assert.Equal(1, resolution.StolenItemQuantity);
+        Assert.Equal(startingHeat, resolution.PursuitHeat);
+        Assert.Equal(0, Assert.Single(resolution.JourneySnapshot.CurrentDayPlan!.Encounters,
+            dayEncounter => dayEncounter.Resolution is not null).Resolution!.HeatIncrease);
         Assert.Equal(expectedQuantity, Quantity(resolution.JourneySnapshot, stolenKind));
         Assert.Equal(expectedQuantity, session.Player.Inventory.GetQuantity(stolenKind));
         Assert.Equal(expectedQuantity, Quantity(session.Journey.ToSnapshot(session.TravelRules), stolenKind));
+        Assert.Equal(startingHeat, session.PursuitState.Heat);
+        Assert.Equal(0, Assert.Single(session.Journey.CurrentDayPlan!.Encounters,
+            dayEncounter => dayEncounter.Resolution is not null).Resolution!.HeatIncrease);
 
         var history = setupEvents.Concat(session.CommittedEvents).Concat(session.UncommittedEvents).ToArray();
         var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, history);
         Assert.Equal(resolution.PlayerHealth, replayed.Player.Health);
         Assert.Equal(resolution.WalletCash, replayed.Player.Wallet.Cash);
+        Assert.Equal(resolution.PursuitHeat, replayed.PursuitState.Heat);
+        Assert.Equal(0, Assert.Single(replayed.Journey!.CurrentDayPlan!.Encounters,
+            dayEncounter => dayEncounter.Resolution is not null).Resolution!.HeatIncrease);
         Assert.Equal(expectedQuantity, replayed.Player.Inventory.GetQuantity(stolenKind));
-        Assert.Equal(expectedQuantity, Quantity(replayed.Journey!.ToSnapshot(replayed.TravelRules), stolenKind));
+        Assert.Equal(expectedQuantity, Quantity(replayed.Journey.ToSnapshot(replayed.TravelRules), stolenKind));
     }
 
     [Fact]
@@ -214,6 +244,28 @@ public sealed class TravelResourceSettlementTests
         }
 
         throw new InvalidOperationException($"Could not find a retaliation roll that steals {stolenKind}.");
+    }
+
+    private static ulong FindNonRetaliationRoll(GameSession session, JourneyEncounterState encounter)
+    {
+        for (ulong roll = 0; roll < 10_000; roll++)
+        {
+            var plan = JourneyEncounterResolutionEngine.ResolveBribe(
+                encounter,
+                session.Player.Wallet.Cash,
+                session.TravelRules,
+                requestedBribe: 1m,
+                session.Journey!.FoodRemaining,
+                session.Journey.HorseFeedRemaining,
+                session.Player.Inventory.GetQuantity(ItemKind.RevolverAmmo),
+                roll);
+            if (!plan.Resolved && plan.HealthDelta == 0 && plan.StolenItemKind is null)
+            {
+                return roll;
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("Could not find a deterministic bribe roll without retaliation.");
     }
 
     private static int Quantity(TravelJourneySnapshot snapshot, ItemKind itemKind)

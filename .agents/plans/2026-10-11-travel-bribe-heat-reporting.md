@@ -14,6 +14,8 @@
 
 **Execution Strategy:** `executing-plans` - the nested diary fact, event, live aggregate and replay are one state transition through the same bribe command. A single behavior test and minimal decision correction keep the event-backed invariant reviewable as one slice.
 
+**Fixture ruling, 2026-10-11:** The existing one-encounter test fixture completed its day and removed the current day plan before the event snapshot could expose the recorded resolution. The behavior test now appends a second pending encounter, keeping the first resolution in the emitted snapshot and replay so the regression fails on the intended nonzero heat fact.
+
 ## Global Constraints
 
 - Heat represents lawman and town attention; trail encounters do not change it (ADR-0029).
@@ -38,13 +40,13 @@
 
 **Produces:** The same scenario verifies absolute pursuit heat remains unchanged and the persisted current-day encounter-resolution `HeatIncrease` is zero in the `JourneyEncounterResolved` event, live aggregate and replay.
 
-- [ ] **Step 1: Extend the existing behavior test.** In `BribeRetaliationRecordsTheResourceActuallyStolen`, capture the starting pursuit heat before resolving the bribe. Assert the emitted event's absolute `PursuitHeat` equals that value and its single current-day encounter resolution reports `HeatIncrease == 0`. After rehydration, assert replayed absolute heat and nested resolution metadata equal the event facts. Keep the existing theft, health and wallet assertions intact.
+- [x] **Step 1: Extend the existing behavior test.** In `BribeRetaliationRecordsTheResourceActuallyStolen`, capture the starting pursuit heat before resolving the bribe. Assert the emitted event's absolute `PursuitHeat` equals that value and its single current-day encounter resolution reports `HeatIncrease == 0`. After rehydration, assert replayed absolute heat and nested resolution metadata equal the event facts. Keep the existing theft, health and wallet assertions intact.
 
-- [ ] **Step 2: Prove the test fails for the intended reason.** Run `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --no-restore --filter FullyQualifiedName~BribeRetaliationRecordsTheResourceActuallyStolen`. Expected: the new nested `HeatIncrease` assertion fails because the retaliatory plan records `1`, while event pursuit heat remains unchanged. Confirm the failure identifies the metadata mismatch, not a fixture or environment failure.
+- [x] **Step 2: Prove the test fails for the intended reason.** Run `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --no-restore --filter FullyQualifiedName~BribeRetaliationRecordsTheResourceActuallyStolen`. Expected: the new nested `HeatIncrease` assertion fails because the retaliatory plan records `1`, while event pursuit heat remains unchanged. Confirm the failure identifies the metadata mismatch, not a fixture or environment failure.
 
-- [ ] **Step 3: Correct the domain decision.** In `JourneyEncounterResolutionEngine.ResolveBribe`, set the heat increase to zero for both unsuccessful-bribe branches. Preserve all existing success, offer payment, lockout, theft, health, wallet and encounter behavior. Do not remove or reshape persisted fields because they remain part of event history and snapshots.
+- [x] **Step 3: Correct the domain decision.** In `JourneyEncounterResolutionEngine.ResolveBribe`, set the heat increase to zero for both unsuccessful-bribe branches. Preserve all existing success, offer payment, lockout, theft, health, wallet and encounter behavior. Do not remove or reshape persisted fields because they remain part of event history and snapshots.
 
-- [ ] **Step 4: Verify focused behavior and replay.** Re-run the focused test and then `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --no-restore`. Both must pass. Inspect the event production and `Apply` path to confirm the event still carries absolute heat and the persisted snapshot carries the zero increase without rerolling.
+- [x] **Step 4: Verify focused behavior and replay.** Re-run the focused test and then `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --no-restore`. Both must pass. Inspect the event production and `Apply` path to confirm the event still carries absolute heat and the persisted snapshot carries the zero increase without rerolling.
 
 ### Task 2: Retire the completed plan and deliver the correction
 
@@ -54,13 +56,13 @@
 
 **Produces:** The roadmap records PR #263's merge and gate evidence, links this successor plan and records the `.79` target; the investigation dates DN-16's bribe-heat correction without rewriting the original finding; the `.78` plan is retired in Git history; and the authored version is `.79`.
 
-- [ ] **Step 1: Update the roadmap evidence.** In row 12, preserve the existing PR #260-263 scope and record PR #263's merge SHA, exact-head gate and develop-push gate. Link this plan as the active row-12 slice, set its target to `0.1.0-dev.79`, and describe the narrow remaining correction. Add a dated delivery note for PR #263 consistent with adjacent row-12 records.
+- [x] **Step 1: Update the roadmap evidence.** In row 12, preserve the existing PR #260-263 scope and record PR #263's merge SHA, exact-head gate and develop-push gate. Link this plan as the active row-12 slice, set its target to `0.1.0-dev.79`, and describe the narrow remaining correction. Add a dated delivery note for PR #263 consistent with adjacent row-12 records.
 
-- [ ] **Step 2: Date the investigation disposition.** Under DN-16, preserve the original audit text and add a dated note that failed bribe plans no longer report trail heat increases, ADR-0029 remains authoritative, and the correction does not change event schema or supported history policy.
+- [x] **Step 2: Date the investigation disposition.** Under DN-16, preserve the original audit text and add a dated note that failed bribe plans no longer report trail heat increases, ADR-0029 remains authoritative, and the correction does not change event schema or supported history policy.
 
-- [ ] **Step 3: Retire the completed `.78` plan and advance the version.** Remove `.agents/plans/2026-10-11-travel-encounter-facts.md`; update `Directory.Build.props` from `.78` to `.79`. Do not edit the accepted baseline or feature matrix because their behavior and disposition do not change.
+- [x] **Step 3: Retire the completed `.78` plan and advance the version.** Remove `.agents/plans/2026-10-11-travel-encounter-facts.md`; update `Directory.Build.props` from `.78` to `.79`. Do not edit the accepted baseline or feature matrix because their behavior and disposition do not change.
 
-- [ ] **Step 4: Run the complete local gate and commit deliberately.** Ensure PostgreSQL with `.\tools\postgres-dev.ps1 ensure` when required by CI lanes, run `py -3 tools/run.py ci --check`, inspect the generated build identity and full diff, then commit through the normal check-only hook. Do not bypass hooks or include generated build artifacts.
+- [x] **Step 4: Run the complete local gate and commit deliberately.** Ensure PostgreSQL with `.\tools\postgres-dev.ps1 ensure` when required by CI lanes, run `py -3 tools/run.py ci --check`, inspect the generated build identity and full diff, then commit through the normal check-only hook. Do not bypass hooks or include generated build artifacts.
 
 - [ ] **Step 5: Review and publish.** Run plan completion-readiness and request a fresh independent whole-branch review against the plan, spec, ADR-0029 and backend review profile. Resolve important findings with a witnessed red/green cycle and rerun the full gate. Open a PR to `develop`; verify hosted exact-head CI passes before merging, then verify the develop-push gate, fast-forward the main checkout to latest `develop`, and confirm it is clean.
 
