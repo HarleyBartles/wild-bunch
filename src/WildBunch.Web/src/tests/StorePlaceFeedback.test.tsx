@@ -1,11 +1,13 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
-import { GameSessionProvider } from "../state/GameSessionProvider";
+import { GameSessionContext, GameSessionProvider } from "../state/GameSessionProvider";
+import { useGameSession } from "../state/useGameSession";
 import {
   AvailableActionKind,
   type GameSessionDto,
@@ -96,6 +98,51 @@ function renderShell(extraContent: ReactNode = null) {
       <GameSessionProvider>
         <RouterProvider router={createAppRouter()} />
         {extraContent}
+      </GameSessionProvider>
+    </QueryClientProvider>,
+  );
+  return { queryClient };
+}
+
+function SwitchablePlaythrough({ children }: { children: ReactNode }) {
+  const initialValue = useGameSession();
+  const [switched, setSwitched] = useState(false);
+  const gameTwoSession = createSession();
+  gameTwoSession.id = "game-2";
+  gameTwoSession.player.currentTownId = "other-town";
+  const value = switched
+    ? {
+        ...initialValue,
+        gameId: "game-2",
+        currentTown: { id: "other-town", name: "Dust Fork" },
+        session: gameTwoSession,
+      }
+    : initialValue;
+  return (
+    <GameSessionContext.Provider value={value}>
+      <button type="button" onClick={() => setSwitched(true)}>
+        Switch playthrough
+      </button>
+      {children}
+    </GameSessionContext.Provider>
+  );
+}
+
+function renderSwitchableShell(extraContent: ReactNode = null) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  render(
+    <QueryClientProvider client={queryClient}>
+      <GameSessionProvider>
+        <SwitchablePlaythrough>
+          <RouterProvider router={createAppRouter()} />
+          {extraContent}
+        </SwitchablePlaythrough>
       </GameSessionProvider>
     </QueryClientProvider>,
   );
@@ -397,6 +444,62 @@ describe("Store purchase feedback", () => {
     expect(await screen.findByText("game-1 context 2")).toBeInTheDocument();
     expect(screen.getByText("game-2 context 1")).toBeInTheDocument();
     expect(screen.getByText("Inventory").closest("section")).toHaveTextContent("$7.00");
+    expect(refreshProbeCalls.filter((gameId) => gameId === "game-1")).toHaveLength(2);
+    expect(refreshProbeCalls.filter((gameId) => gameId === "game-2")).toHaveLength(1);
+  });
+
+  it("keeps a delayed purchase with its captured playthrough after switching games", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town/store");
+    const updatedSession = createSession();
+    updatedSession.inventory!.wallet.cash = 10;
+    mockedGetGame.mockResolvedValueOnce(createSession()).mockResolvedValue(updatedSession);
+
+    let resolvePurchase!: (result: GameTurnResultDto) => void;
+    mockedBuyStoreItem.mockImplementation(
+      () => new Promise((resolve) => (resolvePurchase = resolve)),
+    );
+
+    renderSwitchableShell(
+      <>
+        <RefreshProbe gameId="game-1" />
+        <RefreshProbe gameId="game-2" />
+      </>,
+    );
+
+    const user = userEvent.setup();
+    await screen.findByText("Canned beans");
+    await screen.findByText("game-1 context 1");
+    await screen.findByText("game-2 context 1");
+    await user.click(screen.getByRole("button", { name: /^buy$/i }));
+    expect(mockedBuyStoreItem).toHaveBeenCalledWith("game-1", "t-town", {
+      itemKind: 0,
+      quantity: 1,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Switch playthrough" }));
+    await waitFor(() => {
+      expect(mockedGetTownStoreOffers).toHaveBeenCalledWith("game-2", "other-town");
+    });
+    expect(screen.getByText("Inventory").closest("section")).toHaveTextContent("$14.00");
+
+    await act(async () => {
+      resolvePurchase({
+        success: true,
+        message: "You bought 1 canned beans for $1.50.",
+        currentSession: updatedSession,
+        journeyStatus: null,
+        journey: null,
+        trailEvent: null,
+        travelDiary: null,
+      });
+    });
+
+    await screen.findByText("game-1 context 2");
+    expect(screen.getByText("game-2 context 1")).toBeInTheDocument();
+    expect(screen.queryByText("You bought 1 canned beans for $1.50.")).toBeNull();
+    expect(screen.getByText("Inventory").closest("section")).toHaveTextContent("$14.00");
     expect(refreshProbeCalls.filter((gameId) => gameId === "game-1")).toHaveLength(2);
     expect(refreshProbeCalls.filter((gameId) => gameId === "game-2")).toHaveLength(1);
   });

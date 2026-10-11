@@ -22,6 +22,7 @@
 - Every returned purchase result refreshes the playthrough's mutable resources, including `success: false` results that include an updated session.
 - A purchase quantity must be a positive whole number before the client submits it; invalid input displays `Enter a whole number of at least 1.` beside the field, and the backend remains responsible for authoritative legality and affordability.
 - A delayed purchase remains scoped to the game and town captured when submitted; it must not write another playthrough's cache or feedback.
+- A route-level test switches from game A to game B before the deferred purchase completes, then proves game A's resource family refreshes while game B retains its own inventory and receives no stale feedback.
 - Advance the single authored application version from `0.1.0-dev.88` to `0.1.0-dev.89` exactly once in this PR.
 - In the successor PR, record PR #273's merge and hosted-gate evidence, retire its completed query-freshness plan, and keep this plan until its implementation PR is merged.
 
@@ -30,6 +31,7 @@
 - A pending purchase disables duplicate submission and stays pending until active resource refreshes settle; the route-level test must observe the disabled control during a deferred request.
 - Blank, zero, negative, and fractional quantities never reach the API; the route-level test must prove the request is absent for each invalid value.
 - A completed purchase for the captured game refreshes that game's active resources and preserves the server result's success or failure presentation.
+- Switching playthrough identity while the mutation is pending unmounts the old Store mutation state without preventing its result from refreshing only the captured game's resources.
 
 ---
 
@@ -57,8 +59,9 @@
 - [x] **Step 6: Make quantity submission explicit and valid.** Use a submitted quantity field with positive-integer validation and accessible field feedback; the handler must revalidate parsed numeric input and submit no fallback quantity for malformed values.
 - [x] **Step 7: Remove Store-only command plumbing from the universal context.** Delete `handleBuyOffer` from `GameSessionProvider` and remove the now-unconsumed `setSession` helper from `useCurrentGameSession`; preserve the other session fields and wanted-identity selection.
 - [x] **Step 8: Relocate and reconcile Store behavior tests.** Move provider-level purchase ownership, unsuccessful-result refresh, and failed-catalog-refresh coverage to `StorePlaceFeedback.test.tsx`; retain only wanted-identity behavior in `GameSessionProvider.test.tsx`. Keep query-family game scoping covered by `gameResourceQueries.test.tsx`.
-- [x] **Step 9: Run focused Store and provider tests.** Run `npm --prefix src/WildBunch.Web test -- --run src/tests/StorePlaceFeedback.test.tsx src/tests/GameSessionProvider.test.tsx src/tests/gameResourceQueries.test.tsx`; all 14 tests pass.
+- [x] **Step 9: Run focused Store and provider tests.** Run `npm --prefix src/WildBunch.Web test -- --run src/tests/StorePlaceFeedback.test.tsx src/tests/GameSessionProvider.test.tsx src/tests/gameResourceQueries.test.tsx`; all 15 tests pass, including delayed purchase completion after a playthrough switch.
 - [x] **Step 10: Verify the Store route in the browser.** In worktree `Z:\_agent-worktrees\wild-bunch\codex\row13-provider-narrowing`, API `http://localhost:5275`, frontend `http://localhost:5173`, create a disposable QA playthrough and buy three Food. The route showed `Purchased 3 Food for $6.00.`, cash changed from $25 to $19, inventory Food changed from four to seven, and the purchase plus game/action/journal/store refreshes returned 200. No browser console or dynamic network errors remained during this Store interaction. The app's ordinary `/api/games/setup` request returned 415 because its idempotency header replaces the JSON content type; row 14 now owns that separate transport defect. Worktree API and frontend were stopped afterward; shared PostgreSQL remains running.
+- [x] **Step 11: Preserve delayed-purchase identity across a playthrough switch.** Add a route-level deferred-purchase test that switches from game A/town A to game B/town B before A completes; prove the request retained A's identity, only A's resource probe refetched, B retained its own cash, and A's completion message did not appear in B. Failure proof: temporarily removed the Store's game/town React key and reran this test; it failed because A's success message appeared in B. Restored the key and confirmed the test passes.
 
 ### Task 2: Advance and publish the Store slice
 
