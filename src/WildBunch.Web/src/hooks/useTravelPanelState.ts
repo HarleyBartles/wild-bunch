@@ -1,12 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   acknowledgeTravelArrival,
   advanceTravelDay,
-  getGame,
   resolveTravelEncounter,
 } from "../api/wildBunchApi";
 import type { GameSessionDto, GameTurnResultDto } from "../api/types";
 import { getErrorMessage } from "../components/travel/travelShared";
+import { gameSessionQueryOptions } from "../state/gameSessionQuery";
 
 interface UseTravelPanelStateArgs {
   gameId: string;
@@ -35,13 +35,10 @@ function useTravelMutationState(
   gameId: string,
   onTurnResult: UseTravelPanelStateArgs["onTurnResult"],
 ) {
-  const queryClient = useQueryClient();
-
   const advanceMutation = useMutation({
     mutationFn: () => advanceTravelDay(gameId),
     onSuccess: async (result) => {
       await onTurnResult(result);
-      await queryClient.invalidateQueries({ queryKey: ["travel-session", gameId] });
     },
   });
 
@@ -49,7 +46,6 @@ function useTravelMutationState(
     mutationFn: () => acknowledgeTravelArrival(gameId),
     onSuccess: async (result) => {
       await onTurnResult(result);
-      await queryClient.invalidateQueries({ queryKey: ["travel-session", gameId] });
     },
   });
 
@@ -65,7 +61,6 @@ function useTravelMutationState(
       }),
     onSuccess: async (result) => {
       await onTurnResult(result);
-      await queryClient.invalidateQueries({ queryKey: ["travel-session", gameId] });
     },
   });
 
@@ -79,8 +74,7 @@ export function useTravelPanelState({
   onTurnResult,
 }: UseTravelPanelStateArgs): TravelPanelState {
   const travelSessionQuery = useQuery({
-    queryKey: ["travel-session", gameId],
-    queryFn: () => getGame(gameId),
+    ...gameSessionQueryOptions(gameId),
     enabled: Boolean(gameId && session.journey),
     initialData: session,
     staleTime: 0,

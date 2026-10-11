@@ -257,6 +257,27 @@ function deferred<T>() {
 }
 
 describe("TravelPanel", () => {
+  it("shows an authoritative session update made by another session reader", async () => {
+    const session = createSession();
+    mockedGetGame.mockResolvedValue(session);
+
+    const { queryClient } = renderTravelPanel(session);
+
+    expect(await screen.findByText("The ridge may blow up after dusk.")).toBeInTheDocument();
+
+    const refreshedSession: GameSessionDto = {
+      ...session,
+      journey: {
+        ...session.journey!,
+        warnings: ["Rain has washed out the crossing."],
+      },
+    };
+    queryClient.setQueryData(["session", session.id], refreshedSession);
+
+    expect(await screen.findByText("Rain has washed out the crossing.")).toBeInTheDocument();
+    expect(screen.queryByText("The ridge may blow up after dusk.")).not.toBeInTheDocument();
+  });
+
   it("renders backend travel diary entries and the advance action for an active journey", async () => {
     const session = createSession();
     mockedGetGame.mockResolvedValue(session);

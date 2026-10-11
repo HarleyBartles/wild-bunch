@@ -21,6 +21,7 @@ import {
   clearPendingSetupOperation,
   type PendingSetupOperation,
 } from "../utils/startupOperationStorage";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
 
 type UseGameSessionMutationsArgs = {
   gameId: string | null;
@@ -50,7 +51,7 @@ export function useGameSessionMutations({
   const invalidateGameQueries = useCallback(
     (activeGameId: string) =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["session", activeGameId] }),
+        queryClient.invalidateQueries({ queryKey: gameSessionQueryKey(activeGameId) }),
         queryClient.invalidateQueries({ queryKey: ["actions", activeGameId] }),
         queryClient.invalidateQueries({ queryKey: ["journal", activeGameId] }),
       ]),
@@ -85,7 +86,7 @@ export function useGameSessionMutations({
   const markPrologueViewedMutation = useMutation({
     mutationFn: (activeGameId: string) => markPrologueViewed(activeGameId),
     onSuccess: async (updatedSession) => {
-      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      queryClient.setQueryData(gameSessionQueryKey(updatedSession.id), updatedSession);
       await invalidateGameQueries(updatedSession.id);
     },
     onError: (exception: unknown) => {
@@ -120,7 +121,7 @@ export function useGameSessionMutations({
     },
     onSuccess: async (updatedSession) => {
       clearPendingFirstArrivalOperation(updatedSession.id);
-      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      queryClient.setQueryData(gameSessionQueryKey(updatedSession.id), updatedSession);
       await invalidateGameQueries(updatedSession.id);
       setNotice(`New game started for ${updatedSession.player.name}.`);
     },
@@ -163,7 +164,7 @@ export function useGameSessionMutations({
       resetSetupDraft();
       setError("");
       if (archivedGameId) {
-        queryClient.removeQueries({ queryKey: ["session", archivedGameId] });
+        queryClient.removeQueries({ queryKey: gameSessionQueryKey(archivedGameId) });
         queryClient.removeQueries({ queryKey: ["actions", archivedGameId] });
         queryClient.removeQueries({ queryKey: ["journal", archivedGameId] });
       }
@@ -178,7 +179,7 @@ export function useGameSessionMutations({
   const travelMutation = useMutation({
     mutationFn: (destinationTownId: string) => travel(gameId as string, destinationTownId),
     onSuccess: async (result) => {
-      queryClient.setQueryData(["session", gameId], result.currentSession);
+      queryClient.setQueryData(gameSessionQueryKey(gameId), result.currentSession);
       await invalidateGameQueries(gameId as string);
       setNotice(result.message);
       setError("");
@@ -191,7 +192,7 @@ export function useGameSessionMutations({
   const acknowledgeArrivalMutation = useMutation({
     mutationFn: () => acknowledgeTravelArrival(gameId as string),
     onSuccess: async (result) => {
-      queryClient.setQueryData(["session", gameId], result.currentSession);
+      queryClient.setQueryData(gameSessionQueryKey(gameId), result.currentSession);
       await invalidateGameQueries(gameId as string);
       setNotice(result.message);
       setError("");
@@ -247,7 +248,7 @@ export function useGameSessionMutations({
     mutationFn: () =>
       confrontSaloonPersonOfInterest(gameId as string, declaredWantedIdentityHandle),
     onSuccess: async (result) => {
-      queryClient.setQueryData(["session", gameId], result.currentSession);
+      queryClient.setQueryData(gameSessionQueryKey(gameId), result.currentSession);
       await invalidateGameQueries(gameId as string);
       const noticeText =
         result.fineAmount !== null && result.walletBefore !== null && result.walletAfter !== null
