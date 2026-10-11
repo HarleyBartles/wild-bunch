@@ -1,8 +1,42 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { getAvailableActions, getGame, getJournal } from "../api/wildBunchApi";
 import { JournalSurface } from "../components/JournalSurface";
-import { createJournal } from "./test-utils/factories";
+import { useGameSessionQueries } from "../hooks/useGameSessionQueries";
+import { gameResourceQueryKeys } from "../state/gameResourceQueries";
+import { createJournal, createSession } from "./test-utils/factories";
+
+vi.mock("../api/wildBunchApi", () => ({
+  getAvailableActions: vi.fn(),
+  getGame: vi.fn(),
+  getJournal: vi.fn(),
+}));
+
+const mockedGetAvailableActions = vi.mocked(getAvailableActions);
+const mockedGetGame = vi.mocked(getGame);
+const mockedGetJournal = vi.mocked(getJournal);
+
+afterEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+});
+
+function QueryBackedJournal() {
+  const game = useGameSessionQueries("game-1");
+
+  return (
+    <JournalSurface
+      journal={game.journal}
+      loading={game.journalLoading}
+      refreshing={game.journalRefreshing}
+      error=""
+      readError={game.journalError}
+      onRetry={game.retryJournal}
+    />
+  );
+}
 
 describe("JournalSurface", () => {
   it("renders a grouped player journal without leaking hidden internals", () => {
@@ -61,5 +95,40 @@ describe("JournalSurface", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Could not read the journal.");
     await userEvent.setup().click(screen.getByRole("button", { name: /try again/i }));
     expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a cached journal visible when its active query refetch fails", async () => {
+    const lastJournal = createJournal({
+      logEntries: [{ kind: 2, message: "Last known journal entry", day: 5, turn: 2 }],
+    });
+    const recoveredJournal = createJournal({
+      logEntries: [{ kind: 2, message: "Recovered journal entry", day: 6, turn: 1 }],
+    });
+    mockedGetAvailableActions.mockResolvedValue([]);
+    mockedGetGame.mockResolvedValue(createSession());
+    mockedGetJournal.mockResolvedValue(lastJournal);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const user = userEvent.setup();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <QueryBackedJournal />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Last known journal entry")).toBeInTheDocument();
+    mockedGetJournal.mockRejectedValueOnce(new Error("Connection unavailable"));
+    await act(async () => {
+      await queryClient.invalidateQueries({
+        queryKey: gameResourceQueryKeys.journal("game-1"),
+      });
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not read the journal/i);
+    expect(screen.getByText("Last known journal entry")).toBeInTheDocument();
+    mockedGetJournal.mockResolvedValue(recoveredJournal);
+    await user.click(screen.getByRole("button", { name: /try again/i }));
+
+    expect(await screen.findByText("Recovered journal entry")).toBeInTheDocument();
   });
 });
