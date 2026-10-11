@@ -1,13 +1,11 @@
 import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  acknowledgeTravelArrival,
   archiveGame,
   getGame,
   markPrologueViewed,
   setupGame,
   startGameWithTown,
-  travel,
 } from "../api/wildBunchApi";
 import { GameStatus } from "../api/types";
 import { storageKey } from "../utils/formatting";
@@ -161,39 +159,11 @@ export function useGameSessionMutations({
     },
   });
 
-  const travelMutation = useMutation({
-    mutationFn: (destinationTownId: string) => travel(gameId as string, destinationTownId),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(gameSessionQueryKey(gameId), result.currentSession);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to travel.");
-    },
-  });
-
-  const acknowledgeArrivalMutation = useMutation({
-    mutationFn: () => acknowledgeTravelArrival(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(gameSessionQueryKey(gameId), result.currentSession);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to acknowledge arrival.");
-    },
-  });
-
   return {
     setupGameMutation,
     markPrologueViewedMutation,
     startGameWithTownMutation,
     archivePlaythroughMutation,
-    travelMutation,
-    acknowledgeArrivalMutation,
     invalidateGameQueries,
   };
 }

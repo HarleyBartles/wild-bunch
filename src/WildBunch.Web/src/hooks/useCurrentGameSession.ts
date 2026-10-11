@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  GameStatus,
-  type GameSessionDto,
-  type GameTurnResultDto,
-  type SetupGameRequest,
-} from "../api/types";
+import { GameStatus, type GameSessionDto, type SetupGameRequest } from "../api/types";
 import { HttpRequestError } from "../api/httpClient";
 import { storageKey } from "../utils/formatting";
 import {
@@ -62,8 +57,6 @@ export function useCurrentGameSession() {
     markPrologueViewedMutation,
     startGameWithTownMutation,
     archivePlaythroughMutation,
-    travelMutation,
-    acknowledgeArrivalMutation,
     invalidateGameQueries,
   } = useGameSessionMutations({
     gameId,
@@ -83,7 +76,6 @@ export function useCurrentGameSession() {
   }, [gameId, state.pendingSetup, setupGameMutation]);
 
   const loading =
-    travelMutation.isPending ||
     sessionQuery.isFetching ||
     actionsQuery.isFetching ||
     journalQuery.isFetching ||
@@ -151,33 +143,6 @@ export function useCurrentGameSession() {
     [gameId, invalidateGameQueries],
   );
 
-  const handleTravelTurnResult = useCallback(
-    async (result: GameTurnResultDto) => {
-      const activeGameId = result.currentSession.id;
-      queryClient.setQueryData(gameSessionQueryKey(activeGameId), result.currentSession);
-      await invalidateGameQueries(activeGameId);
-      setNotice(result.message);
-    },
-    [queryClient, invalidateGameQueries, setNotice],
-  );
-
-  const handleTravel = useCallback(
-    async (destinationTownId: string) => {
-      if (!gameId) {
-        return;
-      }
-      await travelMutation.mutateAsync(destinationTownId);
-    },
-    [gameId, travelMutation],
-  );
-
-  const handleAcknowledgeArrival = useCallback(async () => {
-    if (!gameId) {
-      return;
-    }
-    await acknowledgeArrivalMutation.mutateAsync();
-  }, [gameId, acknowledgeArrivalMutation]);
-
   const handleReset = useCallback(() => {
     window.localStorage.removeItem(storageKey);
     setStoredGameId(null);
@@ -244,9 +209,6 @@ export function useCurrentGameSession() {
     handleMarkPrologueViewed,
     handleStartGameWithTown,
     reloadCurrentGame,
-    handleTravelTurnResult,
-    handleTravel,
-    handleAcknowledgeArrival,
     handleReset,
     setNotice: state.setNotice,
     setError: state.setError,

@@ -1,8 +1,12 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import styled from "styled-components";
+import { acknowledgeTravelArrival } from "../api/wildBunchApi";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
+import { refreshGameResources } from "../state/gameResourceQueries";
 import { useGameSession } from "../state/useGameSession";
 import { JourneyStatus } from "../api/types";
 import { TravelPanel } from "../components/TravelPanel";
-import { FlowSurface, Button } from "../components/ui/sharedStyled";
+import { FlowSurface, Button, FlowError } from "../components/ui/sharedStyled";
 
 const TrailLockBanner = styled.div`
   padding: 12px 18px;
@@ -37,8 +41,18 @@ const ArrivalLead = styled.p`
 `;
 
 export function TrailFlowSurface() {
-  const { session, gameId, loading, handleTravelTurnResult, handleAcknowledgeArrival } =
-    useGameSession();
+  const queryClient = useQueryClient();
+  const { session, gameId, loading } = useGameSession();
+  const arrivalMutation = useMutation({
+    mutationFn: ({ gameId }: { gameId: string }) => acknowledgeTravelArrival(gameId),
+    onSuccess: async (result, variables) => {
+      const updatedGameId = variables.gameId;
+      queryClient.setQueryData(gameSessionQueryKey(updatedGameId), result.currentSession);
+      await refreshGameResources(queryClient, updatedGameId);
+    },
+  });
+  const arrivalBelongsToCurrentGame = arrivalMutation.variables?.gameId === gameId;
+  const arrivalPendingForCurrentGame = arrivalMutation.isPending && arrivalBelongsToCurrentGame;
 
   if (!session || !gameId) {
     return null;
@@ -61,11 +75,17 @@ export function TrailFlowSurface() {
           <Button
             type="button"
             $variant="primary"
-            onClick={() => void handleAcknowledgeArrival()}
-            disabled={loading}
+            onClick={() => arrivalMutation.mutate({ gameId })}
+            disabled={loading || arrivalPendingForCurrentGame}
           >
-            {loading ? "Stepping into town..." : "Step into town"}
+            {arrivalPendingForCurrentGame ? "Stepping into town..." : "Step into town"}
           </Button>
+          {arrivalBelongsToCurrentGame && arrivalMutation.error ? (
+            <FlowError>{arrivalMutation.error.message}</FlowError>
+          ) : null}
+          {arrivalBelongsToCurrentGame && arrivalMutation.data && !arrivalMutation.data.success ? (
+            <FlowError>{arrivalMutation.data.message}</FlowError>
+          ) : null}
         </ArrivalCard>
       </FlowSurface>
     );
@@ -77,12 +97,7 @@ export function TrailFlowSurface() {
       <TrailLockBanner role="status">
         You're on the trail. No turning back until you reach your destination.
       </TrailLockBanner>
-      <TravelPanel
-        gameId={gameId}
-        session={session}
-        busy={loading}
-        onTurnResult={handleTravelTurnResult}
-      />
+      <TravelPanel gameId={gameId} session={session} busy={loading} />
     </FlowSurface>
   );
 }

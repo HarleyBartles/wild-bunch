@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import styled from "styled-components";
-import type { GameSessionDto, TownDto } from "../api/types";
+import type { GameSessionDto, GameTurnResultDto, TownDto } from "../api/types";
 import { StartFlowPhase, TravelMode } from "../api/types";
-import { getWorldMap } from "../api/wildBunchApi";
+import { getWorldMap, travel } from "../api/wildBunchApi";
 import { useGameSession } from "../state/useGameSession";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
+import { refreshGameResources } from "../state/gameResourceQueries";
 import { travelPreviewQueryOptions } from "../state/travelPreviewQuery";
 import { InventoryPanel } from "../components/InventoryPanel";
 import { PhaserMapHost } from "../components/start-flow/PhaserMapHost";
@@ -94,9 +96,25 @@ function connectedDestinations(session: GameSessionDto) {
 
 export function TravelPrepSurface() {
   const navigate = useNavigate();
-  const { session, gameId, sessionUpdatedAt, loading, handleTravel, notice, error } =
-    useGameSession();
+  const queryClient = useQueryClient();
+  const { session, gameId, sessionUpdatedAt, loading } = useGameSession();
   const [selection, setSelection] = useState<DestinationSelection | null>(null);
+  const departureMutation = useMutation<
+    GameTurnResultDto,
+    Error,
+    { gameId: string; destinationTownId: string }
+  >({
+    mutationFn: ({ gameId: submittedGameId, destinationTownId }) =>
+      travel(submittedGameId, destinationTownId),
+    onSuccess: async (result, variables) => {
+      const updatedGameId = variables.gameId;
+      queryClient.setQueryData(gameSessionQueryKey(updatedGameId), result.currentSession);
+      await refreshGameResources(queryClient, updatedGameId);
+    },
+  });
+  const departureBelongsToCurrentGame = departureMutation.variables?.gameId === gameId;
+  const departurePendingForCurrentGame =
+    departureMutation.isPending && departureBelongsToCurrentGame;
 
   const destinations = useMemo(() => (session ? connectedDestinations(session) : []), [session]);
   const currentTownId = session?.player.currentTownId ?? null;
@@ -185,10 +203,17 @@ export function TravelPrepSurface() {
                     <Button
                       type="button"
                       $variant="primary"
-                      onClick={() => void handleTravel(selectedDestinationId)}
-                      disabled={loading}
+                      onClick={() => {
+                        if (gameId) {
+                          departureMutation.mutate({
+                            gameId,
+                            destinationTownId: selectedDestinationId,
+                          });
+                        }
+                      }}
+                      disabled={loading || departurePendingForCurrentGame}
                     >
-                      {loading ? "Setting out..." : "Start the ride"}
+                      {departurePendingForCurrentGame ? "Setting out..." : "Start the ride"}
                     </Button>
                   </TravelPrepActions>
                 </>
@@ -233,8 +258,12 @@ export function TravelPrepSurface() {
             </Stack>
           </Panel>
         </TravelPrepBody>
-        {notice ? <FlowNotice>{notice}</FlowNotice> : null}
-        {error ? <FlowError>{error}</FlowError> : null}
+        {departureBelongsToCurrentGame && departureMutation.data?.message ? (
+          <FlowNotice>{departureMutation.data.message}</FlowNotice>
+        ) : null}
+        {departureBelongsToCurrentGame && departureMutation.error ? (
+          <FlowError>{departureMutation.error.message}</FlowError>
+        ) : null}
       </FlowSurface>
     );
   }
