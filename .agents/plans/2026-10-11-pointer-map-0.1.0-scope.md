@@ -29,6 +29,8 @@
 
 - The feature matrix, baseline specification, ADR catalogue and roadmap agree that town selection remains pointer-operated for 0.1.0.
 - ADR-0045 remains a true record of the decision made on 2026-10-11 and is marked superseded by ADR-0046.
+- ADR-0035's map-level keyboard/screen-reader requirement is partially superseded by ADR-0046 while its durable ownership and server-authority decisions survive.
+- ADR-0039's setup and free-arrival decision remains live; only its inherited map-level accessibility requirement is superseded for 0.1.0 by ADR-0046.
 - Row 15 no longer promises a new keyboard/screen-reader map selector, while preserving required accessibility work for existing controls and overlays.
 - The roadmap retains its one-map architecture and does not describe start and travel as separate map implementations.
 - WB-14's unresolved implementation proposal is replaced with a dated disposition; its historical observation remains understandable.
@@ -40,6 +42,8 @@
 **Files:**
 - Add: `docs/decisions/ADR-0046-pointer-operated-town-selection-for-0.1.0.md`
 - Modify: `docs/decisions/README.md`
+- Modify: `docs/decisions/ADR-0035-react-shell-with-phaser-as-renderer-input-adapter-for-playfield-surfaces.md`
+- Modify: `docs/decisions/ADR-0039-seeded-game-setup-and-free-first-arrival.md`
 - Modify: `docs/features.md`
 - Modify: `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
@@ -49,14 +53,14 @@
 - Delete: `.agents/plans/2026-10-11-travel-preview-resource-identity.md`
 
 - [x] Add ADR-0046 with dated history, decision, rationale and consequences. Record that map-level keyboard/screen-reader town selection is absent, so adding it is new 0.1.0 work; preserve one shared pointer-operated map for this release.
-- [x] Mark ADR-0045 superseded by ADR-0046 in its status/successor section and catalogue, without rewriting the decision it records.
+- [x] Mark ADR-0045 superseded by ADR-0046 in its status/successor section and catalogue, without rewriting the decision it records; update ADR-0035 and ADR-0039 to mark only their map-level accessibility requirement partially superseded.
 - [x] Update PG-003's feature matrix, baseline contract, Workstream E, roadmap row 15 and detailed row-15 scope to remove the keyboard/screen-reader town-selection requirement and cite ADR-0046.
 - [x] Keep accessibility expectations for existing supported controls, overlays and building navigation intact; remove only the unbuilt map-level town selector requirement.
 - [x] Add a dated WB-14 disposition and test-follow-up note. Record why no map-selection test or implementation is added for this baseline; retain actual pointer-selection tests and map behavior obligations.
 - [x] Update row 13 with PR #270 reviewed source `55ccfa21fd59be376bd6d97dbc9cfc5c2047d0f1`, merge `8bfb26e6975c25e19fda37749bf56b4d5584a4db`, identical source/merge tree `35a9b37835f22ca4de609e362f626a3a0319e21b`, exact-head gate `38131228340`, develop-push gate `38131620570`, and retire the completed travel-preview plan.
 - [x] Advance `Directory.Build.props` from `0.1.0-dev.85` to `0.1.0-dev.86`.
-- [x] Run the command-bus documentation checks and full `py -3 tools/run.py ci --check` gate on the implementation tree. The fail-fast pre-commit gate passed on the exact committed tree, including 333 web tests, 333 PostgreSQL integration tests, other .NET suites, Python tests, typecheck and production build.
-- [ ] Request an independent whole-branch review; resolve findings and re-review any changed diff.
+- [x] Run the command-bus documentation checks and full `py -3 tools/run.py ci --check` gate on the implementation tree.
+- [x] Request an independent whole-branch review; resolve findings and re-review the corrected diff.
 - [ ] Open a Draft PR targeting `develop`, verify body and exact head, mark ready, and merge after the exact-head hosted canonical gate passes.
 - [ ] In the successor plan, record this PR's reviewed source, merge/tree and both hosted gates, then fast-forward the primary checkout and clean only the verified merged worktree and branch.
 
