@@ -56,7 +56,9 @@ public sealed class JournalLogProjector
                 case SaloonPersonOfInterestConfronted confrontation:
                     // Delegated wanted outcomes already have typed narration events; only unique saloon-level results belong here.
                     if (confrontation.Outcome is SaloonPersonOfInterestConfrontationOutcome.Rejected
-                        or SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration)
+                        or SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration
+                        or SaloonPersonOfInterestConfrontationOutcome.Refused
+                        or SaloonPersonOfInterestConfrontationOutcome.CitizenReleased)
                     {
                         entries.Add(new GameLogEntry(GameLogEntryKind.CaseUpdate, confrontation.Message, day, turn));
                     }

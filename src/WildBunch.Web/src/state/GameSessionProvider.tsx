@@ -34,10 +34,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
   } = useTownStoreOffers(gameId, currentTown?.id);
 
   const selectedWantedPoster = useMemo(
-    () =>
-      wantedPosters.find((poster) => poster.posterId === declaredWantedIdentityHandle) ??
-      wantedPosters[0] ??
-      null,
+    () => wantedPosters.find((poster) => poster.posterId === declaredWantedIdentityHandle) ?? null,
     [wantedPosters, declaredWantedIdentityHandle],
   );
 

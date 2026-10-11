@@ -1,6 +1,12 @@
 # Culprit identity and release contract
 
-**Status:** Working product decision record. The user established gang-settlement release and independent identity discovery. Exact threshold policy and implementation/migration details remain for design.
+**Status:** Historical investigation and product-decision record. The dated clarification below settles the current 0.1.0 threshold; earlier statements that the threshold remained undecided are historical.
+
+## 2026-10-10 current 0.1.0 clarification
+
+The user settled the threshold: the generated gang has seven members, one culprit and six other members; five distinct other members must be brought to justice through successful lawful settlement to release the culprit into encounter eligibility. Clue discovery, duplicates, citizens, failed attempts and wrong-name outcomes do not count. Wanted-poster identity remains discoverable before release through the Sheriff Office. No separate town noticeboard or private sheriff-records surface exists in 0.1.0. PG-006 and the culprit identity/release rows in the baseline specification and `docs/features.md` own the current contract.
+
+The original example below (five gang members and three settlements) and its undecided-threshold statements preserve the state of the investigation when authored; they are not the current threshold or an implementation option.
 
 ## Two independent capabilities
 

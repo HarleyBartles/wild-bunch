@@ -103,6 +103,7 @@ export function SaloonPlace() {
                     onChange={(event) => setDeclaredWantedIdentityHandle(event.target.value)}
                     disabled={loading}
                   >
+                    <option value="">Choose who you believe this is</option>
                     {wantedPosters.map((poster) => (
                       <option key={poster.posterId} value={poster.posterId}>
                         {poster.targetDisplayName}

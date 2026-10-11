@@ -332,13 +332,14 @@ public static class TestSessionFactory
     }
 
     /// <summary>
-    /// Creates a session with an active citizen saloon person of interest (no suspects,
-    /// LookAroundSaloon called to set a citizen POI). Used by BUNCH-80 saloon confrontation
-    /// event-sourcing tests.
+    /// Creates a session with a known warrant and an active citizen saloon person of interest.
+    /// Used by saloon confrontation event-sourcing tests that require a valid declared identity.
     /// </summary>
     public static GameSession CreateWithActiveCitizenSaloonPerson()
     {
-        var session = CreateWithNoConfrontableSaloonSuspect();
+        var session = CreateWithWarrantedSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
+        session.MarkEventsCommitted();
         session.LookAroundSaloon();
         session.MarkEventsCommitted();
         return session;

@@ -284,7 +284,7 @@ public sealed class BountySaloonEventSourcingTests
     public void ConfrontCitizenWithWrongDeclarationProducesConfrontedEvent()
     {
         var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
-        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "warrant-1");
 
         Assert.True(result.Success);
         var confrontedEvent = session.UncommittedEvents.OfType<SaloonPersonOfInterestConfronted>().Single();
@@ -310,7 +310,7 @@ public sealed class BountySaloonEventSourcingTests
         var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
         var turnAfterLookAround = session.Clock.Turn;
 
-        session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+        session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "warrant-1");
 
         Assert.Equal(turnAfterLookAround, session.Clock.Turn);
     }
@@ -364,7 +364,7 @@ public sealed class BountySaloonEventSourcingTests
             new SaloonPersonOfInterestSpotted { SourceKind = InvestigationSourceKind.SaloonLookAround, TownId = new TownId("current"), Message = "test", RecordLog = true },
             new WantedSuspectConfronted { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, Choice = WantedSuspectConfrontationChoice.Surrendered, Outcome = WantedSuspectConfrontationOutcome.Surrendered, IsAlive = true, IsSecured = true, Message = "test" },
             new SheriffTurnInSettled { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, IsAlive = true, BountyAmount = 50m, Message = "test", Day = 1, Turn = 1 },
-            new SaloonPersonOfInterestConfronted { Message = "test", TargetName = "stranger", PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen, Outcome = SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, IsCitizen = true }
+            new SaloonPersonOfInterestConfronted { Message = "test", TargetName = "stranger", PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen, Outcome = SaloonPersonOfInterestConfrontationOutcome.CitizenReleased, IsCitizen = true }
         };
 
         foreach (var e in events)

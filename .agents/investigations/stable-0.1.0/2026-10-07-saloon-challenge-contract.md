@@ -1,6 +1,12 @@
 # Saloon identification, challenge and confrontation
 
-**Status:** Working product contract from the user's supplied flow. Taking someone in is the current interaction to assess and correct; gunfight is a separate future feature. Exact resistance probabilities, conditions and penalties remain implementation/product design where not specified.
+**Status:** Historical investigation and proposal record. The dated clarification below is the current 0.1.0 product contract where it conflicts with the original assessment.
+
+## 2026-10-10 current 0.1.0 clarification
+
+The user settled the current take-in behavior after this investigation was written. Observation presents distinguishing features; the player must declare a name before the server resolves a take-in. A citizen comes quietly, is released by the sheriff and incurs the capped $10 fine even without a gun. A wanted person requires ownership of a gun, but not ammunition. With a gun, a correct identity settles through the sheriff and an incorrect identity is released with the capped $10 fine and no bounty or roundup credit. Without a gun, a wanted person refuses; refusal is not flight, injury or capture. A missing declaration is rejected without consuming the observed person. Resistance, escape, injury, saloon gunfights and town-specific sheriff recognition are future features, not retained 0.1.0 behavior. PG-006 in `.agents/specs/2026-10-07-stable-0.1.0-baseline.md` and `docs/features.md` owns the current contract.
+
+The original investigation below remains as a record of what source and proposed behavior were inspected at that time. Its descriptions of retained resistance, gun-dependent citizen cooperation, unresolved fine amounts, and automatic firearm-based outcomes are not current implementation requirements.
 
 ## Observation and declaration
 

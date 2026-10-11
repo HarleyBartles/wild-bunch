@@ -171,7 +171,7 @@ public sealed class JournalLogProjectorTests
                 Message = "The butcher comes quietly. The sheriff releases him and fines you $5.00.",
                 TargetName = "the butcher",
                 PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
-                Outcome = SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.CitizenReleased,
                 IsCitizen = true,
                 FineAmount = 5m
             }

@@ -2809,13 +2809,13 @@ public sealed class EfGameSessionRepositoryTests
     [Theory]
     [InlineData("outcome")]
     [InlineData("secured")]
-    public async Task CaseFileConfrontationCacheRecoveryKeepsFledSuspectIneligibleForTurnIn(string mutation)
+    public async Task CaseFileConfrontationCacheRecoveryRebuildsSuccessfulTakeInFromSettlementEvents(string mutation)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var session = CreateSessionWithFledWantedSuspect();
+        var session = CreateSessionWithSettledWantedSuspect();
         var expected = Assert.Single(session.CaseFile.WantedSuspectConfrontations);
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, expected.Outcome);
-        Assert.False(expected.IsSecured);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, expected.Outcome);
+        Assert.True(expected.IsSecured);
 
         var repository = CreateRepository(fixture, out var unitOfWork);
         await PersistAsync(repository, unitOfWork, session);
@@ -2826,8 +2826,8 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(recovered);
         Assert.Equal(expected, Assert.Single(recovered!.CaseFile.WantedSuspectConfrontations));
         var turnIn = recovered.AssessSheriffTurnIn(new SuspectId("suspect-presence-target"), isAlive: true);
-        Assert.False(turnIn.Success);
-        Assert.Contains("not secured", turnIn.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(turnIn.Success);
+        Assert.Equal("Mira Cline", turnIn.TargetName);
     }
 
     [Theory]
@@ -4205,14 +4205,14 @@ public sealed class EfGameSessionRepositoryTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var writer = CreateRepository(fixture, out var writerUnitOfWork);
-        var session = CreateSessionWithFledWantedSuspect();
+        var session = CreateSessionWithSettledWantedSuspect();
         var targetSuspectId = new SuspectId("suspect-presence-target");
         var confrontationEvent = Assert.Single(session.AllEvents.OfType<WantedSuspectConfronted>());
         Assert.Equal(targetSuspectId, confrontationEvent.TargetSuspectId);
-        Assert.Equal(WantedSuspectConfrontationChoice.Fled, confrontationEvent.Choice);
-        Assert.Equal(WantedSuspectConfrontationOutcome.Fled, confrontationEvent.Outcome);
+        Assert.Equal(WantedSuspectConfrontationChoice.Surrendered, confrontationEvent.Choice);
+        Assert.Equal(WantedSuspectConfrontationOutcome.Surrendered, confrontationEvent.Outcome);
         var expectedPresence = session.GetWantedSuspectPresenceState(targetSuspectId);
-        Assert.Equal(WantedSuspectPresenceState.GoneToGround, expectedPresence);
+        Assert.Equal(WantedSuspectPresenceState.SecuredAlive, expectedPresence);
         await PersistAsync(writer, writerUnitOfWork, session);
 
         int originalComponentVersion;
@@ -4370,7 +4370,7 @@ public sealed class EfGameSessionRepositoryTests
     {
         using var fixture = new PostgreSqlPersistenceFixture();
         var writer = CreateRepository(fixture, out var writerUnitOfWork);
-        var session = CreateSessionWithFledWantedSuspect();
+        var session = CreateSessionWithSettledWantedSuspect();
         await PersistAsync(writer, writerUnitOfWork, session);
 
         await using (var context = fixture.CreateContext())
@@ -5529,7 +5529,7 @@ public sealed class EfGameSessionRepositoryTests
         return session;
     }
 
-    private static GameSession CreateSessionWithFledWantedSuspect()
+    private static GameSession CreateSessionWithSettledWantedSuspect()
     {
         var currentTown = new Town(new TownId("current"), "Current Town");
         var connectedTown = new Town(new TownId("connected"), "Connected Town");
@@ -5566,18 +5566,24 @@ public sealed class EfGameSessionRepositoryTests
                     "Wanted for a stage robbery.")
             });
 
+        var inventory = new DomainInventory(
+            new[]
+            {
+                new DomainInventoryItem(DomainItemKind.Revolver, 1),
+                new DomainInventoryItem(DomainItemKind.RevolverAmmo, 1)
+            });
         var session = GameSession.StartSetup(
             "Ranger Vale", world, caseFile,
             GameDifficulty.Standard, GameEntropy.Classic, "test-seed", DeterministicSaltSource);
         session.ViewPrologue("test-prologue-descriptor");
         session.SelectStartingTown(currentTown.Id);
-        session.CompleteGameStart();
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
         session.SetWantedSuspectPresenceState(targetId, WantedSuspectPresenceState.AvailableInTown);
         session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(targetId));
         Assert.True(session.LookAroundSaloon().Success);
         var confrontation = session.ConfrontSaloonPersonOfInterest("warrant-1");
         Assert.True(confrontation.Success);
-        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Fled, confrontation.Outcome);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Surrendered, confrontation.Outcome);
         return session;
     }
 
