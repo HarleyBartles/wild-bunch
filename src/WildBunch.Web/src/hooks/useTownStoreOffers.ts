@@ -5,7 +5,7 @@ export function useTownStoreOffers(gameId: string | null, townId: string | null 
   const query = useQuery(townStoreOffersQueryOptions(gameId, townId));
 
   return {
-    storeOffers: query.data ?? null,
+    storeOffers: query.isError ? null : (query.data ?? null),
     loading: query.isFetching,
   };
 }

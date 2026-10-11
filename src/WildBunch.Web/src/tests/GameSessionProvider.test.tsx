@@ -105,7 +105,7 @@ describe("GameSessionProvider wanted identity selection", () => {
 });
 
 describe("GameSessionProvider store offers", () => {
-  it("does not refresh the selected store when an earlier game's purchase completes", async () => {
+  it("scopes offers by game and town when an earlier purchase completes", async () => {
     const user = userEvent.setup();
     const sessionA = {
       gameId: "game-a",
@@ -117,13 +117,13 @@ describe("GameSessionProvider store offers", () => {
       setSession: vi.fn(),
       reloadCurrentGame: vi.fn(),
     };
-    const sessionB = {
+    const sameGameDifferentTown = {
       ...sessionA,
-      gameId: "game-b",
       currentTown: { id: "town-b" },
     };
-    mocks.getTownStoreOffers.mockImplementation(async (_gameId: string, townId: string) =>
-      townId === "town-a" ? createOffers(townId, "Town A") : createOffers(townId, "Town B"),
+    const differentGameSameTown = { ...sameGameDifferentTown, gameId: "game-b" };
+    mocks.getTownStoreOffers.mockImplementation(async (gameId: string, townId: string) =>
+      createOffers(townId, `${gameId} ${townId}`),
     );
     let resolvePurchase!: (result: unknown) => void;
     mocks.buyStoreItem.mockReturnValue(
@@ -148,15 +148,21 @@ describe("GameSessionProvider store offers", () => {
     );
     const { rerender } = render(tree());
 
-    await screen.findByText("Town A");
+    await screen.findByText("game-a town-a");
+
+    mocks.currentSession = sameGameDifferentTown;
+    rerender(tree());
+    await screen.findByText("game-a town-b");
+    expect(mocks.getTownStoreOffers).toHaveBeenNthCalledWith(2, "game-a", "town-b");
+
     await user.click(screen.getByRole("button", { name: "Buy beans" }));
 
-    mocks.currentSession = sessionB;
+    mocks.currentSession = differentGameSameTown;
     rerender(tree());
-    await screen.findByText("Town B");
-    const callsForTownB = () =>
-      mocks.getTownStoreOffers.mock.calls.filter(([, townId]) => townId === "town-b").length;
-    expect(callsForTownB()).toBe(1);
+    await screen.findByText("game-b town-b");
+    const callsForGameB = () =>
+      mocks.getTownStoreOffers.mock.calls.filter(([gameId]) => gameId === "game-b").length;
+    expect(callsForGameB()).toBe(1);
 
     await act(async () => {
       resolvePurchase({
@@ -166,18 +172,65 @@ describe("GameSessionProvider store offers", () => {
       });
       await purchaseCompletion;
     });
-    expect(callsForTownB()).toBe(1);
+    expect(callsForGameB()).toBe(1);
     expect(mocks.getTownStoreOffers).toHaveBeenNthCalledWith(1, "game-a", "town-a");
-    expect(mocks.getTownStoreOffers).toHaveBeenNthCalledWith(2, "game-b", "town-b");
+    expect(mocks.getTownStoreOffers).toHaveBeenNthCalledWith(2, "game-a", "town-b");
+    expect(mocks.getTownStoreOffers).toHaveBeenNthCalledWith(3, "game-b", "town-b");
 
-    mocks.currentSession = sessionA;
+    mocks.currentSession = sameGameDifferentTown;
     rerender(tree());
     await waitFor(() => {
       expect(
-        mocks.getTownStoreOffers.mock.calls.filter(([, townId]) => townId === "town-a"),
+        mocks.getTownStoreOffers.mock.calls.filter(
+          ([gameId, townId]) => gameId === "game-a" && townId === "town-b",
+        ),
       ).toHaveLength(2);
     });
-    expect(mocks.getTownStoreOffers).toHaveBeenLastCalledWith("game-a", "town-a");
+    expect(mocks.getTownStoreOffers).toHaveBeenLastCalledWith("game-a", "town-b");
+    queryClient.clear();
+  });
+
+  it("hides cached offers when a successful purchase refresh fails", async () => {
+    const user = userEvent.setup();
+    mocks.currentSession = {
+      gameId: "game-a",
+      currentTown: { id: "town-a" },
+      wantedPosters: [],
+      declaredWantedIdentityHandle: "",
+      setNotice: vi.fn(),
+      setError: vi.fn(),
+      setSession: vi.fn(),
+      reloadCurrentGame: vi.fn(),
+    };
+    mocks.getTownStoreOffers
+      .mockReset()
+      .mockResolvedValueOnce(createOffers("town-a", "Town A"))
+      .mockRejectedValueOnce(new Error("Store offers are unavailable."));
+    mocks.buyStoreItem.mockReset().mockResolvedValue({
+      success: true,
+      message: "Bought beans.",
+      currentSession: { id: "game-a" },
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: Infinity },
+        mutations: { retry: false },
+      },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GameSessionProvider>
+          <ContextReader />
+        </GameSessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("Town A");
+    await user.click(screen.getByRole("button", { name: "Buy beans" }));
+
+    expect(await screen.findByText("No offers")).toBeInTheDocument();
+    expect(mocks.getTownStoreOffers).toHaveBeenCalledTimes(2);
     queryClient.clear();
   });
 });
