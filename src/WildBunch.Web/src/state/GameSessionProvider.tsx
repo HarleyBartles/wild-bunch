@@ -3,12 +3,9 @@ import { createContext, useCallback, useMemo, type ReactNode } from "react";
 import { buyStoreItem } from "../api/wildBunchApi";
 import type { TownStoreOffersDto, WantedPosterDto } from "../api/types";
 import { useCurrentGameSession } from "../hooks/useCurrentGameSession";
-import { useTownStoreOffers } from "../hooks/useTownStoreOffers";
 import { townStoreOffersQueryKey } from "./townStoreOffersQuery";
 
 type GameSessionValue = ReturnType<typeof useCurrentGameSession> & {
-  storeOffers: TownStoreOffersDto | null;
-  storeOffersLoading: boolean;
   handleBuyOffer: (offer: TownStoreOffersDto["offers"][number], quantity: number) => Promise<void>;
   selectedWantedPoster: WantedPosterDto | null;
 };
@@ -28,8 +25,6 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
     setSession,
     reloadCurrentGame,
   } = session;
-
-  const { storeOffers, loading: storeOffersLoading } = useTownStoreOffers(gameId, currentTown?.id);
 
   const selectedWantedPoster = useMemo(
     () => wantedPosters.find((poster) => poster.posterId === declaredWantedIdentityHandle) ?? null,
@@ -79,12 +74,10 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<GameSessionValue>(
     () => ({
       ...session,
-      storeOffers,
-      storeOffersLoading,
       handleBuyOffer,
       selectedWantedPoster,
     }),
-    [session, storeOffers, storeOffersLoading, handleBuyOffer, selectedWantedPoster],
+    [session, handleBuyOffer, selectedWantedPoster],
   );
 
   return <GameSessionContext.Provider value={value}>{children}</GameSessionContext.Provider>;

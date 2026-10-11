@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { useNavigate } from "@tanstack/react-router";
 import { useGameSession } from "../../state/useGameSession";
+import { useTownStoreOffers } from "../../hooks/useTownStoreOffers";
 import { StoreOffersPanel } from "../../components/StoreOffersPanel";
 import { InventoryPanel } from "../../components/InventoryPanel";
 import { FlowSurface, BackButton, FlowNotice, FlowError } from "../../components/ui/sharedStyled";
@@ -22,8 +23,8 @@ const PlaceBody = styled.div`
 
 export function StorePlace() {
   const navigate = useNavigate();
-  const { session, storeOffers, storeOffersLoading, loading, handleBuyOffer, notice, error } =
-    useGameSession();
+  const { session, gameId, currentTown, loading, handleBuyOffer, notice, error } = useGameSession();
+  const { storeOffers, loading: storeOffersLoading } = useTownStoreOffers(gameId, currentTown?.id);
 
   if (!session) {
     return null;

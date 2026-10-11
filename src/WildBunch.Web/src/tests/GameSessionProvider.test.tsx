@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { useGameSession } from "../state/useGameSession";
+import { useTownStoreOffers } from "../hooks/useTownStoreOffers";
 import type { TownStoreOffersDto, WantedPosterDto } from "../api/types";
 
 const mocks = vi.hoisted(() => ({
@@ -44,7 +45,8 @@ const poster: WantedPosterDto = {
 } as WantedPosterDto;
 
 function ContextReader() {
-  const { selectedWantedPoster, storeOffers, handleBuyOffer } = useGameSession();
+  const { selectedWantedPoster, gameId, currentTown, handleBuyOffer } = useGameSession();
+  const { storeOffers } = useTownStoreOffers(gameId, currentTown?.id);
   return (
     <>
       <output>{selectedWantedPoster?.targetDisplayName ?? "No identity selected"}</output>
