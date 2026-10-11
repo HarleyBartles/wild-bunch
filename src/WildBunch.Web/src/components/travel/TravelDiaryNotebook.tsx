@@ -1,5 +1,5 @@
 import type { GameSessionDto } from "../../api/types";
-import { Card, SectionHeader } from "./travelShared";
+import { Card, SectionHeader, SectionMeta, SectionTitle } from "./travelShared";
 import { TravelDiaryDayCard } from "./TravelDiaryDayCard";
 import { JournalEntryTimeline } from "../journal/JournalEntryTimeline";
 import styled from "styled-components";
@@ -13,8 +13,8 @@ export function TravelDiaryNotebook({ travelDiary, refreshing }: TravelDiaryNote
   return (
     <NotebookCard>
       <SectionHeader>
-        <strong>Travel diary</strong>
-        <span>
+        <SectionTitle>Travel diary</SectionTitle>
+        <SectionMeta>
           {refreshing
             ? "Refreshing..."
             : travelDiary?.journeyEntries.length
@@ -22,7 +22,7 @@ export function TravelDiaryNotebook({ travelDiary, refreshing }: TravelDiaryNote
               : travelDiary?.days.length
                 ? `${travelDiary.days.length} travel days`
                 : "Blank pages"}
-        </span>
+        </SectionMeta>
       </SectionHeader>
 
       {travelDiary?.days.length ? (

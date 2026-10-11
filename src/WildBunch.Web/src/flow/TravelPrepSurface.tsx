@@ -16,6 +16,7 @@ import {
   BackButton,
   Panel,
   PanelHead,
+  PanelHeading,
   Stack,
   Button,
   Muted,
@@ -181,7 +182,7 @@ export function TravelPrepSurface() {
         <TravelPrepBody>
           <Panel>
             <PanelHead>
-              <h2>{destination?.town.name ?? selectedDestinationId}</h2>
+              <PanelHeading>{destination?.town.name ?? selectedDestinationId}</PanelHeading>
             </PanelHead>
             <Stack>
               {previewMatchesCurrentSelection && preview ? (

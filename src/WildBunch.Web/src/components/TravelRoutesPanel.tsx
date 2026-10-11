@@ -3,7 +3,15 @@ import styled from "styled-components";
 import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
 import { previewTravel } from "../api/wildBunchApi";
 import { formatRisk, formatTrailTerrain, formatWaterFeature } from "../ui/formatters";
-import { Panel, PanelHead, PanelSubtitle, Stack, ItemCard, Muted } from "./ui/sharedStyled";
+import {
+  Panel,
+  PanelHead,
+  PanelHeading,
+  PanelSubtitle,
+  Stack,
+  ItemCard,
+  Muted,
+} from "./ui/sharedStyled";
 
 const DestinationCard = styled(ItemCard).attrs({ as: "button" })`
   width: 100%;
@@ -174,7 +182,7 @@ export function TravelRoutesPanel({ gameId, session, busy, onTravel }: TravelRou
   return (
     <Panel>
       <PanelHead>
-        <h2>Travel routes</h2>
+        <PanelHeading>Travel routes</PanelHeading>
         <PanelSubtitle as="span">{destinations.length} connected</PanelSubtitle>
       </PanelHead>
       <Stack>

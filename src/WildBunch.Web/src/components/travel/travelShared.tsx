@@ -31,15 +31,15 @@ export const SectionHeader = styled.div`
   justify-content: space-between;
   gap: 14px;
   align-items: baseline;
+`;
 
-  strong {
-    font-size: 1rem;
-  }
+export const SectionTitle = styled.strong`
+  font-size: 1rem;
+`;
 
-  span {
-    color: color-mix(in srgb, var(--text) 62%, transparent);
-    font-size: 0.9rem;
-  }
+export const SectionMeta = styled.span`
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+  font-size: 0.9rem;
 `;
 
 export const ButtonBase = styled.button`

@@ -3,7 +3,7 @@ import { StartFlowPhase } from "../api/types";
 import { InventoryPanel } from "./InventoryPanel";
 import { StoreOffersPanel } from "./StoreOffersPanel";
 import { TravelPanel } from "./TravelPanel";
-import { Grid, StatusCard, StatList } from "./ui/sharedStyled";
+import { Grid, StatusCard, StatusCardHeading, StatList } from "./ui/sharedStyled";
 
 interface FieldReportPanelProps {
   session: GameSessionDto;
@@ -35,7 +35,7 @@ export function FieldReportPanel({
   return (
     <Grid>
       <StatusCard>
-        <h3>Field report</h3>
+        <StatusCardHeading>Field report</StatusCardHeading>
         <StatList>
           <div>
             <dt>Player</dt>
@@ -61,7 +61,7 @@ export function FieldReportPanel({
       </StatusCard>
 
       <StatusCard>
-        <h3>Town details</h3>
+        <StatusCardHeading>Town details</StatusCardHeading>
         <StatList>
           <div>
             <dt>Current town</dt>

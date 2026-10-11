@@ -26,11 +26,32 @@ import {
   BackButton,
   Panel,
   PanelHead,
+  PanelHeading,
   Stack,
   Button,
-  Field,
   Muted,
 } from "../../components/ui/sharedStyled";
+
+const DeclaredIdentityField = styled.label`
+  display: grid;
+  gap: 4px;
+`;
+
+const DeclaredIdentityLabel = styled.span`
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`;
+
+const DeclaredIdentitySelect = styled.select`
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-size: 0.94rem;
+`;
 
 const PlaceHeader = styled.header`
   display: grid;
@@ -158,7 +179,7 @@ function SaloonPlaceForGame() {
       <PlaceBody>
         <Panel>
           <PanelHead>
-            <h2>Saloon floor</h2>
+            <PanelHeading>Saloon floor</PanelHeading>
           </PanelHead>
           <Stack>
             <Button
@@ -184,16 +205,16 @@ function SaloonPlaceForGame() {
         {personOfInterest ? (
           <Panel>
             <PanelHead>
-              <h2>Person of interest</h2>
+              <PanelHeading>Person of interest</PanelHeading>
             </PanelHead>
             <Stack>
               <p>
                 <strong>{personOfInterest.descriptor}</strong> is waiting in the saloon.
               </p>
               {wantedPosters.length > 0 ? (
-                <Field as="label">
-                  <span>Declare wanted identity</span>
-                  <select
+                <DeclaredIdentityField>
+                  <DeclaredIdentityLabel>Declare wanted identity</DeclaredIdentityLabel>
+                  <DeclaredIdentitySelect
                     value={declaredWantedIdentityHandle}
                     onChange={(event) => setDeclaredWantedIdentityHandle(event.target.value)}
                     disabled={loading || commandPending}
@@ -204,8 +225,8 @@ function SaloonPlaceForGame() {
                         {poster.targetDisplayName}
                       </option>
                     ))}
-                  </select>
-                </Field>
+                  </DeclaredIdentitySelect>
+                </DeclaredIdentityField>
               ) : (
                 <Muted>
                   Read wanted posters at the Sheriff Office to choose the identity you want to

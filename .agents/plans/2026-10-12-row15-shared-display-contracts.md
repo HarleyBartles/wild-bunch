@@ -46,11 +46,11 @@
 - Modify: `src/WildBunch.Web/src/components/travel/TravelSummary.tsx`
 - Modify: `src/WildBunch.Web/src/components/travel/TravelDiaryNotebook.tsx`
 
-- [ ] Remove `PanelHead`'s `h2` rule and `StatusCard`'s `h3` rule. Export explicit `PanelHeading` and `StatusCardHeading` styled components with the same current heading styles, then update all current consumers without changing their semantic elements or text.
-- [ ] Remove the generic `Field` child selectors from `sharedStyled.tsx`. Move the only shared-field use in `SaloonPlace` to local `DeclaredIdentityField`, `DeclaredIdentityLabel` and `DeclaredIdentitySelect` styled components that preserve the current layout and label-to-select behavior.
-- [ ] Replace `SectionHeader`'s `strong` and `span` rules with explicit travel title and metadata styled components. Give the travel summary status pill its complete appearance without `!important` and update the diary header to use the metadata component.
-- [ ] Keep `StatList`'s `dt`/`dd` styling and other selectors over markup owned by their styled component.
-- [ ] Run the focused existing Saloon, TravelRoutes, TravelPrep and TravelPanel tests. Add no test unless execution exposes an actual behavior gap that cannot be covered by those existing tests.
+- [x] Remove `PanelHead`'s `h2` rule and `StatusCard`'s `h3` rule. Export explicit `PanelHeading` and `StatusCardHeading` styled components with the same current heading styles, then update all current consumers without changing their semantic elements or text.
+- [x] Remove the generic `Field` child selectors from `sharedStyled.tsx`. Move the only shared-field use in `SaloonPlace` to local `DeclaredIdentityField`, `DeclaredIdentityLabel` and `DeclaredIdentitySelect` styled components that preserve the current layout and label-to-select behavior.
+- [x] Replace `SectionHeader`'s `strong` and `span` rules with explicit travel title and metadata styled components. Give the travel summary status pill its complete appearance without `!important` and update the diary header to use the metadata component.
+- [x] Keep `StatList`'s `dt`/`dd` styling and other selectors over markup owned by their styled component.
+- [x] Run the focused existing Saloon, TravelRoutes, TravelPrep and TravelPanel tests. Add no test unless execution exposes an actual behavior gap that cannot be covered by those existing tests.
 
 ### Task 2: Verify the rendered contracts and retire the predecessor plan
 
@@ -60,12 +60,12 @@
 - Modify: `Directory.Build.props`
 - Keep through this PR: `.agents/plans/2026-10-12-row15-shared-display-contracts.md`
 
-- [ ] Run `.\tools\postgres-dev.ps1 ensure`, then `.\scripts\dev-servers.ps1 ensure`; verify the browser uses this worktree's API and web URLs.
-- [ ] Play a deterministic browser smoke through the in-town Sheriff and Saloon surfaces and the travel summary/diary. Confirm semantic heading and metadata hierarchy, visible controls and narrow-width layout; inspect console and network state. Existing Saloon tests prove the wanted-identity control label and selection behavior. Capture representative desktop and narrow-width views and record results in the off-repo execution ledger only.
-- [ ] Update row 15 with PR #280's merged source, merge identity, exact-head/develop gate results, verified worktree/ref cleanup and retirement of the `.95` closeout plan. Point the live row at this plan and preserve the remaining row-15 work.
-- [ ] Repair the malformed row-15 entry in the roadmap's `Prerequisites and outputs` table with the actual row dependency and output contract.
-- [ ] Retire the completed `.95` predecessor plan and advance `Directory.Build.props` from `0.1.0-dev.95` to `0.1.0-dev.96`.
-- [ ] Run `py -3 tools/run.py ci --check`, inspect the full diff, verify roadmap links and confirm the generated web version is `0.1.0-dev.96`.
+- [x] Run `.\tools\postgres-dev.ps1 ensure`, then `.\scripts\dev-servers.ps1 ensure`; verify the browser uses this worktree's API and web URLs.
+- [x] Play a read-only browser smoke through the in-town Sheriff and Saloon surfaces. Confirm semantic heading hierarchy, visible controls and narrow-width layout; inspect console and network state. The shared local database currently has an active playtest, so do not archive it or create a second playthrough. The active playtest has no journey; travel summary/diary appearance and behavior remain covered by focused existing component tests. Existing Saloon tests prove the wanted-identity control label and selection behavior. Capture representative desktop and narrow-width views and record results in the off-repo execution ledger only.
+- [x] Update row 15 with PR #280's merged source, merge identity, exact-head/develop gate results, verified worktree/ref cleanup and retirement of the `.95` closeout plan. Point the live row at this plan and preserve the remaining row-15 work.
+- [x] Repair the malformed row-15 entry in the roadmap's `Prerequisites and outputs` table with the actual row dependency and output contract.
+- [x] Retire the completed `.95` predecessor plan and advance `Directory.Build.props` from `0.1.0-dev.95` to `0.1.0-dev.96`.
+- [x] Run `py -3 tools/run.py ci --check`, inspect the full diff, verify roadmap links and confirm the generated web version is `0.1.0-dev.96`.
 - [ ] Commit the completed implementation for PR publication to `develop`; the normal hook must validate the staged snapshot without changing or staging files.
 
 **Validation:** `npm --prefix src/WildBunch.Web test -- src/tests/SaloonPlace.test.tsx src/tests/TravelRoutesPanel.test.tsx src/tests/TravelPrepSurface.test.tsx src/tests/TravelPanel.test.tsx`; manual browser evidence under `.agents/playbooks/ui-browser-check.md`; `py -3 tools/run.py ci --check`; `git diff --check`; generated web identity check.

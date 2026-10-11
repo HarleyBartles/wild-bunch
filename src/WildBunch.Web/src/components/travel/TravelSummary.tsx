@@ -8,7 +8,7 @@ import {
   formatWaterFeature,
 } from "../../ui/formatters";
 import { formatRemainingRideDays } from "../../ui/beatFormatters";
-import { Card, SectionHeader } from "./travelShared";
+import { Card, SectionHeader, SectionTitle } from "./travelShared";
 import styled from "styled-components";
 
 interface TravelSummaryProps {
@@ -27,7 +27,7 @@ export function TravelSummary({ session }: TravelSummaryProps) {
   return (
     <SummaryCard>
       <SectionHeader>
-        <strong>Trail ledger</strong>
+        <SectionTitle>Trail ledger</SectionTitle>
         <StatusPill>{formatJourneyStatus(journey.status)}</StatusPill>
       </SectionHeader>
 
@@ -99,10 +99,10 @@ const StatusPill = styled.span`
   align-items: center;
   padding: 5px 10px;
   border-radius: 999px;
-  color: var(--accent-ink) !important;
+  color: var(--accent-ink);
   background: linear-gradient(180deg, var(--accent-strong), var(--accent-strong-dark));
   font-weight: 700;
-  font-size: 0.78rem !important;
+  font-size: 0.78rem;
 `;
 
 const SummaryGrid = styled.dl`

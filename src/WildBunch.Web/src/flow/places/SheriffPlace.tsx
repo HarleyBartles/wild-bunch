@@ -14,6 +14,7 @@ import {
   BackButton,
   Panel,
   PanelHead,
+  PanelHeading,
   Stack,
   Button,
   Muted,
@@ -68,7 +69,7 @@ export function SheriffPlace() {
       <PlaceBody>
         <Panel>
           <PanelHead>
-            <h2>Wanted posters</h2>
+            <PanelHeading>Wanted posters</PanelHeading>
           </PanelHead>
           <Stack>
             <Button

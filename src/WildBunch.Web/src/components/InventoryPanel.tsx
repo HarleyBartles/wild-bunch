@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import type { InventoryDto, InventoryItemDto } from "../api/types";
 import { formatCanteenState, formatHorseTravelState, formatItemKind } from "../ui/formatters";
-import { StatusCard, StatList, Stack, ItemCard } from "./ui/sharedStyled";
+import { StatusCard, StatusCardHeading, StatList, Stack, ItemCard } from "./ui/sharedStyled";
 
 const ItemList = styled(Stack)`
   margin-top: 16px;
@@ -24,7 +24,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
 
   return (
     <StatusCard>
-      <h3>Inventory</h3>
+      <StatusCardHeading>Inventory</StatusCardHeading>
       <StatList>
         <div>
           <dt>Cash</dt>
