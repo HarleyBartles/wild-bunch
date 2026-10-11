@@ -3,18 +3,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   acknowledgeTravelArrival,
   archiveGame,
-  confrontSaloonPersonOfInterest,
-  gatherLocalGossip,
   getGame,
-  lookAroundSaloon,
   markPrologueViewed,
-  readWantedPosters,
   setupGame,
   startGameWithTown,
   travel,
 } from "../api/wildBunchApi";
 import { GameStatus } from "../api/types";
-import { formatMoney, storageKey } from "../utils/formatting";
+import { storageKey } from "../utils/formatting";
 import { HttpRequestError } from "../api/httpClient";
 import {
   clearPendingFirstArrivalOperation,
@@ -27,22 +23,18 @@ import { gameResourceQueryKeys } from "../state/gameResourceQueries";
 
 type UseGameSessionMutationsArgs = {
   gameId: string | null;
-  declaredWantedIdentityHandle: string;
   setStoredGameId: (id: string | null) => void;
   resetSetupDraft: () => void;
   setPendingSetup: (pending: PendingSetupOperation | null) => void;
-  setDeclaredWantedIdentityHandle: (handle: string) => void;
   setNotice: (notice: string) => void;
   setError: (error: string) => void;
 };
 
 export function useGameSessionMutations({
   gameId,
-  declaredWantedIdentityHandle,
   setStoredGameId,
   resetSetupDraft,
   setPendingSetup,
-  setDeclaredWantedIdentityHandle,
   setNotice,
   setError,
 }: UseGameSessionMutationsArgs) {
@@ -154,7 +146,6 @@ export function useGameSessionMutations({
       const archivedGameId = gameId;
       window.localStorage.removeItem(storageKey);
       setStoredGameId(null);
-      setDeclaredWantedIdentityHandle("");
       resetSetupDraft();
       setError("");
       if (archivedGameId) {
@@ -196,69 +187,6 @@ export function useGameSessionMutations({
     },
   });
 
-  const readWantedPostersMutation = useMutation({
-    mutationFn: () => readWantedPosters(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(gameResourceQueryKeys.journal(gameId), result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to read wanted posters.");
-    },
-  });
-
-  const gatherLocalGossipMutation = useMutation({
-    mutationFn: () => gatherLocalGossip(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(gameResourceQueryKeys.journal(gameId), result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to gather local gossip.");
-    },
-  });
-
-  const lookAroundSaloonMutation = useMutation({
-    mutationFn: () => lookAroundSaloon(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(gameResourceQueryKeys.journal(gameId), result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error ? exception.message : "Unable to look around the saloon.",
-      );
-    },
-  });
-
-  const confrontSaloonMutation = useMutation({
-    mutationFn: () =>
-      confrontSaloonPersonOfInterest(gameId as string, declaredWantedIdentityHandle),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(gameSessionQueryKey(gameId), result.currentSession);
-      await invalidateGameQueries(gameId as string);
-      const noticeText =
-        result.fineAmount !== null && result.walletBefore !== null && result.walletAfter !== null
-          ? `${result.message} Wallet ${formatMoney(result.walletBefore)} -> ${formatMoney(result.walletAfter)}.`
-          : result.message;
-      setNotice(noticeText);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error
-          ? exception.message
-          : "Unable to confront the person in the saloon.",
-      );
-    },
-  });
-
   return {
     setupGameMutation,
     markPrologueViewedMutation,
@@ -266,10 +194,6 @@ export function useGameSessionMutations({
     archivePlaythroughMutation,
     travelMutation,
     acknowledgeArrivalMutation,
-    readWantedPostersMutation,
-    gatherLocalGossipMutation,
-    lookAroundSaloonMutation,
-    confrontSaloonMutation,
     invalidateGameQueries,
   };
 }

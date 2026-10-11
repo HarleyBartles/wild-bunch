@@ -6,11 +6,6 @@ import {
   type GameTurnResultDto,
   type SetupGameRequest,
 } from "../api/types";
-import {
-  actionIsGatherLocalGossip,
-  actionIsLookAroundSaloon,
-  actionIsWantedPosters,
-} from "../utils/actionTypePredicates";
 import { HttpRequestError } from "../api/httpClient";
 import { storageKey } from "../utils/formatting";
 import {
@@ -25,23 +20,13 @@ import { useGameSessionState } from "./useGameSessionState";
 import { gameSessionQueryKey } from "../state/gameSessionQuery";
 import { gameResourceQueryKeys } from "../state/gameResourceQueries";
 
-type BusyMode =
-  "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
-
 const EMPTY_WANTED_POSTERS: NonNullable<GameSessionDto["wantedPosters"]> = [];
 
 export function useCurrentGameSession() {
   const queryClient = useQueryClient();
 
   const state = useGameSessionState();
-  const {
-    setDeclaredWantedIdentityHandle,
-    setError,
-    setNotice,
-    setResetToken,
-    setStoredGameId,
-    setPendingSetup,
-  } = state;
+  const { setError, setNotice, setResetToken, setStoredGameId, setPendingSetup } = state;
   const gameId = state.storedGameId;
   const resetSetupDraft = useCallback(
     () => setResetToken((current) => current + 1),
@@ -61,21 +46,11 @@ export function useCurrentGameSession() {
 
   const wantedPosters = session?.wantedPosters ?? EMPTY_WANTED_POSTERS;
 
-  useEffect(() => {
-    if (
-      state.declaredWantedIdentityHandle &&
-      !wantedPosters.some((poster) => poster.posterId === state.declaredWantedIdentityHandle)
-    ) {
-      setDeclaredWantedIdentityHandle("");
-    }
-  }, [wantedPosters, state.declaredWantedIdentityHandle, setDeclaredWantedIdentityHandle]);
-
   // Detect an event-backed archive from confirmed Start Over and return to setup.
   useEffect(() => {
     if (sessionQuery.data?.status === GameStatus.Archived) {
       window.localStorage.removeItem(storageKey);
       state.setStoredGameId(null);
-      state.setDeclaredWantedIdentityHandle("");
       queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
       queryClient.removeQueries({ queryKey: gameResourceQueryKeys.actions(gameId) });
       queryClient.removeQueries({ queryKey: gameResourceQueryKeys.journal(gameId) });
@@ -89,18 +64,12 @@ export function useCurrentGameSession() {
     archivePlaythroughMutation,
     travelMutation,
     acknowledgeArrivalMutation,
-    readWantedPostersMutation,
-    gatherLocalGossipMutation,
-    lookAroundSaloonMutation,
-    confrontSaloonMutation,
     invalidateGameQueries,
   } = useGameSessionMutations({
     gameId,
-    declaredWantedIdentityHandle: state.declaredWantedIdentityHandle,
     setStoredGameId: state.setStoredGameId,
     resetSetupDraft,
     setPendingSetup: state.setPendingSetup,
-    setDeclaredWantedIdentityHandle: state.setDeclaredWantedIdentityHandle,
     setNotice: state.setNotice,
     setError: state.setError,
   });
@@ -113,32 +82,13 @@ export function useCurrentGameSession() {
     }
   }, [gameId, state.pendingSetup, setupGameMutation]);
 
-  const investigationPending =
-    gatherLocalGossipMutation.isPending ||
-    lookAroundSaloonMutation.isPending ||
-    confrontSaloonMutation.isPending;
-
-  const busyMode: BusyMode = travelMutation.isPending
-    ? "traveling"
-    : readWantedPostersMutation.isPending
-      ? "reading"
-      : investigationPending
-        ? "investigating"
-        : sessionQuery.isFetching || actionsQuery.isFetching || journalQuery.isFetching
-          ? "refreshing"
-          : setupGameMutation.isPending || startGameWithTownMutation.isPending
-            ? "starting"
-            : "idle";
-
-  const loading = busyMode !== "idle";
-
-  const canReadWantedPosters = actions.some(actionIsWantedPosters);
-  const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
-  const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
-  const canConfrontSaloonPersonOfInterest = Boolean(
-    session?.activeSaloonPersonOfInterest &&
-    wantedPosters.some((poster) => poster.posterId === state.declaredWantedIdentityHandle),
-  );
+  const loading =
+    travelMutation.isPending ||
+    sessionQuery.isFetching ||
+    actionsQuery.isFetching ||
+    journalQuery.isFetching ||
+    setupGameMutation.isPending ||
+    startGameWithTownMutation.isPending;
 
   const handleSetupGame = useCallback(
     async (request: SetupGameRequest) => {
@@ -228,38 +178,9 @@ export function useCurrentGameSession() {
     await acknowledgeArrivalMutation.mutateAsync();
   }, [gameId, acknowledgeArrivalMutation]);
 
-  const handleReadWantedPosters = useCallback(async () => {
-    if (!gameId || !canReadWantedPosters) {
-      return;
-    }
-    await readWantedPostersMutation.mutateAsync();
-  }, [gameId, canReadWantedPosters, readWantedPostersMutation]);
-
-  const handleGatherLocalGossip = useCallback(async () => {
-    if (!gameId || !canGatherLocalGossip) {
-      return;
-    }
-    await gatherLocalGossipMutation.mutateAsync();
-  }, [gameId, canGatherLocalGossip, gatherLocalGossipMutation]);
-
-  const handleLookAroundSaloon = useCallback(async () => {
-    if (!gameId || !canLookAroundSaloon) {
-      return;
-    }
-    await lookAroundSaloonMutation.mutateAsync();
-  }, [gameId, canLookAroundSaloon, lookAroundSaloonMutation]);
-
-  const handleConfrontSaloonPersonOfInterest = useCallback(async () => {
-    if (!gameId || !canConfrontSaloonPersonOfInterest) {
-      return;
-    }
-    await confrontSaloonMutation.mutateAsync();
-  }, [gameId, canConfrontSaloonPersonOfInterest, confrontSaloonMutation]);
-
   const handleReset = useCallback(() => {
     window.localStorage.removeItem(storageKey);
     setStoredGameId(null);
-    setDeclaredWantedIdentityHandle("");
     setNotice("");
     setError("");
     setResetToken((current) => current + 1);
@@ -268,15 +189,7 @@ export function useCurrentGameSession() {
       queryClient.removeQueries({ queryKey: gameResourceQueryKeys.actions(gameId) });
       queryClient.removeQueries({ queryKey: gameResourceQueryKeys.journal(gameId) });
     }
-  }, [
-    gameId,
-    queryClient,
-    setStoredGameId,
-    setDeclaredWantedIdentityHandle,
-    setNotice,
-    setError,
-    setResetToken,
-  ]);
+  }, [gameId, queryClient, setStoredGameId, setNotice, setError, setResetToken]);
 
   const archivePlaythrough = useCallback(async () => {
     if (!gameId) {
@@ -314,12 +227,10 @@ export function useCurrentGameSession() {
     pendingSetup: state.pendingSetup,
     journal,
     wantedPosters,
-    hasReadWantedPosters: wantedPosters.length > 0,
     actions,
     gameId,
     currentTown,
     cockpitMode,
-    busyMode,
     loading,
     sessionLoading: sessionQuery.isLoading,
     sessionUpdatedAt: sessionQuery.dataUpdatedAt,
@@ -329,12 +240,6 @@ export function useCurrentGameSession() {
     notice: state.notice,
     error: state.error,
     resetToken: state.resetToken,
-    canReadWantedPosters,
-    canGatherLocalGossip,
-    canLookAroundSaloon,
-    canConfrontSaloonPersonOfInterest,
-    declaredWantedIdentityHandle: state.declaredWantedIdentityHandle,
-    setDeclaredWantedIdentityHandle: state.setDeclaredWantedIdentityHandle,
     handleSetupGame,
     handleMarkPrologueViewed,
     handleStartGameWithTown,
@@ -342,10 +247,6 @@ export function useCurrentGameSession() {
     handleTravelTurnResult,
     handleTravel,
     handleAcknowledgeArrival,
-    handleReadWantedPosters,
-    handleGatherLocalGossip,
-    handleLookAroundSaloon,
-    handleConfrontSaloonPersonOfInterest,
     handleReset,
     setNotice: state.setNotice,
     setError: state.setError,
