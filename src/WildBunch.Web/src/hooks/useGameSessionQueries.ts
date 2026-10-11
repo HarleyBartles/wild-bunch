@@ -25,7 +25,12 @@ export function useGameSessionQueries(gameId: string | null) {
 
   const session = sessionQuery.data ?? null;
   const journal = journalQuery.data ?? null;
+  const journalLoading = journalQuery.isPending && journalQuery.data === undefined;
+  const journalRefreshing = journalQuery.isFetching && journalQuery.data !== undefined;
+  const journalError = journalQuery.isError ? "Could not read the journal." : null;
   const actions = actionsQuery.data ?? [];
+  const actionsLoading = actionsQuery.isPending && actionsQuery.data === undefined;
+  const actionsError = actionsQuery.isError ? "Could not read town services." : null;
 
   const currentTown = useMemo(() => {
     if (!session) {
@@ -42,7 +47,18 @@ export function useGameSessionQueries(gameId: string | null) {
     journalQuery,
     session,
     journal,
+    journalLoading,
+    journalRefreshing,
+    journalError,
+    retryJournal: async () => {
+      await journalQuery.refetch();
+    },
     actions,
+    actionsLoading,
+    actionsError,
+    retryActions: async () => {
+      await actionsQuery.refetch();
+    },
     currentTown,
     cockpitMode,
   };

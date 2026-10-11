@@ -384,6 +384,21 @@ describe("AppShell", () => {
     expect(within(hud).getByText("Day 5, Morning")).toBeInTheDocument();
   });
 
+  it("recovers town services after the available-actions read fails", async () => {
+    primeMocks();
+    mockedGetAvailableActions
+      .mockRejectedValueOnce(new Error("Connection unavailable"))
+      .mockResolvedValueOnce([{ kind: AvailableActionKind.BuySupplies, label: "Buy supplies" }]);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not read town services/i);
+    await userEvent.setup().click(screen.getByRole("button", { name: /try again/i }));
+
+    expect(await screen.findByRole("button", { name: /^store$/i })).toBeInTheDocument();
+  });
+
   it("defaults to the flow router and shows the pre-session surface", async () => {
     primeMocks();
 
@@ -434,6 +449,47 @@ describe("AppShell", () => {
     expect(
       journalScope.queryByText("Find the culprit before the law closes in."),
     ).not.toBeInTheDocument();
+  });
+
+  it("recovers the journal when its query fails", async () => {
+    primeMocks();
+    mockedGetJournal.mockRejectedValue(new Error("Connection unavailable"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await userEvent.setup().click(within(hud).getByRole("button", { name: /journal/i }));
+    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
+    const journalScope = within(journalDialog);
+
+    expect(await journalScope.findByRole("alert")).toHaveTextContent(/could not read the journal/i);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    await userEvent.setup().click(journalScope.getByRole("button", { name: /try again/i }));
+
+    expect(await journalScope.findByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
+  });
+
+  it("keeps case-file recovery reachable after the journal query fails", async () => {
+    primeMocks();
+    mockedGetJournal.mockRejectedValue(new Error("Connection unavailable"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const caseFileButton = await screen.findByRole("button", { name: /^case file$/i });
+    expect(caseFileButton).toBeEnabled();
+    await userEvent.setup().click(caseFileButton);
+    const caseFileDialog = await screen.findByRole("dialog", { name: /case file/i });
+    const caseFileScope = within(caseFileDialog);
+
+    expect(await caseFileScope.findByRole("alert")).toHaveTextContent(
+      /could not read the journal/i,
+    );
+    mockedGetJournal.mockResolvedValue(createJournal());
+    await userEvent.setup().click(caseFileScope.getByRole("button", { name: /try again/i }));
+
+    expect(await caseFileScope.findByText(/opening lead:/i)).toBeInTheDocument();
   });
 
   it("shows a Dev toggle button that opens the developer overlay drawer", async () => {

@@ -13,6 +13,28 @@ const ModalState = styled.div`
   color: var(--text);
 `;
 
+const ReadError = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+  border-radius: 12px;
+  color: var(--text);
+`;
+
+const RetryButton = styled.button`
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+`;
+
 const Section = styled(StatusCard)`
   grid-column: 1 / -1;
 `;
@@ -80,7 +102,10 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 interface CaseFileSurfaceProps {
   journal: JournalDto | null;
   loading: boolean;
+  refreshing?: boolean;
   error: string;
+  readError?: string | null;
+  onRetry?: () => void;
 }
 
 type AnchorRow = { label: string; value: string };
@@ -131,10 +156,26 @@ function renderAnchors(rows: AnchorRow[]) {
   );
 }
 
-export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProps) {
+export function CaseFileSurface({
+  journal,
+  loading,
+  refreshing = false,
+  error,
+  readError = null,
+  onRetry,
+}: CaseFileSurfaceProps) {
   if (loading && !journal) return <ModalState>Loading the latest case file...</ModalState>;
   if (!loading && !journal)
-    return <ModalState>{error || "Load a game to inspect the case file."}</ModalState>;
+    return (
+      <ModalState role={readError ? "alert" : undefined}>
+        <p>{readError || error || "Load a game to inspect the case file."}</p>
+        {readError && onRetry ? (
+          <RetryButton type="button" onClick={onRetry}>
+            Try again
+          </RetryButton>
+        ) : null}
+      </ModalState>
+    );
   if (!journal) return null;
 
   const settledWarrantIds = new Set(
@@ -147,117 +188,131 @@ export function CaseFileSurface({ journal, loading, error }: CaseFileSurfaceProp
   );
 
   return (
-    <Grid $cols={2} $tabletCols={2} $mobileCols={1}>
-      <Section as="article">
-        <SectionHead>
-          <PanelSubtitle>
-            {journal.currentTown.name}, day {journal.clock.day}
-          </PanelSubtitle>
-        </SectionHead>
-        <Fact>{journal.caseFile.caseSummary}</Fact>
-        <Fact>
-          <strong>Opening lead:</strong> {journal.caseFile.openingLead}
-        </Fact>
-        <Minor>{journal.caseFile.caseState.statusText}</Minor>
-      </Section>
+    <>
+      {readError ? (
+        <ReadError role="alert">
+          <span>{readError}</span>
+          {onRetry ? (
+            <RetryButton type="button" onClick={onRetry}>
+              Try again
+            </RetryButton>
+          ) : null}
+        </ReadError>
+      ) : null}
+      {refreshing ? <ModalState role="status">Checking the case file...</ModalState> : null}
+      {error ? <ModalState role="alert">{error}</ModalState> : null}
+      <Grid $cols={2} $tabletCols={2} $mobileCols={1}>
+        <Section as="article">
+          <SectionHead>
+            <PanelSubtitle>
+              {journal.currentTown.name}, day {journal.clock.day}
+            </PanelSubtitle>
+          </SectionHead>
+          <Fact>{journal.caseFile.caseSummary}</Fact>
+          <Fact>
+            <strong>Opening lead:</strong> {journal.caseFile.openingLead}
+          </Fact>
+          <Minor>{journal.caseFile.caseState.statusText}</Minor>
+        </Section>
 
-      <Section as="article">
-        <SectionHead>
-          <h3>Warrants</h3>
-        </SectionHead>
-        <Stack>
-          {journal.caseFile.caseBoard.warrants.length > 0 ? (
-            journal.caseFile.caseBoard.warrants.map((warrant) => (
-              <ItemCard as="article" key={warrant.id}>
-                <RecordTitle>{warrant.targetName}</RecordTitle>
-                <Fact>{warrant.summary}</Fact>
-                <Minor>Issued by {warrant.issuingSource}</Minor>
-                <Fact>
-                  <strong>Bounty:</strong> {currencyFormatter.format(warrant.bountyAmount)}
-                </Fact>
-                <Fact>
-                  <strong>Disposition:</strong> {formatWarrantDisposition(warrant.disposition)}
-                </Fact>
-                {warrant.knownAliases.length > 0 ? (
+        <Section as="article">
+          <SectionHead>
+            <h3>Warrants</h3>
+          </SectionHead>
+          <Stack>
+            {journal.caseFile.caseBoard.warrants.length > 0 ? (
+              journal.caseFile.caseBoard.warrants.map((warrant) => (
+                <ItemCard as="article" key={warrant.id}>
+                  <RecordTitle>{warrant.targetName}</RecordTitle>
+                  <Fact>{warrant.summary}</Fact>
+                  <Minor>Issued by {warrant.issuingSource}</Minor>
                   <Fact>
-                    <strong>Known aliases:</strong> {warrant.knownAliases.join(", ")}
+                    <strong>Bounty:</strong> {currencyFormatter.format(warrant.bountyAmount)}
                   </Fact>
-                ) : null}
-                {warrant.knownFeatures.length > 0 ? (
                   <Fact>
-                    <strong>Known features:</strong> {warrant.knownFeatures.join("; ")}
+                    <strong>Disposition:</strong> {formatWarrantDisposition(warrant.disposition)}
                   </Fact>
-                ) : null}
-                {warrant.settlement ? (
-                  <Minor>
-                    Turned in {warrant.settlement.isAlive ? "alive" : "dead"} on day{" "}
-                    {warrant.settlement.day}; bounty paid{" "}
-                    {currencyFormatter.format(warrant.settlement.bountyAmount)}.
-                  </Minor>
-                ) : null}
-              </ItemCard>
-            ))
-          ) : (
-            <Muted>No warrants have been recorded.</Muted>
-          )}
-        </Stack>
-      </Section>
+                  {warrant.knownAliases.length > 0 ? (
+                    <Fact>
+                      <strong>Known aliases:</strong> {warrant.knownAliases.join(", ")}
+                    </Fact>
+                  ) : null}
+                  {warrant.knownFeatures.length > 0 ? (
+                    <Fact>
+                      <strong>Known features:</strong> {warrant.knownFeatures.join("; ")}
+                    </Fact>
+                  ) : null}
+                  {warrant.settlement ? (
+                    <Minor>
+                      Turned in {warrant.settlement.isAlive ? "alive" : "dead"} on day{" "}
+                      {warrant.settlement.day}; bounty paid{" "}
+                      {currencyFormatter.format(warrant.settlement.bountyAmount)}.
+                    </Minor>
+                  ) : null}
+                </ItemCard>
+              ))
+            ) : (
+              <Muted>No warrants have been recorded.</Muted>
+            )}
+          </Stack>
+        </Section>
 
-      <Section as="article">
-        <SectionHead>
-          <h3>Clues</h3>
-        </SectionHead>
-        <Stack>
-          {journal.caseFile.caseBoard.clues.length > 0 ? (
-            journal.caseFile.caseBoard.clues.map((clue) => (
-              <ItemCard as="article" key={clue.id}>
-                <RecordTitle>{clue.description}</RecordTitle>
-                <Minor>{formatClueKind(clue.kind)}</Minor>
-                {clue.source ? (
-                  <Fact>
-                    <strong>Source:</strong> {clue.source}
-                  </Fact>
-                ) : null}
-                {clue.context ? (
-                  <Fact>
-                    <strong>Context:</strong> {clue.context}
-                  </Fact>
-                ) : null}
-                {renderAnchors(buildAnchorRows(clue.anchors))}
-              </ItemCard>
-            ))
-          ) : (
-            <Muted>No clues have been recorded.</Muted>
-          )}
-        </Stack>
-      </Section>
+        <Section as="article">
+          <SectionHead>
+            <h3>Clues</h3>
+          </SectionHead>
+          <Stack>
+            {journal.caseFile.caseBoard.clues.length > 0 ? (
+              journal.caseFile.caseBoard.clues.map((clue) => (
+                <ItemCard as="article" key={clue.id}>
+                  <RecordTitle>{clue.description}</RecordTitle>
+                  <Minor>{formatClueKind(clue.kind)}</Minor>
+                  {clue.source ? (
+                    <Fact>
+                      <strong>Source:</strong> {clue.source}
+                    </Fact>
+                  ) : null}
+                  {clue.context ? (
+                    <Fact>
+                      <strong>Context:</strong> {clue.context}
+                    </Fact>
+                  ) : null}
+                  {renderAnchors(buildAnchorRows(clue.anchors))}
+                </ItemCard>
+              ))
+            ) : (
+              <Muted>No clues have been recorded.</Muted>
+            )}
+          </Stack>
+        </Section>
 
-      <Section as="article">
-        <SectionHead>
-          <h3>Known suspects</h3>
-        </SectionHead>
-        <Stack>
-          {journal.caseFile.discoveredSuspects.length > 0 ? (
-            journal.caseFile.discoveredSuspects.map((suspect, index) => (
-              <ItemCard as="article" key={`${suspect.name}:${index}`}>
-                <SuspectLine>
-                  <RecordTitle>{suspect.name}</RecordTitle>
-                  <Minor>{formatSuspectStatus(suspect.status)}</Minor>
-                </SuspectLine>
-              </ItemCard>
-            ))
-          ) : (
-            <Muted>No names have been recorded.</Muted>
-          )}
-        </Stack>
-      </Section>
+        <Section as="article">
+          <SectionHead>
+            <h3>Known suspects</h3>
+          </SectionHead>
+          <Stack>
+            {journal.caseFile.discoveredSuspects.length > 0 ? (
+              journal.caseFile.discoveredSuspects.map((suspect, index) => (
+                <ItemCard as="article" key={`${suspect.name}:${index}`}>
+                  <SuspectLine>
+                    <RecordTitle>{suspect.name}</RecordTitle>
+                    <Minor>{formatSuspectStatus(suspect.status)}</Minor>
+                  </SuspectLine>
+                </ItemCard>
+              ))
+            ) : (
+              <Muted>No names have been recorded.</Muted>
+            )}
+          </Stack>
+        </Section>
 
-      <Section as="article">
-        <SectionHead>
-          <h3>Wanted posters</h3>
-        </SectionHead>
-        <WantedPosterSurface wantedPosters={activeWantedPosters} />
-      </Section>
-    </Grid>
+        <Section as="article">
+          <SectionHead>
+            <h3>Wanted posters</h3>
+          </SectionHead>
+          <WantedPosterSurface wantedPosters={activeWantedPosters} />
+        </Section>
+      </Grid>
+    </>
   );
 }

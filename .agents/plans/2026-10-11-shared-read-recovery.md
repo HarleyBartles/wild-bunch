@@ -46,7 +46,7 @@
 - The session context exposes `actionsLoading: boolean`, `actionsError: string | null`, and `retryActions: () => Promise<void>` from the action query observer.
 - `TownHubSurface` shows an initial loading status while action data is unavailable, shows a retry action on query failure, and continues rendering backend-reported services when stale data exists.
 
-- [ ] **Step 1: Write the failing player-path test.** In `AppShell.test.tsx`, mount the real shell with a saved GameStarted session; make the first `getAvailableActions` request reject and the retry return the store, sheriff, saloon, and trailhead actions. Assert that the town displays an action-read error and a retry button instead of silently appearing to have no services, then click retry and assert that the service navigation returns.
+- [x] **Step 1: Write the failing player-path test.** In `AppShell.test.tsx`, mount the real shell with a saved GameStarted session; make the first `getAvailableActions` request reject and the retry return the store, sheriff, saloon, and trailhead actions. Assert that the town displays an action-read error and a retry button instead of silently appearing to have no services, then click retry and assert that the service navigation returns.
 
 ```tsx
 it("recovers town services after the available-actions read fails", async () => {
@@ -64,9 +64,9 @@ it("recovers town services after the available-actions read fails", async () => 
 });
 ```
 
-- [ ] **Step 2: Witness the intended failure.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx -t "recovers town services"` and confirm the new assertion fails because no read-error recovery is rendered.
-- [ ] **Step 3: Expose action query state and render its recovery.** Return action loading/error/refetch from `useGameSessionQueries`, surface a resource-specific message and `retryActions` through `useCurrentGameSession`, and render an accessible loading or retryable error state in `TownHubSurface` without changing successful action mapping.
-- [ ] **Step 4: Verify the town behavior.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx -t "recovers town services"` and verify the error, retry, and backend-reported Store route assertions pass.
+- [x] **Step 2: Witness the intended failure.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx -t "recovers town services"` and confirm the new assertion fails because no read-error recovery is rendered.
+- [x] **Step 3: Expose action query state and render its recovery.** Return action loading/error/refetch from `useGameSessionQueries`, surface a resource-specific message and `retryActions` through `useCurrentGameSession`, and render an accessible loading or retryable error state in `TownHubSurface` without changing successful action mapping.
+- [x] **Step 4: Verify the town behavior.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx -t "recovers town services"` and verify the error, retry, and backend-reported Store route assertions pass.
 
 ### Task 2: Make journal and case-file reads recoverable
 
@@ -83,12 +83,12 @@ it("recovers town services after the available-actions read fails", async () => 
 - The Journal and Case file surfaces accept query-specific error and retry inputs; a missing journal caused by a failed request remains openable from its reference control.
 - Existing command feedback retains its existing ownership and is not overwritten by query errors.
 
-- [ ] **Step 1: Write the failing shell recovery tests.** Add one real-shell test where `getJournal` rejects once, the Journal overlay shows the read error and retry action, and retry renders the returned journal. Add a second assertion that the Case file affordance remains enabled while that same read error is present and its surface offers the same recovery action.
-- [ ] **Step 2: Witness the intended failure.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx -t "recovers the journal"` and confirm the current shell hides the failed journal behind a disabled Case file button or generic state and has no retry action.
-- [ ] **Step 3: Write the failing stale-data test.** In `JournalSurface.test.tsx`, render a known journal together with a journal-read error and a retry callback; assert that the known entry remains visible, the error is announced, and retry invokes the callback.
-- [ ] **Step 4: Witness the stale-data failure.** Run `npm --prefix src/WildBunch.Web test -- src/tests/JournalSurface.test.tsx -t "keeps the last journal"` and confirm the surface currently cannot display the query failure alongside its existing journal.
-- [ ] **Step 5: Implement the query-owned recovery state.** Expose journal initial-loading, background-fetching, error, and refetch behavior; let both reference surfaces show a retryable read error without clearing successful journal data; keep normal journal and case-file rendering unchanged when the query succeeds.
-- [ ] **Step 6: Verify the reference behavior.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx src/tests/JournalSurface.test.tsx` and confirm initial failure, retry, stale-data retention, and normal rendering all pass.
+- [x] **Step 1: Write the failing shell recovery tests.** Add real-shell tests where `getJournal` keeps rejecting until the player retries, the Journal overlay shows the read error and retry action, retry renders the returned journal, and the Case file affordance remains enabled with the same recovery action.
+- [x] **Step 2: Witness the intended failure.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx -t "recovers the journal|keeps case-file recovery"` and confirm the current shell hides the failed journal behind a disabled Case file button or generic state and has no retry action.
+- [x] **Step 3: Write the failing stale-data test.** In `JournalSurface.test.tsx`, render a known journal together with a journal-read error and a retry callback; assert that the known entry remains visible, the error is announced, and retry invokes the callback.
+- [x] **Step 4: Witness the stale-data failure.** Run `npm --prefix src/WildBunch.Web test -- src/tests/JournalSurface.test.tsx -t "keeps the last journal"` and confirm the surface currently cannot display the query failure alongside its existing journal.
+- [x] **Step 5: Implement the query-owned recovery state.** Expose journal initial-loading, background-fetching, error, and refetch behavior; let both reference surfaces show a retryable read error without clearing successful journal data; keep normal journal and case-file rendering unchanged when the query succeeds.
+- [x] **Step 6: Verify the reference behavior.** Run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx src/tests/JournalSurface.test.tsx src/tests/CaseFileSurface.test.tsx` and confirm initial failure, retry, stale-data retention, and normal rendering all pass.
 
 ### Task 3: Reconcile row 13, advance version, and complete the delivery
 
@@ -98,9 +98,10 @@ it("recovers town services after the available-actions read fails", async () => 
 - Delete: `.agents/plans/2026-10-11-travel-route-ownership.md`
 - Keep: `.agents/plans/2026-10-11-shared-read-recovery.md` through this PR.
 
-- [ ] **Step 1: Reconcile row 13 against current source.** Confirm route-owned Store, Saloon, Sheriff, and travel commands; shared game-keyed session/actions/journal resources; derived wanted posters; the shared world-map key; all-resource refresh from gameplay and dev commands; and cross-game isolation tests. Record row 13 complete because these exits are now met; keep the failed action/journal query recovery in row 14, whose existing scope owns truthful transport/read feedback.
-- [ ] **Step 2: Retire the predecessor plan and record the verified row-13 boundary.** Remove the completed travel-route plan and write one dated roadmap update citing PR #276 source `8dbae1ddd582ea4588f2e5552e2bcd42ccca40b7`, merge `3d74d060048ea8f2fdb32e2cf67cfbd636301eb8`, and hosted exact-head/develop-push gates `38167396777` and `38167705458`; distinguish implemented row-13 behavior from any disposition that remains in another roadmap row.
-- [ ] **Step 3: Advance the sole authored application version.** Set `Directory.Build.props` to `0.1.0-dev.92`; generated web identity remains build-derived.
-- [ ] **Step 4: Recheck ADR and feature truth.** Confirm ADR-0016 and ADR-0028 remain accurate and `docs/features.md` promises/dependencies do not change; do not add an ADR or feature-matrix edit for read recovery.
-- [ ] **Step 5: Run the complete fail-fast gate and commit the staged candidate.** Use `py -3 tools/run.py ci --check`, then stage the intended files and commit with the check-only pre-commit hook enabled.
-- [ ] **Step 6: Independently review, publish, and verify.** Follow the PR and code-review runbooks; require a fresh whole-branch review, exact-head hosted canonical CI success, merge to `develop`, and a passing develop-push gate before paired worktree and branch cleanup.
+- [x] **Step 1: Reconcile row 13 against current source.** Confirm route-owned Store, Saloon, Sheriff, and travel commands; shared game-keyed session/actions/journal resources; derived wanted posters; the shared world-map key; all-resource refresh from gameplay and dev commands; and cross-game isolation tests. Record row 13 complete because these exits are now met; keep the action and journal read-recovery gap in row 14, whose current scope owns truthful transport/read feedback.
+- [x] **Step 2: Retire the predecessor plan and record the verified row-13 boundary.** Remove the completed travel-route plan and record PR #276's reviewed source `8dbae1ddd582ea4588f2e5552e2bcd42ccca40b7`, merge `3d74d060048ea8f2fdb32e2cf67cfbd636301eb8`, identical tree `ac8dda387a6c8f7fd6a6999450b96a13ee610eaa`, and hosted exact-head/develop-push gates `38167396777` and `38167705458`; distinguish implemented row-13 behavior from the remaining row-14 work.
+- [x] **Step 3: Advance the sole authored application version.** Set `Directory.Build.props` to `0.1.0-dev.92`; generated web identity remains build-derived.
+- [x] **Step 4: Recheck ADR and feature truth.** Confirm ADR-0016 and ADR-0028 remain accurate and `docs/features.md` promises/dependencies do not change; no ADR or feature-matrix edit is needed for read recovery.
+- [ ] **Step 5: Commit the staged candidate through the canonical fail-fast gate.** Stage only the intended source, test, version, roadmap and successor-plan retirement changes, inspect the staged diff, then commit with the check-only pre-commit hook enabled. The hook runs `ci --check` in cheapest-first order and stops at the first failure; resolve any formatter or linter failure before downstream build and test work.
+- [ ] **Step 6: Independently review, publish, and verify.** Follow the PR and code-review runbooks; require a fresh whole-branch review, exact-head hosted canonical CI success, merge to `develop`, and a passing develop-push gate.
+- [ ] **Step 7: Clean up paired Git refs and worktree.** After verifying the merged source/head and develop integration, remove this clean worktree and its matching local and upstream branch refs together, then verify all three are gone and clean this branch's scratch directory.

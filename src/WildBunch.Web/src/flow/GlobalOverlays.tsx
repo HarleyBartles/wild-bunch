@@ -16,14 +16,28 @@ interface GlobalOverlaysProps {
 }
 
 export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysProps) {
-  const { journal, wantedPosters, loading, error, setError, archivePlaythrough, archiving } =
-    useGameSession();
+  const {
+    journal,
+    journalLoading,
+    journalRefreshing,
+    journalError,
+    retryJournal,
+    wantedPosters,
+    error,
+    setError,
+    archivePlaythrough,
+    archiving,
+  } = useGameSession();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <>
       <OverlayButtons role="toolbar" aria-label="Reference overlays">
-        <OverlayButton type="button" onClick={() => onOpenOverlay("case-file")} disabled={!journal}>
+        <OverlayButton
+          type="button"
+          onClick={() => onOpenOverlay("case-file")}
+          disabled={!journal && !journalError}
+        >
           Case file
         </OverlayButton>
         <OverlayButton
@@ -42,7 +56,14 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         description="Clues, suspects, and evidence."
         onClose={() => onOpenOverlay(null)}
       >
-        <CaseFileSurface journal={journal} loading={loading} error={error} />
+        <CaseFileSurface
+          journal={journal}
+          loading={journalLoading}
+          refreshing={journalRefreshing}
+          error={error}
+          readError={journalError}
+          onRetry={retryJournal}
+        />
       </CockpitOverlayFrame>
 
       <CockpitOverlayFrame
@@ -63,8 +84,11 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
       >
         <JournalSurface
           journal={journal}
-          loading={loading}
+          loading={journalLoading}
+          refreshing={journalRefreshing}
           error={error}
+          readError={journalError}
+          onRetry={retryJournal}
           sessionLogEntries={journal?.logEntries ?? []}
         />
       </CockpitOverlayFrame>
