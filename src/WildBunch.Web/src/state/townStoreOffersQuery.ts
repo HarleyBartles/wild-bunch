@@ -1,7 +1,8 @@
 import { getTownStoreOffers } from "../api/wildBunchApi";
+import { gameResourceQueryKeys } from "./gameResourceQueries";
 
 export function townStoreOffersQueryKey(gameId: string | null, townId: string | null | undefined) {
-  return ["store-offers", gameId, townId] as const;
+  return gameResourceQueryKeys.storeOffers(gameId, townId);
 }
 
 export function townStoreOffersQueryOptions(

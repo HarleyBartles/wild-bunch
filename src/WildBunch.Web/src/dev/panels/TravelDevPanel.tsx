@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { clearTravelOverride, forceTravelOverride, getTravelDevContext } from "../devApi";
+import { gameResourceQueryKeys, refreshGameResources } from "../../state/gameResourceQueries";
 
 const ENCOUNTER_CATEGORIES = [
   "Foe",
@@ -36,7 +37,7 @@ function TravelDevPanelForGame({ gameId }: { gameId: string }) {
   const [actionPending, setActionPending] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dev-travel-context", gameId],
+    queryKey: gameResourceQueryKeys.devTravel(gameId),
     queryFn: () => getTravelDevContext(gameId),
     enabled: Boolean(gameId),
     retry: false,
@@ -45,8 +46,6 @@ function TravelDevPanelForGame({ gameId }: { gameId: string }) {
   if (isLoading) {
     return <MutedText>Loading travel context...</MutedText>;
   }
-
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["dev-travel-context", gameId] });
 
   const handleForce = async () => {
     setError(null);
@@ -59,7 +58,7 @@ function TravelDevPanelForGame({ gameId }: { gameId: string }) {
         foeMinimumBribe: foeBribe.trim() === "" ? null : Number(foeBribe),
         encounterMessage: message.trim() === "" ? null : message,
       });
-      await refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force override.");
     } finally {
@@ -72,7 +71,7 @@ function TravelDevPanelForGame({ gameId }: { gameId: string }) {
     setActionPending(true);
     try {
       await clearTravelOverride(gameId);
-      await refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear override.");
     } finally {

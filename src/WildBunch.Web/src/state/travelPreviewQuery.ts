@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { previewTravel } from "../api/wildBunchApi";
+import { gameResourceQueryKeys } from "./gameResourceQueries";
 
 export function travelPreviewQueryKey(
   gameId: string | null,
@@ -7,7 +8,12 @@ export function travelPreviewQueryKey(
   destinationTownId: string | null,
   sessionUpdatedAt: number,
 ) {
-  return ["travel-preview", gameId, originTownId, destinationTownId, sessionUpdatedAt] as const;
+  return gameResourceQueryKeys.travelPreview(
+    gameId,
+    originTownId,
+    destinationTownId,
+    sessionUpdatedAt,
+  );
 }
 
 export function travelPreviewQueryOptions(

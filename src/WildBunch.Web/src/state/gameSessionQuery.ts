@@ -1,7 +1,8 @@
 import { getGame } from "../api/wildBunchApi";
+import { gameResourceQueryKeys } from "./gameResourceQueries";
 
 export function gameSessionQueryKey(gameId: string | null) {
-  return ["session", gameId] as const;
+  return gameResourceQueryKeys.session(gameId);
 }
 
 export function gameSessionQueryOptions(gameId: string | null) {

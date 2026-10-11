@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { clearSaloonOverride, forceSaloonOverride, getSaloonDevContext } from "../devApi";
 import type { SaloonSuspectDevDto } from "../types";
+import { gameResourceQueryKeys, refreshGameResources } from "../../state/gameResourceQueries";
 
 const POI_KINDS = ["Suspect", "Citizen", "None"] as const;
 type PoiKind = (typeof POI_KINDS)[number];
@@ -32,7 +33,7 @@ function SaloonDevPanelForGame({ gameId }: { gameId: string }) {
   const [actionPending, setActionPending] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dev-saloon-context", gameId],
+    queryKey: gameResourceQueryKeys.devSaloon(gameId),
     queryFn: () => getSaloonDevContext(gameId),
     enabled: Boolean(gameId),
     retry: false,
@@ -47,8 +48,6 @@ function SaloonDevPanelForGame({ gameId }: { gameId: string }) {
     return <MutedText>Loading saloon context...</MutedText>;
   }
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["dev-saloon-context", gameId] });
-
   const handleForce = async () => {
     setError(null);
     setActionPending(true);
@@ -60,7 +59,7 @@ function SaloonDevPanelForGame({ gameId }: { gameId: string }) {
         forcedCitizenRoleKey:
           forcedKind === "Citizen" && selectedCitizenRoleKey !== "" ? selectedCitizenRoleKey : null,
       });
-      await refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force override.");
     } finally {
@@ -73,7 +72,7 @@ function SaloonDevPanelForGame({ gameId }: { gameId: string }) {
     setActionPending(true);
     try {
       await clearSaloonOverride(gameId);
-      await refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear override.");
     } finally {
