@@ -104,6 +104,6 @@
 - [x] Set row 15's active JIT plan to this player-dialog slice at `0.1.0-dev.94`; preserve its remaining map/style work as pending rather than claiming the full row complete.
 - [x] Confirm the actual change does not alter feature truth or a durable ADR decision; keep `docs/features.md` and the ADR log unchanged if that remains true.
 - [x] Inspect and stage only the intended source, tests, plan, roadmap, version and completed predecessor plan retirement.
-- [ ] Commit through the check-only pre-commit hook; do not run the full canonical gate immediately after a successful hooked commit.
+- [x] Commit through the check-only pre-commit hook; do not run the full canonical gate immediately after a successful hooked commit.
 - [ ] Request a fresh whole-branch review, resolve findings, push, open a non-draft PR to `develop`, and verify its exact head and successful hosted canonical gate.
 - [ ] Merge to `develop`, verify the develop-push gate, fast-forward the main checkout, then remove this clean worktree and its matching local/upstream branch refs together and verify each is gone.
