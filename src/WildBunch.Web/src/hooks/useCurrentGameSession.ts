@@ -27,6 +27,8 @@ import { gameSessionQueryKey } from "../state/gameSessionQuery";
 type BusyMode =
   "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
 
+const EMPTY_WANTED_POSTERS: NonNullable<GameSessionDto["wantedPosters"]> = [];
+
 export function useCurrentGameSession() {
   const queryClient = useQueryClient();
 
@@ -38,7 +40,6 @@ export function useCurrentGameSession() {
     setResetToken,
     setStoredGameId,
     setPendingSetup,
-    setWantedPosters,
   } = state;
   const gameId = state.storedGameId;
   const resetSetupDraft = useCallback(
@@ -57,21 +58,22 @@ export function useCurrentGameSession() {
     cockpitMode,
   } = useGameSessionQueries(gameId);
 
-  // Load wanted posters from session state once they're known.
-  // The readWantedPosters API call adds them to KnownWarrants and the journal,
-  // but we should use the session DTO to avoid requiring a separate API call
-  // every time we want to declare an identity.
+  const wantedPosters = session?.wantedPosters ?? EMPTY_WANTED_POSTERS;
+
   useEffect(() => {
-    const posters = sessionQuery.data?.wantedPosters;
-    setWantedPosters(posters ?? []);
-  }, [sessionQuery.data?.wantedPosters, setWantedPosters]);
+    if (
+      state.declaredWantedIdentityHandle &&
+      !wantedPosters.some((poster) => poster.posterId === state.declaredWantedIdentityHandle)
+    ) {
+      setDeclaredWantedIdentityHandle("");
+    }
+  }, [wantedPosters, state.declaredWantedIdentityHandle, setDeclaredWantedIdentityHandle]);
 
   // Detect an event-backed archive from confirmed Start Over and return to setup.
   useEffect(() => {
     if (sessionQuery.data?.status === GameStatus.Archived) {
       window.localStorage.removeItem(storageKey);
       state.setStoredGameId(null);
-      state.setWantedPosters([]);
       state.setDeclaredWantedIdentityHandle("");
       queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
       queryClient.removeQueries({ queryKey: ["actions", gameId] });
@@ -97,7 +99,6 @@ export function useCurrentGameSession() {
     setStoredGameId: state.setStoredGameId,
     resetSetupDraft,
     setPendingSetup: state.setPendingSetup,
-    setWantedPosters: state.setWantedPosters,
     setDeclaredWantedIdentityHandle: state.setDeclaredWantedIdentityHandle,
     setNotice: state.setNotice,
     setError: state.setError,
@@ -134,7 +135,8 @@ export function useCurrentGameSession() {
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
   const canConfrontSaloonPersonOfInterest = Boolean(
-    session?.activeSaloonPersonOfInterest && state.declaredWantedIdentityHandle,
+    session?.activeSaloonPersonOfInterest &&
+    wantedPosters.some((poster) => poster.posterId === state.declaredWantedIdentityHandle),
   );
 
   const handleSetupGame = useCallback(
@@ -256,7 +258,6 @@ export function useCurrentGameSession() {
   const handleReset = useCallback(() => {
     window.localStorage.removeItem(storageKey);
     setStoredGameId(null);
-    setWantedPosters([]);
     setDeclaredWantedIdentityHandle("");
     setNotice("");
     setError("");
@@ -270,7 +271,6 @@ export function useCurrentGameSession() {
     gameId,
     queryClient,
     setStoredGameId,
-    setWantedPosters,
     setDeclaredWantedIdentityHandle,
     setNotice,
     setError,
@@ -325,8 +325,8 @@ export function useCurrentGameSession() {
     session,
     pendingSetup: state.pendingSetup,
     journal,
-    wantedPosters: state.wantedPosters,
-    hasReadWantedPosters: state.wantedPosters.length > 0,
+    wantedPosters,
+    hasReadWantedPosters: wantedPosters.length > 0,
     actions,
     gameId,
     currentTown,

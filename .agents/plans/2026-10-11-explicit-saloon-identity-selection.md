@@ -46,15 +46,15 @@
 - Keep: `src/WildBunch.Web/src/state/GameSessionProvider.tsx`
 - Keep: `src/WildBunch.Web/src/state/gameSessionQuery.ts`
 
-- [ ] Add a provider-backed behavior test that mounts `GameSessionProvider` and `SaloonPlace` with a real `QueryClient`, a router needed by the route, and API-boundary mocks for session, actions, journal and offers.
-- [ ] Start from session data with an active saloon person and no known posters, then update `gameSessionQueryKey(gameId)` with a session containing one poster; wait for the identity combobox and assert it remains on the blank option and the take-in action remains disabled.
-- [ ] Run the new test against the current code and confirm it fails because the provider's poster synchronization selects the first poster without player input.
-- [ ] In the same scenario, explicitly select the poster and assert the existing action becomes enabled; replace the Query session with one that no longer contains the chosen poster and assert the choice clears and the action disables.
-- [ ] Remove `wantedPosters` and `setWantedPosters` from `useGameSessionState`; remove its first-poster auto-selection effect.
-- [ ] Derive `wantedPosters` from `session?.wantedPosters ?? []` in `useCurrentGameSession`; remove effect-driven poster mirroring and setter writes from poster-read, reset and archive paths.
-- [ ] Keep the declared poster handle local and initially empty; clear it only when its poster disappears from the active session, on reset, or after confirmed archive.
-- [ ] Ensure confrontation requires a currently resolved selected poster rather than any stale nonempty handle; derive the displayed poster from the same session Query data.
-- [ ] Run `npm test -- src/tests/SaloonPlace.test.tsx src/tests/GameSessionProvider.test.tsx src/tests/SheriffPlace.test.tsx` and `npm run typecheck` from `src/WildBunch.Web`.
+- [x] Add a provider-backed behavior test that mounts `GameSessionProvider` and `SaloonPlace` with a real `QueryClient`, the existing mocked navigation boundary, and API-boundary mocks for session, actions and journal.
+- [x] Start from session data with an active saloon person and no known posters, then update `gameSessionQueryKey(gameId)` with a session containing one poster; wait for the identity combobox and assert it remains on the blank option and the take-in action remains disabled.
+- [x] Run the new test against the current code and confirm it fails because the provider's poster synchronization selects the first poster without player input.
+- [x] In the same scenario, explicitly select the poster and assert the existing action becomes enabled; replace the Query session with one that no longer contains the chosen poster and assert the choice clears and the action disables.
+- [x] Remove `wantedPosters` and `setWantedPosters` from `useGameSessionState`; remove its first-poster auto-selection effect.
+- [x] Derive `wantedPosters` from `session?.wantedPosters ?? []` in `useCurrentGameSession`; remove effect-driven poster mirroring and setter writes from poster-read, reset and archive paths.
+- [x] Keep the declared poster handle local and initially empty; clear it only when its poster disappears from the active session, on reset, or after confirmed archive.
+- [x] Ensure confrontation requires a currently resolved selected poster rather than any stale nonempty handle; derive the displayed poster from the same session Query data.
+- [x] Run `npm test -- src/tests/SaloonPlace.test.tsx src/tests/GameSessionProvider.test.tsx src/tests/SheriffPlace.test.tsx` and `npm run typecheck` from `src/WildBunch.Web`.
 
 The test must exercise production provider/query ownership; the current `StatefulSaloon` context fake begins with an empty declaration and cannot detect the provider's automatic first-poster assignment. Keep its focused display/outcome assertion if the new provider test does not make it redundant.
 
@@ -73,12 +73,12 @@ The test must exercise production provider/query ownership; the current `Statefu
 - Delete: `.agents/plans/2026-10-11-store-offers-route-ownership.md`
 - Keep: `.agents/plans/2026-10-11-explicit-saloon-identity-selection.md`
 
-- [ ] Record PR #268's reviewed source `91b52ca0c7af9b55ec1a4511e90dc4365c2428d9`, merge `0c7b47696bbb9f32a625c76459bef0709c641470`, matching tree `d802b3310d17a47a346607c750c11796beceff15`, exact-head gate `38126111561`, and develop-push gate `38126452305` in row 13.
-- [ ] Link this plan as the live row-13 work item, advance the product version to `0.1.0-dev.84`, and preserve only the remaining row-13 scope after the deliberate-identity behavior ships.
-- [ ] Record ADR-0045's accessible shared-map decision in the specification and row 15; mark ADR-0044 superseded, preserve its dated historical decision, update the ADR catalogue and surviving scope in ADR-0035/0039, and reconcile the map test follow-up.
-- [ ] Record that the same `WorldMapScene` already serves starting-town selection and travel with distinct legal eligible-town inputs; the earlier starting-town DOM button path was removed, travel has no separate keyboard town chooser, and Town Hub's keyboard building controls are a different interaction.
-- [ ] Retire `.agents/plans/2026-10-11-store-offers-route-ownership.md` only in the first substantive implementation commit after checking its complete scope against PR #268 and the current source.
-- [ ] Leave `docs/features.md` unchanged because the player's explicit declaration is already promised by PG-006; leave event, backend and API contracts unchanged.
+- [x] Record PR #268's reviewed source `91b52ca0c7af9b55ec1a4511e90dc4365c2428d9`, merge `0c7b47696bbb9f32a625c76459bef0709c641470`, matching tree `d802b3310d17a47a346607c750c11796beceff15`, exact-head gate `38126111561`, and develop-push gate `38126452305` in row 13.
+- [x] Link this plan as the live row-13 work item, advance the product version to `0.1.0-dev.84`, and preserve only the remaining row-13 scope after the deliberate-identity behavior ships.
+- [x] Record ADR-0045's accessible shared-map decision in the specification and row 15; mark ADR-0044 superseded, preserve its dated historical decision, update the ADR catalogue and surviving scope in ADR-0035/0039, and reconcile the map test follow-up.
+- [x] Record that the same `WorldMapScene` already serves starting-town selection and travel with distinct legal eligible-town inputs; the earlier starting-town DOM button path was removed, travel has no separate keyboard town chooser, and Town Hub's keyboard building controls are a different interaction.
+- [x] Retire `.agents/plans/2026-10-11-store-offers-route-ownership.md` only in the first substantive implementation commit after checking its complete scope against PR #268 and the current source.
+- [x] Leave `docs/features.md` unchanged because the player's explicit declaration is already promised by PG-006; leave event, backend and API contracts unchanged.
 
 Before the first implementation commit, format the changed web sources with `py -3 tools/run.py format --apply src/WildBunch.Web/src/hooks/useGameSessionState.ts src/WildBunch.Web/src/hooks/useCurrentGameSession.ts src/WildBunch.Web/src/hooks/useGameSessionMutations.ts src/WildBunch.Web/src/tests/SaloonPlace.test.tsx` and lint those same paths with `py -3 tools/run.py lint src/WildBunch.Web/src/hooks/useGameSessionState.ts src/WildBunch.Web/src/hooks/useCurrentGameSession.ts src/WildBunch.Web/src/hooks/useGameSessionMutations.ts src/WildBunch.Web/src/tests/SaloonPlace.test.tsx`. Stage source, tests, planning/decision updates, the sole version source and predecessor retirement together so the implementation PR carries its successor-artifact and development-version obligations.
 
@@ -86,7 +86,7 @@ Before the first implementation commit, format the changed web sources with `py 
 
 ### Task 3: Validate, review, publish and merge
 
-- [ ] Run the focused tests and typecheck from Task 1; the normal staged-candidate commit hook runs the complete fail-fast repository gate.
+- [x] Run the focused tests and typecheck from Task 1; the normal staged-candidate commit hook runs the complete fail-fast repository gate.
 - [ ] Review the complete diff against the specification, this plan, ADR-0006/0016/0027/0035/0039/0045, the feature-matrix and decision-record playbooks, frontend standards, testing doctrine and scoped web unslop profile.
 - [ ] Open a Draft PR targeting `develop`, verify the body and exact head, mark it ready to trigger the hosted canonical gate, and merge only after that exact-head gate passes.
 - [ ] Record the resulting merge and both hosted runs in the next JIT successor plan/roadmap update.

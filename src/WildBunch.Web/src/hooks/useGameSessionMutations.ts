@@ -13,7 +13,7 @@ import {
   startGameWithTown,
   travel,
 } from "../api/wildBunchApi";
-import { GameStatus, type WantedPosterDto } from "../api/types";
+import { GameStatus } from "../api/types";
 import { formatMoney, storageKey } from "../utils/formatting";
 import { HttpRequestError } from "../api/httpClient";
 import {
@@ -29,7 +29,6 @@ type UseGameSessionMutationsArgs = {
   setStoredGameId: (id: string | null) => void;
   resetSetupDraft: () => void;
   setPendingSetup: (pending: PendingSetupOperation | null) => void;
-  setWantedPosters: (posters: WantedPosterDto[]) => void;
   setDeclaredWantedIdentityHandle: (handle: string) => void;
   setNotice: (notice: string) => void;
   setError: (error: string) => void;
@@ -41,7 +40,6 @@ export function useGameSessionMutations({
   setStoredGameId,
   resetSetupDraft,
   setPendingSetup,
-  setWantedPosters,
   setDeclaredWantedIdentityHandle,
   setNotice,
   setError,
@@ -159,7 +157,6 @@ export function useGameSessionMutations({
       const archivedGameId = gameId;
       window.localStorage.removeItem(storageKey);
       setStoredGameId(null);
-      setWantedPosters([]);
       setDeclaredWantedIdentityHandle("");
       resetSetupDraft();
       setError("");
@@ -206,7 +203,6 @@ export function useGameSessionMutations({
     mutationFn: () => readWantedPosters(gameId as string),
     onSuccess: async (result) => {
       queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      setWantedPosters(result.wantedPosters);
       await invalidateGameQueries(gameId as string);
       setNotice(result.message);
       setError("");
