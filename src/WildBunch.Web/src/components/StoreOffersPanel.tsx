@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import styled from "styled-components";
 import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
 import { StatusCard, Stack, Muted, Button } from "./ui/sharedStyled";
@@ -36,6 +36,12 @@ const QuantityInput = styled.input`
   font-size: 0.9rem;
 `;
 
+const QuantityError = styled.span`
+  flex-basis: 100%;
+  color: var(--danger, #d16d62);
+  font-size: 0.82rem;
+`;
+
 const OfferList = styled(Stack)`
   gap: 6px;
 `;
@@ -44,7 +50,7 @@ interface StoreOffersPanelProps {
   storeOffers: TownStoreOffersDto | null;
   loading: boolean;
   busy: boolean;
-  onBuyOffer: (offer: StoreOfferDto, quantity: number) => Promise<void>;
+  onBuyOffer: (offer: StoreOfferDto, quantity: number) => void;
 }
 
 function quantityKey(offer: StoreOfferDto) {
@@ -58,21 +64,29 @@ function StoreOfferRow({
 }: {
   offer: StoreOfferDto;
   disabled: boolean;
-  onBuyOffer: (offer: StoreOfferDto, quantity: number) => Promise<void>;
+  onBuyOffer: (offer: StoreOfferDto, quantity: number) => void;
 }) {
   const [quantity, setQuantity] = useState("1");
+  const [quantityError, setQuantityError] = useState("");
 
   useEffect(() => {
     setQuantity("1");
   }, [offer.itemKind]);
 
-  async function handleBuy() {
-    const parsedQuantity = Number.parseInt(quantity, 10);
-    await onBuyOffer(offer, Number.isFinite(parsedQuantity) ? parsedQuantity : 1);
+  function handleBuy(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsedQuantity = Number(quantity);
+    if (!quantity.trim() || !Number.isSafeInteger(parsedQuantity) || parsedQuantity < 1) {
+      setQuantityError("Enter a whole number of at least 1.");
+      return;
+    }
+
+    setQuantityError("");
+    onBuyOffer(offer, parsedQuantity);
   }
 
   return (
-    <OfferRow>
+    <OfferRow as="form" noValidate onSubmit={handleBuy}>
       <OfferName>{offer.displayName}</OfferName>
       <OfferPrice>${offer.price.toFixed(2)}</OfferPrice>
       <OfferSpacer />
@@ -81,13 +95,23 @@ function StoreOfferRow({
         min="1"
         step="1"
         aria-label={`Quantity for ${offer.displayName}`}
+        aria-invalid={Boolean(quantityError)}
+        aria-describedby={quantityError ? `quantity-error-${offer.itemKind}` : undefined}
         value={quantity}
-        onChange={(event) => setQuantity(event.target.value)}
+        onChange={(event) => {
+          setQuantity(event.target.value);
+          setQuantityError("");
+        }}
         disabled={disabled}
       />
-      <Button type="button" onClick={handleBuy} disabled={disabled}>
+      <Button type="submit" disabled={disabled}>
         Buy
       </Button>
+      {quantityError ? (
+        <QuantityError id={`quantity-error-${offer.itemKind}`} role="alert">
+          {quantityError}
+        </QuantityError>
+      ) : null}
     </OfferRow>
   );
 }

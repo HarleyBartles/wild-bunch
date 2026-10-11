@@ -1,78 +1,28 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { createContext, useCallback, useMemo, type ReactNode } from "react";
-import { buyStoreItem } from "../api/wildBunchApi";
-import type { TownStoreOffersDto, WantedPosterDto } from "../api/types";
+import { createContext, useMemo, type ReactNode } from "react";
+import type { WantedPosterDto } from "../api/types";
 import { useCurrentGameSession } from "../hooks/useCurrentGameSession";
-import { refreshGameResources } from "./gameResourceQueries";
 
 type GameSessionValue = ReturnType<typeof useCurrentGameSession> & {
-  handleBuyOffer: (offer: TownStoreOffersDto["offers"][number], quantity: number) => Promise<void>;
   selectedWantedPoster: WantedPosterDto | null;
 };
 
 export const GameSessionContext = createContext<GameSessionValue | null>(null);
 
 export function GameSessionProvider({ children }: { children: ReactNode }) {
-  const queryClient = useQueryClient();
   const session = useCurrentGameSession();
-  const {
-    gameId,
-    currentTown,
-    wantedPosters,
-    declaredWantedIdentityHandle,
-    setNotice,
-    setError,
-    setSession,
-  } = session;
+  const { wantedPosters, declaredWantedIdentityHandle } = session;
 
   const selectedWantedPoster = useMemo(
     () => wantedPosters.find((poster) => poster.posterId === declaredWantedIdentityHandle) ?? null,
     [wantedPosters, declaredWantedIdentityHandle],
   );
 
-  const handleBuyOffer = useCallback(
-    async (offer: TownStoreOffersDto["offers"][number], quantity: number) => {
-      const activeGameId = gameId;
-      const activeTownId = currentTown?.id;
-      if (!activeGameId || !activeTownId) {
-        return;
-      }
-
-      setNotice("");
-      setError("");
-
-      try {
-        const result = await buyStoreItem(activeGameId, activeTownId, {
-          itemKind: offer.itemKind,
-          quantity,
-        });
-
-        setSession(result.currentSession);
-        await refreshGameResources(queryClient, result.currentSession.id);
-        if (result.success) {
-          setNotice(result.message);
-          setError("");
-          return;
-        }
-
-        setNotice("");
-        setError(result.message);
-      } catch (exception) {
-        setError(
-          exception instanceof Error ? exception.message : "Unable to buy the selected item.",
-        );
-      }
-    },
-    [gameId, currentTown?.id, setNotice, setError, setSession, queryClient],
-  );
-
   const value = useMemo<GameSessionValue>(
     () => ({
       ...session,
-      handleBuyOffer,
       selectedWantedPoster,
     }),
-    [session, handleBuyOffer, selectedWantedPoster],
+    [session, selectedWantedPoster],
   );
 
   return <GameSessionContext.Provider value={value}>{children}</GameSessionContext.Provider>;

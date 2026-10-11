@@ -1,13 +1,15 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import {
   AvailableActionKind,
   type GameSessionDto,
+  type GameTurnResultDto,
   type JournalDto,
   type TownStoreOffersDto,
 } from "../api/types";
@@ -28,6 +30,7 @@ import {
   markPrologueViewed,
 } from "../api/wildBunchApi";
 import { getSessionAudit } from "../dev/devApi";
+import { gameResourceQueryKeys } from "../state/gameResourceQueries";
 
 vi.mock("../api/wildBunchApi", () => ({
   archiveGame: vi.fn(),
@@ -75,11 +78,12 @@ beforeAll(async () => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  refreshProbeCalls.length = 0;
   window.localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
-function renderShell() {
+function renderShell(extraContent: ReactNode = null) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -91,11 +95,26 @@ function renderShell() {
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
         <RouterProvider router={createAppRouter()} />
+        {extraContent}
       </GameSessionProvider>
     </QueryClientProvider>,
   );
   return { queryClient };
 }
+
+function RefreshProbe({ gameId }: { gameId: string }) {
+  const { data } = useQuery({
+    queryKey: gameResourceQueryKeys.devSession(gameId),
+    queryFn: async () => {
+      const count = refreshProbeCalls.filter((id) => id === gameId).length + 1;
+      refreshProbeCalls.push(gameId);
+      return `${gameId} context ${count}`;
+    },
+  });
+  return <output>{data}</output>;
+}
+
+const refreshProbeCalls: string[] = [];
 
 function createSession(): GameSessionDto {
   return {
@@ -283,17 +302,148 @@ describe("Store purchase feedback", () => {
     // StorePlace is lazy-loaded via React.lazy, so under full-suite load
     // it may take longer than the default 1000ms findByRole timeout.
     const buyButton = await screen.findByRole("button", { name: /^buy$/i }, { timeout: 10000 });
+    const quantityInput = screen.getByRole("spinbutton", { name: "Quantity for Canned beans" });
+    await user.clear(quantityInput);
+    await user.type(quantityInput, "3");
+    mockedBuyStoreItem.mockResolvedValueOnce({
+      success: true,
+      message: "You bought 3 canned beans for $4.50.",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
     await user.click(buyButton);
 
     expect(mockedBuyStoreItem).toHaveBeenCalledWith("game-1", "t-town", {
       itemKind: 0,
-      quantity: 1,
+      quantity: 3,
     });
 
     // The purchase confirmation notice should appear.
     await waitFor(() => {
-      expect(screen.getByText("You bought 1 canned beans for $1.50.")).toBeInTheDocument();
+      expect(screen.getByText("You bought 3 canned beans for $4.50.")).toBeInTheDocument();
     });
+  });
+
+  it("disables duplicate purchase submission until the command and resource refresh settle", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town/store");
+
+    let resolvePurchase!: (result: GameTurnResultDto) => void;
+    mockedBuyStoreItem.mockImplementation(
+      () => new Promise((resolve) => (resolvePurchase = resolve)),
+    );
+
+    renderShell();
+
+    const user = userEvent.setup();
+    const buyButton = await screen.findByRole("button", { name: /^buy$/i });
+    await user.click(buyButton);
+
+    await waitFor(() => expect(mockedBuyStoreItem).toHaveBeenCalledTimes(1));
+    expect(buyButton).toBeDisabled();
+    await user.click(buyButton);
+    expect(mockedBuyStoreItem).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolvePurchase({
+        success: true,
+        message: "You bought 1 canned beans for $1.50.",
+        currentSession: createSession(),
+        journeyStatus: null,
+        journey: null,
+        trailEvent: null,
+        travelDiary: null,
+      });
+    });
+
+    expect(await screen.findByText("You bought 1 canned beans for $1.50.")).toBeInTheDocument();
+    await waitFor(() => expect(buyButton).toBeEnabled());
+  });
+
+  it("reconciles an unsuccessful purchase result and refreshes only that game's resources", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town/store");
+    const updatedSession = createSession();
+    updatedSession.inventory!.wallet.cash = 7;
+    mockedGetGame.mockResolvedValueOnce(createSession()).mockResolvedValue(updatedSession);
+    mockedBuyStoreItem.mockResolvedValueOnce({
+      success: false,
+      message: "You cannot afford that.",
+      currentSession: updatedSession,
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    });
+
+    renderShell(
+      <>
+        <RefreshProbe gameId="game-1" />
+        <RefreshProbe gameId="game-2" />
+      </>,
+    );
+
+    const user = userEvent.setup();
+    await screen.findByText("game-1 context 1");
+    await screen.findByText("game-2 context 1");
+    await user.click(await screen.findByRole("button", { name: /^buy$/i }));
+
+    expect(await screen.findByText("You cannot afford that.")).toBeInTheDocument();
+    expect(await screen.findByText("game-1 context 2")).toBeInTheDocument();
+    expect(screen.getByText("game-2 context 1")).toBeInTheDocument();
+    expect(screen.getByText("Inventory").closest("section")).toHaveTextContent("$7.00");
+    expect(refreshProbeCalls.filter((gameId) => gameId === "game-1")).toHaveLength(2);
+    expect(refreshProbeCalls.filter((gameId) => gameId === "game-2")).toHaveLength(1);
+  });
+
+  it("hides a cached catalog when the purchase refresh cannot reload it", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town/store");
+    mockedGetTownStoreOffers
+      .mockResolvedValueOnce(createStoreOffers())
+      .mockRejectedValueOnce(new Error("Store offers are unavailable."));
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await screen.findByText("Canned beans");
+    await user.click(screen.getByRole("button", { name: /^buy$/i }));
+
+    expect(await screen.findByText("Town catalog unavailable.")).toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: "Quantity for Canned beans" })).toBeNull();
+    expect(mockedGetTownStoreOffers).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["blank", ""],
+    ["zero", "0"],
+    ["negative", "-1"],
+    ["fractional", "1.5"],
+  ])("rejects a %s quantity before sending a purchase request", async (_label, value) => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town/store");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    const quantityInput = await screen.findByRole("spinbutton", {
+      name: "Quantity for Canned beans",
+    });
+    await user.clear(quantityInput);
+    if (value) {
+      await user.type(quantityInput, value);
+    }
+    await user.click(screen.getByRole("button", { name: /^buy$/i }));
+
+    expect(mockedBuyStoreItem).not.toHaveBeenCalled();
+    expect(screen.getByText("Enter a whole number of at least 1.")).toBeInTheDocument();
   });
 });
 
