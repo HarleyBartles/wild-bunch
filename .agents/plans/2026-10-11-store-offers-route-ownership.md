@@ -43,12 +43,12 @@
 - Keep: `src/WildBunch.Web/src/state/townStoreOffersQuery.ts`
 - Keep: `src/WildBunch.Web/src/hooks/useTownStoreOffers.ts`
 
-- [ ] Add a routed behavior test in `StorePlaceFeedback.test.tsx`: start at `/town`, wait until the `Tumbleweed` hub is rendered, assert `getTownStoreOffers` has not been called, activate the accessible `Store` navigation button, then assert the offers request uses `game-1` and `t-town` and the returned offer is shown.
-- [ ] Run that focused test against the current implementation and confirm it fails because the provider starts the offers request before Store is entered.
-- [ ] Remove `storeOffers`, `storeOffersLoading`, and the `useTownStoreOffers` call from `GameSessionProvider`; read `gameId` and `currentTown` from `useGameSession` in `StorePlace` and use `useTownStoreOffers(gameId, currentTown?.id)` to supply the panel's data/loading.
-- [ ] Adapt the test-only provider reader to invoke `useTownStoreOffers` with the currently selected game/town identity, preserving the purchase command tests.
-- [ ] Keep the existing delayed-purchase test that independently changes town and game IDs and the failed-refetch test proving cached offers become unavailable.
-- [ ] Run `npm test -- src/tests/StorePlaceFeedback.test.tsx src/tests/GameSessionProvider.test.tsx` and `npm run typecheck` from `src/WildBunch.Web`.
+- [x] Add a routed behavior test in `StorePlaceFeedback.test.tsx`: start at `/town`, wait until the `Tumbleweed` hub is rendered, assert `getTownStoreOffers` has not been called, activate the accessible `Store` navigation button, then assert the offers request uses `game-1` and `t-town` and the returned offer is shown.
+- [x] Run that focused test against the current implementation and confirm it fails because the provider starts the offers request before Store is entered.
+- [x] Remove `storeOffers`, `storeOffersLoading`, and the `useTownStoreOffers` call from `GameSessionProvider`; read `gameId` and `currentTown` from `useGameSession` in `StorePlace` and use `useTownStoreOffers(gameId, currentTown?.id)` to supply the panel's data/loading.
+- [x] Adapt the test-only provider reader to invoke `useTownStoreOffers` with the currently selected game/town identity, preserving the purchase command tests.
+- [x] Keep the existing delayed-purchase test that independently changes town and game IDs and the failed-refetch test proving cached offers become unavailable.
+- [x] Run `npm test -- src/tests/StorePlaceFeedback.test.tsx src/tests/GameSessionProvider.test.tsx` and `npm run typecheck` from `src/WildBunch.Web`.
 
 The StorePlace consumer should have this ownership shape:
 
@@ -71,11 +71,11 @@ Run from `src/WildBunch.Web`: `npm test -- src/tests/StorePlaceFeedback.test.tsx
 - Delete: `.agents/plans/2026-10-11-store-offers-query-resource.md`
 - Keep: `.agents/plans/2026-10-11-store-offers-route-ownership.md`
 
-- [ ] Record PR #267's reviewed source `7227a681767e53499a3d55989b49b057baf24676`, merge `a122ed2f6bc7e8b0238361e2bea868d904583d60`, exact-head gate `38124223316`, and develop-push gate `38124540425` in row 13.
-- [ ] Describe the store offers query and captured invalidation as delivered, link this plan as the live row-13 work item, and preserve the remaining provider narrowing, identity-lifetime, and capability-composition scope.
-- [ ] Advance the sole authored product version from `0.1.0-dev.82` to `0.1.0-dev.83`; do not hand-edit generated version mirrors.
-- [ ] Retire `.agents/plans/2026-10-11-store-offers-query-resource.md` only in this successor delivery and retain the current plan through its completing PR.
-- [ ] Leave `docs/features.md` and ADRs unchanged because no product capability or durable decision changed.
+- [x] Record PR #267's reviewed source `7227a681767e53499a3d55989b49b057baf24676`, merge `a122ed2f6bc7e8b0238361e2bea868d904583d60`, exact-head gate `38124223316`, and develop-push gate `38124540425` in row 13.
+- [x] Describe the store offers query and captured invalidation as delivered, link this plan as the live row-13 work item, and preserve the remaining provider narrowing, identity-lifetime, and capability-composition scope.
+- [x] Advance the sole authored product version from `0.1.0-dev.82` to `0.1.0-dev.83`; do not hand-edit generated version mirrors.
+- [x] Retire `.agents/plans/2026-10-11-store-offers-query-resource.md` only in this successor delivery and retain the current plan through its completing PR.
+- [x] Leave `docs/features.md` and ADRs unchanged because no product capability or durable decision changed.
 
 Before the first implementation commit, apply the repository formatter to the touched source files and confirm the roadmap's existing Markdown wrapping policy. Stage the code, test, version, roadmap and predecessor retirement together so this PR carries its successor-artifact and development-version obligations.
 

@@ -251,6 +251,23 @@ function primeMocks() {
 }
 
 describe("Store purchase feedback", () => {
+  it("loads town offers only after entering the Store route", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    await screen.findByRole("heading", { name: "Tumbleweed" });
+    expect(mockedGetTownStoreOffers).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Store" }));
+
+    expect(await screen.findByText("Canned beans")).toBeInTheDocument();
+    expect(mockedGetTownStoreOffers).toHaveBeenCalledWith("game-1", "t-town");
+  });
+
   it("shows the purchase confirmation notice on the store surface after a successful buy", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
