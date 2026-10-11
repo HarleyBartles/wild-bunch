@@ -84,11 +84,11 @@ expect(headers.get("X-Trace")).toBe("kept");
 - Consumes: the worktree's API and Vite servers, PostgreSQL at `localhost:5435`, the startup flow, and the shared `requestJson` implementation from Task 1.
 - Produces: observed successful setup and first-town requests from the matching worktree browser, followed by the active in-town phase.
 
-- [ ] Ensure PostgreSQL with `.\tools\postgres-dev.ps1 ensure`; start this worktree's API and web servers with `.\scripts\dev-servers.ps1 ensure` and verify their actual URLs and worktree identity with `.\scripts\dev-servers.ps1 status`.
-- [ ] Open the worktree web URL in a clean browser context. If an existing active local playthrough blocks setup, archive it through the confirmed in-game Start Over flow before continuing; do not delete or rebuild the database.
-- [ ] Enter a player name and choose `Ride on`; observe `/api/games/setup` returning success with request `Content-Type: application/json` and a valid `Idempotency-Key`.
-- [ ] Continue through the returned prologue with `Ride on`, select one town on the starting map, and observe `/api/games/{id}/start` returning success with the same JSON and operation-ID header contract. Confirm the game enters that town and no 415 response or browser console error occurs.
-- [ ] Record the API URL, web URL, selected town, request/response statuses, and console/network result in the PR description; stop only the servers started for this worktree with `.\scripts\dev-servers.ps1 stop`.
+- [x] Ensure PostgreSQL with `.\tools\postgres-dev.ps1 ensure`; start this worktree's API and web servers with `.\scripts\dev-servers.ps1 ensure` and verify their actual URLs and worktree identity with `.\scripts\dev-servers.ps1 status`.
+- [x] Open the worktree web URL in a clean browser context. If an existing active local playthrough blocks setup, archive it through the confirmed in-game Start Over flow before continuing; do not delete or rebuild the database.
+- [x] Enter a player name and choose `Ride on`; observe `/api/games/setup` returning `201 Created` with request `Content-Type: application/json` and a valid `Idempotency-Key`.
+- [x] Continue through the returned prologue with `Ride on`, select Silver Creek on the starting map, and observe `/api/games/{id}/start` returning `200 OK` with the same JSON and operation-ID header contract. Confirm the game enters that town and no 415 response or browser console error occurs.
+- [x] Record the API URL, web URL, selected town, request/response statuses, and console/network result in the PR description; stop only the servers started for this worktree with `.\scripts\dev-servers.ps1 stop`.
 
 ### Task 3: Verify the slice and publish it through the epic route
 
@@ -97,8 +97,8 @@ expect(headers.get("X-Trace")).toBe("kept");
 - Delete: `.agents/plans/2026-10-11-shared-read-recovery.md`
 - Keep: `.agents/plans/2026-10-11-setup-request-transport.md` through this PR.
 
-- [ ] Confirm row 14 records merged PR #277, its merge commit, and the two successful hosted gates, while this setup transport plan remains the active row-14 slice.
-- [ ] Confirm ADR-0016 and ADR-0028 remain accurate and `docs/features.md` does not change; no ADR or feature-matrix update is needed for the HTTP-header repair.
-- [ ] Run `py -3 tools/run.py ci --check` on the final candidate, stage the intended files, inspect the staged diff, and commit through the check-only pre-commit hook.
+- [x] Confirm row 14 records merged PR #277, its merge commit, and the two successful hosted gates, while this setup transport plan remains the active row-14 slice.
+- [x] Confirm ADR-0016 and ADR-0028 remain accurate and `docs/features.md` does not change; no ADR or feature-matrix update is needed for the HTTP-header repair.
+- [x] Run `py -3 tools/run.py ci --check` on the final candidate, stage the intended files, inspect the staged diff, and commit through the check-only pre-commit hook.
 - [ ] Request a fresh whole-branch review, resolve any findings, push the branch, open a non-draft PR to `develop`, and verify the exact PR head and hosted canonical gate.
 - [ ] Merge the PR to `develop`, verify its develop-push gate, fast-forward the main checkout, then remove this clean worktree and its matching local and upstream branch refs together and verify each is gone.
