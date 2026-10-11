@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { SegmentedToggle } from "../../components/start-flow/SegmentedToggle";
 import { forceDevDifficulty, getSessionDevContext, setDevEntropy } from "../devApi";
+import { gameResourceQueryKeys, refreshGameResources } from "../../state/gameResourceQueries";
 
 interface SessionDevPanelProps {
   expanded?: boolean;
@@ -29,7 +30,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
   const [error, setError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dev-session-context", gameId],
+    queryKey: gameResourceQueryKeys.devSession(gameId),
     queryFn: () => getSessionDevContext(gameId as string),
     enabled: Boolean(gameId),
     retry: false,
@@ -43,14 +44,11 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
     return <MutedText>Loading session context...</MutedText>;
   }
 
-  const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: ["dev-session-context", gameId] });
-
   const handleForceDifficulty = async (value: string) => {
     setError(null);
     try {
       await forceDevDifficulty(gameId, { difficulty: value });
-      await refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force difficulty.");
     }
@@ -60,7 +58,7 @@ export function SessionDevPanel({ expanded = false }: SessionDevPanelProps) {
     setError(null);
     try {
       await setDevEntropy(gameId, { entropy: value });
-      await refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set entropy.");
     }

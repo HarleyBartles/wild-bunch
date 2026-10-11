@@ -3,7 +3,7 @@ import { createContext, useCallback, useMemo, type ReactNode } from "react";
 import { buyStoreItem } from "../api/wildBunchApi";
 import type { TownStoreOffersDto, WantedPosterDto } from "../api/types";
 import { useCurrentGameSession } from "../hooks/useCurrentGameSession";
-import { townStoreOffersQueryKey } from "./townStoreOffersQuery";
+import { refreshGameResources } from "./gameResourceQueries";
 
 type GameSessionValue = ReturnType<typeof useCurrentGameSession> & {
   handleBuyOffer: (offer: TownStoreOffersDto["offers"][number], quantity: number) => Promise<void>;
@@ -23,7 +23,6 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
     setNotice,
     setError,
     setSession,
-    reloadCurrentGame,
   } = session;
 
   const selectedWantedPoster = useMemo(
@@ -49,12 +48,8 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
         });
 
         setSession(result.currentSession);
-
+        await refreshGameResources(queryClient, result.currentSession.id);
         if (result.success) {
-          await reloadCurrentGame(activeGameId);
-          void queryClient.invalidateQueries({
-            queryKey: townStoreOffersQueryKey(activeGameId, activeTownId),
-          });
           setNotice(result.message);
           setError("");
           return;
@@ -68,7 +63,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
         );
       }
     },
-    [gameId, currentTown?.id, setNotice, setError, setSession, reloadCurrentGame, queryClient],
+    [gameId, currentTown?.id, setNotice, setError, setSession, queryClient],
   );
 
   const value = useMemo<GameSessionValue>(

@@ -2,12 +2,13 @@ import styled from "styled-components";
 import { useQuery } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { getSessionAudit } from "../devApi";
+import { gameResourceQueryKeys } from "../../state/gameResourceQueries";
 
 export function SessionAuditDevPanel() {
   const { gameId } = useGameSession();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["dev-session-audit", gameId],
+    queryKey: gameResourceQueryKeys.devSessionAudit(gameId),
     queryFn: () => getSessionAudit(gameId as string),
     enabled: Boolean(gameId),
     retry: false,

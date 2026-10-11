@@ -22,6 +22,8 @@ import {
   type PendingSetupOperation,
 } from "../utils/startupOperationStorage";
 import { gameSessionQueryKey } from "../state/gameSessionQuery";
+import { refreshGameResources } from "../state/gameResourceQueries";
+import { gameResourceQueryKeys } from "../state/gameResourceQueries";
 
 type UseGameSessionMutationsArgs = {
   gameId: string | null;
@@ -47,12 +49,7 @@ export function useGameSessionMutations({
   const queryClient = useQueryClient();
 
   const invalidateGameQueries = useCallback(
-    (activeGameId: string) =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: gameSessionQueryKey(activeGameId) }),
-        queryClient.invalidateQueries({ queryKey: ["actions", activeGameId] }),
-        queryClient.invalidateQueries({ queryKey: ["journal", activeGameId] }),
-      ]),
+    (activeGameId: string) => refreshGameResources(queryClient, activeGameId),
     [queryClient],
   );
 
@@ -162,8 +159,8 @@ export function useGameSessionMutations({
       setError("");
       if (archivedGameId) {
         queryClient.removeQueries({ queryKey: gameSessionQueryKey(archivedGameId) });
-        queryClient.removeQueries({ queryKey: ["actions", archivedGameId] });
-        queryClient.removeQueries({ queryKey: ["journal", archivedGameId] });
+        queryClient.removeQueries({ queryKey: gameResourceQueryKeys.actions(archivedGameId) });
+        queryClient.removeQueries({ queryKey: gameResourceQueryKeys.journal(archivedGameId) });
       }
       setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
     },
@@ -202,7 +199,7 @@ export function useGameSessionMutations({
   const readWantedPostersMutation = useMutation({
     mutationFn: () => readWantedPosters(gameId as string),
     onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
+      queryClient.setQueryData(gameResourceQueryKeys.journal(gameId), result.currentJournal);
       await invalidateGameQueries(gameId as string);
       setNotice(result.message);
       setError("");
@@ -215,7 +212,7 @@ export function useGameSessionMutations({
   const gatherLocalGossipMutation = useMutation({
     mutationFn: () => gatherLocalGossip(gameId as string),
     onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
+      queryClient.setQueryData(gameResourceQueryKeys.journal(gameId), result.currentJournal);
       await invalidateGameQueries(gameId as string);
       setNotice(result.message);
       setError("");
@@ -228,7 +225,7 @@ export function useGameSessionMutations({
   const lookAroundSaloonMutation = useMutation({
     mutationFn: () => lookAroundSaloon(gameId as string),
     onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
+      queryClient.setQueryData(gameResourceQueryKeys.journal(gameId), result.currentJournal);
       await invalidateGameQueries(gameId as string);
       setNotice(result.message);
       setError("");

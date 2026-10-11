@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
@@ -11,6 +11,7 @@ import type { TownStoreOffersDto, WantedPosterDto } from "../api/types";
 const mocks = vi.hoisted(() => ({
   currentSession: {},
   getTownStoreOffers: vi.fn(),
+  getDevSessionContext: vi.fn(),
   buyStoreItem: vi.fn(),
 }));
 
@@ -60,6 +61,19 @@ function ContextReader() {
         Buy beans
       </button>
     </>
+  );
+}
+
+function DevContextReader({ gameId }: { gameId: string }) {
+  const { data } = useQuery({
+    queryKey: ["dev-session-context", gameId],
+    queryFn: () => mocks.getDevSessionContext(gameId),
+  });
+
+  return (
+    <output aria-label={`Developer context ${gameId}`}>
+      {data ?? "Loading developer context"}
+    </output>
   );
 }
 
@@ -127,6 +141,12 @@ describe("GameSessionProvider store offers", () => {
     mocks.getTownStoreOffers.mockImplementation(async (gameId: string, townId: string) =>
       createOffers(townId, `${gameId} ${townId}`),
     );
+    mocks.getDevSessionContext.mockImplementation(async (gameId: string) => {
+      const readCount = mocks.getDevSessionContext.mock.calls.filter(
+        ([id]) => id === gameId,
+      ).length;
+      return `${gameId} context ${readCount}`;
+    });
     let resolvePurchase!: (result: unknown) => void;
     mocks.buyStoreItem.mockReturnValue(
       new Promise((resolve) => {
@@ -145,12 +165,16 @@ describe("GameSessionProvider store offers", () => {
       <QueryClientProvider client={queryClient}>
         <GameSessionProvider>
           <ContextReader />
+          <DevContextReader gameId="game-a" />
+          <DevContextReader gameId="game-b" />
         </GameSessionProvider>
       </QueryClientProvider>
     );
     const { rerender } = render(tree());
 
     await screen.findByText("game-a town-a");
+    await screen.findByText("game-a context 1");
+    await screen.findByText("game-b context 1");
 
     mocks.currentSession = sameGameDifferentTown;
     rerender(tree());
@@ -174,6 +198,11 @@ describe("GameSessionProvider store offers", () => {
       });
       await purchaseCompletion;
     });
+    expect(await screen.findByText("game-a context 2")).toBeInTheDocument();
+    expect(screen.getByText("game-b context 1")).toBeInTheDocument();
+    expect(
+      mocks.getDevSessionContext.mock.calls.filter(([gameId]) => gameId === "game-b"),
+    ).toHaveLength(1);
     expect(callsForGameB()).toBe(1);
     expect(mocks.getTownStoreOffers).toHaveBeenNthCalledWith(1, "game-a", "town-a");
     expect(mocks.getTownStoreOffers).toHaveBeenNthCalledWith(2, "game-a", "town-b");
@@ -189,6 +218,46 @@ describe("GameSessionProvider store offers", () => {
       ).toHaveLength(2);
     });
     expect(mocks.getTownStoreOffers).toHaveBeenLastCalledWith("game-a", "town-b");
+    queryClient.clear();
+  });
+
+  it("reconciles updated game state returned with an unsuccessful purchase", async () => {
+    const setError = vi.fn();
+    mocks.currentSession = {
+      gameId: "game-a",
+      currentTown: { id: "town-a" },
+      wantedPosters: [],
+      declaredWantedIdentityHandle: "",
+      setNotice: vi.fn(),
+      setError,
+      setSession: vi.fn(),
+      reloadCurrentGame: vi.fn(),
+    };
+    mocks.getTownStoreOffers.mockResolvedValue(createOffers("town-a", "game-a town-a"));
+    mocks.getDevSessionContext.mockImplementation(async () => {
+      const readCount = mocks.getDevSessionContext.mock.calls.length;
+      return `context ${readCount}`;
+    });
+    mocks.buyStoreItem.mockResolvedValue({
+      success: false,
+      message: "You cannot afford that.",
+      currentSession: { id: "game-a" },
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <GameSessionProvider>
+          <ContextReader />
+          <DevContextReader gameId="game-a" />
+        </GameSessionProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByText("context 1");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Buy beans" }));
+    expect(await screen.findByText("context 2")).toBeInTheDocument();
+    expect(setError).toHaveBeenCalledWith("You cannot afford that.");
     queryClient.clear();
   });
 

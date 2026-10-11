@@ -23,6 +23,7 @@ import { useGameSessionMutations } from "./useGameSessionMutations";
 import { useGameSessionQueries } from "./useGameSessionQueries";
 import { useGameSessionState } from "./useGameSessionState";
 import { gameSessionQueryKey } from "../state/gameSessionQuery";
+import { gameResourceQueryKeys } from "../state/gameResourceQueries";
 
 type BusyMode =
   "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
@@ -76,8 +77,8 @@ export function useCurrentGameSession() {
       state.setStoredGameId(null);
       state.setDeclaredWantedIdentityHandle("");
       queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
-      queryClient.removeQueries({ queryKey: ["actions", gameId] });
-      queryClient.removeQueries({ queryKey: ["journal", gameId] });
+      queryClient.removeQueries({ queryKey: gameResourceQueryKeys.actions(gameId) });
+      queryClient.removeQueries({ queryKey: gameResourceQueryKeys.journal(gameId) });
     }
   }, [sessionQuery.data?.status, gameId, queryClient, state]);
 
@@ -264,8 +265,8 @@ export function useCurrentGameSession() {
     setResetToken((current) => current + 1);
     if (gameId) {
       queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
-      queryClient.removeQueries({ queryKey: ["actions", gameId] });
-      queryClient.removeQueries({ queryKey: ["journal", gameId] });
+      queryClient.removeQueries({ queryKey: gameResourceQueryKeys.actions(gameId) });
+      queryClient.removeQueries({ queryKey: gameResourceQueryKeys.journal(gameId) });
     }
   }, [
     gameId,
