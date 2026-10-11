@@ -1,13 +1,14 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useMemo, type ReactNode } from "react";
 import { buyStoreItem } from "../api/wildBunchApi";
 import type { TownStoreOffersDto, WantedPosterDto } from "../api/types";
 import { useCurrentGameSession } from "../hooks/useCurrentGameSession";
 import { useTownStoreOffers } from "../hooks/useTownStoreOffers";
+import { townStoreOffersQueryKey } from "./townStoreOffersQuery";
 
 type GameSessionValue = ReturnType<typeof useCurrentGameSession> & {
   storeOffers: TownStoreOffersDto | null;
   storeOffersLoading: boolean;
-  refreshStoreOffers: () => void;
   handleBuyOffer: (offer: TownStoreOffersDto["offers"][number], quantity: number) => Promise<void>;
   selectedWantedPoster: WantedPosterDto | null;
 };
@@ -15,6 +16,7 @@ type GameSessionValue = ReturnType<typeof useCurrentGameSession> & {
 export const GameSessionContext = createContext<GameSessionValue | null>(null);
 
 export function GameSessionProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const session = useCurrentGameSession();
   const {
     gameId,
@@ -27,11 +29,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
     reloadCurrentGame,
   } = session;
 
-  const {
-    storeOffers,
-    loading: storeOffersLoading,
-    refreshStoreOffers,
-  } = useTownStoreOffers(gameId, currentTown?.id);
+  const { storeOffers, loading: storeOffersLoading } = useTownStoreOffers(gameId, currentTown?.id);
 
   const selectedWantedPoster = useMemo(
     () => wantedPosters.find((poster) => poster.posterId === declaredWantedIdentityHandle) ?? null,
@@ -40,7 +38,9 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
 
   const handleBuyOffer = useCallback(
     async (offer: TownStoreOffersDto["offers"][number], quantity: number) => {
-      if (!gameId || !currentTown?.id) {
+      const activeGameId = gameId;
+      const activeTownId = currentTown?.id;
+      if (!activeGameId || !activeTownId) {
         return;
       }
 
@@ -48,7 +48,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
       setError("");
 
       try {
-        const result = await buyStoreItem(gameId, currentTown.id, {
+        const result = await buyStoreItem(activeGameId, activeTownId, {
           itemKind: offer.itemKind,
           quantity,
         });
@@ -56,8 +56,10 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
         setSession(result.currentSession);
 
         if (result.success) {
-          await reloadCurrentGame(gameId);
-          refreshStoreOffers();
+          await reloadCurrentGame(activeGameId);
+          void queryClient.invalidateQueries({
+            queryKey: townStoreOffersQueryKey(activeGameId, activeTownId),
+          });
           setNotice(result.message);
           setError("");
           return;
@@ -71,15 +73,7 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
         );
       }
     },
-    [
-      gameId,
-      currentTown?.id,
-      setNotice,
-      setError,
-      setSession,
-      reloadCurrentGame,
-      refreshStoreOffers,
-    ],
+    [gameId, currentTown?.id, setNotice, setError, setSession, reloadCurrentGame, queryClient],
   );
 
   const value = useMemo<GameSessionValue>(
@@ -87,18 +81,10 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
       ...session,
       storeOffers,
       storeOffersLoading,
-      refreshStoreOffers,
       handleBuyOffer,
       selectedWantedPoster,
     }),
-    [
-      session,
-      storeOffers,
-      storeOffersLoading,
-      refreshStoreOffers,
-      handleBuyOffer,
-      selectedWantedPoster,
-    ],
+    [session, storeOffers, storeOffersLoading, handleBuyOffer, selectedWantedPoster],
   );
 
   return <GameSessionContext.Provider value={value}>{children}</GameSessionContext.Provider>;
