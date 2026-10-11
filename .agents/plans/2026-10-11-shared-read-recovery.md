@@ -46,14 +46,14 @@
 - The session context exposes `actionsLoading: boolean`, `actionsError: string | null`, and `retryActions: () => Promise<void>` from the action query observer.
 - `TownHubSurface` shows an initial loading status while action data is unavailable, shows a retry action on query failure, and continues rendering backend-reported services when stale data exists.
 
-- [x] **Step 1: Write the failing player-path test.** In `AppShell.test.tsx`, mount the real shell with a saved GameStarted session; make the first `getAvailableActions` request reject and the retry return the store, sheriff, saloon, and trailhead actions. Assert that the town displays an action-read error and a retry button instead of silently appearing to have no services, then click retry and assert that the service navigation returns.
+- [x] **Step 1: Write the failing player-path test.** In `AppShell.test.tsx`, mount the real shell with a saved GameStarted session; make the first `getAvailableActions` request reject and the retry return a backend-reported Store action. Assert that the town displays an action-read error and a retry button instead of silently appearing to have no services, then click retry and assert that the Store route returns.
 
 ```tsx
 it("recovers town services after the available-actions read fails", async () => {
   primeMocks();
   mockedGetAvailableActions
     .mockRejectedValueOnce(new Error("Connection unavailable"))
-    .mockResolvedValueOnce([AvailableActionKind.BuySupplies]);
+    .mockResolvedValueOnce([{ kind: AvailableActionKind.BuySupplies, label: "Buy supplies" }]);
   window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
   renderShell();
