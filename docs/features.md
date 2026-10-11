@@ -66,7 +66,7 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 ### PG-005 - Gather public investigation knowledge
 
-**Promise and entry:** The player can learn from the prologue lead, wanted posters in the Sheriff Office, reachable saloon gossip, and saloon observation. A wanted-poster read reveals one clue. There is no town noticeboard, public-square interaction, sheriff-records interaction or privileged case-record access in 0.1.0. An observed person is evidence about a distinguishing feature, not a solved identity. The player draws conclusions from the facts collected.
+**Promise and entry:** The player can learn from the prologue lead, wanted posters read from the Sheriff Office context, reachable saloon gossip, and saloon observation. Each wanted-poster read reveals one clue. There is no town noticeboard, public-square interaction, sheriff-records interaction or privileged case-record access in 0.1.0. An observed person is evidence about a distinguishing feature, not a solved identity. The player draws conclusions from the facts collected.
 
 **Authority, failure and history:** Learned claims preserve their actual text, source, identity only when explicitly established, and recorded time/place details. Unknown subjects remain unknown. Reading a source records only the knowledge/outcome the player actually received. The opening culprit clue is sourced to the Prologue. Telegraph remains visible but disabled and has no 0.1.0 command, route or generated clue source.
 
