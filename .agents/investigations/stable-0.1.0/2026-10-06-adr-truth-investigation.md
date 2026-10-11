@@ -128,13 +128,15 @@ The dev namespace, separate DTOs, environment guard and event-backed consume-onc
 
 **Affected:** ADR-0035.
 
-**Classification:** Editorial rewrite and dated factual note for transport changes; implementation gap for keyboard/screen-reader selection.
+**Classification (2026-10-06):** Editorial rewrite and dated factual note for transport changes; implementation gap for keyboard/screen-reader selection.
 
 The React-owned state/API and Phaser intent-only adapter remain visible in [PhaserMapHost](../../../src/WildBunch.Web/src/components/start-flow/PhaserMapHost.tsx). The ADR describes a global map endpoint, DTO `Selectable` flag and single `POST /api/games` confirmation. Current [endpoints](../../../src/WildBunch.Api/Games/GameSessionEndpoints.cs), [map handler](../../../src/WildBunch.Application/Games/Queries/GetStartingTownMapHandler.cs) and [map DTO](../../../src/WildBunch.Application/Games/Models/StartingTownMapDto.cs) instead use a session-derived map and staged setup/start flow, with no `Selectable` member.
 
 More seriously, the promised selectable DOM fallback is absent from [StartingTownStep](../../../src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx) and `PhaserMapHost`: the host exposes a labelled image container, and scene selection uses pointer callbacks. No town-choice buttons or equivalent keyboard selection path exist in those components. A DOM fallback was an accepted accessibility decision, not incidental implementation trivia.
 
-**Proposed action:** Keep React/Phaser ownership and accessible equivalent interaction as durable decisions. Strip endpoint and object-shape snapshots. Investigate restoring an equivalent accessible selection path; do not delete the accessibility promise to match the code. Browser verification is needed when that correction is implemented.
+**Proposed action (2026-10-06, superseded by the dated disposition below):** Keep React/Phaser ownership and accessible equivalent interaction as durable decisions. Strip endpoint and object-shape snapshots. Investigate restoring an equivalent accessible selection path; do not delete the accessibility promise to match the code. Browser verification is needed when that correction is implemented.
+
+**Dated disposition (2026-10-11):** ADR-0044 withdraws equivalent keyboard town selection from the 0.1.0 baseline while preserving React-owned selection state, Phaser's intent-only role and server-owned legality. The current source remains pointer-operated. The original evidence and unknown reason for the earlier removal remain part of this finding's history; the proposed restoration is no longer current work.
 
 ### A-12: The dev-enabled action ADR describes public phases that are dev-only and incompletely replayable
 

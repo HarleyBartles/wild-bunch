@@ -8,6 +8,7 @@
 
 - `2026-10-08` - Settled game-start ownership and the one-shot free arrival into the player's selected starting town.
 - `2026-10-10` - Clarified startup retry identity: setup and first arrival use persisted operation IDs and request fingerprints so only exact retries replay their original operation; this is transport metadata, not game state or a generic receipt framework.
+- `2026-10-11` - ADR-0044 supersedes the accessible-equivalent world-map town-selection requirement for the 0.1.0 baseline; the setup, prologue, shared map and free first-arrival flow remain.
 
 ## Decision Type
 
@@ -20,6 +21,7 @@
 - `partially supersedes`: ADR-0027
 - `partially supersedes`: ADR-0035
 - `partially supersedes`: ADR-0036
+- `partially superseded by`: ADR-0044
 - `related to`: ADR-0023, ADR-0028
 
 ## Context
@@ -40,4 +42,4 @@ World and mystery truth exist before the prologue is shown, while the initial pl
 
 ## Successors and Surviving Scope
 
-This record partially supersedes ADR-0016's cockpit-era setup assumption, ADR-0021's seed-owned starting town and bundled setup descriptor, ADR-0027's setup-flow shape, ADR-0035's initial map-flow assumption, and ADR-0036's exclusive snapshot-only preparation/start pattern. The UUID public input contract and hidden-truth boundary in ADR-0021 survive. ADR-0027's routed shell, query ownership, and server authority survive. ADR-0035's React-owned UI state and accessible-equivalent selection requirement survive. ADR-0036's clean player API boundary and backend ownership of dev overrides survive.
+This record partially supersedes ADR-0016's cockpit-era setup assumption, ADR-0021's seed-owned starting town and bundled setup descriptor, ADR-0027's setup-flow shape, ADR-0035's initial map-flow assumption, and ADR-0036's exclusive snapshot-only preparation/start pattern. The UUID public input contract and hidden-truth boundary in ADR-0021 survive. ADR-0027's routed shell, query ownership, and server authority survive. ADR-0035's React-owned UI state, intent-only renderer input and server authority survive; ADR-0044 supersedes its accessible-equivalent town-selection requirement for the 0.1.0 baseline. ADR-0036's clean player API boundary and backend ownership of dev overrides survive.
