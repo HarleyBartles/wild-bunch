@@ -15,7 +15,7 @@ interface JourneyDecisionProps {
       bulletSpend?: number | null;
       bribeAmount?: number | null;
     },
-  ) => Promise<void>;
+  ) => void;
 }
 
 export function JourneyDecision({

@@ -13,7 +13,6 @@ interface FieldReportPanelProps {
   busy: boolean;
   gameId: string;
   onBuyOffer: Parameters<typeof StoreOffersPanel>[0]["onBuyOffer"];
-  onTurnResult: Parameters<typeof TravelPanel>[0]["onTurnResult"];
 }
 
 export function FieldReportPanel({
@@ -24,7 +23,6 @@ export function FieldReportPanel({
   busy,
   gameId,
   onBuyOffer,
-  onTurnResult,
 }: FieldReportPanelProps) {
   if (
     session.startFlowPhase !== StartFlowPhase.GameStarted ||
@@ -94,9 +92,7 @@ export function FieldReportPanel({
         busy={busy}
         onBuyOffer={onBuyOffer}
       />
-      {session.journey ? (
-        <TravelPanel gameId={gameId} session={session} busy={busy} onTurnResult={onTurnResult} />
-      ) : null}
+      {session.journey ? <TravelPanel gameId={gameId} session={session} busy={busy} /> : null}
     </Grid>
   );
 }

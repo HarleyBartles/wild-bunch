@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import type { GameSessionDto, GameTurnResultDto } from "../api/types";
+import type { GameSessionDto } from "../api/types";
 import { JourneyStatus } from "../api/types";
 import { formatJourneyStatus } from "../ui/formatters";
 import { useTravelPanelState } from "../hooks/useTravelPanelState";
@@ -11,11 +11,10 @@ interface TravelPanelProps {
   gameId: string;
   session: GameSessionDto;
   busy: boolean;
-  onTurnResult: (result: GameTurnResultDto) => Promise<void> | void;
 }
 
-export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanelProps) {
-  const travelUi = useTravelPanelState({ gameId, session, busy, onTurnResult });
+export function TravelPanel({ gameId, session, busy }: TravelPanelProps) {
+  const travelUi = useTravelPanelState({ gameId, session, busy });
 
   return (
     <TravelStage>
@@ -43,6 +42,7 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
       </TravelHeader>
 
       {travelUi.actionError ? <ErrorBanner>{travelUi.actionError}</ErrorBanner> : null}
+      {travelUi.message ? <InfoBanner>{travelUi.message}</InfoBanner> : null}
       {travelUi.refreshing ? (
         <InfoBanner>Refreshing trail pages from the backend.</InfoBanner>
       ) : null}
@@ -57,9 +57,7 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
           session={travelUi.session}
           busy={travelUi.busy}
           refreshing={travelUi.refreshing}
-          actionError={travelUi.actionError}
           onAdvanceTravelDay={travelUi.advanceTravelDay}
-          onAcknowledgeTravelArrival={travelUi.acknowledgeTravelArrival}
           onResolveEncounter={travelUi.resolveTravelEncounter}
         />
       </TravelGrid>

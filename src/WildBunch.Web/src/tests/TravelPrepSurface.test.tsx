@@ -8,7 +8,9 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
+import { useGameSession } from "../state/useGameSession";
 import { gameSessionQueryKey } from "../state/gameSessionQuery";
 import { TravelPrepSurface } from "../flow/TravelPrepSurface";
 import { WorldMapScene } from "../components/start-flow/PhaserMapHost";
@@ -16,6 +18,7 @@ import {
   AvailableActionKind,
   StartFlowPhase,
   type GameSessionDto,
+  type GameTurnResultDto,
   type JournalDto,
   type TravelPreviewResultDto,
 } from "../api/types";
@@ -276,7 +279,12 @@ function renderPrep() {
     path: "/town/trailhead",
     component: () => <TravelPrepSurface />,
   });
-  const router = createRouter({ routeTree: rootRoute.addChildren([trailheadRoute]) });
+  const awayRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town",
+    component: AwayFromTravel,
+  });
+  const router = createRouter({ routeTree: rootRoute.addChildren([trailheadRoute, awayRoute]) });
   window.history.replaceState({}, "", "/town/trailhead");
   render(
     <QueryClientProvider client={queryClient}>
@@ -285,7 +293,17 @@ function renderPrep() {
       </GameSessionProvider>
     </QueryClientProvider>,
   );
-  return { queryClient };
+  return { queryClient, router };
+}
+
+function AwayFromTravel() {
+  const { notice } = useGameSession();
+  return (
+    <>
+      <button type="button">Away from travel</button>
+      {notice ? <p>{notice}</p> : null}
+    </>
+  );
 }
 
 describe("TravelPrepSurface travel-mode display", () => {
@@ -329,6 +347,63 @@ describe("TravelPrepSurface travel-mode display", () => {
 });
 
 describe("TravelPrepSurface preview identity", () => {
+  it("does not send a late departure result to a route that did not issue it", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    const pendingTravel = deferred<GameTurnResultDto>();
+    const domainResult: GameTurnResultDto = {
+      success: false,
+      message: "That route is no longer open.",
+      currentSession: createSession(),
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+      travelDiary: null,
+    };
+    mockedPreviewTravel.mockResolvedValue(createPreview());
+    mockedTravel.mockReturnValue(pendingTravel.promise);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const { queryClient, router } = renderPrep();
+
+    await waitFor(() => expect(mockState.games.length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(queryClient.getQueryState(gameSessionQueryKey("game-1"))?.data).toBeDefined(),
+    );
+    mockState.games[0].config.scene.selectTown("dust-fork");
+    const startRideButton = await screen.findByRole("button", { name: /start the ride/i });
+    await waitFor(() => expect(startRideButton).toBeEnabled());
+    await user.click(startRideButton);
+    await waitFor(() => expect(mockedTravel).toHaveBeenCalledWith("game-1", "dust-fork"));
+    await router.navigate({ to: "/town" });
+    expect(await screen.findByRole("button", { name: "Away from travel" })).toBeInTheDocument();
+    const completedFetchCount = mockedGetGame.mock.calls.length;
+    pendingTravel.resolve(domainResult);
+
+    await waitFor(() => expect(mockedGetGame).toHaveBeenCalledTimes(completedFetchCount + 1));
+    expect(screen.queryByText(domainResult.message)).not.toBeInTheDocument();
+  });
+
+  it("shows a departure request failure without changing the session", async () => {
+    primeMocks();
+    const user = userEvent.setup();
+    mockedPreviewTravel.mockResolvedValue(createPreview());
+    mockedTravel.mockRejectedValue(new Error("The trail request could not be completed."));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    const { queryClient } = renderPrep();
+
+    await waitFor(() => expect(mockState.games.length).toBeGreaterThan(0));
+    mockState.games[0].config.scene.selectTown("dust-fork");
+    const startRideButton = await screen.findByRole("button", { name: /start the ride/i });
+    await waitFor(() => expect(startRideButton).toBeEnabled());
+    await user.click(startRideButton);
+
+    expect(
+      await screen.findByText("The trail request could not be completed."),
+    ).toBeInTheDocument();
+    expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(createSession());
+    expect(mockedTravel).toHaveBeenCalledWith("game-1", "dust-fork");
+  });
+
   it("fetches a fresh preview when the active session changes for the selected destination", async () => {
     primeMocks();
     const firstPreview = deferred<TravelPreviewResultDto>();
