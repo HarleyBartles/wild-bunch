@@ -32,7 +32,7 @@
 
 ## Review Focus
 
-- Select destination A, then B; resolve A after B. The confirmation must remain bound to B and its preview.
+- Select destination A, return to the map, then select B; resolve A after B. The confirmation must remain bound to B and its preview.
 - Update the active session while the destination ID stays the same. The old preview must not authorize travel or remain displayed as current while the fresh preview is pending.
 - Change current town while a preview is pending. The old origin's result must not appear or enable a trip from the new origin.
 - Return an unsuccessful preview or reject the HTTP request. The player must see the failure, have a retry/back path, and be unable to start travel.
@@ -48,22 +48,22 @@
 - Add: `src/WildBunch.Web/src/state/travelPreviewQuery.ts`
 - Modify: `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx`
 
-- [ ] Add `sessionUpdatedAt` to the session hook's returned read contract from the subscribed `sessionQuery.dataUpdatedAt`; treat it only as client cache freshness metadata, never as domain state.
-- [ ] Add a named travel-preview query key/options owner keyed by game ID, current origin town ID, destination town ID, and `sessionUpdatedAt`; keep retries disabled under the existing UI policy.
-- [ ] Replace `TravelPrepSurface`'s effect-driven `preview` state and cancellation boolean with the keyed query. Bind selected-destination intent to game and origin identity, and refuse to render confirmation when it no longer matches the live context.
-- [ ] Check that the selected destination is still connected from the current town before using it. If game/origin changes, clear or make the old selection unavailable; do not render an old confirmation during the reconciliation render.
-- [ ] Accept a preview only when the query result reports success, contains a preview, and both `originTownId` and `destinationTownId` match the active query. Keep an unsuccessful domain result's message available to the player.
-- [ ] Render a useful pending state, a retryable transport-error state, and an unsuccessful/mismatched-preview state with a back path to destination selection. Do not route preview errors through unrelated global notices.
-- [ ] Keep the Start the ride command unavailable until the current query has a valid matching preview; preserve server-side command authority and existing pending behavior.
-- [ ] Add a meaningful provider-backed RED/GREEN test for out-of-order A/B responses and another for a session update while the destination ID stays the same. The latter must prove the previous preview is unavailable until the refreshed preview resolves.
-- [ ] Add behavioral coverage for a current-town change during an in-flight preview, an unsuccessful preview response, a transport rejection with retry, and a mismatched-origin/destination response. Assert no travel command is sent from invalid preview states.
-- [ ] Assert a successful matching preview enables the existing action and submits exactly the selected current destination.
-- [ ] Prove the new race test fails against the effect/local-state implementation, then restore the implementation and show it passes.
-- [ ] Update the web test follow-up with a dated row-13 disposition describing the concrete behavior and evidence; do not convert the investigation into a development receipt.
-- [ ] Retire `.agents/plans/2026-10-11-explicit-saloon-identity-selection.md` in this first substantive commit after confirming the plan's scope shipped in merged PR #269; keep this plan live.
-- [ ] Update roadmap row 13 with PR #269 reviewed source `98f0169723793697086827163367aece8fae03c2`, merge `57b1f48929307f223611bed24a3a777b612253a1`, matching tree `dfc8706a71b3e44854a022dc3f06d19dedda96c7`, exact-head gate `38128754214`, develop-push gate `38129072476`, and this plan as the active slice.
-- [ ] Advance `Directory.Build.props` from `0.1.0-dev.84` to `0.1.0-dev.85` and record the roadmap's next development version.
-- [ ] Run focused `TravelPrepSurface` tests and web typecheck; then run the full `py -3 tools/run.py ci --check` gate on the committed implementation state.
+- [x] Add `sessionUpdatedAt` to the session hook's returned read contract from the subscribed `sessionQuery.dataUpdatedAt`; treat it only as client cache freshness metadata, never as domain state.
+- [x] Add a named travel-preview query key/options owner keyed by game ID, current origin town ID, destination town ID, and `sessionUpdatedAt`; keep retries disabled under the existing UI policy.
+- [x] Replace `TravelPrepSurface`'s effect-driven `preview` state and cancellation boolean with the keyed query. Bind selected-destination intent to game and origin identity, and refuse to render confirmation when it no longer matches the live context.
+- [x] Check that the selected destination is still connected from the current town before using it. If game/origin changes, clear or make the old selection unavailable; do not render an old confirmation during the reconciliation render.
+- [x] Accept a preview only when the query result reports success, contains a preview, and both `originTownId` and `destinationTownId` match the active query. Keep an unsuccessful domain result's message available to the player.
+- [x] Render a useful pending state, a retryable transport-error state, and an unsuccessful/mismatched-preview state with a back path to destination selection. Do not route preview errors through unrelated global notices.
+- [x] Keep the Start the ride command unavailable until the current query has a valid matching preview; preserve server-side command authority and existing pending behavior.
+- [x] Add a meaningful provider-backed RED/GREEN test for out-of-order A/B responses and another for a session update while the destination ID stays the same. The latter must prove the previous preview is unavailable until the refreshed preview resolves.
+- [x] Add behavioral coverage for a current-town change during an in-flight preview, an unsuccessful preview response, a transport rejection with retry, and a mismatched-origin/destination response. Assert no travel command is sent from invalid preview states.
+- [x] Assert a successful matching preview enables the existing action and submits exactly the selected current destination.
+- [x] Prove the new race test fails against the effect/local-state implementation, then restore the implementation and show it passes.
+- [x] Update the web test follow-up with a dated row-13 disposition describing the concrete behavior and evidence; do not convert the investigation into a development receipt.
+- [x] Retire `.agents/plans/2026-10-11-explicit-saloon-identity-selection.md` in this first substantive commit after confirming the plan's scope shipped in merged PR #269; keep this plan live.
+- [x] Update roadmap row 13 with PR #269 reviewed source `98f0169723793697086827163367aece8fae03c2`, merge `57b1f48929307f223611bed24a3a777b612253a1`, matching tree `dfc8706a71b3e44854a022dc3f06d19dedda96c7`, exact-head gate `38128754214`, develop-push gate `38129072476`, and this plan as the active slice.
+- [x] Advance `Directory.Build.props` from `0.1.0-dev.84` to `0.1.0-dev.85` and record the roadmap's next development version.
+- [x] Run focused `TravelPrepSurface` tests and web typecheck; then run the full `py -3 tools/run.py ci --check` gate on the committed implementation state.
 - [ ] Request an independent whole-branch review against the plan, feature matrix, ADRs, unslop profiles, frontend standards and tests; resolve findings and re-review any changed diff.
 - [ ] Open a Draft PR targeting `develop`, verify the body and exact head, mark ready, and merge only after the exact-head hosted canonical gate passes.
 - [ ] In the next JIT successor plan/roadmap update, record this PR's reviewed source, merge/tree and both hosted gate runs.

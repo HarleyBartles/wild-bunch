@@ -334,6 +334,7 @@ export function useCurrentGameSession() {
     busyMode,
     loading,
     sessionLoading: sessionQuery.isLoading,
+    sessionUpdatedAt: sessionQuery.dataUpdatedAt,
     sessionRestoreStatus,
     retrySessionRestore,
     abandonMissingSession,

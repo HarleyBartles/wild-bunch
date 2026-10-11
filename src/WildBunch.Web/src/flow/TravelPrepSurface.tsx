@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import styled from "styled-components";
-import type { GameSessionDto, TownDto, TravelPreviewDto } from "../api/types";
+import type { GameSessionDto, TownDto } from "../api/types";
 import { StartFlowPhase, TravelMode } from "../api/types";
-import { getWorldMap, previewTravel } from "../api/wildBunchApi";
+import { getWorldMap } from "../api/wildBunchApi";
 import { useGameSession } from "../state/useGameSession";
+import { travelPreviewQueryOptions } from "../state/travelPreviewQuery";
 import { InventoryPanel } from "../components/InventoryPanel";
 import { PhaserMapHost } from "../components/start-flow/PhaserMapHost";
 import {
@@ -51,6 +52,12 @@ interface ConnectedDestination {
   trailCount: number;
 }
 
+interface DestinationSelection {
+  gameId: string;
+  originTownId: string;
+  destinationTownId: string;
+}
+
 function connectedDestinations(session: GameSessionDto) {
   const currentTownId = session.player.currentTownId;
   if (currentTownId === null) {
@@ -87,37 +94,36 @@ function connectedDestinations(session: GameSessionDto) {
 
 export function TravelPrepSurface() {
   const navigate = useNavigate();
-  const { session, gameId, loading, handleTravel, notice, error } = useGameSession();
-  const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
-  const [preview, setPreview] = useState<TravelPreviewDto | null>(null);
+  const { session, gameId, sessionUpdatedAt, loading, handleTravel, notice, error } =
+    useGameSession();
+  const [selection, setSelection] = useState<DestinationSelection | null>(null);
 
   const destinations = useMemo(() => (session ? connectedDestinations(session) : []), [session]);
+  const currentTownId = session?.player.currentTownId ?? null;
+  const selectionMatchesCurrentContext = Boolean(
+    selection &&
+    selection.gameId === gameId &&
+    selection.originTownId === currentTownId &&
+    destinations.some((destination) => destination.town.id === selection.destinationTownId),
+  );
+  const selectedDestinationId = selectionMatchesCurrentContext
+    ? (selection?.destinationTownId ?? null)
+    : null;
+
+  const previewQuery = useQuery(
+    travelPreviewQueryOptions(
+      selectedDestinationId ? gameId : null,
+      selectedDestinationId ? currentTownId : null,
+      selectedDestinationId,
+      sessionUpdatedAt,
+    ),
+  );
 
   useEffect(() => {
-    if (!gameId || !selectedDestId) {
-      setPreview(null);
-      return;
+    if (selection && !selectionMatchesCurrentContext) {
+      setSelection(null);
     }
-
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const result = await previewTravel(gameId, selectedDestId);
-        if (!cancelled) {
-          setPreview(result.success && result.preview ? result.preview : null);
-        }
-      } catch {
-        if (!cancelled) {
-          setPreview(null);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [gameId, selectedDestId]);
+  }, [selection, selectionMatchesCurrentContext]);
 
   if (
     !session ||
@@ -126,16 +132,30 @@ export function TravelPrepSurface() {
   ) {
     return null;
   }
+  const activeCurrentTownId = session.player.currentTownId;
 
-  // If a destination is selected, show the preparation/confirmation screen
-  if (selectedDestId && preview) {
-    const destination = destinations.find((d) => d.town.id === selectedDestId);
-    const rideDays = preview.baselineRideDays;
+  const previewResult = previewQuery.data ?? null;
+  const preview = previewResult?.success ? previewResult.preview : null;
+  const previewMatchesCurrentSelection = Boolean(
+    selectionMatchesCurrentContext &&
+    preview &&
+    preview.originTownId === currentTownId &&
+    preview.destinationTownId === selectedDestinationId,
+  );
+
+  // Keep the selected ride context visible while its current preview loads or recovers.
+  if (selectionMatchesCurrentContext && selectedDestinationId) {
+    const destination = destinations.find((item) => item.town.id === selectedDestinationId);
+    const previewError =
+      previewResult && (!previewResult.success || !previewResult.preview)
+        ? previewResult.message || "This ride could not be previewed."
+        : null;
+    const mismatchedPreview = Boolean(preview && !previewMatchesCurrentSelection);
 
     return (
       <FlowSurface $variant="travel-prep">
         <PlaceHeader>
-          <BackButton type="button" onClick={() => setSelectedDestId(null)}>
+          <BackButton type="button" onClick={() => setSelection(null)}>
             ← Pick another destination
           </BackButton>
           <h1>Prepare to ride</h1>
@@ -143,32 +163,73 @@ export function TravelPrepSurface() {
         <TravelPrepBody>
           <Panel>
             <PanelHead>
-              <h2>{destination?.town.name ?? selectedDestId}</h2>
+              <h2>{destination?.town.name ?? selectedDestinationId}</h2>
             </PanelHead>
             <Stack>
-              <TravelPrepRide>
-                That's a <strong>{rideDays}-day ride</strong>
-                {preview.travelMode === TravelMode.Mounted ? " on horseback" : " on foot"}.
-              </TravelPrepRide>
-              <InventoryPanel inventory={session.inventory} />
-              <TravelPrepActions>
-                <Button
-                  type="button"
-                  $variant="secondary"
-                  onClick={() => setSelectedDestId(null)}
-                  disabled={loading}
-                >
-                  Back to town
-                </Button>
-                <Button
-                  type="button"
-                  $variant="primary"
-                  onClick={() => void handleTravel(selectedDestId)}
-                  disabled={loading}
-                >
-                  {loading ? "Setting out..." : "Start the ride"}
-                </Button>
-              </TravelPrepActions>
+              {previewMatchesCurrentSelection && preview ? (
+                <>
+                  <TravelPrepRide>
+                    That's a <strong>{preview.baselineRideDays}-day ride</strong>
+                    {preview.travelMode === TravelMode.Mounted ? " on horseback" : " on foot"}.
+                  </TravelPrepRide>
+                  <InventoryPanel inventory={session.inventory} />
+                  <TravelPrepActions>
+                    <Button
+                      type="button"
+                      $variant="secondary"
+                      onClick={() => setSelection(null)}
+                      disabled={loading}
+                    >
+                      Back to town
+                    </Button>
+                    <Button
+                      type="button"
+                      $variant="primary"
+                      onClick={() => void handleTravel(selectedDestinationId)}
+                      disabled={loading}
+                    >
+                      {loading ? "Setting out..." : "Start the ride"}
+                    </Button>
+                  </TravelPrepActions>
+                </>
+              ) : previewQuery.isError ? (
+                <>
+                  <FlowError>
+                    {previewQuery.error instanceof Error
+                      ? previewQuery.error.message
+                      : "Unable to calculate this ride."}
+                  </FlowError>
+                  <TravelPrepActions>
+                    <Button type="button" $variant="secondary" onClick={() => setSelection(null)}>
+                      Pick another destination
+                    </Button>
+                    <Button
+                      type="button"
+                      $variant="primary"
+                      onClick={() => void previewQuery.refetch()}
+                    >
+                      Try again
+                    </Button>
+                  </TravelPrepActions>
+                </>
+              ) : previewError || mismatchedPreview ? (
+                <>
+                  <FlowError>
+                    {previewError ??
+                      "The ride preview no longer matches this route. Pick a destination again."}
+                  </FlowError>
+                  <Button type="button" $variant="secondary" onClick={() => setSelection(null)}>
+                    Pick another destination
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Muted>Calculating the ride...</Muted>
+                  <Button type="button" $variant="secondary" onClick={() => setSelection(null)}>
+                    Pick another destination
+                  </Button>
+                </>
+              )}
             </Stack>
           </Panel>
         </TravelPrepBody>
@@ -179,7 +240,6 @@ export function TravelPrepSurface() {
   }
 
   // Destination selection screen — visual map
-  const currentTownId = session.player.currentTownId;
   const selectableTownIds = destinations.map((d) => d.town.id);
 
   return (
@@ -195,10 +255,16 @@ export function TravelPrepSurface() {
           {destinations.length > 0 ? (
             <TravelMapSelection
               gameId={gameId}
-              currentTownId={currentTownId}
+              currentTownId={activeCurrentTownId}
               selectableTownIds={selectableTownIds}
-              selectedDestId={selectedDestId}
-              onSelectDestination={(townId) => setSelectedDestId(townId)}
+              selectedDestId={selectedDestinationId}
+              onSelectDestination={(townId) =>
+                setSelection({
+                  gameId: gameId ?? session.id,
+                  originTownId: activeCurrentTownId,
+                  destinationTownId: townId,
+                })
+              }
             />
           ) : (
             <Muted>No trails lead out of this town.</Muted>
