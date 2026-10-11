@@ -60,16 +60,17 @@ public sealed class GameSessionResolverWiringTests
     }
 
     [Fact]
-    public void ReadWantedPosters_ExcludesTrueCulpritWarrantUntilKillerReleased()
+    public void ReadWantedPostersCanRevealCulpritWarrantBeforeReleaseGateOpens()
     {
         var session = CreateSessionWithCulpritAndGangWarrants();
 
-        // The culprit warrant is gated behind the killer release gate.
-        // Reading posters should surface the gang warrant, not the culprit.
         var result = session.ReadWantedPosters();
         Assert.True(result.Success);
         var warrant = Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal(InvestigationTargetKind.GangMember, warrant.Terms.TargetKind);
+        Assert.Equal(InvestigationTargetKind.TrueCulprit, warrant.Terms.TargetKind);
+        Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Throws<InvalidOperationException>(() =>
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(warrant.TargetSuspectId!.Value)));
     }
 
     [Fact]
@@ -232,7 +233,6 @@ public sealed class GameSessionResolverWiringTests
                     OutlawGangIds.WildBunch,
                     InvestigationSourceKind.SheriffWarrants),
                 "Wanted for a Wild Bunch robbery."),
-            CreateGangWarrant("warrant-gang-1", "Ira Flint")
         };
 
         var caseFile = new CaseFile(

@@ -129,6 +129,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.Equal(activePersonOfInterest, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Equal(eventCountBeforeConfront, session.AllEvents.Count);
         Assert.Empty(session.UncommittedEvents);
         Assert.False(session.CaseFile.TryGetWantedSuspectConfrontationState(activePersonOfInterest, out _));
@@ -245,6 +246,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.Null(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
         Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
         Assert.Equal(WantedSuspectPresenceState.AvailableInTown, session.GetWantedSuspectPresenceState(suspectId));
         Assert.Equal(25m, session.Player.Wallet.Cash);
@@ -285,6 +287,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(result.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.CitizenReleased, result.Outcome);
+        Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Contains("come quietly", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("releases them", result.Message);
         Assert.Contains("$4.00", result.Message);
@@ -352,6 +355,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
         Assert.True(result.Success);
         Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
         Assert.Equal("a stranger with Raven-feather pin", result.TargetName);
         Assert.False(result.IsCitizen);
         Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, result.PersonOfInterestKind);

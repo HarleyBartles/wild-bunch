@@ -245,10 +245,8 @@ internal static class SeedCaseBuilder
         var publicWarrants = new List<Warrant>();
         var warrantIndex = 1;
 
-        // 7 gang member warrants: one per suspect. The true culprit's warrant
-        // carries InvestigationTargetKind.TrueCulprit; the rest are GangMember.
-        // The culprit warrant is gated behind the killer release gate at runtime
-        // (WantedPosterResolver), not at setup time, so it stays in the pool.
+        // 7 public warrants: one per suspect. The true culprit's public identity
+        // can surface before release; the encounter gate is enforced by saloon selection.
         for (var i = 0; i < roster.Count; i++)
         {
             var profile = i == trueCulpritIndex

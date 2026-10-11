@@ -9,11 +9,13 @@ public sealed record CaseOpeningLead(string Description)
     }
 }
 
-public sealed record KillerReleaseState(int Progress, int RequiredPublicClues)
+public sealed record KillerReleaseState(int Progress, int RequiredGangSettlements)
 {
-    public bool IsReleased => Progress >= RequiredPublicClues;
+    public bool IsReleased => Progress >= RequiredGangSettlements;
+
+    public int RemainingGangSettlements => Math.Max(0, RequiredGangSettlements - Progress);
 
     public string StatusText => IsReleased
         ? "The killer trail is released."
-        : $"The killer trail is locked until {RequiredPublicClues - Progress} more public clue(s) surface.";
+        : $"The killer trail is locked until {RemainingGangSettlements} more gang member{(RemainingGangSettlements == 1 ? " is" : "s are")} brought to justice.";
 }

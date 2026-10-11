@@ -14,7 +14,7 @@ namespace WildBunch.Domain.Tests;
 /// <summary>
 /// Tests for BUNCH-106 simplified saloon POI selection.
 /// Any non-culprit suspect can appear in any saloon — no town presence, warrant,
-/// or poster state gates. The true killer is gated until the killer-release gate opens.
+/// or poster state gates. The true killer is gated until five other gang members are settled.
 /// The pool includes suspects + citizens + nobody.
 /// </summary>
 public sealed class SaloonPoiSelectionTests

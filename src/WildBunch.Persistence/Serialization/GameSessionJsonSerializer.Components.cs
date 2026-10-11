@@ -391,7 +391,6 @@ public sealed partial class GameSessionJsonSerializer
                 (snapshot.DiscoveredSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)),
                 snapshot.PublicClues?.Select(ClueSnapshot.ToDomain),
                 snapshot.KillerReleaseThreshold,
-                snapshot.KillerReleaseProgress,
                 (snapshot.KnownWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
                 (snapshot.PublicWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
                 suspectTurfAssignments: (snapshot.SuspectTurfAssignments ?? Array.Empty<SuspectTurfAssignmentSnapshot>()).Select(SuspectTurfAssignmentSnapshot.ToDomain),

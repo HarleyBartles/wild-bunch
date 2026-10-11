@@ -124,6 +124,7 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.True(firstResult.SessionChanged);
         Assert.Equal(2525m, session.Player.Wallet.Cash);
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.True(session.CaseFile.TryGetSheriffTurnInSettlementState(new SuspectId("suspect-1"), out var settlementState));
         Assert.Equal("Mira Cline", settlementState.TargetName);
         Assert.False(settlementState.IsAlive);
@@ -133,6 +134,7 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.Equal(SheriffTurnInOutcome.Rejected, secondResult.Outcome);
         Assert.Equal(2525m, session.Player.Wallet.Cash);
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -172,6 +174,7 @@ public sealed class GameSessionSheriffTurnInTests
 
         // No SheriffTurnInSettled event should be produced for a rejected turn-in
         Assert.DoesNotContain(session.UncommittedEvents, e => e is SheriffTurnInSettled);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]

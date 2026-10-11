@@ -16,10 +16,9 @@ namespace WildBunch.Domain.Cases;
 ///   <see cref="string.GetHashCode()"/>, which is randomized per process).</item>
 /// </list>
 /// Eligible warrants are all <see cref="CaseFile.PublicWarrants"/> not already in
-/// <see cref="CaseFile.KnownWarrants"/>, with the culprit warrant
-/// (<see cref="InvestigationTargetKind.TrueCulprit"/>) excluded unless
-/// <see cref="CaseFile.KillerReleaseState"/>.<see cref="KillerReleaseState.IsReleased"/>
-/// is true. Returns null when the eligible pool is exhausted.
+/// <see cref="CaseFile.KnownWarrants"/>. The culprit's identity may be publicly known
+/// before the release gate opens; the gate controls encounter eligibility only.
+/// Returns null when the eligible pool is exhausted.
 /// </remarks>
 public sealed class WantedPosterResolver
 {
@@ -33,8 +32,6 @@ public sealed class WantedPosterResolver
 
         var eligible = caseFile.PublicWarrants
             .Where(w => !caseFile.KnownWarrants.Any(k => k.Id.Equals(w.Id)))
-            .Where(w => w.Terms.TargetKind != InvestigationTargetKind.TrueCulprit
-                || caseFile.KillerReleaseState.IsReleased)
             .ToArray();
 
         if (eligible.Length == 0)

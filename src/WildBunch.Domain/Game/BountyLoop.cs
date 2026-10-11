@@ -911,7 +911,7 @@ internal sealed class BountyLoop
         // BUNCH-106: Simplified saloon POI selection.
         // The candidate pool is: each eligible non-culprit suspect + each citizen role + one "nobody" slot.
         // Any non-culprit suspect can walk into any saloon — no town presence, warrant, or poster gates.
-        // The true killer is excluded until the killer-release gate opens.
+        // The true killer is excluded until five other gang members are settled.
         // The roll is deterministic using the salt source + town + day + turn + visit number.
         var eligibleSuspects = context.EligibleSuspects;
         var citizenRoleCount = context.CitizenRoleCount;

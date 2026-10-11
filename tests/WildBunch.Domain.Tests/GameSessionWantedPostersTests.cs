@@ -24,7 +24,7 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
-        // The WantedPosterResolver gates the true-culprit warrant behind the killer-release gate.
+        // This deterministic visit selects a gang-member warrant; culprit identity is eligible too.
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Equal("Ira Flint", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
@@ -86,7 +86,7 @@ public sealed class GameSessionWantedPostersTests
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        // The WantedPosterResolver gates the true-culprit warrant, so the gang-member warrant surfaces first.
+        // This deterministic visit selects the gang-member warrant from the public pool.
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Equal("Ira Flint", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);

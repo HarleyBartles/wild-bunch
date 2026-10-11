@@ -47,7 +47,7 @@ public sealed class SeededNewGameFactoryTests
             clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
         Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
-        Assert.Equal(5, session.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(5, session.CaseFile.KillerReleaseState.RequiredGangSettlements);
         Assert.Equal(new[]
         {
             "Butch Cassidy",
@@ -115,7 +115,7 @@ public sealed class SeededNewGameFactoryTests
         Assert.Equal(new[] { "Raven-feather pin", "Black felt hat" }, session.CaseFile.PublicWarrants[0].Terms.KnownFeatures);
         Assert.Equal(new[] { OutlawGangIds.WildBunch }, session.CaseFile.PublicWarrants[0].Terms.GangAffiliations);
         Assert.Equal(OutlawGangIds.WildBunch, session.CaseFile.PublicWarrants[0].Terms.AdvancesGangPressureFor);
-        // The true culprit's warrant is in the pool (gated behind the killer release gate at runtime).
+        // The true culprit's warrant is in the public pool before encounter release.
         Assert.Contains(session.CaseFile.PublicWarrants, warrant => warrant.TargetName == session.CaseFile.Suspects[3].Name
             && warrant.Terms.TargetKind == InvestigationTargetKind.TrueCulprit);
         Assert.DoesNotContain(session.CaseFile.PublicWarrants[0].Terms.KnownFeatures, feature => feature.Contains("scar", StringComparison.OrdinalIgnoreCase));

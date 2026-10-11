@@ -60,7 +60,7 @@ public sealed class DevSaloonOverrideTests
     [Fact]
     public void ForceDevSaloonOverride_RejectsTrueCulprit_WhenKillerReleaseGateIsLocked()
     {
-        // Default session: killer-release gate is locked (progress=0, threshold=2).
+        // Default session: killer-release gate is locked (progress=0, threshold=5).
         // The true culprit is gated out of saloon POI, not permanently barred.
         var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
         var trueCulpritId = new SuspectId("suspect-2");
@@ -79,7 +79,7 @@ public sealed class DevSaloonOverrideTests
     [Fact]
     public void ForceDevSaloonOverride_AcceptsTrueCulprit_WhenKillerReleaseGateIsOpen()
     {
-        // Gate-open session: killer-release progress = threshold = 2.
+        // Gate-open session: five distinct gang-member settlements meet the threshold.
         // The true culprit is now eligible as a saloon POI candidate.
         var session = TestSessionFactory.CreateWithKillerReleaseGateOpen();
         var trueCulpritId = new SuspectId("suspect-2");

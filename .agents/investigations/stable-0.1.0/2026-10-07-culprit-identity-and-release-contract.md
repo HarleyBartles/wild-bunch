@@ -22,7 +22,7 @@ Successful gang settlement is the progression source. Reading clues, viewing the
 
 Identity discovery and encounter release have different dependencies: investigation produces player knowledge, while successful gang settlement produces release progress. Neither is a substitute for the other. Public wanted information about the culprit must be eligible before release; hiding from encounters does not remove the person's public identity. Preserve existing knowledge across the release transition.
 
-## Corrections against current source
+## Corrections against source when investigated
 
 CaseFile currently associates release advancement with an optional clue-discovery flag that production callers do not enable. SeedCaseBuilder sets NormalReleaseThreshold to five. BountyLoop excludes the culprit from saloon eligibility until release, which matches the product rule. WantedPosterResolver also excludes the culprit's warrant until release, which conflicts with independent early identity discovery. Separate these policies rather than either deleting the gate or enabling progress for every clue.
 
@@ -51,3 +51,11 @@ PG-005 investigation supplies identity evidence; PG-008 case/poster displays pre
 ## 2026-10-08 implementation outcome: town sources and Prologue provenance
 
 The 0.1.0 town-service slice keeps the opening culprit clue in the settled case and marks its source as `Prologue`. Its text remains the distinguishing feature the player reads before choosing a starting town. The two generated gang clues formerly attributed to `TelegraphLead` are removed; public wanted identities remain available through the retained notices and warrants. Telegraph stays visible in every town layout but has no investigation source, player action, API route or browser affordance. This changes clue-source provenance and removes redundant clues without changing the independent identity-discovery and gang-release rules above.
+
+## 2026-10-11 implementation outcome: settlement-derived five-of-six release
+
+`CaseFile.KillerReleaseProgress` is now derived from unique `SheriffTurnInSettlementState` facts whose target matches a generated warrant classified as a Wild Bunch gang member that advances Wild Bunch pressure. The culprit's own settlement is excluded. The generated seven-member gang has six other members, and five qualifying settlements release the culprit into encounter eligibility. Clue discovery no longer has a progress flag or counter mutation. The event schema is unchanged: `CaseFileGenerated` establishes suspect/warrant identity and each successful `SheriffTurnInSettled` establishes a settlement; replay reconstructs the same progress. The cached progress field is ignored in favor of the settlement list, while settlement-cache recovery continues to compare that list with event history.
+
+Wanted-poster eligibility is independent of the release gate, so a poster in the Sheriff Office can identify the culprit while saloon candidate selection still excludes them. Existing knowledge remains visible after capture. Domain tests settle four then five distinct gang members through normal command/event paths, prove clue/non-gang/culprit/citizen/wrong-name/refusal/repeat outcomes do not advance progress, and replay the fifth settlement. PostgreSQL tests reload after four, continue with a fifth, verify the gate opens, and verify that a stale cached progress field cannot override intact settlements. Player response boundaries continue to keep the hidden culprit flag and release counter private.
+
+ADR review found no existing durable decision contradicted by the change: the event-sourcing decision and dev saloon guard still describe the implemented behavior. No ADR amendment or successor was needed. This implementation does not add a new release event, alter serialized event shapes or promise compatibility for disposable pre-alpha playthroughs.

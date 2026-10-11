@@ -49,7 +49,6 @@ public sealed record CaseFileSnapshot(
             discoveredSuspectIds: DiscoveredSuspectIds.Select(id => new SuspectId(id)),
             publicClues: PublicClues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray(),
             killerReleaseThreshold: KillerReleaseThreshold,
-            killerReleaseProgress: KillerReleaseProgress,
             knownWarrants: KnownWarrants.Select<WarrantSnapshot, Warrant>(w => w.ToDomain()),
             publicWarrants: PublicWarrants.Select<WarrantSnapshot, Warrant>(w => w.ToDomain()),
             suspectTurfAssignments: SuspectTurfAssignments.Select<SuspectTurfAssignmentSnapshot, SuspectTurfAssignment>(s => s.ToDomain()),

@@ -275,7 +275,7 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(session.CaseFile.OpeningLead.Description, reloaded.CaseFile.OpeningLead.Description);
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, reloaded.CaseFile.KillerReleaseState.IsReleased);
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, reloaded.CaseFile.KillerReleaseState.Progress);
-        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, reloaded.CaseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredGangSettlements, reloaded.CaseFile.KillerReleaseState.RequiredGangSettlements);
         Assert.Equal(session.CaseFile.DiscoveredSuspectIds, reloaded.CaseFile.DiscoveredSuspectIds);
         Assert.Equal(session.CaseFile.Suspects[0].Profile.Aliases.Count, reloaded.CaseFile.Suspects[0].Profile.Aliases.Count);
         Assert.Equal(WantedSuspectPresenceState.AvailableInTown, reloaded.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
@@ -2871,10 +2871,13 @@ public sealed class EfGameSessionRepositoryTests
 
         Assert.NotNull(commandRead);
         Assert.Equal(expectedSettlements, commandRead!.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(2, commandRead.CaseFile.KillerReleaseState.Progress);
         Assert.NotNull(playerRead);
         Assert.Equal(expectedSettlements, playerRead!.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(2, playerRead.CaseFile.KillerReleaseState.Progress);
         Assert.NotNull(journalRead);
         Assert.Equal(expectedSettlements, journalRead!.SheriffTurnInSettlements);
+        Assert.Equal(2, journalRead.KillerReleaseState.Progress);
         Assert.Equal(session.CaseFile.KnownWarrants.Select(warrant => warrant.Id),
             commandRead.CaseFile.KnownWarrants.Select(warrant => warrant.Id));
         Assert.Equal(expectedSettlements[0].BountyAmount + expectedSettlements[1].BountyAmount + 25m,
@@ -2917,6 +2920,103 @@ public sealed class EfGameSessionRepositoryTests
         Assert.NotNull(fresh);
         Assert.Equal(expectedSettlements, fresh!.CaseFile.SheriffTurnInSettlements);
         Assert.Equal(settlementEventCount, fresh.AllEvents.OfType<SheriffTurnInSettled>().Count());
+    }
+
+    [Fact]
+    public async Task PostgreSqlReloadRebuildsKillerReleaseAcrossTheFourToFiveSettlementBoundary()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var session = CreateSessionWithRoundupSettlements(4);
+        Assert.Equal(4, session.CaseFile.KillerReleaseState.Progress);
+        Assert.False(session.CaseFile.KillerReleaseState.IsReleased);
+
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            payload["killerReleaseProgress"] = 0;
+            component.PayloadJson = payload.ToJsonString();
+            await context.SaveChangesAsync();
+        }
+
+        var resumedRepository = CreateRepository(fixture, out var resumedUnitOfWork);
+        var resumed = await resumedRepository.GetByIdAsync(session.Id);
+        Assert.NotNull(resumed);
+        Assert.Equal(4, resumed!.CaseFile.KillerReleaseState.Progress);
+        Assert.False(resumed.CaseFile.KillerReleaseState.IsReleased);
+        Assert.Equal(0, (await ReadCaseFilePayloadAsync(fixture, session.Id))["killerReleaseProgress"]!.GetValue<int>());
+
+        SettleRoundupMember(resumed, 5, markEventsCommitted: false);
+        Assert.Equal(5, resumed.CaseFile.KillerReleaseState.Progress);
+        Assert.True(resumed.CaseFile.KillerReleaseState.IsReleased);
+        await PersistAsync(resumedRepository, resumedUnitOfWork, resumed);
+
+        var reloaded = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+        Assert.NotNull(reloaded);
+        Assert.Equal(5, reloaded!.AllEvents.OfType<SheriffTurnInSettled>().Count());
+        Assert.Equal(5, reloaded.CaseFile.KillerReleaseState.Progress);
+        Assert.True(reloaded.CaseFile.KillerReleaseState.IsReleased);
+    }
+
+    private static GameSession CreateSessionWithRoundupSettlements(int settledCount)
+    {
+        var town = new Town(new TownId("roundup-town"), "Roundup Town");
+        var connected = new Town(new TownId("roundup-connected"), "Roundup Connected");
+        var world = new WildBunch.Domain.World.World(
+            new[] { town, connected },
+            new[] { new Trail(new TrailId("roundup-trail"), town.Id, connected.Id, TrailRisk.Low) });
+        var suspects = Enumerable.Range(1, 7)
+            .Select(number => new Suspect(
+                new SuspectId($"suspect-{number}"),
+                $"Roundup Member {number}",
+                SuspectTraits.Empty,
+                SuspectStatus.AtLarge))
+            .ToArray();
+        var warrants = suspects.Take(6)
+            .Select((suspect, index) => CreateSettlementWarrant(
+                $"roundup-warrant-{index + 1}", suspect.Name, 100m, suspect.Id))
+            .ToArray();
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: suspects[6].Id,
+            openingLead: CaseOpeningLead.Create("Find the Wild Bunch."),
+            knownClues: Array.Empty<Clue>(),
+            killerReleaseThreshold: 5,
+            knownWarrants: warrants);
+        var inventory = new DomainInventory(new[] { new DomainInventoryItem(DomainItemKind.Revolver, 1) });
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic,
+            "roundup-persistence-seed", DeterministicSaltSource);
+        session.ViewPrologue("roundup-persistence-prologue");
+        session.SelectStartingTown(town.Id);
+        session.CompleteGameStart(Wallet.Starting(25m), inventory);
+
+        for (var number = 1; number <= settledCount; number++)
+        {
+            SettleRoundupMember(session, number, markEventsCommitted: true);
+        }
+
+        return session;
+    }
+
+    private static void SettleRoundupMember(GameSession session, int number, bool markEventsCommitted)
+    {
+        var suspectId = new SuspectId($"suspect-{number}");
+        session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        if (markEventsCommitted)
+        {
+            session.MarkEventsCommitted();
+        }
+        Assert.True(session.LookAroundSaloon().Success);
+        var result = session.ConfrontSaloonPersonOfInterest($"roundup-warrant-{number}");
+        Assert.True(result.Success, result.Message);
+        Assert.Contains(session.AllEvents.OfType<SheriffTurnInSettled>(), settlement => settlement.TargetSuspectId == suspectId);
     }
 
     [Fact]
@@ -5659,8 +5759,8 @@ public sealed class EfGameSessionRepositoryTests
                 Array.Empty<string>(),
                 "Settlement Town Sheriff",
                 InvestigationTargetKind.GangMember,
-                Array.Empty<OutlawGangId>(),
-                null),
+                new[] { OutlawGangIds.WildBunch },
+                OutlawGangIds.WildBunch),
             $"Wanted for robbery by {name}.",
             targetSuspectId);
 

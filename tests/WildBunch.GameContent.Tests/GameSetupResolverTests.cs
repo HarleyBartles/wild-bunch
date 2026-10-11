@@ -82,7 +82,7 @@ public sealed class GameSetupResolverTests
             warrant.Terms.TargetKind is InvestigationTargetKind.GangMember or InvestigationTargetKind.TrueCulprit));
         Assert.Equal("Butch Cassidy", setup.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(InvestigationTargetKind.GangMember, setup.CaseFile.PublicWarrants[0].Terms.TargetKind);
-        // The true culprit's warrant is in the pool (gated behind the killer release gate at runtime).
+        // The true culprit's warrant is in the public pool before encounter release.
         Assert.Contains(setup.CaseFile.PublicWarrants, warrant => warrant.TargetName == setup.CaseFile.Suspects[3].Name
             && warrant.Terms.TargetKind == InvestigationTargetKind.TrueCulprit);
         Assert.DoesNotContain(setup.CaseFile.PublicWarrants[0].Terms.KnownFeatures, feature => feature.Contains("scar", StringComparison.OrdinalIgnoreCase));
