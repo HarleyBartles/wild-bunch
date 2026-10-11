@@ -309,19 +309,6 @@ export function useCurrentGameSession() {
     }
   }, [sessionRestoreStatus, handleReset]);
 
-  const setSession = useCallback(
-    (next: GameSessionDto | null) => {
-      if (gameId) {
-        if (next) {
-          queryClient.setQueryData(gameSessionQueryKey(gameId), next);
-        } else {
-          queryClient.removeQueries({ queryKey: gameSessionQueryKey(gameId) });
-        }
-      }
-    },
-    [gameId, queryClient],
-  );
-
   return {
     session,
     pendingSetup: state.pendingSetup,
@@ -360,7 +347,6 @@ export function useCurrentGameSession() {
     handleLookAroundSaloon,
     handleConfrontSaloonPersonOfInterest,
     handleReset,
-    setSession,
     setNotice: state.setNotice,
     setError: state.setError,
     archivePlaythrough,
