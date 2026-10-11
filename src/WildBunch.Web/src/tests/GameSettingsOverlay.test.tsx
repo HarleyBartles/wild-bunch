@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
@@ -328,6 +328,62 @@ describe("Game Settings overlay", () => {
     });
     // The Game Settings overlay should remain open.
     expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
+  });
+
+  it("handles the confirmation cancel request without closing Game Settings or archiving", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    const settingsButton = within(hud).getByRole("button", { name: /game settings/i });
+    await user.click(settingsButton);
+    const settingsDialog = await screen.findByRole("dialog", { name: /game settings/i });
+    const startOverButton = within(settingsDialog).getByRole("button", { name: /start over/i });
+    await user.click(startOverButton);
+    await screen.findByRole("dialog", { name: /start over\?/i });
+
+    const confirmation = screen.getByRole("dialog", { name: /start over\?/i });
+    const cancelEvent = new Event("cancel", { cancelable: true });
+    fireEvent(confirmation, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
+    expect(startOverButton).toBeInTheDocument();
+    expect(mockedArchiveGame).not.toHaveBeenCalled();
+  });
+
+  it("wraps Tab in Game Settings when focus reaches either edge", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(within(hud).getByRole("button", { name: /game settings/i }));
+    const settingsDialog = await screen.findByRole("dialog", { name: /game settings/i });
+    const closeButton = within(settingsDialog).getByRole("button", { name: "Close" });
+    const startOverButton = within(settingsDialog).getByRole("button", { name: /start over/i });
+
+    startOverButton.focus();
+    fireEvent.keyDown(startOverButton, { key: "Tab" });
+    expect(closeButton).toHaveFocus();
+
+    closeButton.focus();
+    fireEvent.keyDown(closeButton, { key: "Tab", shiftKey: true });
+    expect(startOverButton).toHaveFocus();
   });
 
   it("disables the Game Settings button when no session is active", async () => {
