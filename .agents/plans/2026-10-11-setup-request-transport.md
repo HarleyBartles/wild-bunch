@@ -42,13 +42,13 @@
 - Consumes: `setupGame(request, operationId)`, `startGameWithTown(gameId, request, operationId)`, and `requestJson<T>(path, init)`.
 - Produces: a `fetch` request whose default JSON header survives call-specific headers and whose body and operation ID remain unchanged.
 
-- [ ] Add `Content-Type` assertions to the existing setup and first-arrival API-client tests:
+- [x] Add `Content-Type` assertions to the existing setup and first-arrival API-client tests:
 
 ```typescript
 expect(new Headers(init.headers).get("Content-Type")).toBe("application/json");
 ```
 
-- [ ] Add one `requestJson` test supplying `Headers` with an explicit `Content-Type` and a custom header, then assert both values reach `fetch` unchanged. Temporarily omit the caller-header merge and confirm this test fails for the missing caller headers; restore the merge before continuing.
+- [x] Add one `requestJson` test supplying `Headers` with an explicit `Content-Type` and a custom header, then assert both values reach `fetch` unchanged. Temporarily omit the caller-header merge and confirm this test fails for the missing caller headers; restore the merge before continuing.
 
 ```typescript
 const fetchMock = vi.fn().mockResolvedValue({
@@ -70,10 +70,10 @@ expect(headers.get("Content-Type")).toBe("application/vnd.wild-bunch+json");
 expect(headers.get("X-Trace")).toBe("kept");
 ```
 
-- [ ] Run `npm --prefix src/WildBunch.Web test -- src/tests/wildBunchApi.test.ts -t "setup operation ID|first-arrival operation ID"` before changing production code. Confirm the assertion fails because the call-specific `headers` object replaces the shared default.
-- [ ] In `requestJson`, construct a `Headers` instance from the default JSON content type, merge every entry from `init?.headers` with `Headers.set`, then pass `{ ...init, headers }` to `fetch`. Keep the caller's explicit header value authoritative and keep the serialized body unchanged.
-- [ ] Rerun the focused tests and confirm the setup and first-arrival requests each preserve their expected body, idempotency key, and `application/json` content type, while an explicit caller `Content-Type` and other caller headers remain intact.
-- [ ] Run the HTTP-client tests with `npm --prefix src/WildBunch.Web test -- src/tests/httpClient.test.ts src/tests/wildBunchApi.test.ts`.
+- [x] Run `npm --prefix src/WildBunch.Web test -- src/tests/wildBunchApi.test.ts -t "setup operation ID|first-arrival operation ID"` before changing production code. Confirm the assertion fails because the call-specific `headers` object replaces the shared default.
+- [x] In `requestJson`, construct a `Headers` instance from the default JSON content type, merge every entry from `init?.headers` with `Headers.set`, then pass `{ ...init, headers }` to `fetch`. Keep the caller's explicit header value authoritative and keep the serialized body unchanged.
+- [x] Rerun the focused tests and confirm the setup and first-arrival requests each preserve their expected body, idempotency key, and `application/json` content type, while an explicit caller `Content-Type` and other caller headers remain intact.
+- [x] Run the HTTP-client tests with `npm --prefix src/WildBunch.Web test -- src/tests/httpClient.test.ts src/tests/wildBunchApi.test.ts`.
 
 ### Task 2: Prove setup through first-town selection in a real browser
 
