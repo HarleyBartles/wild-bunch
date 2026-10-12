@@ -140,7 +140,9 @@ N-01 is corrected in PR #302: the replay test now uses the canonical uncommitted
 
 ### N-04: Journal equivalence tests never compare the claimed sequence
 
-The three `WildBunch.Domain.Tests/Projections/JournalLogProjectorEquivalenceTests` scenarios assert only nonempty output and entry kinds despite promising exact command-path equality. The encounter case accepts a projector that omits the resolution entry because journey start already produces a travel entry. Replace the smoke with complete expected records/order at the owning projector contract, incorporating existing application projector coverage. Do not preserve obsolete command-side logs merely to keep a historical test name.
+The three `WildBunch.Domain.Tests/Projections/JournalLogProjectorEquivalenceTests` scenarios asserted only nonempty output and entry kinds despite promising exact command-path equality. The projector is event-derived, so there is no independent command-side log to compare. The encounter case also accepted omitted resolution narration because journey start already produced a travel entry.
+
+**Dated disposition, 2026-10-12:** Removed the misleading Domain equivalence class. Existing Application projector contracts retain exact opening, purchase, travel-day, and journey-sequence behavior. `JournalLogProjectorTests.Project_CompletedJourneyWithEncounterResolution_EmitsExactJournalSequence` now asserts the complete ordered records across departure, travel-day messages, encounter narration and resolution, completion, and acknowledgment. Omitting encounter narration was proven to fail the exact sequence assertion. No production behavior or ADR-0028 decision changed.
 
 ### N-05: Concurrency retry proof permits duplicated command effects
 

@@ -43,8 +43,8 @@
 - Consumes: current `origin/develop` at `a0022e50fbe46f4db8d39a3e08841e038d501750`.
 - Produces: committed plan for N-04 implementation in this worktree; no source changes and no version increment.
 
-- [ ] Review the plan against the baseline spec, live N-04 inventory, and current projector tests.
-- [ ] Commit only this plan; verify `Directory.Build.props` remains `0.1.0-dev.118`.
+- [x] Review the plan against the baseline spec, live N-04 inventory, and current projector tests.
+- [x] Commit only this plan; verify `Directory.Build.props` remains `0.1.0-dev.118`.
 
 ### Task 2: Replace the false equivalence claim with exact projector behavior
 
@@ -61,29 +61,30 @@
 - Consumes: the existing `JournalLogProjector.Project(IReadOnlyList<IDomainEvent>)`, `GameLogEntry` value, `JourneySnapshot(int)` fixture, and typed journey events.
 - Produces: one exact event-to-journal sequence contract in the Application test owner; a dated N-04 disposition; row 17 still in progress at the `.119` plan; sole authored application version `0.1.0-dev.119`.
 
-- [ ] Add an event-stream test to `JournalLogProjectorTests` containing `GameStarted`, `JourneyStarted`, `TravelDayAdvanced`, `JourneyEncounterResolved` with one additional narration and a resolution message, `JourneyCompleted`, and `JourneyArrivalAcknowledged`.
-- [ ] Reuse GameStartedEvent() and JourneySnapshot(1); set the travel-day event to day 2, and give each event distinct narration so omission or reordering is observable. Build the expected records in this order:
+- [x] Add an event-stream test to `JournalLogProjectorTests` containing `GameStarted`, `JourneyStarted`, `TravelDayAdvanced`, `JourneyEncounterResolved` with one additional narration and a resolution message, `JourneyCompleted`, and `JourneyArrivalAcknowledged`.
+- [x] Reuse GameStartedEvent() and JourneySnapshot(1); set the travel-day event to day 2, and give each event distinct narration so omission or reordering is observable. Build the expected records in this order:
 
 ```csharp
 new(GameLogEntryKind.Opening, "The hunt begins in Pinecross.", 1, 0),
 new(GameLogEntryKind.Travel, "The road opens.", 1, 0, 1),
-new(GameLogEntryKind.Travel, "A rider vanished into the dust.", 2, 0, 1),
-new(GameLogEntryKind.Travel, "The trail bends east.", 2, 0, 1),
+new(GameLogEntryKind.Travel, "A rider's horse kicked up dust.", 2, 0, 1),
+new(GameLogEntryKind.Travel, "A rider blocked the trail.", 2, 0, 1),
 new(GameLogEntryKind.Travel, "I pass a broken wagon.", 2, 0, 1),
 new(GameLogEntryKind.Travel, "The rider fled before I could learn more.", 2, 0, 1),
-new(GameLogEntryKind.Travel, "Dust Fork appears at sundown.", 2, 0, 1),
-new(GameLogEntryKind.Travel, "I ride into Dust Fork.", 2, 0, 1)
+new(GameLogEntryKind.Travel, "The final stretch opens.", 3, 0, 1),
+new(GameLogEntryKind.Travel, "Dust Fork appears at sundown.", 3, 0, 1),
+new(GameLogEntryKind.Travel, "I ride into Dust Fork.", 3, 0, 1)
 ```
 
-- [ ] Construct JourneyEncounterResolved with Resolved = true, DiaryMessage = "The rider fled before I could learn more.", AdditionalDiaryMessages = ["I pass a broken wagon."], DayCompleted = true, JourneyCompleted = false, zero resource deltas, and JourneySnapshot(1); use "The road opens." for the departure, "A rider vanished into the dust." and "The trail bends east." for the day, "Dust Fork appears at sundown." for completion, and "I ride into Dust Fork." for acknowledgment. Fill every other required event property with valid neutral values from the event definitions.
-- [ ] Compare the entire projected collection directly with the expected GameLogEntry[] above; do not reduce it to count, kind, selected messages, or a parallel projection call.
-- [ ] Run the focused Application projector test and require it to pass before implementation is considered complete.
-- [ ] Temporarily change `JournalLogProjector` so `JourneyEncounterResolved` adds no journal entries; rerun the new test and require it to fail specifically because expected encounter records are absent. Restore the source and rerun the focused test.
-- [ ] Delete the Domain equivalence class. Preserve existing Application projector tests for exact opening, purchase, day ordering, and journey sequence; do not duplicate them.
-- [ ] Record N-04's disposition in both test inventories: the old “command-path equivalence” was a false claim because the projector is event-derived; the Domain test is removed, Application owns the complete sequence, and existing specific Application contracts remain.
-- [ ] In the roadmap, record PR #303's source, squash merge, tree, exact-head/develop gates, paired cleanup, and this active `.119` slice; leave row 17 and all unrelated inventory findings pending.
-- [ ] Advance `Directory.Build.props` exactly once to `0.1.0-dev.119`; retire the completed `.118` plan in this same first substantive commit.
-- [ ] Run the focused Application and Domain test projects, then run `py -3 tools/run.py ci --check`; normal commits must pass the check-only pre-commit hook without `--no-verify`.
+- [x] Set the first TravelDayAdvanced to DayOutcome.Interrupted at day 2 and use a snapshot with Status.Interrupted plus a matching pending foe encounter. Construct JourneyEncounterResolved with Resolved = true, DiaryMessage = "The rider fled before I could learn more.", AdditionalDiaryMessages = ["I pass a broken wagon."], DayCompleted = true, JourneyCompleted = false, zero resource deltas, and the active JourneySnapshot(1). Add a completed TravelDayAdvanced at day 3 with "The final stretch opens." before JourneyCompleted and JourneyArrivalAcknowledged; use the completed snapshot for the day-3 advance, completion, and acknowledgment. Fill every other required event property with valid neutral values from the event definitions.
+- [x] Compare the entire projected collection directly with the expected GameLogEntry[] above; do not reduce it to count, kind, selected messages, or a parallel projection call.
+- [x] Run the focused Application projector test and require it to pass before implementation is considered complete.
+- [x] Temporarily change `JournalLogProjector` so `JourneyEncounterResolved` adds no journal entries; rerun the new test and require it to fail specifically because expected encounter records are absent. Restore the source and rerun the focused test.
+- [x] Delete the Domain equivalence class. Preserve existing Application projector tests for exact opening, purchase, day ordering, and journey sequence; do not duplicate them.
+- [x] Record N-04's disposition in both test inventories: the old “command-path equivalence” was a false claim because the projector is event-derived; the Domain test is removed, Application owns the complete sequence, and existing specific Application contracts remain.
+- [x] In the roadmap, record PR #303's source, squash merge, tree, exact-head/develop gates, paired cleanup, and this active `.119` slice; leave row 17 and all unrelated inventory findings pending.
+- [x] Advance `Directory.Build.props` exactly once to `0.1.0-dev.119`; retire the completed `.118` plan in this same first substantive commit.
+- [x] Run the focused Application and Domain test projects, stage the intended change, then commit through the normal check-only pre-commit hook; the hook runs `py -3 tools/run.py ci --check` on the staged candidate. Never use `--no-verify`.
 
 ### Task 3: Review, publish, merge, and retire the execution unit
 
