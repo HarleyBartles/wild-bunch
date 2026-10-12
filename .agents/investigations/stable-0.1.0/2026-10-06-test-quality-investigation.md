@@ -154,6 +154,8 @@ The three `WildBunch.Domain.Tests/Projections/JournalLogProjectorEquivalenceTest
 
 `Handlers/GetGameSessionHandlerTests.GetGameSessionProjectsOnlyExplicitlyDiscoveredSuspects` excludes a second suspect that its single-suspect factory never created. Supply two real suspects and discover one. The analogous journal test already uses a genuinely adversarial two-suspect fixture; preserve it.
 
+**Dated disposition, 2026-10-12:** The misleading development-DTO test was already removed in commit `02fd3e66`; its positive hidden-truth assertions remain in `GetSaloonDevContextHandlerTests.HandleAsync_ReturnsSaloonContext_WithHiddenTruthAndSuspects`, and the player DTO secrecy test remains at the Application mapping boundary in `GetGameSessionReturnsSavedSessionDto`. The remaining query test now uses two roster members, with only one discovered; temporarily projecting the full roster fails because the hidden culprit appears. This corrects the existing proof without changing source behavior or product scope.
+
 ### N-07: Source strings and IL opcodes detect implementation shape
 
 `WildBunch.Application.Tests/Guardrails/ReadStoreLoaderJournalProjectionGuardrailTests` searches particular source files for projector/store strings and absence of a retired table name. Comments satisfy the positive searches and safe refactors break the paths. Remove the detectors, preserving actual PostgreSQL journal projection/read-load equivalence where needed.

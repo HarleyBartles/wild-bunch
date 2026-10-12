@@ -64,15 +64,16 @@ public sealed class GetGameSessionHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSessionWithDiscoveredSuspect();
+        Assert.Equal(2, session.CaseFile.Suspects.Count);
+        Assert.Single(session.CaseFile.GetDiscoveredSuspects());
         repository.Seed(session);
         var handler = new GetGameSessionHandler(repository);
 
         var result = await handler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
 
-        Assert.Single(result.CaseFile.DiscoveredSuspects);
-        Assert.Equal("Ira Flint", result.CaseFile.DiscoveredSuspects[0].Name);
-        Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
-        Assert.Single(session.CaseFile.Suspects);
+        var discoveredSuspect = Assert.Single(result.CaseFile.DiscoveredSuspects);
+        Assert.Equal("Ira Flint", discoveredSuspect.Name);
+        Assert.Equal(SuspectStatus.AtLarge, discoveredSuspect.Status);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
 
         var payload = JsonSerializer.Serialize(result);
@@ -127,7 +128,29 @@ public sealed class GetGameSessionHandlerTests
 
     private static GameSession CreateSessionWithDiscoveredSuspect()
     {
-        var session = new StubNewGameFactory().CreatedSession;
+        var pinecross = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("pinecross"), "Pinecross");
+        var redmesa = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("redmesa"), "Red Mesa");
+        var world = new WildBunch.Domain.World.World(
+            new[] { pinecross, redmesa },
+            new[]
+            {
+                new WildBunch.Domain.World.Trail(new WildBunch.Domain.World.TrailId("trail-1"), pinecross.Id, redmesa.Id, WildBunch.Domain.World.TrailRisk.Low)
+            });
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Find the person who left the brass star mark."),
+            knownClues: Array.Empty<Clue>());
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart();
         session.CaseFile.DiscoverSuspect(new SuspectId("suspect-1"));
         return session;
     }
