@@ -49,17 +49,17 @@ Verify that setup, prologue, starting-town selection, and game-start commands st
 - [x] Route `StartSetup`, `ViewPrologue`, `SelectStartingTown`, and `CompleteGameStart` through `ProduceEvent`, preserving their current event order and idempotent/rejection behavior.
 - [x] Remove the duplicate production dispatcher and the unused `firstEvent` local; do not add a second event inventory or reflection-based dispatch.
 - [x] Run `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~StartFlowEventSourcingTests` and `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~GameSessionEventReplayTests`; both must pass against the command and replay paths.
-- [ ] Inspect the focused diff and `git diff --check`; confirm no event payload, migration, upcaster, or externally visible gameplay change was introduced.
+- [x] Inspect the focused diff and `git diff --check`; confirm no event payload, migration, upcaster, or externally visible gameplay change was introduced.
 
 ### Task 3: Correct the DN-14 disposition
 
 **Files:**
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-domain-layer-investigation.md`
 
-- [ ] Preserve DN-14's original observation and add a dated disposition describing the shared command/replay dispatcher, setup-flow routing, and removal of the unused replay local.
-- [ ] Mark only the dispatcher-drift and unused-local portions closed; leave each unrelated DN-14 observation open for its own JIT disposition.
-- [ ] Correct the per-file entries for `GameSession.cs` and `GameSessionEventReplay.cs` without rewriting the original audit snapshot.
-- [ ] Keep ADR-0028 and ADR-0038 unchanged because their current decisions already describe the intended authority; make no feature-matrix change because no product promise or dependency changed.
+- [x] Preserve DN-14's original observation and add a dated disposition describing the shared command/replay dispatcher, setup-flow routing, and removal of the unused replay local.
+- [x] Mark only the dispatcher-drift and unused-local portions closed; leave each unrelated DN-14 observation open for its own JIT disposition.
+- [x] Correct the per-file entries for `GameSession.cs` and `GameSessionEventReplay.cs` without rewriting the original audit snapshot.
+- [x] Keep ADR-0028 and ADR-0038 unchanged because their current decisions already describe the intended authority; make no feature-matrix change because no product promise or dependency changed.
 
 ### Task 4: Retire `.108` and route the `.109` successor
 
@@ -68,8 +68,8 @@ Verify that setup, prologue, starting-town selection, and game-start commands st
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-12-row16-domain-occurrence-truth.md`
 
-- [ ] Record PR #293's reviewed source and merge identities, exact-head and develop-push gate results, fresh review, and verified paired worktree/branch cleanup; route this `.109` plan as the active row-16 slice.
-- [ ] Advance the product version exactly once to `0.1.0-dev.109` and retire the `.108` plan in this successor.
-- [ ] Run the normal check-only commit hook on the staged candidate; it must complete the canonical repository gate before allowing the commit.
+- [x] Record PR #293's reviewed source and merge identities, exact-head and develop-push gate results, fresh review, and verified paired worktree/branch cleanup; route this `.109` plan as the active row-16 slice.
+- [x] Advance the product version exactly once to `0.1.0-dev.109` and retire the `.108` plan in this successor.
+- [x] Run the normal check-only commit hook on the staged candidate; it must complete the canonical repository gate before allowing the commit.
 
 **Validation:** Existing `StartFlowEventSourcingTests` and `GameSessionEventReplayTests` cover the observable start-flow facts and reconstructed phase. Do not add structural dispatcher-parity tests; if either existing suite fails to detect an actual behavior loss introduced by the refactor, identify that observable gap and add the smallest independent behavior test before continuing.
