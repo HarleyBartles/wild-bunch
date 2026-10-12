@@ -1,3 +1,4 @@
+using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Projections;
@@ -96,58 +97,42 @@ public sealed class AdvanceTravelDayHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncKeepsCompletedJourneyUntilArrivalIsAcknowledged()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateEasyLuckyFoodSession();
-        repository.Seed(session);
-
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector());
-        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository,
-            new HudProjector());
-
-        var secondAdvance = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
-        Assert.NotNull(secondAdvance.CurrentSession.Journey);
-        if (secondAdvance.JourneyStatus == JourneyStatus.Completed)
-        {
-            var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
-
-            Assert.True(acknowledged.Success);
-            Assert.Null(acknowledged.CurrentSession.Journey);
-            Assert.Equal("openpass", acknowledged.CurrentSession.Player.CurrentTownId);
-            Assert.NotNull(acknowledged.CurrentSession.TravelDiary);
-        }
-    }
-
-    [Fact]
-    public async Task HandleAsyncCompletesSixFullTrailDaysBeforeArrival()
+    public async Task HandleAsyncCompletesSixFullTrailDaysBeforeArrivalAcknowledgement()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSixDayQuietSession();
         repository.Seed(session);
 
+        var forceTravelOverrideHandler = new ForceTravelOverrideHandler(repository, repository);
         var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
             new HudProjector());
         var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository,
             new HudProjector());
 
-        GameTurnResultDto? result = null;
         for (var day = 1; day <= 6; day++)
         {
-            result = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+            await forceTravelOverrideHandler.HandleAsync(new ForceTravelOverrideCommand(
+                session.Id.Value,
+                TravelDayEncounterCategory.Quiet,
+                FoeSpeed: null,
+                FoeFightStrength: null,
+                FoeMinimumBribe: null,
+                EncounterMessage: null));
+            var result = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
-            Assert.NotNull(result.CurrentSession.Journey);
+            Assert.True(result.Success);
+            Assert.Equal(day < 6 ? JourneyStatus.Active : JourneyStatus.Completed, result.JourneyStatus);
+            Assert.NotNull(result.Journey);
+            Assert.Equal(day < 6 ? "pinecross" : "sixmile", result.CurrentSession.Player.CurrentTownId);
+            Assert.Equal(Enumerable.Range(1, day), result.CurrentSession.TravelDiary!.Days.Select(entry => entry.DayNumber));
         }
 
-        if (result is not null && result.JourneyStatus == JourneyStatus.Completed)
-        {
-            var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
+        var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
 
-            Assert.True(acknowledged.Success);
-            Assert.Null(acknowledged.CurrentSession.Journey);
-            Assert.NotNull(acknowledged.CurrentSession.TravelDiary);
-        }
+        Assert.True(acknowledged.Success);
+        Assert.Null(acknowledged.CurrentSession.Journey);
+        Assert.Equal("sixmile", acknowledged.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(Enumerable.Range(1, 6), acknowledged.CurrentSession.TravelDiary!.Days.Select(entry => entry.DayNumber));
     }
 
     private static GameSession CreateEasyLuckyFoodSession()

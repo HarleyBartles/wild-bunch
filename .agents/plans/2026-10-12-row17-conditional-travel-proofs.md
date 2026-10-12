@@ -1,6 +1,6 @@
 # Row 17 Conditional Travel Proofs Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task inline. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task inline. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Correct N-03's conditional travel assertions so tests require the interrupted and completed journeys they claim to prove.
 
@@ -31,7 +31,7 @@
 ## Review Focus
 
 - The Domain test reaches `JourneyStatus.Interrupted` and retains a pending encounter before it compares command-path diary days with the projector output.
-- The Application scenario requires every quiet-day advance to succeed, days one through five to remain active, day six to complete, origin location before acknowledgment, and destination location after successful acknowledgment.
+- The Application scenario requires every quiet-day advance to succeed, days one through five to remain active at the origin, day six to complete and move the player to the destination, then acknowledgment to clear the completed Journey without erasing diary history.
 - The Application scenario proves all six diary days remain available after acknowledgment; it does not hide success behind an `if` or nullable guard.
 - The plan retires only N-03's false conditional proofs and preserves the distinction between Domain projection parity and Application handler orchestration.
 
@@ -46,11 +46,11 @@
 - Consumes: `TravelTestFactory.CreateHighRiskJourney`, `DevTravelOverride.ForCategory`, and `TravelDiaryDayProjector.Project`.
 - Produces: an interrupted-day parity scenario that proves its fixture reaches the `DayCompleted=false` projection branch before comparing complete command-path and event-projection day records.
 
-- [ ] Replace seed-dependent high-risk encounter generation with a forced Foe override on the active journey, then advance through the normal aggregate command.
-- [ ] Assert the command result and aggregate both report `Interrupted`, the journey retains a pending encounter, and the event stream contains the interrupted travel-day fact before invoking the projector.
-- [ ] Compare the complete diary-day records from the command path and projector; remove the quiet-day fallback and early return.
-- [ ] Run the focused Domain test and verify a temporary mutation that makes the forced Foe plan quiet fails the required interruption assertion; restore the production code.
-- [ ] Temporarily break the projector's interrupted-day diary update and verify the exact parity assertion fails; restore the production code and rerun the focused test.
+- [x] Replace seed-dependent high-risk encounter generation with a forced Foe override on the active journey, then advance through the normal aggregate command.
+- [x] Assert the command result and aggregate both report `Interrupted`, the journey retains a pending encounter, and the event stream contains the interrupted travel-day fact before invoking the projector.
+- [x] Compare the complete diary-day records from the command path and projector; remove the quiet-day fallback and early return.
+- [x] Run the focused Domain test and verify a temporary mutation that makes the forced Foe plan quiet fails the required interruption assertion; restore the production code.
+- [x] Temporarily break the projector's interrupted-day diary update and verify the exact parity assertion fails; restore the production code and rerun the focused test.
 
 **Acceptance:** The test cannot pass on a quiet-only journey and fails if event replay omits or misprojects the interrupted day.
 
@@ -65,11 +65,11 @@
 - Consumes: `CreateSixDayQuietSession`, `ForceTravelOverrideHandler`, `AdvanceTravelDayHandler`, `AcknowledgeJourneyArrivalHandler`, and their current command/result contracts.
 - Produces: one deterministic Application scenario covering six successful trail-day commands, completed status retained before acknowledgment, destination applied after acknowledgment, and complete diary retention.
 
-- [ ] Replace `HandleAsyncKeepsCompletedJourneyUntilArrivalIsAcknowledged` and `HandleAsyncCompletesSixFullTrailDaysBeforeArrival` with one coherent six-day orchestration scenario; remove both conditional completion guards.
-- [ ] Force one Quiet override through the existing Application dev command before each day advance, then require each handler result to succeed and report `Active` for days one through five and `Completed` for day six.
-- [ ] Before acknowledgment, require a non-null completed journey, the original `pinecross` location, and six diary day numbers in order; do not use nullable-result guards to skip assertions.
-- [ ] Require successful arrival acknowledgment, a cleared journey, `sixmile` as the current town, and all six diary days retained after the transition.
-- [ ] Run the focused Application test and temporarily make `AdvanceTravelDayHandler` report `Active` when the domain result is `Completed`; verify the test fails at the required completion assertion, restore production code, and rerun the focused test.
+- [x] Replace `HandleAsyncKeepsCompletedJourneyUntilArrivalIsAcknowledged` and `HandleAsyncCompletesSixFullTrailDaysBeforeArrival` with one coherent six-day orchestration scenario; remove both conditional completion guards.
+- [x] Force one Quiet override through the existing Application dev command before each day advance, then require each handler result to succeed and report `Active` for days one through five and `Completed` for day six.
+- [x] On each day, require `pinecross` through day five and `sixmile` when day six completes; require all diary day numbers through the current day in order.
+- [x] Before acknowledgment, require a non-null completed journey at `sixmile`; require successful acknowledgment to clear the Journey while retaining all six diary days.
+- [x] Run the focused Application test and temporarily make `AdvanceTravelDayHandler` report `Active` when the domain result is `Completed`; verify the test fails at the required completion assertion, restore production code, and rerun the focused test.
 
 **Acceptance:** The Application test proves the actual six-command completion and acknowledgment sequence, not merely a non-null journey after a fixed loop.
 
@@ -88,11 +88,11 @@
 
 **Produces:** A dated N-03 disposition, row 17 still in progress at the `.118` plan, and the sole authored application version `0.1.0-dev.118`.
 
-- [ ] Record the Domain interruption and Application completion/acknowledgment outcomes as the N-03 disposition in the test-quality investigation and per-file test index; do not add a test-result receipt.
-- [ ] Update row 17 with PR #302's source, squash merge, tree identity, exact-head/develop gates, paired cleanup proof, and this `.118` plan as the next JIT slice; leave N-04 and row-17 completion pending.
-- [ ] Retire the completed `.117` plan only in this successor's first substantive implementation commit.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.117` to `0.1.0-dev.118` in that same substantive commit; keep the plan-only commit version-neutral.
-- [ ] Stage both test corrections, their maintained investigation records, roadmap/version update, and `.117` plan retirement; use the normal check-only hook with no bypass.
+- [x] Record the Domain interruption and Application completion/acknowledgment outcomes as the N-03 disposition in the test-quality investigation and per-file test index; note that destination identity changes on completion (day six) before acknowledgment clears the Journey; do not add a test-result receipt.
+- [x] Update row 17 with PR #302's source, squash merge, tree identity, exact-head/develop gates, paired cleanup proof, and this `.118` plan as the next JIT slice; leave N-04 and row-17 completion pending.
+- [x] Retire the completed `.117` plan only in this successor's first substantive implementation commit.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.117` to `0.1.0-dev.118` in that same substantive commit; keep the plan-only commit version-neutral.
+- [x] Stage both test corrections, their maintained investigation records, roadmap/version update, and `.117` plan retirement; use the normal check-only hook with no bypass.
 
 **Acceptance:** N-03's two false conditional proofs are corrected and dispositioned; PR #302 is durably reconciled; row 17 remains explicitly incomplete; `.118` is the only authored application version.
 

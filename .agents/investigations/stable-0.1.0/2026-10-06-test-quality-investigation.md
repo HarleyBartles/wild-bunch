@@ -120,7 +120,7 @@ Known runner boundaries deserve focused negative proof: a failing target stops t
 
 ### 2026-10-12 implementation disposition
 
-N-01 is corrected in PR #302: the replay test now uses the canonical uncommitted setup history, verifies the setup snapshot contains the clue only in the public pool, then compares command and replay discovery, spent source and clock state. N-02 is corrected in the same slice: the reset scenario builds heat and starts travel on one aggregate, proves successful trail-day progression remains heat-free, and reaches acknowledged arrival in the destination; the separate next-town rollover scenario now requires actual completion, destination and acknowledgement. Remaining test inventory and findings stay open under roadmap row 17.
+N-01 is corrected in PR #302: the replay test now uses the canonical uncommitted setup history, verifies the setup snapshot contains the clue only in the public pool, then compares command and replay discovery, spent source and clock state. N-02 is corrected in the same slice: the reset scenario builds heat and starts travel on one aggregate, proves successful trail-day progression remains heat-free, and reaches acknowledged arrival in the destination; the separate next-town rollover scenario now requires actual completion, destination and acknowledgement. N-03 is corrected in this successor: the Domain diary projector test forces and requires an interrupted day before full parity, and the Application scenario requires six successful quiet advances, completion on day six, destination identity at completion, successful acknowledgment, and retained diary history. Remaining test inventory and findings stay open under roadmap row 17.
 
 ## .NET assessment
 
@@ -134,9 +134,9 @@ N-01 is corrected in PR #302: the replay test now uses the canonical uncommitted
 
 ### N-03: Conditional assertions accept the untested branch
 
-`WildBunch.Domain.Tests/Projections/TravelDiaryDayProjectorParityTests.Projector_InterruptedJourney_MatchesCommandPathDiaryDays` returns successfully with quiet-day parity if the fixture never interrupts. Require a deterministic interruption through the existing override seam before comparing the independent projection. Retain the parity itself.
+`WildBunch.Domain.Tests/Projections/TravelDiaryDayProjectorParityTests.Projector_InterruptedJourney_MatchesCommandPathDiaryDays` returned successfully with quiet-day parity if the fixture never interrupted. Require a deterministic interruption through the existing override seam before comparing the independent projection. Retain the parity itself.
 
-`WildBunch.Application.Tests/Handlers/AdvanceTravelDayHandlerTests` places arrival and six-day completion assertions behind `if (JourneyStatus == Completed)`. A journey that never completes can satisfy the remaining assertions. Require the intended states and successful advances, then prove origin before acknowledgment, destination afterwards and complete diary history. Existing domain characterization already covers real arrival and quiet-day behavior; consolidate one meaningful application orchestration scenario rather than reproducing all domain tests.
+`WildBunch.Application.Tests/Handlers/AdvanceTravelDayHandlerTests` placed arrival and six-day completion assertions behind `if (JourneyStatus == Completed)`. A journey that never completes could satisfy the remaining assertions. The deterministic Application scenario now requires the intended states and successful advances: the player remains at `pinecross` through day five, reaches `sixmile` when day six completes, and then acknowledges to clear the completed Journey while retaining all diary days. Existing domain characterization covers the underlying travel rules; the Application test owns handler orchestration.
 
 ### N-04: Journal equivalence tests never compare the claimed sequence
 
