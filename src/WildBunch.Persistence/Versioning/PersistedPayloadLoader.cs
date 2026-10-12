@@ -8,13 +8,12 @@ using WildBunch.Persistence.Serialization;
 namespace WildBunch.Persistence.Versioning;
 
 /// <summary>
-/// The single funnel that turns persisted rows into domain objects.
-/// Events are upcasted via PayloadUpcasterRegistry. Components and diary
-/// days are version-checked against ProjectionVersions — if the stored
-/// version doesn't match current, the projection is rebuilt from the
-/// event stream. No code outside WildBunch.Persistence should call
-/// GameSessionJsonSerializer's deserialize methods directly — this loader
-/// is the only sanctioned surface. See the event sourcing integrity policy.
+/// Loads persisted event and projection payloads through the Persistence adapter.
+/// Events are upcasted via PayloadUpcasterRegistry before deserialization.
+/// Component and diary-day payloads are version-checked against ProjectionVersions;
+/// stale projections are rebuilt from the event stream. Component reads return
+/// serialized JSON for the owning component codecs. Repository and read-store
+/// loaders also use GameSessionJsonSerializer for component materialization.
 /// </summary>
 public sealed class PersistedPayloadLoader
 {

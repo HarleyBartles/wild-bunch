@@ -33,7 +33,7 @@ Re-read each changed comment beside its actual registration, load, serialization
 **Files:**
 - Add: `.agents/plans/2026-10-12-row16-persistence-truth.md`
 
-- [ ] Commit this plan by itself before changing Persistence comments, investigation records, roadmap or version.
+- [x] Commit this plan by itself before changing Persistence comments, investigation records, roadmap or version.
 
 ### Task 2: Correct Persistence read-path descriptions
 
@@ -41,21 +41,21 @@ Re-read each changed comment beside its actual registration, load, serialization
 - Modify: `src/WildBunch.Persistence/DependencyInjection.cs`
 - Modify: `src/WildBunch.Persistence/Versioning/PersistedPayloadLoader.cs`
 
-- [ ] Describe upcaster completeness as a test-suite assertion, not build-time enforcement; the runtime registration remains the list returned by `CreateDefaultUpcasters`.
-- [ ] Describe the loader by its actual responsibilities: event upcasting/deserialization and version-aware component/diary payload reads, with stale components reconstructed through the shared event replay callback.
-- [ ] Remove the inaccurate claim that the loader is the one funnel turning every persisted row into a domain object or the only serializer call site. Production repository and read-store loaders also use the serializer inside the Persistence adapter; retain only that supported production boundary.
-- [ ] Do not change `UpcasterCorrectnessTests`' test-only example: its comment describes a synthetic transition that demonstrates the pattern without changing production event history.
-- [ ] Do not change `ApplyWildBunchMigrations`; it still runs synchronously through the API startup composition.
+- [x] Describe upcaster completeness as a test-suite assertion, not build-time enforcement; the runtime registration remains the list returned by `CreateDefaultUpcasters`.
+- [x] Describe the loader by its actual responsibilities: event upcasting/deserialization and version-aware component/diary payload reads, with stale components reconstructed through the shared event replay callback.
+- [x] Remove the inaccurate claim that the loader is the one funnel turning every persisted row into a domain object or the only serializer call site. Production repository and read-store loaders also use the serializer inside the Persistence adapter; retain only that supported production boundary.
+- [x] Do not change `UpcasterCorrectnessTests`' test-only example: its comment describes a synthetic transition that demonstrates the pattern without changing production event history.
+- [x] Do not change `ApplyWildBunchMigrations`; it still runs synchronously through the API startup composition.
 
 ### Task 3: Record the bounded PS-17 disposition
 
 **Files:**
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-persistence-layer-investigation.md`
 
-- [ ] Add a dated partial disposition stating that the stale “Plan C” rebuilder comment was already removed in the row-07 disposition, current source has no claim that the first production upcaster is future work, and the upcaster example test remains accurate.
-- [ ] Record the corrected completeness/loader descriptions and that no runtime behavior or payload contract changed.
-- [ ] State that `ApplyWildBunchMigrations` remains the API-startup migration owner; its production privilege, failure and rollback policy is unresolved here and stays with row 18. Preserve the original finding and timing uncertainty.
-- [ ] Do not create or revise an ADR: no durable architecture choice changes in this slice.
+- [x] Add a dated partial disposition stating that the stale “Plan C” rebuilder comment was already removed in the row-07 disposition, current source has no claim that the first production upcaster is future work, and the upcaster example test remains accurate.
+- [x] Record the corrected completeness/loader descriptions and that no runtime behavior or payload contract changed.
+- [x] State that `ApplyWildBunchMigrations` remains the API-startup migration owner; its production privilege, failure and rollback policy is unresolved here and stays with row 18. Preserve the original finding and timing uncertainty.
+- [x] Do not create or revise an ADR: no durable architecture choice changes in this slice.
 
 ### Task 4: Retire `.106` and route the `.107` successor
 
@@ -64,8 +64,8 @@ Re-read each changed comment beside its actual registration, load, serialization
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-12-row16-ap12-ap13-projection-truth.md`
 
-- [ ] Record PR #291's reviewed source, merge, exact-head gate, develop push gate and verified paired cleanup; route this `.107` plan as the executing row-16 slice.
-- [ ] Advance the product version from `.106` to `.107` exactly once and retire the `.106` plan in this successor.
-- [ ] Re-read each changed comment against current code, run `git diff --check`, then pass the normal check-only commit hook's complete canonical gate before whole-branch review and publication.
+- [x] Record PR #291's reviewed source, merge, exact-head gate, develop push gate and verified paired cleanup; route this `.107` plan as the executing row-16 slice.
+- [x] Advance the product version from `.106` to `.107` exactly once and retire the `.106` plan in this successor.
+- [x] Re-read each changed comment against current code, run `git diff --check`, then pass the normal check-only commit hook's complete canonical gate before whole-branch review and publication.
 
 **Validation:** Comments do not alter runtime behavior, so no new behavioral test is justified. Before implementation, check `git diff --check`; the staged-snapshot hook and `py -3 tools/run.py ci --check` provide compile, test, formatting and build proof for the final committed tree. Persistence composition and migration discovery are out of scope, so no separate migration command is needed.
