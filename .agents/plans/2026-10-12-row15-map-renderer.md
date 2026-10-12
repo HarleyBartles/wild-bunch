@@ -20,7 +20,7 @@
 - Preserve town names, trails, journey-day labels, selected/current-town distinction, non-selectable appearance, and existing callback semantics.
 - Preserve the 800-by-500 desktop map proportion. At viewport widths of 520px or less, keep the canvas within its parent, give it a square viewport, keep text and town targets at readable CSS-pixel sizes rather than shrinking the entire desktop canvas, and place map labels with visible separation so they remain legible on clustered maps.
 - Replace source-shape tests with behavior coverage. Do not assert exact class names, CSS strings, constructor counts by themselves, or Phaser config spelling as the only proof.
-- This slice changes no game capability, product promise, map legality, or durable architecture decision. The PR author and reviewer must independently compare ADR-0035/0039/0046 and `docs/features.md` and state that those records remain accurate.
+- This slice changes no game capability, product promise, map legality, or durable architecture decision. Update PG-003's evidence assessment for the new renderer behavior proof; the PR author and reviewer must independently compare ADR-0035/0039/0046 and the feature matrix against the diff.
 - Publish one PR to `develop`; retire the completed `.96` plan in this successor PR; advance the single authoritative version in `Directory.Build.props` from `0.1.0-dev.96` to `0.1.0-dev.97`.
 - After the PR is merged and hosted checks pass, fast-forward the main checkout, remove this plan worktree with the canonical helper, then remove and verify the matching local and upstream branch refs.
 
@@ -72,12 +72,14 @@
 
 **Files:**
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
+- Modify: `docs/features.md`
 - Delete: `.agents/plans/2026-10-12-row15-shared-display-contracts.md`
 - Modify: `Directory.Build.props`
 - Keep through this PR: `.agents/plans/2026-10-12-row15-map-renderer.md`
 
 - [x] Update row 15 with the merged PR #281 history, its merge identity, hosted gate results, and verified paired worktree/branch cleanup; make this map-renderer plan the active row-15 plan and leave town-hub renderer work as a remaining row-15 exit.
 - [x] Retire the completed `.96` predecessor plan and advance `Directory.Build.props` to `0.1.0-dev.97`.
+- [x] Update PG-003's evidence assessment to reflect current map renderer behavior and browser layout proof, while preserving its partial assessment and pointer-only baseline.
 - [x] Run the focused web tests, changed-file format and lint checks, typecheck, `git diff --check`, inspect the complete diff, verify roadmap links and confirm the generated web identity is `0.1.0-dev.97`.
 - [ ] Stage the intended files and commit normally; the installed hook runs the canonical fail-fast check on the staged snapshot without changing or staging files. Repair any reported failure, then retry the normal commit.
 - [ ] Complete the author's ADR and feature-matrix comparisons in the PR body, obtain a fresh whole-branch review, publish the PR, and verify its head and exact-head hosted gate before requesting merge.
