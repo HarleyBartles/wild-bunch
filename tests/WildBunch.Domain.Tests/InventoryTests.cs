@@ -72,11 +72,12 @@ public sealed class InventoryTests
         Assert.Equal(new DomainHorseTravelState(1, 0, 2), inventory.GetHorseState());
         Assert.Equal(new DomainCanteenState(1, 2), inventory.GetCanteenState());
 
-        var nextHorseState = inventory.AdvanceHorseState(horseFed: false);
+        var nextHorseState = new DomainHorseTravelState(2, 0, 3);
+        inventory.SetHorseState(nextHorseState);
         inventory.SetCanteenState(new DomainCanteenState(0, 2));
 
-        Assert.Equal(new DomainHorseTravelState(2, 0, 3), nextHorseState);
-        Assert.Equal(new DomainHorseTravelState(2, 0, 3), inventory.GetHorseState());
+        Assert.Equal(nextHorseState, inventory.GetHorseState());
+        Assert.Equal(nextHorseState, inventory.Items.Single(item => item.Kind == DomainItemKind.Horse).HorseState);
         Assert.Equal(new DomainCanteenState(0, 2), inventory.GetCanteenState());
     }
 

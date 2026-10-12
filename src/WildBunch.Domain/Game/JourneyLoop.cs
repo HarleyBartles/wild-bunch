@@ -38,9 +38,6 @@ internal sealed class JourneyLoop
     internal int NextJourneySequence => _nextJourneySequence;
     internal DevTravelOverride? PendingDevTravelOverride => _pendingDevTravelOverride;
 
-    // Command methods — filled in by Tasks 3–7
-    // Apply methods — filled in by Task 8
-
     internal void Apply(JourneyStarted e)
     {
         _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);

@@ -24,11 +24,6 @@ internal static partial class TravelDayPlanGenerator
             return new TravelDayPlanState(context.DayNumber, Array.Empty<TravelDayEncounterState>(), CurrentEncounterIndex: 0, IsComplete: true);
         }
 
-        if (encounterCount == 0)
-        {
-            return new TravelDayPlanState(context.DayNumber, Array.Empty<TravelDayEncounterState>(), CurrentEncounterIndex: 0, IsComplete: true);
-        }
-
         var encounters = new List<TravelDayEncounterState>(encounterCount);
         for (var slot = 0; slot < encounterCount; slot++)
         {
