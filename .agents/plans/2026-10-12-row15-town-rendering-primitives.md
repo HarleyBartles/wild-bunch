@@ -85,7 +85,8 @@
 - [x] Advance `Directory.Build.props` to `0.1.0-dev.99` and delete the completed predecessor plan in this plan's first substantive commit.
 - [x] Compare the actual source diff with ADR-0035, ADR-0039 and ADR-0046 and PG-003; this internal deterministic-rendering refactor changes no durable decision or product promise, so no ADR or feature-matrix edits are needed.
 - [x] Run focused web validation, changed-path format/lint, generated identity verification, links and `git diff --check`; the generated identity check follows the `.99` version change above. The normal staged-snapshot hook passed the complete fail-fast gate on the implementation commit. Do not run the complete canonical gate immediately before a normal commit or after a successful hooked commit.
-- [x] Obtain one fresh whole-branch review and publish the PR to `develop`; review approved with no findings, and PR #284 is open.\n- [ ] Verify exact-head hosted PR and develop-push gates before merge.
+- [x] Obtain one fresh whole-branch review and publish the PR to `develop`; review approved with no findings, and PR #284 is open.
+- [ ] Verify exact-head hosted PR and develop-push gates before merge.
 - [ ] After merge, verify the PR source/merge identities and both hosted checks, fast-forward `Z:\wild-bunch`, remove the worktree before its local/upstream branch refs, and verify all three are absent.
 
 **Validation:** Ground-loader and background-planner behavioral tests with demonstrated failing mutations; TownHubScene tile/render tests; `py -3 tools/run.py web --check`; changed-path format/lint; generated version identity `0.1.0-dev.99`; normal staged-snapshot hook; fresh whole-branch review; exact-head hosted PR and develop-push checks.
