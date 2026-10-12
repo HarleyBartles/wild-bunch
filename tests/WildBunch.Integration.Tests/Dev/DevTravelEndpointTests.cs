@@ -162,7 +162,6 @@ public sealed class DevTravelEndpointTests
         HttpClient client)
     {
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 

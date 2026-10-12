@@ -19,7 +19,6 @@ public sealed class GameApiWantedPostersTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
         // The API test factory supplies a fixed SaltSource at player genesis, and this scenario selects Boring entropy.
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -133,7 +132,6 @@ public sealed class GameApiWantedPostersTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);

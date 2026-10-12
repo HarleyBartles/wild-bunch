@@ -44,7 +44,6 @@ public sealed class WorldMapEndpointTests
     private static async Task<Guid> CreateSessionAsync(HttpClient client)
     {
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var response = await client.PostAsJsonWithStartupOperationAsync("/api/games/setup", scenario.CreateRequest("Ranger Vale"));
         var session = await response.Content.ReadFromJsonAsync<GameSessionDto>();

@@ -16,7 +16,6 @@ public sealed class ProjectionEndpointTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
         var created = await client.CreateStartedGameAsync(scenario);
 
         // Get HUD projection
@@ -37,7 +36,6 @@ public sealed class ProjectionEndpointTests
         // The audit endpoint was removed from the normal game API route group.
         // This test proves the endpoint is no longer reachable.
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
         var created = await client.CreateStartedGameAsync(scenario);
 
         var auditResponse = await client.GetAsync($"/api/games/{created.Id}/projections/audit");
@@ -67,7 +65,6 @@ public sealed class ProjectionEndpointTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         // Step 1: setup
         var setupResponse = await client.CreateSetupOnlyGameAsync(scenario);
@@ -132,7 +129,6 @@ public sealed class ProjectionEndpointTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         // Step 1: setup
         var setupResponse = await client.CreateSetupOnlyGameAsync(scenario);

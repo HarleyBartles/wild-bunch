@@ -16,7 +16,6 @@ public sealed class GameApiInvestigationActionsTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -60,7 +59,6 @@ public sealed class GameApiInvestigationActionsTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);

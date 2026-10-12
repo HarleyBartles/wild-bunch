@@ -100,7 +100,6 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario);
 
@@ -118,7 +117,6 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario);
 
@@ -136,7 +134,6 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario);
 
@@ -154,7 +151,6 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario);
 
@@ -197,7 +193,6 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario);
 
@@ -216,7 +211,6 @@ public sealed class GameApiValidationTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario);
 

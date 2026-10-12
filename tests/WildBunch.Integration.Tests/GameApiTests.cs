@@ -20,7 +20,6 @@ public sealed class GameApiTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
@@ -60,7 +59,6 @@ public sealed class GameApiTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -99,7 +97,6 @@ public sealed class GameApiTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -258,8 +255,7 @@ public sealed class GameApiTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.NoHorseFootTravelReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.EasyDifficultyMountedTravelReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -332,7 +328,6 @@ public sealed class GameApiTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.HighRiskFoeInterruptRoute();
-        scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);

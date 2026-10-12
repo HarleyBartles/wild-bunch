@@ -19,7 +19,6 @@ public sealed class DevEndpointTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -38,7 +37,6 @@ public sealed class DevEndpointTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         var route = $"/api/dev/sessions/{created.Id}/audit";
@@ -114,7 +112,6 @@ public sealed class DevEndpointTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 

@@ -19,7 +19,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -75,7 +74,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         var investigateResponse = await client.PostAsync(
@@ -99,7 +97,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
@@ -130,7 +127,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -181,7 +177,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 

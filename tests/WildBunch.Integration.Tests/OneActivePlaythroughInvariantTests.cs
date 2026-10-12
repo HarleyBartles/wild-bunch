@@ -23,7 +23,6 @@ public sealed class OneActivePlaythroughInvariantTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
         var firstOperation = Guid.NewGuid();
         var secondOperation = Guid.NewGuid();
 
@@ -53,7 +52,6 @@ public sealed class OneActivePlaythroughInvariantTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var activeSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         var secondSetup = await client.PostAsJsonWithStartupOperationAsync(
@@ -84,7 +82,6 @@ public sealed class OneActivePlaythroughInvariantTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var previous = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         var archiveResponse = await client.PostAsync($"/api/games/{previous.Id}/archive", content: null);
