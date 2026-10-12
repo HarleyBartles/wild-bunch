@@ -88,6 +88,8 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 **Dated evidence, 2026-10-12, row 16 DN-15:** A normal player look-around command completes POI selection and records the same suspect and kind in its event and active state when a valid runtime-shaped salt folds to `int.MinValue`. This closes the observed overflow on the `BountyLoop` saloon path only; the separate `CitizenCast.StableHash` observation remains open.
 
+**Dated evidence, 2026-10-12, row 16 DN-15 CitizenCast follow-up:** Direct `CitizenCast.Select` tests cover both role and feature selection when the stable hash reaches `int.MinValue`, using authored town IDs and extreme positive visit counters. This proves the pure selector handles its accepted integer inputs; it does not prove a normal saloon command or browser journey can reach those counters.
+
 **0.1.0 disposition:** Retain and repair named take-in, citizen/wanted distinction, correct/wrong-name settlement and the five-of-six release gate. Resistance rolls, escape/injury, saloon gunfights, sheriff poster circulation and murder consequences from killing an innocent are future features.
 
 ### PG-007 - Travel between towns

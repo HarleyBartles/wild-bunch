@@ -47,6 +47,24 @@ public sealed class CitizenCastTests
     }
 
     [Fact]
+    public void CitizenCast_Select_WhenRoleHashIsIntMinValueStillReturnsEncounter()
+    {
+        var encounter = CitizenCast.Select(new TownId("cinnabar"), 1, 1, 116839254, SampleFeatures);
+
+        Assert.Contains(encounter.Role, CitizenCast.Roles);
+        Assert.Contains(encounter.FeatureDescription, SampleFeatures);
+    }
+
+    [Fact]
+    public void CitizenCast_Select_WhenFeatureHashIsIntMinValueStillReturnsEncounter()
+    {
+        var encounter = CitizenCast.Select(new TownId("emberfall"), 1, 1, 1536863146, SampleFeatures);
+
+        Assert.Contains(encounter.Role, CitizenCast.Roles);
+        Assert.Contains(encounter.FeatureDescription, SampleFeatures);
+    }
+
+    [Fact]
     public void CitizenCast_SelectDifferentInputsProduceVariedEncounters()
     {
         var townId = new TownId("t-abelene");

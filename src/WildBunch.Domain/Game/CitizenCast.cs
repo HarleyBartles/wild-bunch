@@ -198,7 +198,7 @@ public static class CitizenCast
                 }
             }
 
-            return Math.Abs(hash);
+            return hash == int.MinValue ? int.MaxValue : Math.Abs(hash);
         }
     }
 }
