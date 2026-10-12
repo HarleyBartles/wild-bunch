@@ -238,6 +238,9 @@ internal static class TravelTestFactory
     /// current town to <paramref name="destinationId"/>. Throws if the preview cannot be resolved
     /// so test setup fails fast with a clear message rather than producing a null preview.
     /// </summary>
+    internal static TravelPreview ResolvePreviewFor(GameSession session, TownId destinationId)
+        => ResolvePreview(session, destinationId);
+
     private static TravelPreview ResolvePreview(GameSession session, TownId destinationId)
     {
         var resolver = new TravelResolver();

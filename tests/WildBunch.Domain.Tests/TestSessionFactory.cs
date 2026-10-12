@@ -454,6 +454,23 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithPublicClue(InvestigationSourceKind sourceKind, string description)
     {
+        return CreatePublicClueSession(sourceKind, description, commitSetupEvents: true);
+    }
+
+    /// <summary>
+    /// Creates the same public-clue scenario while preserving its canonical setup events
+    /// as uncommitted, for replay tests that need the complete event history.
+    /// </summary>
+    public static GameSession CreateUncommittedWithPublicClue(InvestigationSourceKind sourceKind, string description)
+    {
+        return CreatePublicClueSession(sourceKind, description, commitSetupEvents: false);
+    }
+
+    private static GameSession CreatePublicClueSession(
+        InvestigationSourceKind sourceKind,
+        string description,
+        bool commitSetupEvents)
+    {
         var town = new Town(new TownId("current"), "Current Town");
         var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
@@ -497,7 +514,10 @@ public static class TestSessionFactory
         var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
-        session.MarkEventsCommitted();
+        if (commitSetupEvents)
+        {
+            session.MarkEventsCommitted();
+        }
         return session;
     }
 

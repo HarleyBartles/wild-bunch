@@ -49,12 +49,12 @@
 - Consumes: `TestSessionFactory.CreateWithPublicClue(InvestigationSourceKind, string)` and `GameSession.UncommittedEvents`.
 - Produces: `TestSessionFactory.CreateUncommittedWithPublicClue(InvestigationSourceKind, string)`, which returns the same public-clue scenario with canonical setup events still uncommitted; existing callers retain their current committed-setup behavior.
 
-- [ ] Add a test-helper entry point that creates the existing public-clue scenario without committing its canonical setup events, factoring shared construction so the committed helper remains behaviorally unchanged.
-- [ ] Change `RehydrateFromEvents_Reconstructs_Investigation_State` to assert its pre-command state has the expected public clue and no known clue, invoke `GatherLocalGossip`, and replay the complete actual event stream without fabricating `GameStarted` or constructing `CaseFileGenerated` from the mutated case file.
-- [ ] Assert the setup `CaseFileGenerated` event contains the clue in the public pool and assert the command/replay outcomes independently: the same clue ID is known, absent from public clues, the local-gossip source is spent, and replayed day/turn match the command result.
-- [ ] Run the focused test and inspect the captured source history to confirm that removing the `InvestigationPerformed` application makes the known/public/source assertions fail.
-- [ ] Temporarily disable the production application of `InvestigationPerformed`, run the focused test and confirm failure for the expected clue/source behavior, then restore the production file and rerun the test successfully.
-- [ ] Record a dated test-design disposition that replaces N-01's false proof while retaining the N-01 historical audit and updating the exact per-file disposition; record no raw test output or result as a durable receipt.
+- [x] Add a test-helper entry point that creates the existing public-clue scenario without committing its canonical setup events, factoring shared construction so the committed helper remains behaviorally unchanged.
+- [x] Change `RehydrateFromEvents_Reconstructs_Investigation_State` to assert its pre-command state has the expected public clue and no known clue, invoke `GatherLocalGossip`, and replay the complete actual event stream without fabricating `GameStarted` or constructing `CaseFileGenerated` from the mutated case file.
+- [x] Assert the setup `CaseFileGenerated` event contains the clue in the public pool and assert the command/replay outcomes independently: the same clue ID is known, absent from public clues, the local-gossip source is spent, and replayed day/turn match the command result.
+- [x] Run the focused test and inspect the captured source history to confirm that removing the `InvestigationPerformed` application makes the known/public/source assertions fail.
+- [x] Temporarily disable the production application of `InvestigationPerformed`, run the focused test and confirm failure for the expected clue/source behavior, then restore the production file and rerun the test successfully.
+- [x] Record a dated test-design disposition that replaces N-01's false proof while retaining the N-01 historical audit and updating the exact per-file disposition; record no raw test output or result as a durable receipt.
 
 **Acceptance:** The replay receives the unmodified clue as an event-backed public fact and cannot pass if investigation application is removed. Existing helper callers still receive their prior committed setup state.
 
@@ -72,13 +72,13 @@
 - Consumes: deterministic `TravelTestFactory` session and travel-preview construction.
 - Produces: `TravelTestFactory.ResolvePreviewFor(GameSession, TownId)`, a test helper for resolving a current-session preview after its town clock has been advanced; no production API changes.
 
-- [ ] Expose a narrowly named test-helper operation to resolve a preview from the supplied session and destination, reusing the existing private resolver and preserving current factory behavior.
-- [ ] Rewrite `StartingJourney_ResetsHeatToZero` to prepare a deterministic easy journey, build heat to 1 in that same session, obtain a fresh preview, then start the journey and prove the reset on that aggregate.
-- [ ] Fold `AdvancingTrailDays_DoesNotIncreaseHeat` and `ArrivalInNewTown_DoesNotRetroactivelyAddTravelHeat` into that same scenario, asserting successful day events with zero heat after each, a completed journey, successful acknowledgment, and the player's destination identity.
-- [ ] Remove the redundant old trail/arrival tests after their distinct claims are represented in the consolidated scenario; retain separate town-day heat-resumption coverage.
-- [ ] Run the focused scenario and confirm removing the heat-reset application, suppressing successful day advancement, and preventing acknowledgment each fail at their corresponding independent assertion.
-- [ ] Temporarily apply those bounded mutations one at a time, verify each failure, restore production code, and rerun the focused scenario successfully; include a nonzero travel-day heat mutation to prove the per-day no-increase assertion is sensitive.
-- [ ] Record dated N-02 dispositions in the test-quality investigation and per-file index; do not add a test result receipt.
+- [x] Expose a narrowly named test-helper operation to resolve a preview from the supplied session and destination, reusing the existing private resolver and preserving current factory behavior.
+- [x] Rewrite `StartingJourney_ResetsHeatToZero` to prepare a deterministic easy journey, build heat to 1 in that same session, obtain a fresh preview, then start the journey and prove the reset on that aggregate.
+- [x] Fold `AdvancingTrailDays_DoesNotIncreaseHeat` and `ArrivalInNewTown_DoesNotRetroactivelyAddTravelHeat` into that same scenario, asserting successful day events with zero heat after each, a completed journey, successful acknowledgment, and the player's destination identity.
+- [x] Remove the redundant old trail/arrival tests after their distinct claims are represented in the consolidated scenario; retain separate town-day heat-resumption coverage.
+- [x] Run the focused scenario and confirm removing the heat-reset application, suppressing successful day advancement, and preventing acknowledgment each fail at their corresponding independent assertion.
+- [x] Temporarily apply those bounded mutations one at a time, verify each failure, restore production code, and rerun the focused scenario successfully; include a nonzero travel-day heat mutation to prove the per-day no-increase assertion is sensitive.
+- [x] Record dated N-02 dispositions in the test-quality investigation and per-file index; do not add a test result receipt.
 
 **Acceptance:** One scenario proves positive heat on the same session before departure, zero heat immediately after journey start and after actual successful trail days, then proves completion and destination arrival before retaining the no-retroactive-heat assertion.
 
@@ -89,16 +89,18 @@
 **Files:**
 - Modify: `Directory.Build.props`
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
+- Modify: `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`
 - Delete: `.agents/plans/2026-10-12-row16-dn15-building-inputs.md`
 
 - Consumes: merged PR #301 and exact hosted gate evidence listed in Global Constraints.
 - Produces: row 16 marked complete, row 17 linked to this active `.117` plan, and the single authored version `0.1.0-dev.117`.
 
-- [ ] Verify PR #301 is merged into `develop`, its exact-head and develop-push gates passed, the primary checkout contains merge `59a4e080a2866fb54dfac6ccbd10488c80fdb422`, and its clean worktree and local/upstream refs were removed together.
-- [ ] Update row 16 with PR #301 source/merge/gate evidence and paired cleanup, mark row 16 complete, and activate row 17 with this plan as the first test-reconciliation slice.
-- [ ] Retire the completed `.116` plan only in this successor's first substantive implementation commit.
-- [ ] Advance `Directory.Build.props` once from `0.1.0-dev.116` to `0.1.0-dev.117` in that same substantive commit; keep the plan-only commit version-neutral.
-- [ ] Stage both test tasks, their maintained investigation records, roadmap/version update, and `.116` plan retirement; use the normal check-only hook with no bypass.
+- [x] Verify PR #301 is merged into `develop`, its exact-head and develop-push gates passed, the primary checkout contains merge `59a4e080a2866fb54dfac6ccbd10488c80fdb422`, and its clean worktree and local/upstream refs were removed together.
+- [x] Update row 16 with PR #301 source/merge/gate evidence and paired cleanup, mark row 16 complete, and activate row 17 with this plan as the first test-reconciliation slice.
+- [x] Make the spec and roadmap explicit that a plan worktree and its local/upstream branch refs are cleaned as one unit after merge; verify the branch inventory and preserve active PR #185 rather than deleting its unmerged branch.
+- [x] Retire the completed `.116` plan only in this successor's first substantive implementation commit.
+- [x] Advance `Directory.Build.props` once from `0.1.0-dev.116` to `0.1.0-dev.117` in that same substantive commit; keep the plan-only commit version-neutral.
+- [x] Stage both test tasks, their maintained investigation records, roadmap/version update, and `.116` plan retirement; use the normal check-only hook with no bypass.
 
 **Acceptance:** The merged `.116` delivery and paired cleanup are durably reconciled, row 17 remains explicitly incomplete, and `.117` is the only authored application version.
 
