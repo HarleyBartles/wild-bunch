@@ -70,12 +70,16 @@ public sealed class GameSessionCommandHandlerTests
     }
 
     [Fact]
-    public async Task ExecuteWithRetryAsync_RetriesOnConcurrencyException()
+    public async Task ExecuteWithRetryAsync_StoreConflictReloadsDurableStateAndCommitsPurchaseOnce()
     {
-        var repo = new ConcurrencyRetryRepository();
+        var repo = new AuthoritativeRetryRepository(ConcurrencyFailure.StoreOnce);
         var session = CreateSession();
         session.MarkEventsCommitted();
         repo.Seed(session);
+        var initialWallet = session.Player.Wallet.Cash;
+        var initialFood = session.Player.GetQuantity(DomainItemKind.Food);
+        var foodOffer = new TownStoreCatalogResolver().Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
         var handler = new TestCommandHandler(repo, repo);
         var result = await handler.ExecuteWithRetryAsync(
@@ -84,39 +88,94 @@ public sealed class GameSessionCommandHandlerTests
             {
                 // Produce an event so StoreAsync is called
                 var resolver = new TownStoreCatalogResolver();
-                var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
+                var retryOffer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
-                s.Purchase(offer, 1);
+                s.Purchase(retryOffer, 1);
                 await Task.Yield();
                 return "ok";
             });
 
         Assert.Equal("ok", result);
-        Assert.True(repo.Attempts >= 2);
+        var stored = await repo.GetByIdAsync(session.Id);
+        Assert.Equal(initialWallet - foodOffer.Price, stored!.Player.Wallet.Cash);
+        Assert.Equal(initialFood + 1, stored.Player.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(1, repo.StoreConflictCount);
+        AssertSingleFoodPurchase(repo, initialWallet, foodOffer.Price);
     }
 
     [Fact]
-    public async Task ExecuteWithRetryAsync_ThrowsAfterMaxRetries()
+    public async Task ExecuteWithRetryAsync_CommitConflictRollsBackAttemptAndCommitsPurchaseOnce()
     {
-        var repo = new AlwaysConcurrencyRepository();
+        var repo = new AuthoritativeRetryRepository(ConcurrencyFailure.CommitOnce);
         var session = CreateSession();
         session.MarkEventsCommitted();
         repo.Seed(session);
+        var initialWallet = session.Player.Wallet.Cash;
+        var initialFood = session.Player.GetQuantity(DomainItemKind.Food);
+        var foodOffer = new TownStoreCatalogResolver().Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
+        var handler = new TestCommandHandler(repo, repo);
+        var result = await handler.ExecuteWithRetryAsync(
+            session.Id,
+            (s, ct) =>
+            {
+                var catalog = new TownStoreCatalogResolver();
+                var currentOffer = catalog.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
+                    .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
+                s.Purchase(currentOffer, 1);
+                return Task.FromResult("purchased");
+            });
+
+        Assert.Equal("purchased", result);
+        var stored = await repo.GetByIdAsync(session.Id);
+        Assert.Equal(initialWallet - foodOffer.Price, stored!.Player.Wallet.Cash);
+        Assert.Equal(initialFood + 1, stored.Player.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(1, repo.CommitConflictCount);
+        AssertSingleFoodPurchase(repo, initialWallet, foodOffer.Price);
+    }
+
+    [Fact]
+    public async Task ExecuteWithRetryAsync_StoreConflictExhaustionDoesNotPersistFailedPurchase()
+    {
+        var repo = new AuthoritativeRetryRepository(ConcurrencyFailure.StoreAlways);
+        var session = CreateSession();
+        session.MarkEventsCommitted();
+        repo.Seed(session);
+        var initialWallet = session.Player.Wallet.Cash;
+        var initialFood = session.Player.GetQuantity(DomainItemKind.Food);
+        var initialEventCount = repo.DurableEvents.Count;
         var handler = new TestCommandHandler(repo, repo);
 
         await Assert.ThrowsAsync<ConcurrencyException>(() => handler.ExecuteWithRetryAsync(
             session.Id,
-            async (s, ct) =>
+            (s, ct) =>
             {
-                // Produce an event so StoreAsync is called
                 var resolver = new TownStoreCatalogResolver();
                 var offer = resolver.Resolve(s.World.GetTown(s.Player.CurrentTownId!.Value))
                     .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
                 s.Purchase(offer, 1);
-                await Task.Yield();
-                return "ok";
+                return Task.FromResult("purchased");
             }));
+
+        var stored = await repo.GetByIdAsync(session.Id);
+        Assert.Equal(initialWallet, stored!.Player.Wallet.Cash);
+        Assert.Equal(initialFood, stored.Player.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(initialEventCount, repo.DurableEvents.Count);
+        Assert.Equal(3, repo.StoreConflictCount);
+        Assert.Empty(repo.DurableEvents.OfType<StoreItemPurchased>());
+    }
+
+    private static void AssertSingleFoodPurchase(
+        AuthoritativeRetryRepository repository,
+        decimal initialWallet,
+        decimal foodPrice)
+    {
+        var purchase = Assert.Single(repository.DurableEvents.OfType<StoreItemPurchased>());
+        Assert.Equal(DomainItemKind.Food, purchase.ItemKind);
+        Assert.Equal(1, purchase.Quantity);
+        Assert.Equal(foodPrice, purchase.UnitPrice);
+        Assert.Equal(initialWallet - foodPrice, purchase.WalletAfter);
     }
 
     private static GameSession CreateSession()
@@ -151,25 +210,46 @@ public sealed class GameSessionCommandHandlerTests
             : base(repo, uow) { }
     }
 
-    private sealed class ConcurrencyRetryRepository : IGameSessionRepository, IGameSessionUnitOfWork
+    private enum ConcurrencyFailure
     {
-        private readonly Dictionary<GameSessionId, GameSession> _sessions = new();
-        private readonly Dictionary<GameSessionId, GameSession> _pending = new();
-        public int Attempts { get; private set; }
-        public int CommitCalls { get; private set; }
+        StoreOnce,
+        StoreAlways,
+        CommitOnce
+    }
 
-        public IReadOnlyCollection<GameSession> Sessions => _sessions.Values.ToArray();
+    private sealed class AuthoritativeRetryRepository : IGameSessionRepository, IGameSessionUnitOfWork
+    {
+        private readonly ConcurrencyFailure _failure;
+        private readonly Dictionary<GameSessionId, DomainWorld> _worlds = new();
+        private readonly Dictionary<GameSessionId, List<IDomainEvent>> _durableEvents = new();
+        private List<IDomainEvent>? _pendingEvents;
+        private int _storeConflicts;
+        private int _commitConflicts;
 
-        public void Seed(GameSession session) => _sessions[session.Id] = session;
+        public AuthoritativeRetryRepository(ConcurrencyFailure failure) => _failure = failure;
+
+        public int StoreConflictCount { get; private set; }
+        public int CommitConflictCount { get; private set; }
+        public IReadOnlyList<IDomainEvent> DurableEvents => _durableEvents.Values.Single();
+
+        public void Seed(GameSession session)
+        {
+            _worlds[session.Id] = session.World;
+            _durableEvents[session.Id] = session.AllEvents.ToList();
+        }
 
         public Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken ct = default)
         {
-            _sessions.TryGetValue(id, out var s);
-            return Task.FromResult(s);
+            if (!_durableEvents.TryGetValue(id, out var events))
+            {
+                return Task.FromResult<GameSession?>(null);
+            }
+
+            return Task.FromResult<GameSession?>(GameSession.RehydrateFromEvents(id, _worlds[id], events));
         }
 
         public Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<GameSession>>(_sessions.Values.Where(s => s.Status == status).ToArray());
+            => Task.FromResult<IReadOnlyList<GameSession>>(Array.Empty<GameSession>());
 
         public Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken ct = default)
             => Task.FromResult<StartupOperation?>(null);
@@ -178,62 +258,42 @@ public sealed class GameSessionCommandHandlerTests
 
         public Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken ct = default)
         {
-            Attempts++;
-            if (Attempts == 1)
+            if (_failure == ConcurrencyFailure.StoreAlways
+                || (_failure == ConcurrencyFailure.StoreOnce && _storeConflicts++ == 0))
             {
+                StoreConflictCount++;
                 throw new ConcurrencyException(session.Id, 0, 1);
             }
-            _pending[session.Id] = session;
+
+            _pendingEvents = _durableEvents[session.Id].Concat(session.UncommittedEvents).ToList();
             return Task.CompletedTask;
         }
 
         public Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<IDomainEvent>>(Array.Empty<IDomainEvent>());
+            => Task.FromResult<IReadOnlyList<IDomainEvent>>(_durableEvents.GetValueOrDefault(id, []).Skip((int)fromVersion).ToArray());
 
         public Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<RecordedDomainEvent>>(Array.Empty<RecordedDomainEvent>());
+            => Task.FromResult<IReadOnlyList<RecordedDomainEvent>>(_durableEvents.GetValueOrDefault(id, [])
+                .Skip((int)fromVersion)
+                .Select((domainEvent, index) => new RecordedDomainEvent(domainEvent, fromVersion + index + 1, DateTime.UnixEpoch))
+                .ToArray());
 
         public Task CommitAsync(CancellationToken ct = default)
         {
-            CommitCalls++;
-            foreach (var pending in _pending)
+            if (_failure == ConcurrencyFailure.CommitOnce && _commitConflicts++ == 0)
             {
-                _sessions[pending.Key] = pending.Value;
+                CommitConflictCount++;
+                _pendingEvents = null;
+                throw new ConcurrencyException("Simulated commit conflict.");
             }
-            _pending.Clear();
+
+            if (_pendingEvents is not null)
+            {
+                _durableEvents[_durableEvents.Keys.Single()] = _pendingEvents;
+                _pendingEvents = null;
+            }
+
             return Task.CompletedTask;
         }
-    }
-
-    private sealed class AlwaysConcurrencyRepository : IGameSessionRepository, IGameSessionUnitOfWork
-    {
-        private readonly Dictionary<GameSessionId, GameSession> _sessions = new();
-
-        public void Seed(GameSession session) => _sessions[session.Id] = session;
-
-        public Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken ct = default)
-        {
-            _sessions.TryGetValue(id, out var s);
-            return Task.FromResult(s);
-        }
-
-        public Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<GameSession>>(_sessions.Values.Where(s => s.Status == status).ToArray());
-
-        public Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken ct = default)
-            => Task.FromResult<StartupOperation?>(null);
-
-        public void StoreStartupOperation(StartupOperation operation) { }
-
-        public Task StoreAsync(GameSession session, Guid? correlationId = null, CancellationToken ct = default)
-            => throw new ConcurrencyException(session.Id, 0, 1);
-
-        public Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<IDomainEvent>>(Array.Empty<IDomainEvent>());
-
-        public Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<RecordedDomainEvent>>(Array.Empty<RecordedDomainEvent>());
-
-        public Task CommitAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
 }
