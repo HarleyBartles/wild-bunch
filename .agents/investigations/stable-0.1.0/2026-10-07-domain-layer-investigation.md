@@ -133,6 +133,8 @@ Remove obsolete code when nearby remediation establishes its consumers. Record i
 
 **Dated disposition, 2026-10-12:** Command production, event replay, and committed-event catch-up now use one `GameSession.ApplyEvent` dispatcher. `StartSetup`, `ViewPrologue`, `SelectStartingTown`, and `CompleteGameStart` route their existing events through `ProduceEvent`; the duplicate command dispatcher and unused replay local are removed. Existing start-flow and replay outcomes are unchanged. This closes only the dispatcher-drift and unused-local observations; the remaining DN-14 findings stay open for separate disposition.
 
+**Dated disposition, 2026-10-12:** This successor removes the uncalled `Inventory.GetHorseStateOrNull` alias, `Inventory.CanAddItem` predicate, `Inventory.AdvanceHorseState` wrapper, `HorseTravelState.AdvanceTravelDay` legacy calculation, and unused `CitizenCast` reveal helpers. Their helper-only tests were removed or redirected to the retained inventory state setters; current horse daily upkeep remains owned by `JourneyUpkeepRules.ApplyDailyUpkeep`. The unreachable duplicate zero-encounter branch and numbered-task comments in `JourneyLoop` were removed. This closes only these DN-14 findings; refresh-policy semantics and other observations remain open.
+
 ### DN-15: Accepted-value and deterministic-index edges need narrower contracts
 
 **Conditional input defects, not reproduced ordinary-player failures.** `Cases/CaseWarrants.cs:18-43` accepts negative bounty amounts; settlement policies propagate signed cash effects. Current content has no negative example established by this audit. Define nonnegative bounty at the owning contract, or document a real upstream guarantee and reconstruction policy. Likewise `Wallet`'s public positional constructor can accept negative cash despite its guarded adjustment methods; current generated wallets are valid. `PathSegment.Create` validates coordinates but the public record constructor bypasses it, and layout dimensions/grids are permissive. Avoid treating a helper factory as a universally enforced invariant.
@@ -227,7 +229,7 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Game/BeatNarration.cs](../../../src/WildBunch.Domain/Game/BeatNarration.cs) | Keep authored beat/context values pending AP-19 correction. |
 | [Game/BountyLoop.cs](../../../src/WildBunch.Domain/Game/BountyLoop.cs) | See DN-02, DN-15, and DN-15. Command methods return events; no direct event emission found. |
 | [Game/BountyLoopContexts.cs](../../../src/WildBunch.Domain/Game/BountyLoopContexts.cs) | Narrow immutable context records; no independent issue found. |
-| [Game/CitizenCast.cs](../../../src/WildBunch.Domain/Game/CitizenCast.cs) | See DN-15; `ResolveRevealName` and `ResolveRevealNarration` have no production source callers and are documented convenience helpers. |
+| [Game/CitizenCast.cs](../../../src/WildBunch.Domain/Game/CitizenCast.cs) | Keep active encounter selection and concealment; unused reveal helpers retired under DN-14. |
 | [Game/DevSaloonOverride.cs](../../../src/WildBunch.Domain/Game/DevSaloonOverride.cs) | Override factories are clear; validation is at force command as documented. No independent issue found. |
 | [Game/DevTravelOverride.cs](../../../src/WildBunch.Domain/Game/DevTravelOverride.cs) | Keep next-day preparation; validation/default debt AP-04. |
 | [Game/GameClock.cs](../../../src/WildBunch.Domain/Game/GameClock.cs) | Keep clock behavior; exposed mutation DN-09 and pre-event advance DN-06. |
@@ -238,7 +240,7 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Game/GameSessionId.cs](../../../src/WildBunch.Domain/Game/GameSessionId.cs) | Keep typed identity/new-session factory; not replay-time gameplay RNG. |
 | [Game/GameStatus.cs](../../../src/WildBunch.Domain/Game/GameStatus.cs) | Keep statuses; Completed/Failed membership does not establish implemented transitions. |
 | [Game/InvestigationLoop.cs](../../../src/WildBunch.Domain/Game/InvestigationLoop.cs) | Decision logic returns typed events and does not mutate CaseFile; see DN-08 for missing release-progress decision. |
-| [Game/JourneyLoop.cs](../../../src/WildBunch.Domain/Game/JourneyLoop.cs) | Correct DN-04/DN-05/DN-06; legacy repair DN-16, stale task comments DN-14. |
+| [Game/JourneyLoop.cs](../../../src/WildBunch.Domain/Game/JourneyLoop.cs) | Correct DN-04/DN-05/DN-06; legacy repair DN-16; numbered-task comments retired under DN-14. |
 | [Game/JourneyLoopContexts.cs](../../../src/WildBunch.Domain/Game/JourneyLoopContexts.cs) | Keep narrow inputs/outcome; references do not enforce immutability, DN-09. |
 | [Game/Player.cs](../../../src/WildBunch.Domain/Game/Player.cs) | Keep player behavior; exposed mutation DN-09. |
 | [Game/PursuitState.cs](../../../src/WildBunch.Domain/Game/PursuitState.cs) | Keep town-pressure state; mutation seam DN-09 and old parity comments DN-14. |
@@ -254,8 +256,8 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Game/WantedSuspectPresenceLedger.cs](../../../src/WildBunch.Domain/Game/WantedSuspectPresenceLedger.cs) | Missing state defaults to Unavailable, which is material to DN-02; duplicate entries are normalized by replacement. |
 | [IAggregateRoot.cs](../../../src/WildBunch.Domain/IAggregateRoot.cs) | Keep selected marker; marker cannot enforce mutation authority. |
 | [Inventory/CanteenState.cs](../../../src/WildBunch.Domain/Inventory/CanteenState.cs) | Keep charge/capacity invariants and immutable operations. |
-| [Inventory/HorseTravelState.cs](../../../src/WildBunch.Domain/Inventory/HorseTravelState.cs) | Keep horse condition/profile checks; consumer assessment for legacy AdvanceTravelDay. |
-| [Inventory/Inventory.cs](../../../src/WildBunch.Domain/Inventory/Inventory.cs) | Keep concrete rules; misleading/dead APIs DN-14, public mutation DN-09. |
+| [Inventory/HorseTravelState.cs](../../../src/WildBunch.Domain/Inventory/HorseTravelState.cs) | Keep horse condition/profile checks; unused legacy `AdvanceTravelDay` calculation retired under DN-14. |
+| [Inventory/Inventory.cs](../../../src/WildBunch.Domain/Inventory/Inventory.cs) | Keep concrete rules; uncalled forwarding, predicate and horse-advancement APIs retired under DN-14; public mutation DN-09. |
 | [Inventory/InventoryCapabilities.cs](../../../src/WildBunch.Domain/Inventory/InventoryCapabilities.cs) | Keep named capability result. |
 | [Inventory/InventoryCapabilityResolver.cs](../../../src/WildBunch.Domain/Inventory/InventoryCapabilityResolver.cs) | Keep horse/saddle, charged-canteen and loaded-weapon rules. |
 | [Inventory/InventoryItem.cs](../../../src/WildBunch.Domain/Inventory/InventoryItem.cs) | Keep typed item rules; construction defaults do not prove stored-field completeness. |
@@ -274,7 +276,7 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Travel/TrailEventCatalog.cs](../../../src/WildBunch.Domain/Travel/TrailEventCatalog.cs) | Keep authored effect identifiers. |
 | [Travel/TravelDayGenerationContext.cs](../../../src/WildBunch.Domain/Travel/TravelDayGenerationContext.cs) | Keep explicit deterministic inputs and history. |
 | [Travel/TravelDayPlanFactory.cs](../../../src/WildBunch.Domain/Travel/TravelDayPlanFactory.cs) | Keep forced preparation; validation/default debt AP-04. |
-| [Travel/TravelDayPlanGenerator.Context.cs](../../../src/WildBunch.Domain/Travel/TravelDayPlanGenerator.Context.cs) | Correct dust legality DN-06, duplicate branch DN-14; NPC question DN-16. |
+| [Travel/TravelDayPlanGenerator.Context.cs](../../../src/WildBunch.Domain/Travel/TravelDayPlanGenerator.Context.cs) | Correct dust legality DN-06; unreachable duplicate branch retired under DN-14; NPC question DN-16. |
 | [Travel/TravelDiaryDayFactory.cs](../../../src/WildBunch.Domain/Travel/TravelDiaryDayFactory.cs) | Keep day-state composition with explicit derived-state authority. |
 | [Travel/TravelDiaryModels.cs](../../../src/WildBunch.Domain/Travel/TravelDiaryModels.cs) | Keep typed diary/baseline values; heat implications DN-16. |
 | [Travel/TravelJourney.cs](../../../src/WildBunch.Domain/Travel/TravelJourney.cs) | Correct pacing DN-05/food effects DN-06; exposed mutation DN-09. |

@@ -146,21 +146,4 @@ public sealed class CitizenCastTests
         Assert.DoesNotContain(encounter.Role.ShortName, descriptor);
     }
 
-    [Fact]
-    public void CitizenCast_ResolveRevealName_ProducesRoleDisplayName()
-    {
-        var encounter = CitizenCast.SelectByRoleKey("butcher", SampleFeatures);
-        Assert.Equal("the town butcher", CitizenCast.ResolveRevealName(encounter));
-    }
-
-    [Fact]
-    public void CitizenCast_ResolveRevealNarration_ContainsRoleAndFine()
-    {
-        var encounter = CitizenCast.SelectByRoleKey("butcher", SampleFeatures);
-        var narration = CitizenCast.ResolveRevealNarration(encounter, 5.00m);
-
-        Assert.Contains("sheriff identifies them as the town butcher", narration);
-        Assert.Contains("$5.00", narration);
-        Assert.Contains("releases them", narration);
-    }
 }
