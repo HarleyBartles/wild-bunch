@@ -247,10 +247,10 @@ internal static class ScenarioSeedCatalog
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.pendingEncounter.choiceIds", "run,fight,bribe", string.Join(",", blockedAdvance.Journey.PendingEncounter.Choices.Select(choice => choice.Id)));
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.day", secondLegTravel.CurrentSession.Clock.Day + 1, blockedAdvance.CurrentSession.Clock.Day);
         RequireEqual("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.clock.turn", 0, blockedAdvance.CurrentSession.Clock.Turn);
-        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.travelDiary", blockedAdvance.TravelDiary is not null && blockedAdvance.TravelDiary.Days.Count == 1, "expected one diary day for the interrupted first day.");
+        Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.travelDiary", blockedAdvance.CurrentSession.TravelDiary is not null && blockedAdvance.CurrentSession.TravelDiary.Days.Count == 1, "expected one diary day for the interrupted first day.");
 
         // Check diary names the destination town (whatever it is)
-        var departure = blockedAdvance.TravelDiary!.JourneyEntries.SingleOrDefault(
+        var departure = blockedAdvance.CurrentSession.TravelDiary!.JourneyEntries.SingleOrDefault(
             entry => entry.Message.Contains($"toward {destinationTownName}", StringComparison.OrdinalIgnoreCase));
         Require("HighRiskFoeInterruptRoute", "travel-turn.blockedAdvance.departure",
             departure is not null,

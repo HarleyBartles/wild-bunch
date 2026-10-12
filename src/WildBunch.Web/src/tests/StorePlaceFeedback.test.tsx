@@ -266,7 +266,6 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedSetupGame.mockResolvedValue(createSession());
   mockedStartGameWithTown.mockResolvedValue(createSession());
@@ -311,7 +310,6 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
@@ -359,7 +357,6 @@ describe("Store purchase feedback", () => {
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     });
     await user.click(buyButton);
 
@@ -403,7 +400,6 @@ describe("Store purchase feedback", () => {
         journeyStatus: null,
         journey: null,
         trailEvent: null,
-        travelDiary: null,
       });
     });
 
@@ -425,7 +421,6 @@ describe("Store purchase feedback", () => {
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     });
 
     renderShell(
@@ -492,7 +487,6 @@ describe("Store purchase feedback", () => {
         journeyStatus: null,
         journey: null,
         trailEvent: null,
-        travelDiary: null,
       });
     });
 

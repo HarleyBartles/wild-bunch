@@ -358,7 +358,6 @@ describe("TravelPrepSurface preview identity", () => {
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     };
     mockedPreviewTravel.mockResolvedValue(createPreview());
     mockedTravel.mockReturnValue(pendingTravel.promise);

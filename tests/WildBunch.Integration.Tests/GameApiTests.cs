@@ -201,9 +201,9 @@ public sealed class GameApiTests
             // The departure record stays in the one shared journey journal.
             if (day == 1)
             {
-                Assert.NotNull(advance.TravelDiary);
+                Assert.NotNull(advance.CurrentSession.TravelDiary);
                 var departure = Assert.Single(
-                    advance.TravelDiary!.JourneyEntries,
+                    advance.CurrentSession.TravelDiary!.JourneyEntries,
                     entry => entry.Message.Contains($"toward {destinationTownName}", StringComparison.OrdinalIgnoreCase));
                 Assert.Contains($"{preview.Preview.BaselineRideDays} day(s)", departure.Message, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("by mounted travel", departure.Message, StringComparison.OrdinalIgnoreCase);
@@ -233,8 +233,8 @@ public sealed class GameApiTests
         Assert.Equal(0m, finalAdvance.CurrentSession.Journey.RemainingRideDayDistance);
         Assert.Equal(expectedDays, finalAdvance.CurrentSession.Journey.DaysTravelled);
         Assert.Equal(JourneyStatus.Completed, finalAdvance.CurrentSession.Journey!.Status);
-        Assert.Equal(expectedDays, finalAdvance.TravelDiary!.Days.Count);
-        Assert.Equal(JourneyStatus.Completed, finalAdvance.TravelDiary.Days[^1].Status);
+        Assert.Equal(expectedDays, finalAdvance.CurrentSession.TravelDiary!.Days.Count);
+        Assert.Equal(JourneyStatus.Completed, finalAdvance.CurrentSession.TravelDiary.Days[^1].Status);
 
         // Food consumption is one per ride day, capped at zero when supplies run out.
         var finalFoodItem = finalAdvance.CurrentSession.Inventory!.Items.FirstOrDefault(item => item.Kind == WildBunch.Domain.Inventory.ItemKind.Food);

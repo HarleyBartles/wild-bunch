@@ -392,7 +392,6 @@ describe("TravelPanel", () => {
       currentSession: session,
       journeyStatus: 0,
       journey: session.journey,
-      travelDiary: session.travelDiary,
     };
 
     mockedGetGame.mockResolvedValue(session);
@@ -436,7 +435,6 @@ describe("TravelPanel", () => {
       currentSession: session,
       journeyStatus: 0,
       journey: session.journey,
-      travelDiary: session.travelDiary,
     };
 
     mockedGetGame.mockResolvedValue(session);
@@ -468,7 +466,6 @@ describe("TravelPanel", () => {
       currentSession: updatedSession,
       journeyStatus: 0,
       journey: updatedSession.journey,
-      travelDiary: updatedSession.travelDiary,
     };
 
     mockedGetGame.mockResolvedValueOnce(session).mockResolvedValue(updatedSession);
@@ -513,7 +510,6 @@ describe("TravelPanel", () => {
       currentSession: encounterSession,
       journeyStatus: 0,
       journey: encounterSession.journey,
-      travelDiary: encounterSession.travelDiary,
     });
     mockedResolveTravelEncounter.mockResolvedValue({
       success: true,
@@ -521,7 +517,6 @@ describe("TravelPanel", () => {
       currentSession: resolvedSession,
       journeyStatus: 0,
       journey: resolvedSession.journey,
-      travelDiary: resolvedSession.travelDiary,
     });
 
     renderTravelPanel(session);
@@ -591,7 +586,6 @@ describe("TravelPanel", () => {
       currentSession: updatedFirstGame,
       journeyStatus: 0,
       journey: updatedFirstGame.journey,
-      travelDiary: updatedFirstGame.travelDiary,
     });
 
     await waitFor(() => {

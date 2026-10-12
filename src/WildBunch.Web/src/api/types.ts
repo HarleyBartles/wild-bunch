@@ -672,7 +672,6 @@ export interface GameTurnResultDto {
   journeyStatus?: JourneyStatus | null;
   journey?: TravelJourneyDto | null;
   trailEvent?: JourneyTrailEventDto | null;
-  travelDiary?: TravelDiaryDto | null;
 }
 
 export interface SaloonPersonOfInterestConfrontationResultDto {
