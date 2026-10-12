@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
@@ -25,21 +24,11 @@ public sealed record GameSessionDto(
     IReadOnlyList<GameLogEntryDto> LogEntries,
     ActiveSaloonPersonOfInterestDto? ActiveSaloonPersonOfInterest,
     IReadOnlyList<WantedPosterDto> WantedPosters,
-    HudProjection? HudProjection = null)
-{
-    [JsonIgnore]
-    public ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect
-        => ActiveSaloonPersonOfInterest is null || ActiveSaloonPersonOfInterest.Kind != SaloonPersonOfInterestKind.WantedSuspect
-            ? null
-            : new ActiveSaloonWantedSuspectDto(ActiveSaloonPersonOfInterest.Descriptor);
-}
+    HudProjection? HudProjection = null);
 
 public sealed record ActiveSaloonPersonOfInterestDto(
     string Descriptor,
     SaloonPersonOfInterestKind Kind);
-
-public sealed record ActiveSaloonWantedSuspectDto(
-    string Descriptor);
 
 public sealed record PlayerDto(
     string Name,

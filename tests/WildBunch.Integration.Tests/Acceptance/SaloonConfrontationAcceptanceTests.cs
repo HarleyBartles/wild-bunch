@@ -58,7 +58,7 @@ public sealed class SaloonConfrontationAcceptanceTests
         Assert.True(result.IsAlive);
         Assert.False(result.IsSecured);
         Assert.True(result.SessionChanged);
-        Assert.Null(result.CurrentSession.ActiveSaloonWantedSuspect);
+        Assert.Null(result.CurrentSession.ActiveSaloonPersonOfInterest);
 
         var reloadedSession = await LoadDomainSessionAsync(factory, createdSession.Id);
         Assert.Equal(WantedSuspectPresenceState.AvailableInTown, reloadedSession.GetWantedSuspectPresenceState(new SuspectId("suspect-1")));
