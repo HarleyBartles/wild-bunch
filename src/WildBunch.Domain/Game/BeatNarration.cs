@@ -3,7 +3,7 @@ namespace WildBunch.Domain.Game;
 /// <summary>
 /// Generates diegetic beat narration from the current TimeOfDay, TownActionContext, and town name.
 /// Domain-level helper so GameSession can populate CaseInvestigationResult.BeatNarration without
-/// referencing the Application layer. The Application layer's BeatNarrationRenderer delegates to this.
+/// referencing the Application layer.
 /// </summary>
 public static class BeatNarration
 {
