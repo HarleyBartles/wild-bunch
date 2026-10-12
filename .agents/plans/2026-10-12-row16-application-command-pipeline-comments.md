@@ -34,7 +34,7 @@
 **Files:**
 - Add: `.agents/plans/2026-10-12-row16-application-command-pipeline-comments.md`
 
-- [ ] Commit this plan by itself before changing implementation or successor bookkeeping.
+- [x] Commit this plan by itself before changing implementation or successor bookkeeping.
 
 ### Task 2: Correct stale command-pipeline ownership comments
 
@@ -47,11 +47,11 @@
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-12-row16-turn-result-contract.md`
 
-- [ ] Replace the nonexistent `ExecuteAsync` subclass reference and both claims that subclasses load the session with the actual delegate/base-pipeline contract.
-- [ ] Describe `SetupPhaseException` as an Application rejection raised by the base pipeline when `RequiresGameStarted` is true and the loaded session reports `IsSetupPhase`; do not claim `GameSession.ThrowIfSetupPhase` exists or owns this guard.
-- [ ] Add dated AP-10 dispositions to the source and test follow-up records. Preserve the audit-time finding and state that no runtime test is needed because behavior is unchanged; retain the real orchestration and setup-guard behavior tests.
-- [ ] In the first substantive commit, record PR #288 head `14b5dee717d71deb329983b5ab1fe2ae330f8ba8`, merge `a11efd7e46f6bf034f7d148806928c822a8208d6`, and exact-head hosted gate run `38207230748`; note that the `.103` plan is retired here and this `.104` plan is its successor.
-- [ ] Confirm the source-only comment correction does not require an ADR or feature-matrix change.
-- [ ] Review `git diff --check` and run the canonical staged-snapshot gate through the normal commit hook. Do not add a test that asserts comments, method names mentioned in prose or source shape.
+- [x] Replace the nonexistent `ExecuteAsync` subclass reference and both claims that subclasses load the session with the actual delegate/base-pipeline contract.
+- [x] Describe `SetupPhaseException` as an Application rejection raised by the base pipeline when `RequiresGameStarted` is true and the loaded session reports `IsSetupPhase`; do not claim `GameSession.ThrowIfSetupPhase` exists or owns this guard.
+- [x] Add dated AP-10 dispositions to the source and test follow-up records. Preserve the audit-time finding and state that no runtime test is needed because behavior is unchanged; retain the real orchestration and setup-guard behavior tests.
+- [x] In the first substantive commit, record PR #288 head `14b5dee717d71deb329983b5ab1fe2ae330f8ba8`, merge `a11efd7e46f6bf034f7d148806928c822a8208d6`, and exact-head hosted gate run `38207230748`; note that the `.103` plan is retired here and this `.104` plan is its successor.
+- [x] Confirm the source-only comment correction does not require an ADR or feature-matrix change.
+- [x] Review `git diff --check` and run the canonical staged-snapshot gate through the normal commit hook. Do not add a test that asserts comments, method names mentioned in prose or source shape.
 
 **Validation:** Baseline full gate passed on clean `develop` before edits. The completing commit must pass the canonical gate; whole-branch review must approve the exact branch range; hosted canonical CI must pass on the exact PR head before merge.
