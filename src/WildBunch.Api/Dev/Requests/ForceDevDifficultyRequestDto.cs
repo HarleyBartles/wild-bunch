@@ -1,4 +1,4 @@
-namespace WildBunch.Application.Dev.Models;
+namespace WildBunch.Api.Dev;
 
 /// <summary>
 /// Request DTO for the force-difficulty dev endpoint.

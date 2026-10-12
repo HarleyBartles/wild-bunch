@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using WildBunch.Api.Dev;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
 using WildBunch.Integration.Tests.TestInfrastructure;
