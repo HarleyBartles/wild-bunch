@@ -93,6 +93,34 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
+    public void GenerateLayout_UsesValidBuildingGeometryForEverySupportedPalette()
+    {
+        var supportedPalettes = Enum.GetValues<BuildingLayoutPalette>()
+            .Where(palette => !palette.ToString().StartsWith("Reserved", StringComparison.Ordinal));
+
+        foreach (var palette in supportedPalettes)
+        {
+            var townId = NewTownId($"town-{palette}");
+            var layout = TownLayoutGenerator.GenerateLayout(
+                TownProsperity.Prosperous,
+                townId,
+                0,
+                NewLayoutSource(),
+                palette);
+
+            Assert.InRange(layout.PlayerSpawnX, 0, 100);
+            Assert.InRange(layout.PlayerSpawnY, 0, 100);
+            Assert.All(layout.Buildings, building =>
+            {
+                Assert.InRange(building.X, 0, 100);
+                Assert.InRange(building.Y, 0, 100);
+                Assert.True(building.Width > 0);
+                Assert.True(building.Height > 0);
+            });
+        }
+    }
+
+    [Fact]
     public void GenerateLayout_UsesTileBasedPositionsWithoutJitter()
     {
         var townId = NewTownId("town-1");

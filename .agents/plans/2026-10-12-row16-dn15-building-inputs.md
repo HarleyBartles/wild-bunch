@@ -57,19 +57,19 @@
 - Consumes: BuildingPlacement positional values X, Y, View, Width, Height; TownLayout positional values PlayerSpawnX and PlayerSpawnY.
 - Produces: the same public positional records, with invalid coordinates and nonpositive building dimensions rejected at construction and on init assignment.
 
-- [ ] Add behavior tests proving BuildingPlacement direct construction rejects X/Y values -1 and 101, Width/Height values -1 and 0, and with updates cannot bypass any of those checks.
-- [ ] Add behavior tests proving TownLayout direct construction and with updates reject PlayerSpawnX/PlayerSpawnY values -1 and 101; preserve valid endpoint construction for 0 and 100.
-- [ ] Run each new test against the unmodified values and confirm it fails because the positional constructors or generated init properties accept the invalid values.
-- [ ] Add validated init properties with backing fields to BuildingPlacement and TownLayout, initializing each field from its matching primary-constructor parameter and throwing ArgumentOutOfRangeException for an invalid value.
-- [ ] Add a focused positional API behavior test proving BuildingPlacement and TownLayout preserve record equality and deconstruction with the validated positional properties.
-- [ ] Run the focused TownLayoutTests suite and confirm construction, with updates, defaults, custom dimensions, positional equality/deconstruction, and boundary cases pass.
-- [ ] Add a generator behavior test that runs every supported non-reserved BuildingLayoutPalette and verifies its layout constructs with legal center/spawn coordinates and positive dimensions.
-- [ ] Run the complete TownLayoutGeneratorTests suite to verify every supported generated layout still constructs and remains reachable under the new invariants.
-- [ ] Update the PhaserTownHubHost forwarding test to use a valid layout payload and retain its identity assertion; run the focused Vitest file.
-- [ ] Run focused TownLayoutMapperTests and the existing PostgreSQL-backed world-cache recovery test to confirm application mapping and persisted-world JSON reconstruction retain their existing shape.
-- [ ] Correct DN-15 current prose and its per-file index: mark the delivered hash and money defects resolved, record the delivered BuildingPlacement and TownLayout spawn contracts, remove stale PathSegment/factory-bypass language, and leave collection/grid shape conditional where the contract is not settled.
-- [ ] Update row 16 with PR #300 delivery evidence, replace its active plan link with this .116 plan, and retire the completed .115 PathSegment plan in this successor slice.
-- [ ] Change Directory.Build.props exactly once from 0.1.0-dev.115 to 0.1.0-dev.116 in the first substantive implementation commit.
+- [x] Add behavior tests proving BuildingPlacement direct construction rejects X/Y values -1 and 101, Width/Height values -1 and 0, and with updates cannot bypass any of those checks.
+- [x] Add behavior tests proving TownLayout direct construction and with updates reject PlayerSpawnX/PlayerSpawnY values -1 and 101; preserve valid endpoint construction for 0 and 100.
+- [x] Run each new test against the unmodified values and confirm it fails because the positional constructors or generated init properties accept the invalid values.
+- [x] Add validated init properties with backing fields to BuildingPlacement and TownLayout, initializing each field from its matching primary-constructor parameter and throwing ArgumentOutOfRangeException for an invalid value.
+- [x] Add a focused positional API behavior test proving BuildingPlacement and TownLayout preserve record equality and deconstruction with the validated positional properties.
+- [x] Run the focused TownLayoutTests suite and confirm construction, with updates, defaults, custom dimensions, positional equality/deconstruction, and boundary cases pass.
+- [x] Add a generator behavior test that runs every supported non-reserved BuildingLayoutPalette and verifies its layout constructs with legal center/spawn coordinates and positive dimensions.
+- [x] Run the complete TownLayoutGeneratorTests suite to verify every supported generated layout still constructs and remains reachable under the new invariants.
+- [x] Update the PhaserTownHubHost forwarding test to use a valid layout payload and retain its identity assertion; run the focused Vitest file.
+- [x] Run focused TownLayoutMapperTests and the existing PostgreSQL-backed world-cache recovery test to confirm application mapping and persisted-world JSON reconstruction retain their existing shape.
+- [x] Correct DN-15 current prose and its per-file index: mark the delivered hash and money defects resolved, record the delivered BuildingPlacement and TownLayout spawn contracts, remove stale PathSegment/factory-bypass language, and leave collection/grid shape conditional where the contract is not settled.
+- [x] Update row 16 with PR #300 delivery evidence, replace its active plan link with this .116 plan, and retire the completed .115 PathSegment plan in this successor slice.
+- [x] Change Directory.Build.props exactly once from 0.1.0-dev.115 to 0.1.0-dev.116 in the first substantive implementation commit.
 - [ ] Inspect and stage the implementation, behavioral tests, investigation/roadmap update, .116 version, and .115 plan retirement together. Commit through the normal check-only hook; do not bypass it or run the complete gate redundantly before the hooked commit.
 
 **Acceptance:** Both Domain types enforce only their documented coordinate/size boundaries at every public construction and init-update path. Valid generated layouts, the positional and JSON contracts, and historical persisted-world reconstruction remain intact. DN-15 and row 16 describe the current state truthfully, PR #300 is recorded with its exact hosted evidence, and its completed plan is retired in this successor.

@@ -110,8 +110,8 @@ describe("PhaserTownHubHost", () => {
           view: BuildingView.Front,
         },
       ],
-      playerSpawnX: 120,
-      playerSpawnY: 130,
+      playerSpawnX: 47,
+      playerSpawnY: 53,
     });
 
     renderHost({ layout });
