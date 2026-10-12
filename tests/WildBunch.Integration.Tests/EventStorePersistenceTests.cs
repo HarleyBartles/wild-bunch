@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -93,6 +94,20 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         Assert.Equal("TownActionContextEntered", storedEvents[6].EventType);
         Assert.Equal("StoreItemPurchased", storedEvents[7].EventType);
         Assert.Equal(8, storedEvents[7].Sequence);
+
+        using var purchasePayload = JsonDocument.Parse(storedEvents[7].PayloadJson);
+        var payloadPropertyNames = purchasePayload.RootElement
+            .EnumerateObject()
+            .Select(property => property.Name)
+            .ToArray();
+        Assert.Equal(2, purchasePayload.RootElement.GetProperty("quantity").GetInt32());
+        Assert.DoesNotContain("eventId", payloadPropertyNames);
+        Assert.DoesNotContain("sequence", payloadPropertyNames);
+        Assert.DoesNotContain("occurredAtUtc", payloadPropertyNames);
+        Assert.DoesNotContain("schemaVersion", payloadPropertyNames);
+        Assert.DoesNotContain("correlationId", payloadPropertyNames);
+        Assert.DoesNotContain("causationId", payloadPropertyNames);
+        Assert.DoesNotContain("streamId", payloadPropertyNames);
     }
 
     [Fact]
