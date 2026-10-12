@@ -27,8 +27,8 @@
 **Files:**
 - `.agents/plans/2026-10-12-row17-discovered-suspect-projection-proof.md`
 
-- [ ] Confirm N-06 against the current investigation, query test, mapper and available player/dev secrecy tests.
-- [ ] Commit this plan alone without advancing the application version.
+- [x] Confirm N-06 against the current investigation, query test, mapper and available player/dev secrecy tests.
+- [x] Commit this plan alone without advancing the application version.
 
 ## Task 2: Make the undiscovered-suspect exclusion observable
 
@@ -39,12 +39,12 @@
 - `.agents/plans/2026-10-12-row17-concurrency-retry-proof.md`
 - `Directory.Build.props`
 
-- [ ] Replace the one-suspect factory in `GetGameSessionProjectsOnlyExplicitlyDiscoveredSuspects` with a case containing two named suspects and discover exactly one before querying.
-- [ ] Assert the fixture has two roster members and one discovered member, then assert the DTO contains the discovered suspect and excludes the real undiscovered suspect by name and serialized payload.
-- [ ] Temporarily change the mapper to project the full case roster and confirm this test fails because the hidden suspect appears; restore the mapper and rerun the focused test.
-- [ ] Record a dated N-06 disposition for the already-satisfied misleading dev-test half: the dedicated method was removed in commit `02fd3e66`, its positive developer assertions remain in `HandleAsync_ReturnsSaloonContext_WithHiddenTruthAndSuspects`, and player DTO secrecy remains covered at the Application mapping boundary. Record this slice's correction of the remaining fixture defect without rewriting the original finding.
-- [ ] Update the row-17 roadmap with PR #305 delivery evidence and paired cleanup verification, name N-06 as the active successor at `.121`, and retire the completed N-05 plan in this same first substantive commit.
-- [ ] Advance the authored version once to `0.1.0-dev.121` and run the focused test plus the complete Application suite before committing through the normal hook.
+- [x] Replace the one-suspect factory in `GetGameSessionProjectsOnlyExplicitlyDiscoveredSuspects` with a case containing two named suspects and discover exactly one before querying.
+- [x] Assert the fixture has two roster members and one discovered member, then assert the DTO contains the discovered suspect and excludes the real undiscovered suspect by name and serialized payload.
+- [x] Temporarily change the mapper to project the full case roster and confirm this test fails because the hidden suspect appears; restore the mapper and rerun the focused test.
+- [x] Record a dated N-06 disposition for the already-satisfied misleading dev-test half: the dedicated method was removed in commit `02fd3e66`, its positive developer assertions remain in `HandleAsync_ReturnsSaloonContext_WithHiddenTruthAndSuspects`, and player DTO secrecy remains covered at the Application mapping boundary. Record this slice's correction of the remaining fixture defect without rewriting the original finding.
+- [x] Update the row-17 roadmap with PR #305 delivery evidence and paired cleanup verification, name N-06 as the active successor at `.121`, and retire the completed N-05 plan in this same first substantive commit.
+- [x] Advance the authored version once to `0.1.0-dev.121` and run the focused test plus the complete Application suite before committing through the normal hook.
 
 ## Task 3: Review, publish, merge and retire the execution unit
 
