@@ -560,17 +560,12 @@ export interface GameSessionDto {
   logEntries: GameLogEntryDto[];
   activeSaloonPersonOfInterest: ActiveSaloonPersonOfInterestDto | null;
   wantedPosters: WantedPosterDto[];
-  activeSaloonWantedSuspect?: ActiveSaloonWantedSuspectDto | null;
   hudProjection?: HudProjection | null;
 }
 
 export interface ActiveSaloonPersonOfInterestDto {
   descriptor: string;
   kind: SaloonPersonOfInterestKind;
-}
-
-export interface ActiveSaloonWantedSuspectDto {
-  descriptor: string;
 }
 
 export enum SaloonPersonOfInterestKind {
