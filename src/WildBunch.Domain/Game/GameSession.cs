@@ -352,97 +352,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             throw new InvalidOperationException("This playthrough has ended.");
         }
 
-        ApplyProducedEvent(e);
+        ApplyEvent(e);
         _uncommittedEvents.Add(e);
-    }
-
-    /// <summary>
-    /// Dispatches a produced event to the appropriate Apply overload. Mirrors the replay
-    /// dispatcher in <see cref="GameSessionEventReplay.ApplyEvent"/> so command-path and
-    /// replay-path mutation stay identical. Throws for unknown event types.
-    /// </summary>
-    private void ApplyProducedEvent(IDomainEvent e)
-    {
-        switch (e)
-        {
-            case GameStarted gs:
-                Apply(gs);
-                break;
-            case PlaythroughArchived pa:
-                Apply(pa);
-                break;
-            case PlayerDied pd:
-                Apply(pd);
-                break;
-            case StoreItemPurchased p:
-                Apply(p);
-                break;
-            case InvestigationPerformed ip:
-                Apply(ip);
-                break;
-            case TownActionContextEntered tc:
-                Apply(tc);
-                break;
-            case SaloonPersonOfInterestSpotted sp:
-                Apply(sp);
-                break;
-            case WantedSuspectConfronted wc:
-                Apply(wc);
-                break;
-            case SheriffTurnInSettled ts:
-                Apply(ts);
-                break;
-            case SaloonPersonOfInterestConfronted sc:
-                Apply(sc);
-                break;
-            case JourneyStarted js:
-                Apply(js);
-                break;
-            case TravelDayAdvanced tda:
-                Apply(tda);
-                break;
-            case TrailEventApplied tea:
-                Apply(tea);
-                break;
-            case JourneyEncounterResolved jer:
-                Apply(jer);
-                break;
-            case JourneyCompleted jc:
-                Apply(jc);
-                break;
-            case JourneyArrivalAcknowledged jaa:
-                Apply(jaa);
-                break;
-            case DevTravelOverrideForced dtf:
-                Apply(dtf);
-                break;
-            case DevTravelOverrideCleared dtc:
-                Apply(dtc);
-                break;
-            case DevTravelOverrideConsumed dtc2:
-                Apply(dtc2);
-                break;
-            case DevSaloonOverrideForced dsf:
-                Apply(dsf);
-                break;
-            case DevSaloonOverrideCleared dsc:
-                Apply(dsc);
-                break;
-            case DevSaloonOverrideConsumed dsc2:
-                Apply(dsc2);
-                break;
-            case DevDifficultyForced ddf:
-                Apply(ddf);
-                break;
-            case DevEntropyChanged dec:
-                Apply(dec);
-                break;
-            case WorldGenerated wg:
-                Apply(wg);
-                break;
-            default:
-                throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
-        }
     }
 
     /// <summary>
@@ -856,18 +767,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
 
-        session.Apply(setupEvent);
-        session._uncommittedEvents.Add(setupEvent);
-        session.Apply(worldEvent);
-        session._uncommittedEvents.Add(worldEvent);
+        session.ProduceEvent(setupEvent);
+        session.ProduceEvent(worldEvent);
 
         var caseFileEvent = new CaseFileGenerated
         {
             CaseFile = CaseFileSnapshot.FromDomain(caseFile)
         };
 
-        session.Apply(caseFileEvent);
-        session._uncommittedEvents.Add(caseFileEvent);
+        session.ProduceEvent(caseFileEvent);
 
         return session;
     }
@@ -893,8 +801,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             StartingTownId = startingTownId
         };
 
-        Apply(e);
-        _uncommittedEvents.Add(e);
+        ProduceEvent(e);
     }
 
     /// <summary>
@@ -933,8 +840,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SeedCode = SeedCode
         };
 
-        Apply(e);
-        _uncommittedEvents.Add(e);
+        ProduceEvent(e);
     }
 
     /// <summary>
@@ -965,8 +871,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             RevealedSuspectIdentifier = revealedSuspectIdentifier
         };
 
-        Apply(e);
-        _uncommittedEvents.Add(e);
+        ProduceEvent(e);
     }
 
     /// <summary>

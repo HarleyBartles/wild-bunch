@@ -33,7 +33,7 @@ Verify that setup, prologue, starting-town selection, and game-start commands st
 **Files:**
 - Add: `.agents/plans/2026-10-12-row16-domain-event-dispatcher.md`
 
-- [ ] Commit this plan by itself before changing Domain code, the investigation, roadmap, or version.
+- [x] Commit this plan by itself before changing Domain code, the investigation, roadmap, or version.
 
 ### Task 2: Use one event dispatcher for command production and replay
 
@@ -43,12 +43,12 @@ Verify that setup, prologue, starting-town selection, and game-start commands st
 - Verify: `tests/WildBunch.Domain.Tests/Events/StartFlowEventSourcingTests.cs`
 - Verify: `tests/WildBunch.Domain.Tests/Game/GameSessionEventReplayTests.cs`
 
-- [ ] First run the focused existing start-flow and event-replay tests to confirm the current behavior baseline.
-- [ ] Move the typed event switch from `ApplyProducedEvent` into one instance `ApplyEvent` dispatcher available to `GameSession` partials; keep every currently supported replay event case and the explicit unknown-event failure.
-- [ ] Route `ProduceEvent` through the shared dispatcher before appending to `UncommittedEvents`.
-- [ ] Route `StartSetup`, `ViewPrologue`, `SelectStartingTown`, and `CompleteGameStart` through `ProduceEvent`, preserving their current event order and idempotent/rejection behavior.
-- [ ] Remove the duplicate production dispatcher and the unused `firstEvent` local; do not add a second event inventory or reflection-based dispatch.
-- [ ] Run `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~StartFlowEventSourcingTests` and `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~GameSessionEventReplayTests`; both must pass against the command and replay paths.
+- [x] First run the focused existing start-flow and event-replay tests to confirm the current behavior baseline.
+- [x] Move the typed event switch from `ApplyProducedEvent` into one instance `ApplyEvent` dispatcher available to `GameSession` partials; keep every currently supported replay event case and the explicit unknown-event failure.
+- [x] Route `ProduceEvent` through the shared dispatcher before appending to `UncommittedEvents`.
+- [x] Route `StartSetup`, `ViewPrologue`, `SelectStartingTown`, and `CompleteGameStart` through `ProduceEvent`, preserving their current event order and idempotent/rejection behavior.
+- [x] Remove the duplicate production dispatcher and the unused `firstEvent` local; do not add a second event inventory or reflection-based dispatch.
+- [x] Run `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~StartFlowEventSourcingTests` and `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~GameSessionEventReplayTests`; both must pass against the command and replay paths.
 - [ ] Inspect the focused diff and `git diff --check`; confirm no event payload, migration, upcaster, or externally visible gameplay change was introduced.
 
 ### Task 3: Correct the DN-14 disposition

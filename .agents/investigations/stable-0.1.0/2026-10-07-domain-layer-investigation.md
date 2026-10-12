@@ -131,6 +131,8 @@ Retire the misleading unused properties or use a genuinely captured fact when do
 
 Remove obsolete code when nearby remediation establishes its consumers. Record intentional omissions and semantic distinctions in live guidance rather than retaining task scaffolding. Do not invent replacement abstractions for every removed helper.
 
+**Dated disposition, 2026-10-12:** Command production, event replay, and committed-event catch-up now use one `GameSession.ApplyEvent` dispatcher. `StartSetup`, `ViewPrologue`, `SelectStartingTown`, and `CompleteGameStart` route their existing events through `ProduceEvent`; the duplicate command dispatcher and unused replay local are removed. Existing start-flow and replay outcomes are unchanged. This closes only the dispatcher-drift and unused-local observations; the remaining DN-14 findings stay open for separate disposition.
+
 ### DN-15: Accepted-value and deterministic-index edges need narrower contracts
 
 **Conditional input defects, not reproduced ordinary-player failures.** `Cases/CaseWarrants.cs:18-43` accepts negative bounty amounts; settlement policies propagate signed cash effects. Current content has no negative example established by this audit. Define nonnegative bounty at the owning contract, or document a real upstream guarantee and reconstruction policy. Likewise `Wallet`'s public positional constructor can accept negative cash despite its guarded adjustment methods; current generated wallets are valid. `PathSegment.Create` validates coordinates but the public record constructor bypasses it, and layout dimensions/grids are permissive. Avoid treating a helper factory as a universally enforced invariant.
@@ -231,8 +233,8 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Game/GameClock.cs](../../../src/WildBunch.Domain/Game/GameClock.cs) | Keep clock behavior; exposed mutation DN-09 and pre-event advance DN-06. |
 | [Game/GameLogEntry.cs](../../../src/WildBunch.Domain/Game/GameLogEntry.cs) | Keep consumed projection contract pending transfer; not dead because of legacy wording. |
 | [Game/GameLogEntryKind.cs](../../../src/WildBunch.Domain/Game/GameLogEntryKind.cs) | Keep projected log identifiers. |
-| [Game/GameSession.cs](../../../src/WildBunch.Domain/Game/GameSession.cs) | Correct DN-01 through DN-07; public authority seams DN-09 and dispatcher drift DN-14. |
-| [Game/GameSessionEventReplay.cs](../../../src/WildBunch.Domain/Game/GameSessionEventReplay.cs) | Correct ordered ledger DN-03, salt fallback DN-01, dead local DN-14; history policy DN-16. |
+| [Game/GameSession.cs](../../../src/WildBunch.Domain/Game/GameSession.cs) | Correct DN-01 through DN-07; public authority seams DN-09; shared command/replay dispatcher closes one DN-14 subfinding. |
+| [Game/GameSessionEventReplay.cs](../../../src/WildBunch.Domain/Game/GameSessionEventReplay.cs) | Correct ordered ledger DN-03 and salt fallback DN-01; shared dispatcher and unused-local removal close one DN-14 subfinding; history policy DN-16. |
 | [Game/GameSessionId.cs](../../../src/WildBunch.Domain/Game/GameSessionId.cs) | Keep typed identity/new-session factory; not replay-time gameplay RNG. |
 | [Game/GameStatus.cs](../../../src/WildBunch.Domain/Game/GameStatus.cs) | Keep statuses; Completed/Failed membership does not establish implemented transitions. |
 | [Game/InvestigationLoop.cs](../../../src/WildBunch.Domain/Game/InvestigationLoop.cs) | Decision logic returns typed events and does not mutate CaseFile; see DN-08 for missing release-progress decision. |

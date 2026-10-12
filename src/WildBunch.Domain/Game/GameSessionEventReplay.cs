@@ -39,11 +39,6 @@ public sealed partial class GameSession
             throw new ArgumentException("Cannot rehydrate a session from an empty event stream.", nameof(events));
         }
 
-        // The first event may be PlayerSetupCompleted (start flow) or GameStarted (legacy/direct start).
-        // For setup-phase sessions, we use the PlayerSetupCompleted event to construct a placeholder.
-        // For GameStarted sessions, we use the GameStarted event as before.
-        var firstEvent = events[0];
-
         var gameStarted = events.OfType<GameStarted>().FirstOrDefault();
         var setupCompleted = events.OfType<PlayerSetupCompleted>().FirstOrDefault();
         var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
@@ -111,7 +106,7 @@ public sealed partial class GameSession
         // Replay all events through Apply
         foreach (var e in events)
         {
-            ApplyEvent(session, e);
+            session.ApplyEvent(e);
         }
 
         var missingCaseFileWorldIndex = events.ToList().FindIndex(
@@ -132,96 +127,96 @@ public sealed partial class GameSession
     /// Dispatches a typed domain event to the appropriate Apply method.
     /// Throws for unknown event types to prevent silent data loss.
     /// </summary>
-    private static void ApplyEvent(GameSession session, IDomainEvent e)
+    private void ApplyEvent(IDomainEvent e)
     {
         switch (e)
         {
             case GameStarted gs:
-                session.Apply(gs);
+                Apply(gs);
                 break;
             case PlayerSetupCompleted psc:
-                session.Apply(psc);
+                Apply(psc);
                 break;
             case WorldGenerated wg:
-                session.Apply(wg);
+                Apply(wg);
                 break;
             case CaseFileGenerated cfg:
-                session.Apply(cfg);
+                Apply(cfg);
                 break;
             case StartingTownSelected sts:
-                session.Apply(sts);
+                Apply(sts);
                 break;
             case PrologueViewed pv:
-                session.Apply(pv);
+                Apply(pv);
                 break;
             case PlaythroughArchived pa:
-                session.Apply(pa);
+                Apply(pa);
                 break;
             case PlayerDied pd:
-                session.Apply(pd);
+                Apply(pd);
                 break;
             case StoreItemPurchased p:
-                session.Apply(p);
+                Apply(p);
                 break;
             case InvestigationPerformed ip:
-                session.Apply(ip);
+                Apply(ip);
                 break;
             case TownActionContextEntered tc:
-                session.Apply(tc);
+                Apply(tc);
                 break;
             case SaloonPersonOfInterestSpotted sp:
-                session.Apply(sp);
+                Apply(sp);
                 break;
             case WantedSuspectConfronted wc:
-                session.Apply(wc);
+                Apply(wc);
                 break;
             case SheriffTurnInSettled ts:
-                session.Apply(ts);
+                Apply(ts);
                 break;
             case SaloonPersonOfInterestConfronted sc:
-                session.Apply(sc);
+                Apply(sc);
                 break;
             case JourneyStarted js:
-                session.Apply(js);
+                Apply(js);
                 break;
             case TravelDayAdvanced tda:
-                session.Apply(tda);
+                Apply(tda);
                 break;
             case TrailEventApplied tea:
-                session.Apply(tea);
+                Apply(tea);
                 break;
             case JourneyEncounterResolved jer:
-                session.Apply(jer);
+                Apply(jer);
                 break;
             case JourneyCompleted jc:
-                session.Apply(jc);
+                Apply(jc);
                 break;
             case JourneyArrivalAcknowledged jaa:
-                session.Apply(jaa);
+                Apply(jaa);
                 break;
             case DevTravelOverrideForced dtf:
-                session.Apply(dtf);
+                Apply(dtf);
                 break;
             case DevTravelOverrideCleared dtc:
-                session.Apply(dtc);
+                Apply(dtc);
                 break;
             case DevTravelOverrideConsumed dtc2:
-                session.Apply(dtc2);
+                Apply(dtc2);
                 break;
             case DevSaloonOverrideForced dsf:
-                session.Apply(dsf);
+                Apply(dsf);
                 break;
             case DevSaloonOverrideCleared dsc:
-                session.Apply(dsc);
+                Apply(dsc);
                 break;
             case DevSaloonOverrideConsumed dsc2:
-                session.Apply(dsc2);
+                Apply(dsc2);
                 break;
             case DevDifficultyForced ddf:
-                session.Apply(ddf);
+                Apply(ddf);
                 break;
             case DevEntropyChanged dec:
-                session.Apply(dec);
+                Apply(dec);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
@@ -239,7 +234,7 @@ public sealed partial class GameSession
         ArgumentNullException.ThrowIfNull(events);
         foreach (var e in events)
         {
-            ApplyEvent(this, e);
+            ApplyEvent(e);
         }
     }
 }
