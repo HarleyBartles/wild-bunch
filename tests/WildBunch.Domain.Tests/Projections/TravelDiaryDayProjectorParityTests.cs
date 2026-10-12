@@ -116,31 +116,22 @@ public sealed class TravelDiaryDayProjectorParityTests
         var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
         var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(commandSession);
         commandSession.StartJourney(preview);
+        commandSession.ForceDevTravelOverride(DevTravelOverride.ForCategory(
+            TravelDayEncounterCategory.Foe,
+            "A hard-eyed rider cuts across my path."));
 
-        // Advance until an encounter interrupts the journey
-        TravelJourneyStepResult result;
-        do
-        {
-            result = commandSession.AdvanceJourneyDay();
-        } while (result.Status == JourneyStatus.Active && result.Success);
+        var result = commandSession.AdvanceJourneyDay();
 
-        // If the journey didn't interrupt, this test setup isn't producing encounters.
-        // Skip the parity check if no encounter was triggered.
-        if (commandSession.Journey?.Status != JourneyStatus.Interrupted)
-        {
-            // No encounter interrupted — still verify parity for the quiet days produced.
-            var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
-            var projector = new TravelDiaryDayProjector();
-            var projection = projector.Project(events);
-            Assert.Equal(commandSession.TravelDiaryDays, projection.Days);
-            return;
-        }
+        Assert.Equal(JourneyStatus.Interrupted, result.Status);
+        Assert.Equal(JourneyStatus.Interrupted, commandSession.Journey!.Status);
+        Assert.NotNull(commandSession.Journey.PendingEncounter);
+        var interruptedDay = Assert.Single(commandSession.UncommittedEvents.OfType<TravelDayAdvanced>());
+        Assert.Equal(TravelDayOutcome.Interrupted, interruptedDay.DayOutcome);
+        Assert.NotEmpty(interruptedDay.DayEntries);
 
-        // Journey is interrupted — verify parity with the interrupted day
-        var allEvents = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
-        var proj = new TravelDiaryDayProjector();
-        var interruptedProjection = proj.Project(allEvents);
-        Assert.Equal(commandSession.TravelDiaryDays, interruptedProjection.Days);
+        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var projection = new TravelDiaryDayProjector().Project(events);
+        Assert.Equal(commandSession.TravelDiaryDays, projection.Days);
     }
 
     private static TravelPreview ResolveTravelPreview(GameSession session, TownId destinationId)
