@@ -19,7 +19,7 @@
 - Do not change event history, journal projection, gameplay behavior, command legality or endpoint routes.
 - This pre-release has no client compatibility obligation for the duplicate ignored/unused response field.
 - Use one `Directory.Build.props` application version, advancing exactly once to `0.1.0-dev.103` for this PR.
-- Preserve PR delivery to `develop`, exact-head hosted gate, review, successor-artifact retirement, and paired worktree/local/upstream branch cleanup.
+- Preserve PR delivery to `develop`, exact-head hosted gate, review, successor-artifact retirement, and paired worktree/local/upstream branch cleanup. Removing a worktree does not remove its branch refs; explicitly delete the matching local and upstream branches after verified merge and worktree removal, then verify all three are absent.
 
 ## Review Focus
 
