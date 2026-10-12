@@ -100,6 +100,18 @@ public sealed class SaloonPoiSelectionTests
     }
 
     [Fact]
+    public void LookAroundSaloon_RuntimeShapedSaltWhoseHashIsIntMinValueStillSelectsAndRecordsPoi()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect("000000000000000000000000DEA475D9");
+        var result = session.LookAroundSaloon();
+
+        Assert.True(result.Success);
+        var spottedEvent = Assert.Single(session.UncommittedEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.Equal(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId, spottedEvent.SuspectId);
+        Assert.Equal(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind, spottedEvent.PersonOfInterestKind);
+    }
+
+    [Fact]
     public void DevOverrideCanForceSuspectCitizenAndNobodyCleanly()
     {
         // Suspect

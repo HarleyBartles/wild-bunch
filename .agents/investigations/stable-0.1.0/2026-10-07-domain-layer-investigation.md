@@ -143,6 +143,8 @@ Remove obsolete code when nearby remediation establishes its consumers. Record i
 
 `BountyLoop.StableSaloonRollHash` and `CitizenCast.StableHash` call `Math.Abs` on unchecked signed hashes (`BountyLoop.cs:1000-1010`; `CitizenCast.cs:205-219`). The `int.MinValue` result throws. No concrete generated seed/input reaching that result was established. Resolve overflow-safe index conversion if arbitrary salt/content inputs are supported, preserving explicitly selected deterministic compatibility rather than casually changing all existing roll sequences.
 
+**Dated disposition, 2026-10-12, partial:** A valid 32-character uppercase hexadecimal runtime salt, `000000000000000000000000DEA475D9`, with the fixture's `current` town and day/turn/visit values `1/1/1/1` reaches `int.MinValue` through the normal `GameSession.LookAroundSaloon` command. The command-level test observed the `OverflowException` at `Math.Abs`; the fix maps only `int.MinValue` to `int.MaxValue`, preserving every other hash and the existing pool modulo. `CitizenCast.StableHash` remains open; this finding does not establish a production-shaped collision for its input contract.
+
 ### DN-16: Incomplete encounter and legacy-repair semantics require decisions
 
 **Questions/conditional paths, not asserted new gameplay rules.** Generated Npc encounters share run/fight/bribe and default foe resolution (`TravelDayPlanGenerator.Context.cs:625-636`; `JourneyLoop.cs:357-380`). Confirm whether these are hostile contacts or an unfinished distinct interaction. Food warnings exist, but travel consumes food only when available and no player starvation rule was established. Decide intended shortage behavior before writing a test that invents it.
