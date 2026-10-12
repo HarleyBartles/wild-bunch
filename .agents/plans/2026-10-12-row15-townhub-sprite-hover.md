@@ -44,12 +44,12 @@
 - Consumes: current layout, availability, sprite texture, and Phaser pointer events.
 - Produces: available sprite hover interaction that scales the fitted X/Y pair by 1.05 and restores the captured pair exactly; pointer-down still calls `selectBuilding`.
 
-- [ ] Replace or extend the visual sprite double so it stores event handlers, tracks intrinsic texture dimensions, models `setDisplaySize` as independent X/Y scale assignment, and derives rendered dimensions from those scales.
-- [ ] Add a texture-backed available-building behavior test with nonuniform fitted scale. Fire pointer-over, pointer-out, and pointer-down handlers and assert the two scale axes and rendered dimensions at each state, plus the existing selected-building callback.
-- [ ] Run that focused test against the unmodified scene and confirm it fails specifically because pointer-over loses the fitted ratio and pointer-out fails to restore fitted dimensions; retain the failure output only in the working session, not in the repository.
-- [ ] Capture the sprite's fitted X/Y scales before binding hover events; apply the 1.05 multiplier to each axis on entry and restore the captured pair on exit.
-- [ ] Run the focused behavior test and confirm the sprite interaction passes. Keep `setScale(1.05)`/`setScale(1)` on the unit-scale rectangle fallback unchanged; add fallback behavior assertions only if existing tests do not already prove its hover and restore outcomes.
-- [ ] Run the TownHubScene-focused web tests and confirm sprite availability/opacity and callback behavior remain correct.
+- [x] Replace or extend the visual sprite double so it stores event handlers, tracks intrinsic texture dimensions, models `setDisplaySize` as independent X/Y scale assignment, and derives rendered dimensions from those scales.
+- [x] Add a texture-backed available-building behavior test with nonuniform fitted scale. Fire pointer-over, pointer-out, and pointer-down handlers and assert the two scale axes and rendered dimensions at each state, plus the existing selected-building callback.
+- [x] Run that focused test against the unmodified scene and confirm it fails at pointer-over because the scalar reset loses the fitted ratio; its later pointer-out assertions cover exact restoration after that defect is fixed. Retain the failure output only in the working session, not in the repository.
+- [x] Capture the sprite's fitted X/Y scales before binding hover events; apply the 1.05 multiplier to each axis on entry and restore the captured pair on exit.
+- [x] Run the focused behavior tests and confirm sprite and rectangle fallback hover/restoration plus building selection pass. The fallback test was deliberately broken and failed at its 1.05 hover assertion before its production behavior was restored.
+- [x] Run the TownHubScene-focused web tests and confirm sprite availability/opacity and callback behavior remain correct.
 
 ### Task 2: Verify the rendered hover interaction and update owned evidence
 
@@ -62,11 +62,11 @@
 - Consumes: Task 1's passing event behavior test and the current browser-game scenario.
 - Produces: an explicit baseline invariant and accurate PG-003 evidence assessment, plus real-browser observation of sprite hover and restoration.
 
-- [ ] Add the sprite fitted-size/ratio hover invariant to the Web resources and interactions proof family, preserving the existing pointer-only town map decision.
-- [ ] Update PG-003's assessment with the focused sprite-hover behavior test and browser result while retaining its partial status and existing map limitations.
-- [ ] Ensure PostgreSQL and the worktree's API/web servers with the repository helpers; prove the browser's web app uses this worktree's API and identify the existing active playthrough without creating, archiving, restarting, or travelling in a game.
-- [ ] Hover an available texture-backed building, verify visible enlargement and exact return to the prior fitted size after pointer exit, observe pointer-down selection without submitting a gameplay command, and record actual API/web URLs, console/network errors, and the observation separately from automated test results.
-- [ ] Stop only servers started for this worktree; leave shared PostgreSQL running. If no safe existing playthrough or texture-backed rendered building is available, use the least invasive deterministic route and state the remaining browser limitation rather than creating or mutating a playthrough.
+- [x] Add the sprite fitted-size/ratio hover invariant to the Web resources and interactions proof family, preserving the existing pointer-only town map decision.
+- [x] Update PG-003's assessment with the focused sprite-hover behavior test and browser result while retaining its partial status and existing map limitations.
+- [x] Ensure PostgreSQL and the worktree's API/web servers with the repository helpers; prove the browser's web app uses this worktree's API and identify the existing active playthrough without creating, archiving, restarting, or travelling in a game.
+- [x] Hover an available texture-backed building, verify visible enlargement and exact return to the prior fitted size after pointer exit, observe pointer-down selection without submitting a gameplay command, and record actual API/web URLs, console/network errors, and the observation separately from automated test results.
+- [x] Stop only servers started for this worktree; leave shared PostgreSQL running. The original browser route was restored after the read-only town/store navigation.
 
 ### Task 3: Retire the predecessor plan, advance version, and publish
 
@@ -76,9 +76,9 @@
 - Delete: `.agents/plans/2026-10-12-row15-map-renderer.md`
 - Keep through this PR: `.agents/plans/2026-10-12-row15-townhub-sprite-hover.md`
 
-- [ ] Classify the complete `.97` predecessor plan against its behavior, tests, and PR #282 delivery; retain WB-16 town-hub host/lifecycle cleanup as remaining row-15 work and do not mark row 15 complete.
-- [ ] Update row 15 to make this `.98` plan active, record PR #282 source/merge and hosted checks from verified evidence, and state that its worktree plus local/upstream branch were removed and verified.
-- [ ] Delete the completed predecessor plan in this first substantive commit and advance `Directory.Build.props` to `0.1.0-dev.98`.
+- [x] Classify the complete `.97` predecessor plan against its behavior, tests, and PR #282 delivery; retain WB-16 town-hub host/lifecycle cleanup as remaining row-15 work and do not mark row 15 complete.
+- [x] Update row 15 to make this `.98` plan active, record PR #282 source/merge and hosted checks from verified evidence, and state that its worktree plus local/upstream branch were removed and verified.
+- [x] Delete the completed predecessor plan in this first substantive commit and advance `Directory.Build.props` to `0.1.0-dev.98`.
 - [ ] Run the changed web tests, typecheck/build as required, changed-file formatting/lint checks, generated identity check, and `git diff --check`; inspect the full diff and verify links. Start PostgreSQL and run `py -3 tools/run.py ci --check` when required by the repository gate; do not run the canonical gate immediately before a normal commit or after a successful hooked commit.
 - [ ] Stage the intended files and commit normally; the installed pre-commit hook runs the fail-fast staged-snapshot gate without mutation. Repair any failure, then retry the normal commit.
 - [ ] Complete the author's ADR and feature-matrix comparison in the PR description, obtain a fresh whole-branch review, publish the PR to `develop`, and verify the exact-head hosted gate before requesting merge.

@@ -403,6 +403,8 @@ export class TownHubScene extends Phaser.Scene {
       if (this.textures.exists(spriteKey)) {
         const sprite = this.add.image(px, py, spriteKey);
         sprite.setDisplaySize(pw, ph);
+        const fittedScaleX = sprite.scaleX;
+        const fittedScaleY = sprite.scaleY;
 
         if (building.x < 50) {
           sprite.setFlipX(true);
@@ -412,8 +414,8 @@ export class TownHubScene extends Phaser.Scene {
           sprite.setAlpha(0.6);
         } else if (isBuildingAvailable(building.kind, this.availableActions)) {
           sprite.setInteractive({ useHandCursor: true });
-          sprite.on("pointerover", () => sprite.setScale(1.05));
-          sprite.on("pointerout", () => sprite.setScale(1));
+          sprite.on("pointerover", () => sprite.setScale(fittedScaleX * 1.05, fittedScaleY * 1.05));
+          sprite.on("pointerout", () => sprite.setScale(fittedScaleX, fittedScaleY));
           sprite.on("pointerdown", () => this.selectBuilding(building.kind));
         } else {
           sprite.setAlpha(0.4);
