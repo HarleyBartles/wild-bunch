@@ -9,11 +9,25 @@ namespace WildBunch.Domain.Events;
 /// </summary>
 public sealed record SheriffTurnInSettled : IDomainEvent
 {
+    private decimal _bountyAmount;
+
     public required SuspectId TargetSuspectId { get; init; }
     public required string TargetName { get; init; }
     public required WarrantDisposition Disposition { get; init; }
     public required bool IsAlive { get; init; }
-    public required decimal BountyAmount { get; init; }
+    public required decimal BountyAmount
+    {
+        get => _bountyAmount;
+        init
+        {
+            if (value < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(BountyAmount), value, "Bounty amount cannot be negative.");
+            }
+
+            _bountyAmount = value;
+        }
+    }
     public required string Message { get; init; }
     public required int Day { get; init; }
     public required int Turn { get; init; }

@@ -198,27 +198,6 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.Empty(session.UncommittedEvents);
     }
 
-    [Fact]
-    public void RehydrateFromEvents_RejectsNegativeTurnInBounty()
-    {
-        var session = CreateSession();
-        var invalidSettlement = new SheriffTurnInSettled
-        {
-            TargetSuspectId = new SuspectId("suspect-1"),
-            TargetName = "Mira Cline",
-            Disposition = WarrantDisposition.DeadOrAlive,
-            IsAlive = true,
-            BountyAmount = -1m,
-            Message = "Invalid negative bounty",
-            Day = session.Clock.Day,
-            Turn = session.Clock.Turn
-        };
-        var history = session.AllEvents.Append(invalidSettlement).ToArray();
-
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            GameSession.RehydrateFromEvents(session.Id, session.World, history));
-    }
-
     private static GameSession CreateSession()
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross");

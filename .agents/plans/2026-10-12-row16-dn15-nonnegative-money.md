@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task inline. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Enforce nonnegative wallet balances and bounty amounts across construction, settlement state, and event replay while preserving zero balances and the existing capped-fine behavior.
+**Goal:** Enforce nonnegative wallet balances and bounty amounts across construction, persisted-event deserialization, settlement state, and projection inputs while preserving zero balances and the existing capped-fine behavior.
 
-**Architecture:** `Wallet` owns the balance invariant, `WarrantTerms` owns bounty terms, and `SheriffTurnInSettlementState` owns the recorded settlement amount. Replayed negative settlement facts must fail closed before they can be interpreted as wallet debits. No event shape, command outcome, or persistence schema changes.
+**Architecture:** `Wallet` owns the balance invariant, `WarrantTerms` owns bounty terms, and both `SheriffTurnInSettled` and `SheriffTurnInSettlementState` own the recorded settlement amount. A negative settlement fact is rejected when constructed or deserialized, before aggregate replay or independent event projectors can interpret it as a debit. Aggregate application also validates settlement state before changing cash. No event shape, command outcome, or persistence schema changes.
 
 **Tech Stack:** C#/.NET 10, xUnit, Wild Bunch Domain, repository command bus.
 
@@ -19,13 +19,14 @@
 - A negative `SheriffTurnInSettled.BountyAmount` is invalid history; it is not a fine or a wallet debit.
 - Preserve the existing $10 mistaken-take-in fine, capped at available cash, and keep penalties separate from bounty credits.
 - Keep event payloads and persistence schemas unchanged; do not add migrations or upcasters for this constructor/replay validation.
+- Preserve the public `Wallet.Deconstruct(out decimal Cash)` API when making the constructor explicit.
 - Preserve existing command, settlement, replay, and snapshot behavior for valid nonnegative values; do not expand into general price or decimal validation.
 - Preserve the branch-collision preflight and paired worktree/local/upstream-ref closeout rules in the spec and roadmap.
 
 ## Review Focus
 
 - Negative wallet construction, warrant bounty construction, and settlement-state construction must each fail at the owning domain boundary; zero remains a valid value for all three.
-- Replaying a negative bounty settlement must reject the event before it can reduce an otherwise positive wallet, while existing positive bounty payout and capped-fine behavior remain unchanged.
+- Constructing or deserializing a negative bounty settlement must fail before aggregate replay or independent event projectors can apply it; existing positive bounty payout and capped-fine behavior remain unchanged.
 - Snapshot restoration reaches the validated settlement and wallet constructors, and event payload shape remains unchanged; do not add a parallel persistence-only invariant.
 
 ---
@@ -35,9 +36,11 @@
 **Files:**
 - Create: `tests/WildBunch.Domain.Tests/MoneyInvariantTests.cs`
 - Modify: `tests/WildBunch.Domain.Tests/GameSessionSheriffTurnInTests.cs`
+- Create: `tests/WildBunch.Integration.Tests/SheriffTurnInSettledSerializerTests.cs`
 - Modify: `src/WildBunch.Domain/Economy/Wallet.cs`
 - Modify: `src/WildBunch.Domain/Cases/CaseWarrants.cs`
 - Modify: `src/WildBunch.Domain/Cases/SheriffTurnInResult.cs`
+- Modify: `src/WildBunch.Domain/Events/SheriffTurnInSettled.cs`
 - Modify: `src/WildBunch.Domain/Game/GameSession.cs`
 - Modify: `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`
 - Modify: `.agents/doctrine/gameplay-invariants.md`
@@ -50,11 +53,13 @@
 
 **Interfaces:**
 - Consumes: `Wallet(decimal cash)`, `WarrantTerms(decimal bountyAmount, ...)`, `SheriffTurnInSettlementState(..., decimal BountyAmount, ...)`, and `GameSession.RehydrateFromEvents(...)`.
-- Produces: the same valid public construction and replay APIs, with negative balances and bounty facts rejected as `ArgumentOutOfRangeException` before they mutate reconstructed state.
+- Produces: the same valid public construction and replay APIs, with negative balances and bounty facts rejected as `ArgumentOutOfRangeException` before aggregate replay or event projection can apply them.
 
 - [x] Add `Wallet_RejectsNegativeCash`, `WarrantTerms_RejectsNegativeBounty`, and `SheriffTurnInSettlementState_RejectsNegativeBounty` in `MoneyInvariantTests.cs`. Each directly invokes the public constructor with `-1m` and asserts `ArgumentOutOfRangeException`.
 - [x] Add `ZeroWalletAndBountyValuesRemainValid` in `MoneyInvariantTests.cs`. Construct a zero-cash `Wallet`, zero-bounty `WarrantTerms`, and zero-bounty `SheriffTurnInSettlementState`; assert each retains zero.
-- [x] Add `RehydrateFromEvents_RejectsNegativeTurnInBounty` to `GameSessionSheriffTurnInTests.cs`. Start from its existing valid `CreateSession()` event history, append a `SheriffTurnInSettled` for `suspect-1` with `BountyAmount = -1m`, and assert `GameSession.RehydrateFromEvents` throws `ArgumentOutOfRangeException`.
+- [x] The initial implementation added and observed `RehydrateFromEvents_RejectsNegativeTurnInBounty`; the review correction below moved primary rejection to supported event construction/deserialization, then removed the now-unreachable invalid typed-event setup.
+- [x] Add `Wallet_CanBeDeconstructed` and `SheriffTurnInSettled_RejectsNegativeBounty` to `MoneyInvariantTests.cs`; verify the first test fails because conversion removed `Deconstruct`, and the second fails because event construction accepts a negative bounty.
+- [x] Add `DeserializeEvent_RejectsNegativeBountySettlement` in `SheriffTurnInSettledSerializerTests.cs`. Serialize a valid settlement, change only its persisted bounty field to a negative amount, and assert the production event serializer rejects it before projection rebuild.
 
 ```csharp
 Assert.Throws<ArgumentOutOfRangeException>(() => new Wallet(-1m));
@@ -76,7 +81,7 @@ Assert.Throws<ArgumentOutOfRangeException>(() => new SheriffTurnInSettlementStat
     Day: 1,
     Turn: 1));
 
-var invalidSettlement = new SheriffTurnInSettled
+Assert.Throws<ArgumentOutOfRangeException>(() => new SheriffTurnInSettled
 {
     TargetSuspectId = new SuspectId("suspect-1"),
     TargetName = "Mira Cline",
@@ -86,17 +91,17 @@ var invalidSettlement = new SheriffTurnInSettled
     Message = "Invalid negative bounty",
     Day = 1,
     Turn = 1
-};
-var history = session.AllEvents.Append(invalidSettlement).ToArray();
-Assert.Throws<ArgumentOutOfRangeException>(() =>
-    GameSession.RehydrateFromEvents(session.Id, session.World, history));
+});
 ```
 
 - [x] Run the three negative-constructor tests individually with `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~Wallet_RejectsNegativeCash"`, `--filter "FullyQualifiedName~WarrantTerms_RejectsNegativeBounty"`, and `--filter "FullyQualifiedName~SheriffTurnInSettlementState_RejectsNegativeBounty"`; each must fail because no exception is thrown.
 - [x] Run the replay test alone with `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --filter "FullyQualifiedName~RehydrateFromEvents_RejectsNegativeTurnInBounty"`; it must fail because the current replay accepts the negative fact as a debit.
+- [x] Run the new event, Wallet deconstruction and persisted-event tests before implementation; each failed for its intended reason (no exception, missing public method, or no exception on deserialization).
 - [x] Convert `Wallet` to an explicit readonly record struct constructor that throws `ArgumentOutOfRangeException(nameof(cash))` when cash is below zero and assigns the immutable `Cash` property otherwise. Keep `Starting` delegating to the same validated constructor and leave the default struct value at zero.
 - [x] Add `bountyAmount < 0` validation to `WarrantTerms` before assigning `BountyAmount`, throwing `ArgumentOutOfRangeException(nameof(bountyAmount))` while preserving zero.
 - [x] Validate `SheriffTurnInSettlementState.BountyAmount` at construction while preserving its existing positional property names, record equality, and call sites. In `GameSession.Apply(SheriffTurnInSettled)`, construct this validated state before calling `Player.AdjustCash`, so malformed event history fails before any wallet change.
+- [x] Validate `SheriffTurnInSettled.BountyAmount` in its init accessor so object construction and the production JSON event deserializer reject the invalid fact before any direct event projection can consume it. Preserve the serialized property and payload shape.
+- [x] Restore `Wallet.Deconstruct(out decimal Cash)` and verify it returns the validated balance.
 
 ```csharp
 if (cash < 0)
@@ -106,6 +111,7 @@ if (cash < 0)
 ```
 
 - [x] Run the four negative tests and `ZeroWalletAndBountyValuesRemainValid`; confirm the targeted behaviors pass and valid zero values remain accepted.
+- [x] Run `Wallet_CanBeDeconstructed` and the production serializer rejection test; confirm the API and persisted-event behaviors pass.
 - [x] Run `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj`; confirm the complete Domain suite passes, including existing replay, payout, and fine-cap tests.
 - [x] Add a dated baseline clarification and gameplay invariant for nonnegative wallet balances and bounty/settlement amounts, with zero legal and fines remaining separate capped penalties.
 - [x] Add a dated editorial clarification to ADR-0026 recording that a bounty is a nonnegative credit and a negative settlement fact is invalid history; preserve the original decision and catalogue summary because the existing distinction remains in force.
@@ -116,7 +122,9 @@ if (cash < 0)
 - [x] Change `Directory.Build.props` exactly once from `0.1.0-dev.113` to `0.1.0-dev.114`; do not update it in the plan-only commit.
 - [x] Stage the implementation, behavior tests, dated dispositions, ADR/spec/doctrine/feature/roadmap updates, `.114` version and `.113` plan retirement together; inspect the staged diff, commit once, and let the check-only pre-commit hook run the canonical fail-fast gate. Do not use `--no-verify` or run the complete gate redundantly immediately before or after a successful hooked commit.
 
-**Acceptance:** Negative wallet, bounty-term, settlement-state, and replay facts are rejected at the domain boundary; zero and all existing lawful positive flows remain valid. No event/schema migration is introduced, DN-15 is updated with bounded evidence, PR #298 is reconciled in the roadmap, the completed `.113` plan is retired, and the merged implementation PR targets `develop` at `0.1.0-dev.114`.
+**Review correction, 2026-10-12:** Whole-branch review showed that HUD and travel-diary projectors consume event lists independently of aggregate replay. The initial replay test exercised aggregate validation but did not protect these direct projection inputs. Reject the invalid fact at its event init boundary and prove persisted JSON rejection through the production serializer; this makes invalid typed events unavailable to either projector. The review also caught that an explicit non-positional `Wallet` removed the generated deconstruction API, so preserve and test it. The earlier direct negative-event replay test was retired because supported construction and persisted deserialization now reject the event before replay; aggregate settlement validation remains defense in depth.
+
+**Acceptance:** Negative wallet, bounty-term, settlement-event, settlement-state and persisted-event facts are rejected before aggregate replay or independent projection can apply them; zero and all existing lawful positive flows remain valid. Wallet deconstruction compatibility is preserved. No event payload/schema migration is introduced, DN-15 is updated with bounded evidence, PR #298 is reconciled in the roadmap, the completed `.113` plan is retired, and the merged implementation PR targets `develop` at `0.1.0-dev.114`.
 
 **Validation:** The focused xUnit tests and full Domain suite must pass before the implementation commit. The staged pre-commit hook must pass the complete repository gate. A fresh independent whole-branch review and exact-head hosted CI are required before merge.
 

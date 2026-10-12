@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
+using WildBunch.Domain.Events;
 
 namespace WildBunch.Domain.Tests;
 
@@ -9,6 +10,35 @@ public sealed class MoneyInvariantTests
     public void Wallet_RejectsNegativeCash()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Wallet(-1m));
+    }
+
+    [Fact]
+    public void Wallet_CanBeDeconstructed()
+    {
+        var wallet = new Wallet(25m);
+        var deconstruct = typeof(Wallet).GetMethod("Deconstruct");
+
+        Assert.NotNull(deconstruct);
+        var arguments = new object?[] { null };
+        deconstruct.Invoke(wallet, arguments);
+
+        Assert.Equal(25m, arguments[0]);
+    }
+
+    [Fact]
+    public void SheriffTurnInSettled_RejectsNegativeBounty()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SheriffTurnInSettled
+        {
+            TargetSuspectId = new SuspectId("suspect-1"),
+            TargetName = "Mira Cline",
+            Disposition = WarrantDisposition.DeadOrAlive,
+            IsAlive = true,
+            BountyAmount = -1m,
+            Message = "Invalid negative bounty",
+            Day = 1,
+            Turn = 1
+        });
     }
 
     [Fact]

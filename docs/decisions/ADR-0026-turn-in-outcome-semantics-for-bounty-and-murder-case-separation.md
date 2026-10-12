@@ -8,7 +8,7 @@
 
 - `2026-06-10` - Chose to distinguish legal eligibility, turn-in outcome, settlement, murder-case resolution, and hidden culprit truth.
 - `2026-10-08` - Factual correction: sheriff turn-in and bounty-cash settlement now exist in the game. Their implementation does not collapse bounty success into murder-case success; the earlier statement that those paths were absent is historical.
-- `2026-10-12` - Editorial clarification: bounty amounts and recorded bounty settlements are nonnegative credits. Fines are separate capped penalties, and a negative bounty fact is rejected during replay rather than interpreted as a debit.
+- `2026-10-12` - Editorial clarification: bounty amounts and recorded bounty settlements are nonnegative credits. Fines are separate capped penalties, and a negative bounty fact is rejected at event construction/deserialization before replay or projection can interpret it as a debit.
 
 ## Decision Type
 
