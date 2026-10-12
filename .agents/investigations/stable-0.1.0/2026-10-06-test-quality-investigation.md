@@ -190,6 +190,8 @@ Application `ProjectionTests.Projectors_DoNotMutateInputEvents` projects twice a
 
 Domain `DevSaltSourceTests` checks journey nonmutation on null journeys and player nonmutation through item counts/reference values. Use populated immutable before/after values, including quantities and horse/canteen state, while consolidating force/clear state and event assertions. `TravelDiaryTextRendererTests.RenderEntriesDeduplicatesExactStringsWithinADayAndPreservesOrder` establishes distinct membership but never order; strengthen the existing scenario rather than add a separate bug-shaped test.
 
+**Dated disposition, 2026-10-12:** `ProjectionTests.Projectors_DoNotMutateInputEvents` is now `HudProjector_DoesNotMutateInputEventSequenceOrStartingInventory`; it snapshots a two-event input by object identity and ordered populated inventory values before projection. A temporary mutation replacing food quantity 3 with 4 failed at the inventory comparison; restored production code passes. `DevSaltSourceTests` was removed by commit `290b9cf4` as part of retiring the 0.1.0 developer salt controls, so its nonmutation checks are not restored. `TravelDiaryTextRenderer` and its test were removed in PR #247 / commit `8bcf9991` when travel narration moved to the shared journal. The current `TravelDiaryMapperTests.ToDtoPreservesRecordedLatestJourneyEntriesWithSharedDayAndMessageValues` asserts the ordered deduplicated current-journey messages, so preserve that owner and do not recreate the retired renderer's order test.
+
 ### .NET consolidation candidates already established
 
 | Cluster | Proposed disposition |

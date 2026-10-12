@@ -146,36 +146,46 @@ public sealed class ProjectionTests
     }
 
     [Fact]
-    public void Projectors_DoNotMutateInputEvents()
+    public void HudProjector_DoesNotMutateInputEventSequenceOrStartingInventory()
     {
-        // Projectors are pure functions — they must not mutate the input events.
-        var projector = new HudProjector();
-        var events = new IDomainEvent[]
+        var startingItems = new List<DomainInventoryItem>
         {
-            new GameStarted
-            {
-                PlayerName = "Ranger Vale",
-                StartingTownId = new TownId("pinecross"),
-                StartingTownName = "Pinecross",
-                StartingHealth = 100,
-                StartingWallet = 25m,
-                StartingInventoryItems = new[]
-                {
-                    new DomainInventoryItem(DomainItemKind.Food, 1)
-                },
-                GameDifficulty = GameDifficulty.Standard,
-                SaltSource = SaltSource.CreateFixed(string.Empty),
-                GameEntropy = GameEntropy.Classic
-            }
+            new(DomainItemKind.Food, 3),
+            new(DomainItemKind.Horse, 1),
+            new(DomainItemKind.Canteen, 1)
         };
+        var gameStarted = new GameStarted
+        {
+            PlayerName = "Ranger Vale",
+            StartingTownId = new TownId("pinecross"),
+            StartingTownName = "Pinecross",
+            StartingHealth = 100,
+            StartingWallet = 25m,
+            StartingInventoryItems = startingItems,
+            GameDifficulty = GameDifficulty.Standard,
+            SaltSource = SaltSource.CreateFixed(string.Empty),
+            GameEntropy = GameEntropy.Classic
+        };
+        var purchase = new StoreItemPurchased
+        {
+            TownId = new TownId("pinecross"),
+            ItemKind = DomainItemKind.Food,
+            DisplayName = "Trail Biscuits",
+            Quantity = 2,
+            UnitPrice = 2m,
+            TotalPrice = 4m,
+            WalletAfter = 21m
+        };
+        IDomainEvent[] events = [gameStarted, purchase];
+        var eventsBefore = events.ToArray();
+        var itemsBefore = startingItems.ToArray();
 
-        var hud1 = projector.Project(events);
-        var hud2 = projector.Project(events);
+        new HudProjector().Project(events);
 
-        // Idempotent: projecting the same events twice produces the same result
-        Assert.Equal(hud1.WalletCash, hud2.WalletCash);
-        Assert.Equal(hud1.Health, hud2.Health);
-        Assert.Equal(hud1.InventoryItems.Count, hud2.InventoryItems.Count);
+        Assert.Equal(eventsBefore, events);
+        Assert.Same(eventsBefore[0], events[0]);
+        Assert.Same(eventsBefore[1], events[1]);
+        Assert.Equal(itemsBefore, startingItems);
     }
 
     [Fact]
