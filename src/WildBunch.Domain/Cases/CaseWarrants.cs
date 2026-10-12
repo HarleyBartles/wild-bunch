@@ -33,6 +33,10 @@ public sealed record WarrantTerms
         ArgumentNullException.ThrowIfNull(knownFeatures);
         ArgumentNullException.ThrowIfNull(gangAffiliations);
         ArgumentException.ThrowIfNullOrWhiteSpace(issuingSource);
+        if (bountyAmount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bountyAmount), bountyAmount, "Bounty amount cannot be negative.");
+        }
 
         Disposition = disposition;
         BountyAmount = bountyAmount;

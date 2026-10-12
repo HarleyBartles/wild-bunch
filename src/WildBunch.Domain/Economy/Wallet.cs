@@ -1,7 +1,19 @@
 namespace WildBunch.Domain.Economy;
 
-public readonly record struct Wallet(decimal Cash)
+public readonly record struct Wallet
 {
+    public Wallet(decimal cash)
+    {
+        if (cash < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(cash));
+        }
+
+        Cash = cash;
+    }
+
+    public decimal Cash { get; }
+
     public static Wallet Starting(decimal cash) => new(cash);
 
     public bool CanAfford(decimal amount) => amount >= 0 && Cash >= amount;
