@@ -39,11 +39,11 @@ Verify the three event declarations no longer expose computed occurrence timesta
 **Files:**
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-domain-layer-investigation.md`
 
-- [ ] Preserve the original DN-13 finding text and add a dated disposition citing PR #240, source commit `be2af352007424662e712c006e32eeac63e87f3b`, and merge commit `d692b8f6bc617f9c40a02b958c6cdabf8a0c011e`.
-- [ ] State that `CaseFileGenerated`, `WorldGenerated`, and `StartingTownSelected` no longer expose computed `OccurredAt` getters; persisted event envelopes own occurrence time, and the existing Application audit path reads that stored metadata.
-- [ ] State that PR #240 preserved historical event facts through registered upcasters without rewriting stored rows or adding a migration; cite the existing dated Persistence and test follow-ups rather than duplicating their detailed evidence.
-- [ ] Correct only the three per-file disposition entries for these events so they no longer imply DN-13 remains open. Keep unrelated DN-07, DN-11 and DN-16 references intact.
-- [ ] Do not change the Application investigation, which already contains a dated AP-14 disposition, or revise an ADR or feature matrix.
+- [x] Preserve the original DN-13 finding text and add a dated disposition citing PR #240, source commit `be2af352007424662e712c006e32eeac63e87f3b`, and merge commit `d692b8f6bc617f9c40a02b958c6cdabf8a0c011e`.
+- [x] State that `CaseFileGenerated`, `WorldGenerated`, and `StartingTownSelected` no longer expose computed `OccurredAt` getters; persisted event envelopes own occurrence time, and the existing Application audit path reads that stored metadata.
+- [x] State that PR #240 preserved historical event facts through registered upcasters without rewriting stored rows or adding a migration; cite the existing dated Persistence and test follow-ups rather than duplicating their detailed evidence.
+- [x] Correct only the three per-file disposition entries for these events so they no longer imply DN-13 remains open. Keep unrelated DN-07, DN-11 and DN-16 references intact.
+- [x] Do not change the Application investigation, which already contains a dated AP-14 disposition, or revise an ADR or feature matrix.
 
 ### Task 3: Retire `.107` and route the `.108` successor
 
@@ -52,8 +52,8 @@ Verify the three event declarations no longer expose computed occurrence timesta
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-12-row16-persistence-truth.md`
 
-- [ ] Record PR #292's reviewed source, merge, passing exact-head and develop-push gates, clean whole-branch review, and verified worktree/local/upstream ref cleanup; route this `.108` plan as the active row-16 slice.
-- [ ] Advance the product version from `.107` to `.108` exactly once and retire the `.107` plan in this successor.
-- [ ] Review the dated Domain disposition against the live event declarations and existing PR #240 persistence/upcaster evidence, run `git diff --check`, then commit through the normal check-only hook and complete canonical gate.
+- [x] Record PR #292's reviewed source, merge, passing exact-head and develop-push gates, clean whole-branch review, and verified worktree/local/upstream ref cleanup; route this `.108` plan as the active row-16 slice.
+- [x] Advance the product version from `.107` to `.108` exactly once and retire the `.107` plan in this successor.
+- [x] Review the dated Domain disposition against the live event declarations and existing PR #240 persistence/upcaster evidence, run `git diff --check`, then commit through the normal check-only hook and complete canonical gate.
 
 **Validation:** This documentation-only correction does not alter behavior, so no new test is justified. The staged-snapshot hook provides the canonical repository gate for the final committed tree; confirm the event declarations, upcasters, envelope mapping, and existing behavior tests support the historical disposition before committing.

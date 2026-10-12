@@ -119,6 +119,8 @@ Resolve actions by legal journey phase and account for the existing acknowledgem
 
 Retire the misleading unused properties or use a genuinely captured fact when domain timing is required. Resolve audit occurrence time at its real envelope owner, alongside the Application projector that invents current time. Do not pretend access time was historical occurrence or add timing fields to every event solely for uniformity.
 
+**Dated disposition, 2026-10-12:** PR #240 removed the computed `OccurredAt` getters from `CaseFileGenerated`, `WorldGenerated` and `StartingTownSelected`; persisted event envelopes own occurrence time, and the Application audit path reads that recorded metadata. The PR's registered upcasters preserve historical event facts while removing the volatile payload timestamps. Stored rows were not rewritten and no migration was added. See the [Persistence investigation](2026-10-07-persistence-layer-investigation.md) and [Persistence test follow-up](2026-10-07-persistence-test-followup.md) for detailed evidence. PR #240 source `be2af352007424662e712c006e32eeac63e87f3b` merged as `d692b8f6bc617f9c40a02b958c6cdabf8a0c011e`.
+
 ### DN-14: Dormant branches and stale seams obscure the live contract
 
 **Confirmed maintenance debt with bounded impact.** The second identical zero-encounter branch in `TravelDayPlanGenerator.Context.cs:34-37` is unreachable. `GameSessionEventReplay.cs:39` assigns an unused first-event local. `JourneyLoop.cs:41-42` still says methods will be filled by numbered tasks. `Inventory.GetHorseStateOrNull` duplicates `GetHorseState` and has no caller; `AdvanceHorseState` is test-used legacy convenience. Citizen reveal helpers have no production caller. `TownSourceVisitState.RefreshForVisit` collapses both refresh policies and default to the same operation; all current definitions use PerVisit, so no current OnTownReturn discrepancy is alleged.
@@ -186,7 +188,7 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Economy/StorePurchaseResult.cs](../../../src/WildBunch.Domain/Economy/StorePurchaseResult.cs) | Keep behavioral success/failure result. |
 | [Economy/TownStoreCatalogModels.cs](../../../src/WildBunch.Domain/Economy/TownStoreCatalogModels.cs) | Keep prosperity/vendor offers; handler validates availability, no confirmed catalog exploit. |
 | [Economy/Wallet.cs](../../../src/WildBunch.Domain/Economy/Wallet.cs) | Keep cash behavior; permissive construction DN-15. |
-| [Events/CaseFileGenerated.cs](../../../src/WildBunch.Domain/Events/CaseFileGenerated.cs) | Keep case fact; read-time occurrence getter DN-13. |
+| [Events/CaseFileGenerated.cs](../../../src/WildBunch.Domain/Events/CaseFileGenerated.cs) | Keep case fact; volatile occurrence getter removed under DN-13. |
 | [Events/DevDifficultyForced.cs](../../../src/WildBunch.Domain/Events/DevDifficultyForced.cs) | No independent issue found; typed dev fact. |
 | [Events/DevEntropyChanged.cs](../../../src/WildBunch.Domain/Events/DevEntropyChanged.cs) | No independent issue found; typed dev fact. |
 | [Events/DevLayoutSaltsForced.cs](../../../src/WildBunch.Domain/Events/DevLayoutSaltsForced.cs) | Keep typed preparation; missing persisted codec PS-02. |
@@ -211,14 +213,14 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Events/SaloonPersonOfInterestConfronted.cs](../../../src/WildBunch.Domain/Events/SaloonPersonOfInterestConfronted.cs) | Public outcome data; no independent issue found. |
 | [Events/SaloonPersonOfInterestSpotted.cs](../../../src/WildBunch.Domain/Events/SaloonPersonOfInterestSpotted.cs) | Public POI data and explicit log policy; no independent issue found. |
 | [Events/SheriffTurnInSettled.cs](../../../src/WildBunch.Domain/Events/SheriffTurnInSettled.cs) | Settlement data; no independent issue found. |
-| [Events/StartingTownSelected.cs](../../../src/WildBunch.Domain/Events/StartingTownSelected.cs) | Keep selected-town fact; occurrence DN-13, malformed-history policy DN-16. |
+| [Events/StartingTownSelected.cs](../../../src/WildBunch.Domain/Events/StartingTownSelected.cs) | Keep selected-town fact; occurrence getter removed under DN-13, malformed-history policy DN-16. |
 | [Events/StoreItemPurchased.cs](../../../src/WildBunch.Domain/Events/StoreItemPurchased.cs) | Carries purchase totals and resulting wallet; no independent issue found. |
 | [Events/TownActionContextEntered.cs](../../../src/WildBunch.Domain/Events/TownActionContextEntered.cs) | Absolute context/clock/heat state; no independent issue found. |
 | [Events/TrailEventApplied.cs](../../../src/WildBunch.Domain/Events/TrailEventApplied.cs) | Carries absolute journey/wallet/heat; dead/reserved `HeatIncrease` is documented. No independent issue found. |
 | [Events/TravelDayAdvanced.cs](../../../src/WildBunch.Domain/Events/TravelDayAdvanced.cs) | Absolute day/journey plus health delta; no independent issue found. |
 | [Events/UnrelatedCriminalTurnInSettled.cs](../../../src/WildBunch.Domain/Events/UnrelatedCriminalTurnInSettled.cs) | Typed warrant settlement; replay effects are later overwritten by D1. |
 | [Events/WantedSuspectConfronted.cs](../../../src/WildBunch.Domain/Events/WantedSuspectConfronted.cs) | Public outcome and no culprit truth; no independent issue found. |
-| [Events/WorldGenerated.cs](../../../src/WildBunch.Domain/Events/WorldGenerated.cs) | Keep world/configuration fact; DN-07 apply completeness, DN-11 mapping, DN-13 getter. |
+| [Events/WorldGenerated.cs](../../../src/WildBunch.Domain/Events/WorldGenerated.cs) | Keep world/configuration fact; DN-07 apply completeness, DN-11 mapping, occurrence getter removed under DN-13. |
 | [Game/ActionContextTracker.cs](../../../src/WildBunch.Domain/Game/ActionContextTracker.cs) | Keep child-owned context and event decision. |
 | [Game/BeatNarration.cs](../../../src/WildBunch.Domain/Game/BeatNarration.cs) | Keep authored beat/context values pending AP-19 correction. |
 | [Game/BountyLoop.cs](../../../src/WildBunch.Domain/Game/BountyLoop.cs) | See DN-02, DN-15, and DN-15. Command methods return events; no direct event emission found. |
