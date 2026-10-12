@@ -430,11 +430,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     private void Apply(SheriffTurnInSettled e)
     {
-        Player.AdjustCash(e.BountyAmount);
-
         var settlementState = new SheriffTurnInSettlementState(
             e.TargetSuspectId, e.TargetName, e.Disposition,
             e.IsAlive, e.BountyAmount, e.Day, e.Turn);
+
+        Player.AdjustCash(e.BountyAmount);
         CaseFile.RecordSheriffTurnInSettlementState(settlementState);
 
         _version++;

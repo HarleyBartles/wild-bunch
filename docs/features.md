@@ -90,6 +90,8 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 **Dated evidence, 2026-10-12, row 16 DN-15 CitizenCast follow-up:** Direct `CitizenCast.Select` tests cover both role and feature selection when the stable hash reaches `int.MinValue`, using authored town IDs and extreme positive visit counters. This proves the pure selector handles its accepted integer inputs; it does not prove a normal saloon command or browser journey can reach those counters.
 
+**Dated evidence, 2026-10-12, row 16 DN-15 money invariants:** Domain tests reject negative wallet cash, warrant bounty terms, settlement state and constructed settlement events while preserving zero; a production event-serializer test rejects a persisted negative settlement before projection rebuild. Wallet deconstruction remains available, and valid bounty payouts and the separately capped fine remain covered by existing command and replay tests. Current authored content was not found to contain negative bounty values; these tests close permissive input and event-ingress contracts, not a reported ordinary-play failure.
+
 **0.1.0 disposition:** Retain and repair named take-in, citizen/wanted distinction, correct/wrong-name settlement and the five-of-six release gate. Resistance rolls, escape/injury, saloon gunfights, sheriff poster circulation and murder consequences from killing an innocent are future features.
 
 ### PG-007 - Travel between towns

@@ -6,6 +6,9 @@ These domain truths remain stable across implementation workflows.
 
 - Wallet and inventory are concrete player state; do not replace them with
   generic supplies.
+- Wallet cash, warrant bounty terms and recorded bounty settlements cannot be
+  negative; zero is valid. Bounties are credits, and fines are separate capped
+  penalties rather than negative bounty amounts.
 - Horse and saddle are separate concepts. Mounted travel requires a living,
   non-lame horse and a saddle.
 - Water is not a generic stackable good.
