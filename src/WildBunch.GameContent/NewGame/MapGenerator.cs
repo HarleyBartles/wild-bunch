@@ -115,7 +115,7 @@ internal static class MapGenerator
                     seedWorld.SeedCode.ToString(),
                     town.Id,
                     index,
-                    "1.0.0",
+                    TownLayout.CurrentResolverVersion,
                     derivedSalts);
 
                 return town with
@@ -126,7 +126,7 @@ internal static class MapGenerator
                     index,
                     layoutSource,
                     seedWorld.BuildingLayoutPalette,
-                    resolverVersion: "1.0.0")
+                    resolverVersion: layoutSource.ResolverVersion)
                 };
             }).ToArray();
 

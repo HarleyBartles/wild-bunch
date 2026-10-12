@@ -6027,7 +6027,7 @@ public sealed class EfGameSessionRepositoryTests
             TownProsperity.Prosperous,
             new[] { new PathSegment(15, 30, 25, 30) },
             new[] { new[] { 0, 1 }, new[] { 1, 0 } },
-            ResolverVersion: "1.0.0",
+            ResolverVersion: TownLayout.CurrentResolverVersion,
             LayoutSalts: new LayoutSalts("buildings", "roads", "dirt", "props"));
 
         var dustvale = new Town(new TownId("dustvale"), "Dustvale", MapX: 100, MapY: 100, Layout: layout);

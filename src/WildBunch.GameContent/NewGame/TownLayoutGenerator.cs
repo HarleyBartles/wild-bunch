@@ -54,7 +54,7 @@ internal static class TownLayoutGenerator
         int townSlotIndex,
         LayoutDeterministicSource layoutSource,
         BuildingLayoutPalette layoutPalette = BuildingLayoutPalette.NoSpurs_SpreadEvenly,
-        string resolverVersion = "1.0.0")
+        string resolverVersion = TownLayout.CurrentResolverVersion)
     {
         ArgumentNullException.ThrowIfNull(layoutSource);
 

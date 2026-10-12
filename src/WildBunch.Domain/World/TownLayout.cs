@@ -20,5 +20,12 @@ public sealed record TownLayout(
     TownProsperity Prosperity,
     IReadOnlyList<PathSegment> Paths,
     int[][]? TileGrid = null,
-    string ResolverVersion = "1.0.0",
-    LayoutSalts? LayoutSalts = null);
+    string ResolverVersion = TownLayout.CurrentResolverVersion,
+    LayoutSalts? LayoutSalts = null)
+{
+    /// <summary>
+    /// Identifies the current deterministic town-layout algorithm. Generated
+    /// layouts persist this value so rendering and replay retain its identity.
+    /// </summary>
+    public const string CurrentResolverVersion = "1.0.0";
+}

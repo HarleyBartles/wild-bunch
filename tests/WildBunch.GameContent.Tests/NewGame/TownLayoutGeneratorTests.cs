@@ -247,7 +247,7 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_WithLayoutSaltsAndResolverVersion_ProducesVersionedLayout()
+    public void GenerateLayout_WithoutExplicitResolverVersion_UsesCurrentVersion()
     {
         var townId = NewTownId("town-1");
         var salts = new LayoutSalts("buildings", "roads", "dirt", "props");
@@ -258,9 +258,8 @@ public sealed class TownLayoutGeneratorTests
             townId,
             0,
             layoutSource,
-            BuildingLayoutPalette.NoSpurs_SpreadEvenly,
-            "1.0.0");
+            BuildingLayoutPalette.NoSpurs_SpreadEvenly);
 
-        Assert.Equal("1.0.0", layout.ResolverVersion);
+        Assert.Equal(TownLayout.CurrentResolverVersion, layout.ResolverVersion);
     }
 }
