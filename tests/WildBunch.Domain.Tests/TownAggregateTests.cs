@@ -19,8 +19,6 @@ public sealed class TownAggregateTests
         Assert.True(aggregate.IsAvailable(InvestigationSourceKind.LocalGossip));
         Assert.Contains(aggregate.GetInvestigationActions(), action => action.Kind == AvailableActionKind.GatherLocalGossip);
 
-        aggregate.PrimeCurrentTown();
-
         var firstGossipCheck = aggregate.CheckSource(InvestigationSourceKind.LocalGossip);
         var repeatGossipCheck = aggregate.CheckSource(InvestigationSourceKind.LocalGossip);
         var firstWantedPosterCheck = aggregate.CheckWantedPosters();

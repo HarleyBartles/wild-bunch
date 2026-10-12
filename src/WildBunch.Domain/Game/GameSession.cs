@@ -77,7 +77,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             {
                 _currentTown.EnterTown(world.GetTown(player.CurrentTownId.Value));
             }
-            _currentTown.PrimeCurrentTown();
         }
 
         _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries);
@@ -942,7 +941,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         if (_currentTown is null)
         {
             _currentTown = new TownAggregate(World.GetTown(e.StartingTownId), new TownVisitState(e.StartingTownId));
-            _currentTown.PrimeCurrentTown();
         }
         else if (!_currentTown.TownId.Equals(e.StartingTownId))
         {

@@ -88,6 +88,8 @@ Keep real duplicate inventory, insufficient cash, charge bounds, horse/saddle, c
 
 Removing unused methods, the duplicate generator branch, stale comments or unused occurrence getters generally requires consumer/compile review, not replacement runtime tests. If OnTownReturn is retained as a distinct policy, test its explicitly defined refresh behavior; all current definitions are PerVisit, so a new policy test must follow a decision, not create a feature requirement.
 
+**Dated disposition, 2026-10-12, DN-14 town-source refresh policy:** The unsupported `OnTownReturn` alternative was removed rather than implemented. `TownVisitStateAllowsOneNewSourceCheckAfterReturningToTown` and `TownAggregateOwnsTownSourceAffordancesRepeatRulesAndWantedPosterBookkeeping` retain the observable first-check, same-visit repeat, and return-to-town behavior; assertions about refresh metadata and calls to the inert priming helper were removed. No separate policy test is warranted because there is no longer a distinct policy contract.
+
 ## Consolidation and detectors to retire
 
 The four travel characterization suites repeat the same deterministic fixture across initial state, food, clock, wallet, health, journey completion, logs and diary rows. `TravelResourceTrackingCharacterizationTests` alone has multiple complete journey scenarios and separate fragments of its first advance. Consolidate coherent state transitions and observations while keeping independent failure branches and production persistence/projection boundaries. Do not preserve exact prose, random categories, legacy “six-day” names or arbitrary event totals merely because an old migration captured them. The current foot-only four-day fixture does not itself demonstrate the mounted-to-foot bug.

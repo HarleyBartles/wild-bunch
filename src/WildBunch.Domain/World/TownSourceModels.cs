@@ -11,19 +11,12 @@ public enum TownSourceLocality
     Distant = 3
 }
 
-public enum TownSourceRefreshPolicy
-{
-    PerVisit = 0,
-    OnTownReturn = 1
-}
-
 public sealed record TownSourceDefinition(
     string Id,
     InvestigationSourceKind Kind,
     AvailableActionKind ActionKind,
     string Label,
-    TownSourceLocality Locality,
-    TownSourceRefreshPolicy RefreshPolicy);
+    TownSourceLocality Locality);
 
 public sealed record TownSourceCatalog(IReadOnlyList<TownSourceDefinition> Definitions)
 {
@@ -34,15 +27,13 @@ public sealed record TownSourceCatalog(IReadOnlyList<TownSourceDefinition> Defin
                 InvestigationSourceKind.LocalGossip,
                 AvailableActionKind.GatherLocalGossip,
                 "Gather local gossip",
-                TownSourceLocality.TownLocal,
-                TownSourceRefreshPolicy.PerVisit),
+                TownSourceLocality.TownLocal),
             new TownSourceDefinition(
                 "town-source.saloon-look-around",
                 InvestigationSourceKind.SaloonLookAround,
                 AvailableActionKind.LookAroundSaloon,
                 "Look around saloon",
-                TownSourceLocality.TownLocal,
-                TownSourceRefreshPolicy.PerVisit),
+                TownSourceLocality.TownLocal),
         ]);
 
     public TownSourceDefinition GetRequiredDefinition(InvestigationSourceKind kind)

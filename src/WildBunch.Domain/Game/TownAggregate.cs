@@ -50,7 +50,4 @@ public sealed class TownAggregate
         Definition = town ?? throw new ArgumentNullException(nameof(town));
         VisitState.EnterTown(town.Id);
     }
-
-    public void PrimeCurrentTown()
-        => VisitState.PrimeCurrentTown();
 }

@@ -1,5 +1,4 @@
 using WildBunch.Domain.Cases;
-using WildBunch.Domain.Actions;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Game;
@@ -15,14 +14,10 @@ public sealed class TownSourceVisitState
     public TownSourceVisitState(
         TownId townId,
         InvestigationSourceKind sourceKind,
-        TownSourceRefreshPolicy refreshPolicy,
-        int lastRefreshedVisitNumber = 0,
         int lastCheckedVisitNumber = 0)
     {
         TownId = townId;
         SourceKind = sourceKind;
-        RefreshPolicy = refreshPolicy;
-        LastRefreshedVisitNumber = lastRefreshedVisitNumber;
         LastCheckedVisitNumber = lastCheckedVisitNumber;
     }
 
@@ -30,14 +25,7 @@ public sealed class TownSourceVisitState
 
     public InvestigationSourceKind SourceKind { get; }
 
-    public TownSourceRefreshPolicy RefreshPolicy { get; }
-
-    public int LastRefreshedVisitNumber { get; private set; }
-
     public int LastCheckedVisitNumber { get; private set; }
-
-    public bool IsFreshForVisit(int visitNumber)
-        => LastRefreshedVisitNumber >= visitNumber;
 
     public TownSourceCheckOutcome CheckForVisit(int visitNumber)
     {
@@ -48,20 +36,6 @@ public sealed class TownSourceVisitState
 
         LastCheckedVisitNumber = visitNumber;
         return TownSourceCheckOutcome.FirstCheck;
-    }
-
-    public void RefreshForVisit(int visitNumber)
-    {
-        switch (RefreshPolicy)
-        {
-            case TownSourceRefreshPolicy.PerVisit:
-            case TownSourceRefreshPolicy.OnTownReturn:
-                LastRefreshedVisitNumber = visitNumber;
-                break;
-            default:
-                LastRefreshedVisitNumber = visitNumber;
-                break;
-        }
     }
 }
 
@@ -101,8 +75,6 @@ public sealed class TownVisitTownState
                 _sourceStates[sourceKind] = new TownSourceVisitState(
                     townId,
                     sourceKind,
-                    TownSourceRefreshPolicy.PerVisit,
-                    lastRefreshedVisitNumber: VisitNumber,
                     lastCheckedVisitNumber: VisitNumber);
             }
         }
@@ -185,12 +157,12 @@ public sealed class TownVisitTownState
     public TownSourceCheckOutcome CheckSource(TownSourceDefinition sourceDefinition)
     {
         ArgumentNullException.ThrowIfNull(sourceDefinition);
-        return CheckSource(sourceDefinition.Kind, sourceDefinition.RefreshPolicy);
+        return CheckSource(sourceDefinition.Kind);
     }
 
-    public TownSourceCheckOutcome CheckSource(InvestigationSourceKind sourceKind, TownSourceRefreshPolicy refreshPolicy = TownSourceRefreshPolicy.PerVisit)
+    public TownSourceCheckOutcome CheckSource(InvestigationSourceKind sourceKind)
     {
-        var sourceState = GetOrCreateSourceState(sourceKind, refreshPolicy);
+        var sourceState = GetOrCreateSourceState(sourceKind);
         return sourceState.CheckForVisit(VisitNumber);
     }
 
@@ -229,28 +201,17 @@ public sealed class TownVisitTownState
         ClearActiveSaloonPersonOfInterest();
     }
 
-    public void RefreshSources(TownSourceCatalog sourceCatalog)
-    {
-        ArgumentNullException.ThrowIfNull(sourceCatalog);
-
-        foreach (var definition in sourceCatalog.Definitions)
-        {
-            var sourceState = GetOrCreateSourceState(definition.Kind, definition.RefreshPolicy);
-            sourceState.RefreshForVisit(VisitNumber);
-        }
-    }
-
     public bool TryGetSourceState(InvestigationSourceKind sourceKind, out TownSourceVisitState? sourceState)
         => _sourceStates.TryGetValue(sourceKind, out sourceState);
 
-    private TownSourceVisitState GetOrCreateSourceState(InvestigationSourceKind sourceKind, TownSourceRefreshPolicy refreshPolicy)
+    private TownSourceVisitState GetOrCreateSourceState(InvestigationSourceKind sourceKind)
     {
         if (_sourceStates.TryGetValue(sourceKind, out var sourceState))
         {
             return sourceState;
         }
 
-        sourceState = new TownSourceVisitState(TownId, sourceKind, refreshPolicy);
+        sourceState = new TownSourceVisitState(TownId, sourceKind);
         _sourceStates[sourceKind] = sourceState;
         return sourceState;
     }
