@@ -39,17 +39,28 @@ public sealed class TownLayoutGeneratorTests
     }
 
     [Fact]
-    public void GenerateLayout_AlwaysIncludesCoreServicesAndNavigationBuildings()
+    public void GenerateLayout_AlwaysIncludesCoreServicesAndNavigationBuildingsForEverySupportedPalette()
     {
-        var layout = TownLayoutGenerator.GenerateLayout(
-            TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
+        var supportedPalettes = Enum.GetValues<BuildingLayoutPalette>()
+            .Where(palette => !palette.ToString().StartsWith("Reserved", StringComparison.Ordinal));
 
-        var kinds = layout.Buildings.Select(b => b.Kind).ToHashSet();
-        Assert.Contains(BuildingKind.Store, kinds);
-        Assert.Contains(BuildingKind.Sheriff, kinds);
-        Assert.Contains(BuildingKind.Saloon, kinds);
-        Assert.Contains(BuildingKind.Telegraph, kinds);
-        Assert.Contains(BuildingKind.Trailhead, kinds);
+        foreach (var palette in supportedPalettes)
+        {
+            var layout = TownLayoutGenerator.GenerateLayout(
+                TownProsperity.Prosperous,
+                NewTownId($"town-{palette}"),
+                0,
+                NewLayoutSource(),
+                palette,
+                "1.0.0");
+
+            var kinds = layout.Buildings.Select(building => building.Kind).ToHashSet();
+            Assert.Contains(BuildingKind.Store, kinds);
+            Assert.Contains(BuildingKind.Sheriff, kinds);
+            Assert.Contains(BuildingKind.Saloon, kinds);
+            Assert.Contains(BuildingKind.Telegraph, kinds);
+            Assert.Contains(BuildingKind.Trailhead, kinds);
+        }
     }
 
     [Fact]
@@ -90,34 +101,6 @@ public sealed class TownLayoutGeneratorTests
             Assert.Equal(20, b.Width);
             Assert.Equal(10, b.Height);
         });
-    }
-
-    [Fact]
-    public void GenerateLayout_UsesValidBuildingGeometryForEverySupportedPalette()
-    {
-        var supportedPalettes = Enum.GetValues<BuildingLayoutPalette>()
-            .Where(palette => !palette.ToString().StartsWith("Reserved", StringComparison.Ordinal));
-
-        foreach (var palette in supportedPalettes)
-        {
-            var townId = NewTownId($"town-{palette}");
-            var layout = TownLayoutGenerator.GenerateLayout(
-                TownProsperity.Prosperous,
-                townId,
-                0,
-                NewLayoutSource(),
-                palette);
-
-            Assert.InRange(layout.PlayerSpawnX, 0, 100);
-            Assert.InRange(layout.PlayerSpawnY, 0, 100);
-            Assert.All(layout.Buildings, building =>
-            {
-                Assert.InRange(building.X, 0, 100);
-                Assert.InRange(building.Y, 0, 100);
-                Assert.True(building.Width > 0);
-                Assert.True(building.Height > 0);
-            });
-        }
     }
 
     [Fact]

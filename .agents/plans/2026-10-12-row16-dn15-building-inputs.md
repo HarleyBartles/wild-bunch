@@ -63,14 +63,14 @@
 - [x] Add validated init properties with backing fields to BuildingPlacement and TownLayout, initializing each field from its matching primary-constructor parameter and throwing ArgumentOutOfRangeException for an invalid value.
 - [x] Add a focused positional API behavior test proving BuildingPlacement and TownLayout preserve record equality and deconstruction with the validated positional properties.
 - [x] Run the focused TownLayoutTests suite and confirm construction, with updates, defaults, custom dimensions, positional equality/deconstruction, and boundary cases pass.
-- [x] Add a generator behavior test that runs every supported non-reserved BuildingLayoutPalette and verifies its layout constructs with legal center/spawn coordinates and positive dimensions.
+- [x] Extend the existing core-service generator behavior test to run every supported non-reserved BuildingLayoutPalette and verify each layout retains Store, Sheriff, Saloon, Telegraph, and Trailhead. Value constructors enforce geometry boundaries, so do not repeat their coordinate and dimension assertions here.
 - [x] Run the complete TownLayoutGeneratorTests suite to verify every supported generated layout still constructs and remains reachable under the new invariants.
 - [x] Update the PhaserTownHubHost forwarding test to use a valid layout payload and retain its identity assertion; run the focused Vitest file.
 - [x] Run focused TownLayoutMapperTests and the existing PostgreSQL-backed world-cache recovery test to confirm application mapping and persisted-world JSON reconstruction retain their existing shape.
 - [x] Correct DN-15 current prose and its per-file index: mark the delivered hash and money defects resolved, record the delivered BuildingPlacement and TownLayout spawn contracts, remove stale PathSegment/factory-bypass language, and leave collection/grid shape conditional where the contract is not settled.
 - [x] Update row 16 with PR #300 delivery evidence, replace its active plan link with this .116 plan, and retire the completed .115 PathSegment plan in this successor slice.
 - [x] Change Directory.Build.props exactly once from 0.1.0-dev.115 to 0.1.0-dev.116 in the first substantive implementation commit.
-- [ ] Inspect and stage the implementation, behavioral tests, investigation/roadmap update, .116 version, and .115 plan retirement together. Commit through the normal check-only hook; do not bypass it or run the complete gate redundantly before the hooked commit.
+- [x] Inspect and stage the implementation, behavioral tests, investigation/roadmap update, .116 version, and .115 plan retirement together. Commit through the normal check-only hook; do not bypass it or run the complete gate redundantly before the hooked commit.
 
 **Acceptance:** Both Domain types enforce only their documented coordinate/size boundaries at every public construction and init-update path. Valid generated layouts, the positional and JSON contracts, and historical persisted-world reconstruction remain intact. DN-15 and row 16 describe the current state truthfully, PR #300 is recorded with its exact hosted evidence, and its completed plan is retired in this successor.
 
