@@ -24,7 +24,7 @@ public sealed class WantedPosterMapperTests
                     [OutlawGangIds.WildBunch],
                     OutlawGangIds.WildBunch,
                     InvestigationSourceKind.SheriffWarrants),
-                "Wanted for a Wild Bunch robbery and related killings.")
+                "Wanted for related killings.")
         });
 
         Assert.Single(posters);
@@ -38,7 +38,7 @@ public sealed class WantedPosterMapperTests
         Assert.Equal("Mira Cline", poster.QuickView.HeadlineNameOrAlias);
         Assert.Equal("Raven-feather pin", poster.QuickView.HeadlineFeatureOrDescriptor);
         Assert.Equal("Dead or alive, $2,500.00 bounty", poster.QuickView.PocketCheckDescriptor);
-        Assert.Equal("Wanted for a Wild Bunch robbery and related killings.", poster.Details.Summary);
+        Assert.Equal("Wanted for related killings.", poster.Details.Summary);
         Assert.Equal("Dodge City Marshal", poster.Details.PublicOrigin);
         Assert.Equal(2, poster.Details.Features.Count);
         Assert.Equal(WantedPosterFeatureSalience.Headline, poster.Details.Features[0].Salience);
@@ -46,5 +46,28 @@ public sealed class WantedPosterMapperTests
         Assert.Equal(WantedPosterFeatureSalience.Supporting, poster.Details.Features[1].Salience);
         Assert.Equal(WantedPosterFeatureRenderMode.PortraitRenderable, poster.Details.Features[1].RenderMode);
         Assert.Equal("gang-affiliated wanted criminal", poster.PublicSafeClassification);
+    }
+
+    [Fact]
+    public void DoesNotInferPublicGangAffiliationFromInternalWarrantFields()
+    {
+        var warrant = new Warrant(
+            new WarrantId("warrant-hidden-gang-membership"),
+            "Mira Cline",
+            new WarrantTerms(
+                WarrantDisposition.AliveOnly,
+                250m,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                "Dodge City Marshal",
+                InvestigationTargetKind.TrueCulprit,
+                Array.Empty<OutlawGangId>(),
+                OutlawGangIds.WildBunch,
+                InvestigationSourceKind.SheriffWarrants),
+            "Wanted for a bank robbery.");
+
+        var poster = Assert.Single(WantedPosterMapper.ToDto(new[] { warrant }));
+
+        Assert.Equal("wanted criminal", poster.PublicSafeClassification);
     }
 }

@@ -47,9 +47,10 @@
 **Files:**
 - Modify: `tests/WildBunch.Application.Tests/Mappers/WantedPosterMapperTests.cs`
 
-- [ ] Add a warrant with `GangAffiliations` empty but `TargetKind` set to a gang member/culprit and `AdvancesGangPressureFor` set; assert the public classification is `wanted criminal`.
-- [ ] Temporarily change the mapper to derive the classification from an internal target/progression field, run the focused test, and verify it fails specifically on the public classification; restore the source before continuing.
-- [ ] Run the focused test and retain the existing positive gang-affiliation assertion; do not duplicate the positive API test or assert source structure.
+- [x] Add a warrant with `GangAffiliations` empty but `TargetKind` set to a gang member/culprit and `AdvancesGangPressureFor` set; assert the public classification is `wanted criminal`.
+- [x] Make the existing positive mapper fixture's summary neutral so its gang classification is supported by the explicit public affiliation term rather than repeating gang membership in prose.
+- [x] Temporarily change the mapper to derive the classification from an internal target/progression field, run the focused test, and verify it fails specifically on the public classification; restore the source before continuing.
+- [x] Run the focused test and retain the existing positive gang-affiliation assertion; do not duplicate the positive API test or assert source structure.
 
 ### Task 3: Record the truthful setup and public-knowledge contracts
 
@@ -60,11 +61,11 @@
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md`
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-application-test-followup.md`
 
-- [ ] State in PG-005 that an explicit public warrant affiliation may identify a wanted person as gang-affiliated; internal target kind, culprit identity and hidden pressure routing are not public knowledge.
-- [ ] Add a dated editorial clarification to ADR-0007 preserving its original decision and establishing that only affiliation stated by public warrant terms may appear on the player poster.
-- [ ] Add dated AP-12 dispositions that cite the current nullable setup DTO, pre-start HUD `204`, the real setup-to-start API test and the prior `.10` setup-projection correction; preserve the original audit-time finding.
-- [ ] Add dated AP-13 dispositions recording the settled public-affiliation rule, existing positive API behavior and the new negative mapper proof; preserve that hidden target fields remain private.
-- [ ] Do not add a runtime test for AP-12 because the existing PostgreSQL HTTP scenario already exercises the relevant setup and post-start behavior.
+- [x] State in PG-005 that an explicit public warrant affiliation may identify a wanted person as gang-affiliated; internal target kind, culprit identity and hidden pressure routing are not public knowledge.
+- [x] Add a dated editorial clarification to ADR-0007 preserving its original decision and establishing that only affiliation stated by public warrant terms may appear on the player poster.
+- [x] Add dated AP-12 dispositions that cite the current nullable setup DTO, pre-start HUD `204`, the real setup-to-start API test and the prior `.10` setup-projection correction; preserve the original audit-time finding.
+- [x] Add dated AP-13 dispositions recording the settled public-affiliation rule, existing positive API behavior and the new negative mapper proof; preserve that hidden target fields remain private.
+- [x] Do not add a runtime test for AP-12 because the existing PostgreSQL HTTP scenario already exercises the relevant setup and post-start behavior.
 
 ### Task 4: Retire `.105` and route the `.106` successor
 
@@ -73,8 +74,8 @@
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-12-row16-ap11-diagnostic-metadata.md`
 
-- [ ] Record PR #290 source, merge, review, exact-head hosted run and verified paired worktree/branch cleanup; link this `.106` plan as the executing row-16 slice.
-- [ ] Advance the product version from `.105` to `.106` exactly once and retire the `.105` plan in this successor.
-- [ ] Review `git diff --check`, run the focused mapper test, and pass the normal check-only commit hook's complete canonical gate before whole-branch review and publication.
+- [x] Record PR #290 source, merge, review, exact-head hosted run and verified paired worktree/branch cleanup; link this `.106` plan as the executing row-16 slice.
+- [x] Advance the product version from `.105` to `.106` exactly once and retire the `.105` plan in this successor.
+- [x] Review `git diff --check`, run the focused mapper test, and pass the normal check-only commit hook's complete canonical gate before whole-branch review and publication.
 
 **Validation:** The current `develop` tree matches PR #290's reviewed tree. Baseline focused command `py -3 tools/run.py dotnet-test --check -- --filter 'FullyQualifiedName~ProjectionEndpointTests|FullyQualifiedName~WantedPosterMapperTests'` passes on the worktree baseline. After implementation, rerun the focused command; verify the new mapper test's red/green result; then use the staged-snapshot commit hook, fresh whole-branch review and exact-head hosted canonical CI.
