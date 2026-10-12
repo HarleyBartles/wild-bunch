@@ -16,7 +16,7 @@ public static class DependencyInjection
         services.AddSingleton<GameSessionJsonSerializer>();
 
         // Event upcaster registry.
-        // Event upcasters are registered below; the completeness test verifies every
+        // Event upcasters are registered below; the integration-test suite verifies every
         // concrete IEventUpcaster in this assembly is returned by that method.
         services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry(CreateDefaultUpcasters()));
 
@@ -63,7 +63,7 @@ public static class DependencyInjection
     /// <summary>
     /// Returns the list of upcasters that the DI registration uses to construct
     /// PayloadUpcasterRegistry. Extracted as a separate internal method so the
-    /// build-time completeness test (UpcasterChainCompletenessTests) can call it
+    /// integration-test completeness check (UpcasterChainCompletenessTests) can call it
     /// directly and verify every IEventUpcaster in the assembly is registered.
     /// When adding a new upcaster, add it to this method's list.
     /// </summary>
