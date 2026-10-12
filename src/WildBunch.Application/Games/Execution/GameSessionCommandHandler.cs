@@ -9,11 +9,10 @@ namespace WildBunch.Application.Games.Execution;
 /// load → command → store → commit → project → safe return orchestration.
 /// See ADR-0028.
 ///
-/// Subclasses implement <see cref="ExecuteAsync"/> which loads the session,
-/// applies the command, and returns the result. The base class wraps the
-/// execution with:
+/// Callers provide a delegate that applies the command to the session loaded
+/// by the base pipeline. The base class wraps that execution with:
 /// - Correlation ID generation for event tracing
-/// - Setup-phase invariant enforcement for gameplay commands
+/// - Setup-phase command guard for gameplay commands
 /// - Optimistic concurrency retry on ConcurrencyException
 /// - Event commit marking after successful store + commit
 /// </summary>
@@ -43,9 +42,9 @@ public abstract class GameSessionCommandHandler
 
     /// <summary>
     /// Executes the command with optimistic concurrency retry.
-    /// The subclass implementation loads the session, applies the command,
-    /// and returns the result. If the command produced uncommitted events,
-    /// the base class stores and commits them.
+    /// The base pipeline loads the session and invokes the supplied delegate.
+    /// If the command produced uncommitted events, the base class stores and
+    /// commits them before returning the result.
     /// </summary>
     public async Task<T> ExecuteWithRetryAsync<T>(
         GameSessionId sessionId,

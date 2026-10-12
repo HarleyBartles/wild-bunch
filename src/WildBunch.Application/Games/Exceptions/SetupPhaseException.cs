@@ -3,12 +3,11 @@ using WildBunch.Domain.Game;
 namespace WildBunch.Application.Games.Exceptions;
 
 /// <summary>
-/// Thrown when a gameplay command is invoked on a session that has not yet
-/// completed the setup flow (StartFlowPhase &lt; GameStarted). The aggregate
-/// root owns this invariant via GameSession.ThrowIfSetupPhase(); the command
-/// handler base class centralizes the call so individual gameplay handlers
-/// do not need to repeat the guard. See ADR-0028 and the architecture
-/// guardrails for the setup-phase inversion pattern.
+/// Thrown by the Application command-handler pipeline when a handler requires
+/// a started game but the loaded session reports <see cref="GameSession.IsSetupPhase"/>.
+/// The aggregate exposes the phase fact; the Application pipeline enforces
+/// this use-case guard unless the handler opts out. See ADR-0028 and the
+/// architecture guardrails for the setup-phase inversion pattern.
 /// </summary>
 public sealed class SetupPhaseException : InvalidOperationException
 {
