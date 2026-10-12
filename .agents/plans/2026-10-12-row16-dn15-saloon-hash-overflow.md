@@ -57,15 +57,17 @@
 **Files:**
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-domain-layer-investigation.md`
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
+- Modify: `docs/features.md`
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-12-row16-dn14-refresh-policy-retirement.md`
 
 **Interfaces:**
 - Consumes: Task 2's passing public-command proof and PR #296's verified merge/CI/cleanup evidence.
-- Produces: A dated partial DN-15 disposition, an accurate row-16 successor entry at `0.1.0-dev.112`, and retirement of the completed `.111` plan.
+- Produces: A dated partial DN-15 disposition, matching PG-006 evidence for the newly proven normal-command edge, an accurate row-16 successor entry at `0.1.0-dev.112`, and retirement of the completed `.111` plan.
 
 - [x] Add a dated DN-15 note that the valid runtime-shaped salt reproduced `int.MinValue` in `BountyLoop.StableSaloonRollHash`, that the single-value fallback preserves all other saloon hash outcomes, and that `CitizenCast.StableHash` remains open pending a concrete production-shaped input or stronger source contract.
 - [x] Do not change the Domain test follow-up: the new command test is the minimal behavioral proof for this newly reproduced failure, while the existing file already records conditional test recommendations and does not assert this overflow path.
+- [x] Update PG-006's evidence assessment to record that the runtime-shaped `int.MinValue` case completes through the normal player command path and records matching event/state facts; leave the product promise, dependencies and disposition unchanged.
 - [x] Retire the `.111` plan and update row 16 to point to this `.112` plan. Record PR #296 source `199b31404f730e5a9c24cf6e31d1094ce38272e`, merge `6d417431d6af3067c99c5690c9dd8e194f98a40f`, exact-head gate `38239274921`, develop-push gate `38239928829`, and that the clean worktree was removed before both branch refs and all three absences were verified. These records are part of the same first substantive commit as the source fix and version change.
 - [x] Change `Directory.Build.props` exactly once from `0.1.0-dev.111` to `0.1.0-dev.112`; ensure the production web build identity still derives from this shared authority.
 - [x] Run `py -3 tools/run.py ci --check` and the canonical staged-snapshot pre-commit hook, resolve any failure through its designated repair command, then commit the successor retirement, dated dispositions, roadmap delivery proof and version change together.
