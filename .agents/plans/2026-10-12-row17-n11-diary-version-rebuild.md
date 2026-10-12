@@ -21,7 +21,7 @@
 - Remove assertions that freeze `ProjectionVersions.DiaryDay` at 1 or enumerate component names through `ForComponent`, whose current implementation returns one constant independent of the name.
 - Retain future-event rejection, current component payload loading, stale component reconstruction, missing-component behavior, registered event upcasts, and runtime upcaster-chain gap guards.
 - Make stale and mixed diary rebuilds use a real nonempty `TravelDayAdvanced` event and assert exact diary day, towns, resource outcome, and an event-authored entry without deriving expected values by calling the same projector.
-- Before review, compare the actual diff with ADR-0028 and `docs/features.md`; no durable decision or product promise change is expected.
+- Before review, compare the actual diff with ADR-0028 and `docs/features.md`; no durable decision, product promise, dependency, or disposition changes, but PLAT-001's evidence must record the new diary-cache behavior proof and its loader-level limit.
 - Use the normal staged-snapshot hook, which validates without mutating or staging files; do not run `git commit --no-verify`.
 - Require fresh whole-branch review, passing exact-head hosted CI, and passing develop-push CI before paired worktree and branch cleanup.
 
@@ -38,6 +38,7 @@
 
 **Files:**
 - Modify: `tests/WildBunch.Integration.Tests/Versioning/VersionMismatchBehaviorTests.cs`
+- Modify: `docs/features.md`
 - Delete: `tests/WildBunch.Integration.Tests/Versioning/ProjectionVersionCompletenessTests.cs`
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md`
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
@@ -59,7 +60,7 @@
 
 - [x] **Step 2: Run the focused lane and prove the assertions detect the wrong behavior.** Run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Integration.Tests/WildBunch.Integration.Tests.csproj --filter FullyQualifiedName~VersionMismatchBehaviorTests`. For the stale-path proof, temporarily replace `var hasCurrentSchema = ordered.All(day => day.SchemaVersion == ProjectionVersions.DiaryDay);` in `PersistedPayloadLoader.LoadDiaryDays` with `var hasCurrentSchema = true;`; the stale test must fail at the fixed event-entry assertion because it receives the valid stale cache-only line. Restore `PersistedPayloadLoader.cs` byte-for-byte, verify its diff is empty, and rerun the focused test successfully. For the current-version proof, temporarily add `return _diaryDayProjector.Project(events).Days;` as the first statement in `LoadDiaryDays`; the current-version test must fail because the event entry replaces the persisted marker. Restore and rerun. Do not commit either mutation.
 
-- [x] **Step 3: Record dispositions and successor delivery metadata.** Add a dated N-11 disposition that deletes the version-1 integer and component-name detectors, describes the current/stale/mixed cache behavior now exercised, and preserves the unrelated future-event, upcast and chain-gap guards. Update row 17 with PR #310, reviewed source `cffe3471a42e8f48e57fafee89d157c828479b3c`, merge `08c120b4d2c71b95ad5aed261682ca53ceeae5e1`, matching tree `248ee78bb2d2e94857e8e282a18c2ff6db6f338e`, exact-head gate `38314430456`, develop-push gate `38315022543`, and verified paired worktree/ref cleanup. Set N-11 active at `.126` and leave row 17 incomplete.
+- [x] **Step 3: Record dispositions and successor delivery metadata.** Add a dated N-11 disposition that deletes the version-1 integer and component-name detectors, describes the current/stale/mixed cache behavior now exercised, and preserves the unrelated future-event, upcast and chain-gap guards. Update PLAT-001's dated evidence in `docs/features.md` to describe these new loader-level tests without implying PostgreSQL recovery proof. Update row 17 with PR #310, reviewed source `cffe3471a42e8f48e57fafee89d157c828479b3c`, merge `08c120b4d2c71b95ad5aed261682ca53ceeae5e1`, matching tree `248ee78bb2d2e94857e8e282a18c2ff6db6f338e`, exact-head gate `38314430456`, develop-push gate `38315022543`, and verified paired worktree/ref cleanup. Set N-11 active at `.126` and leave row 17 incomplete.
 
 - [x] **Step 4: Advance version and retire the predecessor plan.** In the first substantive implementation commit, change the sole authored version in `Directory.Build.props` from `0.1.0-dev.125` to `0.1.0-dev.126`, delete the N-10 plan, and retain this plan. Review the intended staged diff and commit through the normal check-only hook.
 
