@@ -54,6 +54,23 @@ describe("background building planner", () => {
     );
   });
 
+  it("maps logical coordinates on a ten-unit boundary to the next foreground cell", () => {
+    const layout = createLayout({
+      buildings: [
+        {
+          kind: BuildingKind.Store,
+          view: BuildingView.Profile,
+          x: 20,
+          y: 30,
+          width: 8,
+          height: 10,
+        },
+      ],
+    });
+
+    expect(collectForegroundOccupiedSlots(layout)).toEqual(new Set(["3:2"]));
+  });
+
   it("excludes the immediate east and west slots beside both trailheads from background placement", () => {
     const grid = createGrid();
     grid[0][4] = 1;
@@ -263,10 +280,18 @@ describe("background building planner", () => {
     });
 
     const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-    expect(placements).toHaveLength(1);
-    expect([BuildingView.Rear, BuildingView.RearOblique]).toContain(placements[0].view);
-    expect(placements[0].flipY).toBe(false);
-    expect(placements[0].attachesTo).toBe("spur-below");
+    expect(placements).toEqual([
+      {
+        row: 5,
+        col: 6,
+        family: "background-house",
+        view: BuildingView.RearOblique,
+        flipX: false,
+        flipY: false,
+        side: "east",
+        attachesTo: "spur-below",
+      },
+    ]);
   });
 
   it("produces spur cross tiles only when both sides of the same spur are occupied", () => {

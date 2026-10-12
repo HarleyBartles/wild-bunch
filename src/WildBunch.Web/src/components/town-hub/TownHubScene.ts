@@ -2,6 +2,13 @@ import Phaser from "phaser";
 import { AvailableActionKind, BuildingView } from "../../api/types";
 import { BuildingKind } from "./types";
 import type { BuildingPlacementDto, TownLayoutDto } from "./types";
+import {
+  getTownTileCell,
+  logicalToTileCell,
+  type TownTileCell,
+  TownTileColumns,
+  TownTileRows,
+} from "./town-hub-geometry";
 import { getBackgroundSpriteKey, getBackgroundSpriteUrl, getSpriteUrl } from "./sprite-loader";
 import {
   getDirtTileUrl,
@@ -40,8 +47,6 @@ const BUILDING_LABELS: Record<BuildingKind, string> = {
   [BuildingKind.Telegraph]: "Telegraph",
 };
 
-const TileGridWidth = 10;
-const TileGridHeight = 10;
 const TilePixelWidth = 80;
 const TilePixelHeight = 50;
 const BuildingNudgeRatio = 0.3;
@@ -50,11 +55,6 @@ type RoadVariant = "flat" | "path" | "spur";
 type SpurVariant = "straight" | "path" | "end-cap" | "cross";
 type PathOrientation = "horizontal" | "vertical";
 type PathVariant = "straight" | "diagonal";
-
-interface TilePoint {
-  row: number;
-  col: number;
-}
 
 function isRoadTile(tileType: number): boolean {
   return tileType === 1;
@@ -66,17 +66,6 @@ function isSpurStartTile(tileType: number): boolean {
 
 function isSpurRoadTile(tileType: number): boolean {
   return tileType === 4;
-}
-
-function getCell(layout: TownLayoutDto, row: number, col: number): number {
-  return layout.tileGrid?.[row]?.[col] ?? 0;
-}
-
-function logicalToTileCell(logicalX: number, logicalY: number): TilePoint {
-  return {
-    col: Math.floor(logicalX / 10),
-    row: Math.floor(logicalY / 10),
-  };
 }
 
 export function isBuildingAvailable(kind: BuildingKind, actions: AvailableActionKind[]): boolean {
@@ -108,8 +97,8 @@ export class TownHubScene extends Phaser.Scene {
   public spurCrossTileKeys: Set<string>;
 
   // Canvas dimensions in pixels. The play surface is a 10x10 tile grid at 80x50 each.
-  private static readonly CanvasWidth = TileGridWidth * TilePixelWidth;
-  private static readonly CanvasHeight = TileGridHeight * TilePixelHeight;
+  private static readonly CanvasWidth = TownTileColumns * TilePixelWidth;
+  private static readonly CanvasHeight = TownTileRows * TilePixelHeight;
 
   constructor(
     layout: TownLayoutDto,
@@ -197,8 +186,8 @@ export class TownHubScene extends Phaser.Scene {
     const seed =
       this.layout.layoutSalts?.dirtSalt ?? this.layout.resolverVersion ?? "town-hub-dirt";
 
-    for (let row = 0; row < TileGridHeight; row++) {
-      for (let col = 0; col < TileGridWidth; col++) {
+    for (let row = 0; row < TownTileRows; row++) {
+      for (let col = 0; col < TownTileColumns; col++) {
         const variantIndex = pickDirtVariantIndex(seed, row, col);
         const mirroring = pickDirtMirroring(seed, row, col);
         this.add
@@ -215,9 +204,9 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private renderRoadTiles(): void {
-    for (let row = 0; row < TileGridHeight; row++) {
+    for (let row = 0; row < TownTileRows; row++) {
       for (const col of [4, 5]) {
-        const tileType = getCell(this.layout, row, col);
+        const tileType = getTownTileCell(this.layout, row, col);
         if (!isRoadTile(tileType)) {
           continue;
         }
@@ -239,9 +228,9 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private renderSpurTiles(): void {
-    for (let row = 0; row < TileGridHeight; row++) {
-      for (let col = 0; col < TileGridWidth; col++) {
-        const tileType = getCell(this.layout, row, col);
+    for (let row = 0; row < TownTileRows; row++) {
+      for (let col = 0; col < TownTileColumns; col++) {
+        const tileType = getTownTileCell(this.layout, row, col);
         if (!isSpurStartTile(tileType) && !isSpurRoadTile(tileType)) {
           continue;
         }
@@ -282,7 +271,7 @@ export class TownHubScene extends Phaser.Scene {
       const isWestSide = tile.col < 5;
       const capCol = isWestSide ? tile.col - 1 : tile.col + 1;
       const capRow = tile.row + 1;
-      if (capCol < 0 || capCol >= TileGridWidth || capRow < 0 || capRow >= TileGridHeight) {
+      if (capCol < 0 || capCol >= TownTileColumns || capRow < 0 || capRow >= TownTileRows) {
         continue;
       }
 
@@ -326,9 +315,9 @@ export class TownHubScene extends Phaser.Scene {
     const seed =
       this.layout.layoutSalts?.propsSalt ?? this.layout.resolverVersion ?? "town-hub-props";
 
-    for (let row = 0; row < TileGridHeight; row++) {
-      for (let col = 0; col < TileGridWidth; col++) {
-        if (getCell(this.layout, row, col) !== 0) {
+    for (let row = 0; row < TownTileRows; row++) {
+      for (let col = 0; col < TownTileColumns; col++) {
+        if (getTownTileCell(this.layout, row, col) !== 0) {
           continue;
         }
         if (!shouldPlaceProp(seed, row, col, this.isBlockedByAnyBuildingPlacement(row, col))) {
@@ -472,7 +461,7 @@ export class TownHubScene extends Phaser.Scene {
       if (this.hasBuildingInTile(row, 3)) {
         return "path";
       }
-      if (getCell(this.layout, row, 3) === 3) {
+      if (getTownTileCell(this.layout, row, 3) === 3) {
         return "spur";
       }
     }
@@ -480,7 +469,7 @@ export class TownHubScene extends Phaser.Scene {
       if (this.hasBuildingInTile(row, 6)) {
         return "path";
       }
-      if (getCell(this.layout, row, 6) === 3) {
+      if (getTownTileCell(this.layout, row, 6) === 3) {
         return "spur";
       }
     }
@@ -516,9 +505,9 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private getPathSpriteForPoint(
-    point: TilePoint,
-    previous: TilePoint | null,
-    next: TilePoint | null,
+    point: TownTileCell,
+    previous: TownTileCell | null,
+    next: TownTileCell | null,
   ): { orientation: PathOrientation; variant: PathVariant; flipX: boolean } {
     if (!previous || !next) {
       const step = next ?? previous;
@@ -541,21 +530,21 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private getBuildingOffset(row: number, col: number): { x: number; y: number } {
-    if (this.hasSpurBelow(row, col) || getCell(this.layout, row, col) === 4) {
+    if (this.hasSpurBelow(row, col) || getTownTileCell(this.layout, row, col) === 4) {
       return {
         x: 0,
         y: -(TilePixelHeight * BuildingNudgeRatio),
       };
     }
 
-    if (col === 3 && getCell(this.layout, row, 4) === 1) {
+    if (col === 3 && getTownTileCell(this.layout, row, 4) === 1) {
       return {
         x: -(TilePixelWidth * BuildingNudgeRatio),
         y: 0,
       };
     }
 
-    if (col === 6 && getCell(this.layout, row, 5) === 1) {
+    if (col === 6 && getTownTileCell(this.layout, row, 5) === 1) {
       return {
         x: TilePixelWidth * BuildingNudgeRatio,
         y: 0,
@@ -604,7 +593,7 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private hasSpurBelow(row: number, col: number): boolean {
-    return row + 1 < TileGridHeight && getCell(this.layout, row + 1, col) === 4;
+    return row + 1 < TownTileRows && getTownTileCell(this.layout, row + 1, col) === 4;
   }
 
   private hasBuildingInTile(row: number, col: number): boolean {
@@ -648,11 +637,11 @@ export class TownHubScene extends Phaser.Scene {
       return this.getSpurBuildingGroundTile(building.view, building.x < 50 ? "west" : "east");
     }
 
-    if (col === 3 && getCell(layout, row, 4) === 1) {
+    if (col === 3 && getTownTileCell(layout, row, 4) === 1) {
       return this.getMainRoadBuildingGroundTile(building.view, "west");
     }
 
-    if (col === 6 && getCell(layout, row, 5) === 1) {
+    if (col === 6 && getTownTileCell(layout, row, 5) === 1) {
       return this.getMainRoadBuildingGroundTile(building.view, "east");
     }
 
@@ -735,8 +724,8 @@ export class TownHubScene extends Phaser.Scene {
     return base;
   }
 
-  private rasterizeLine(start: TilePoint, end: TilePoint): TilePoint[] {
-    const points: TilePoint[] = [];
+  private rasterizeLine(start: TownTileCell, end: TownTileCell): TownTileCell[] {
+    const points: TownTileCell[] = [];
     let x0 = start.col;
     let y0 = start.row;
     const x1 = end.col;

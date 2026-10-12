@@ -1,3 +1,5 @@
+import { hashTownVisualSeed, townVisualCellSeed } from "./town-hub-seed";
+
 const DIRT_VARIANTS = ["dirt-1", "dirt-2", "dirt-3"] as const;
 const PROP_KINDS = ["barrel", "cactus", "fence-piece", "tumbleweed", "water-trough"] as const;
 
@@ -22,21 +24,8 @@ const PropScale = 0.6;
 const PropJitterX = 12;
 const PropJitterY = 8;
 
-function hashString(value: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index++) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function seedForCell(seed: string, row: number, col: number, suffix: string): string {
-  return `${seed}:${suffix}:${row}:${col}`;
-}
-
 function jitter(seed: string, magnitude: number): number {
-  return (hashString(seed) % (magnitude * 2 + 1)) - magnitude;
+  return (hashTownVisualSeed(seed) % (magnitude * 2 + 1)) - magnitude;
 }
 
 export function getDirtTileUrl(variantIndex: number): string {
@@ -78,11 +67,11 @@ export function getPropSpriteUrl(kind: PropKind): string {
 }
 
 export function pickDirtVariantIndex(seed: string, row: number, col: number): number {
-  return hashString(seedForCell(seed, row, col, "dirt")) % DIRT_VARIANTS.length;
+  return hashTownVisualSeed(townVisualCellSeed(seed, row, col, "dirt")) % DIRT_VARIANTS.length;
 }
 
 export function pickDirtMirroring(seed: string, row: number, col: number): TileMirroring {
-  const orientation = hashString(seedForCell(seed, row, col, "dirt-mirror")) % 4;
+  const orientation = hashTownVisualSeed(townVisualCellSeed(seed, row, col, "dirt-mirror")) % 4;
   return {
     flipX: orientation === 1 || orientation === 3,
     flipY: orientation === 2 || orientation === 3,
@@ -98,11 +87,13 @@ export function shouldPlaceProp(
   if (blockedByBuilding) {
     return false;
   }
-  return hashString(seedForCell(seed, row, col, "prop")) % 23 === 0;
+  return hashTownVisualSeed(townVisualCellSeed(seed, row, col, "prop")) % 23 === 0;
 }
 
 export function pickPropKind(seed: string, row: number, col: number): PropKind {
-  return PROP_KINDS[hashString(seedForCell(seed, row, col, "prop-kind")) % PROP_KINDS.length];
+  return PROP_KINDS[
+    hashTownVisualSeed(townVisualCellSeed(seed, row, col, "prop-kind")) % PROP_KINDS.length
+  ];
 }
 
 export function pickPropPlacement(
@@ -111,7 +102,7 @@ export function pickPropPlacement(
   col: number,
   kind: PropKind,
 ): PropPlacement {
-  const placementSeed = seedForCell(seed, row, col, `prop-${kind}`);
+  const placementSeed = townVisualCellSeed(seed, row, col, `prop-${kind}`);
   return {
     offsetX: jitter(`${placementSeed}:x`, PropJitterX),
     offsetY: jitter(`${placementSeed}:y`, PropJitterY),
