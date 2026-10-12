@@ -31,7 +31,7 @@
 
 - [x] Inspect N-05's recorded failure mode and the current retry handler, repository extension, Application tests and PostgreSQL conflict tests.
 - [x] Confirm that the existing spec already requires retries to reload authoritative state and that the existing integration tests own database concurrency behavior.
-- [ ] Commit the plan alone without advancing the application version.
+- [x] Commit the plan alone without advancing the application version.
 
 ## Task 2: Prove retry effects against authoritative durable state
 
@@ -43,15 +43,15 @@
 - `.agents/plans/2026-10-12-row17-journal-projector-proof.md`
 - `Directory.Build.props`
 
-- [ ] Replace the retry fake's shared mutable object with durable event state that reconstructs a fresh `GameSession` for each load. The failed attempt's uncommitted mutation must be discarded before the retry.
-- [ ] For a store conflict, assert the final durable wallet, inventory and purchase event reflect exactly one successful purchase after retry.
-- [ ] For a commit conflict, model rollback of staged writes, reload the durable state, retry, and assert exactly one committed purchase effect.
-- [ ] For retry exhaustion, assert the original concurrency failure surfaces and the durable session has no effects from failed attempts; retain meaningful bounded-retry proof without depending on mutable aggregate aliasing.
-- [ ] Keep the PostgreSQL expected-stream-version and cross-context conflict tests as the production persistence boundary; change or add integration coverage only if inspection finds a real uncovered persistence contract needed by this behavior.
-- [ ] Prove the new behavioral assertions fail when the fake is deliberately changed to return the same already-mutated aggregate after the failed attempt; restore it and rerun the focused tests.
-- [ ] Update this spec's delivery paragraph only to make the already-settled paired cleanup wording explicit and easy to discover; do not change its semantics. Add PR #304's completed delivery and paired cleanup evidence to the row-17 roadmap, leaving row 17 and later N-findings open.
-- [ ] Advance the authored version once to `0.1.0-dev.120` and retire the completed `.119` plan in this same first substantive commit.
-- [ ] Run the focused Application and relevant Integration tests, then commit through the normal staged-snapshot hook.
+- [x] Replace the retry fake's shared mutable object with durable event state that reconstructs a fresh `GameSession` for each load. The failed attempt's uncommitted mutation must be discarded before the retry.
+- [x] For a store conflict, assert the final durable wallet, inventory and purchase event reflect exactly one successful purchase after retry.
+- [x] For a commit conflict, model rollback of staged writes, reload the durable state, retry, and assert exactly one committed purchase effect.
+- [x] For retry exhaustion, assert the original concurrency failure surfaces and the durable session has no effects from failed attempts; retain meaningful bounded-retry proof without depending on mutable aggregate aliasing.
+- [x] Keep the PostgreSQL expected-stream-version and cross-context conflict tests as the production persistence boundary; change or add integration coverage only if inspection finds a real uncovered persistence contract needed by this behavior.
+- [x] Prove the new behavioral assertions fail when the fake is deliberately changed to return the same already-mutated aggregate after the failed attempt; restore it and rerun the focused tests.
+- [x] Update this spec's delivery paragraph only to make the already-settled paired cleanup wording explicit and easy to discover; do not change its semantics. Add PR #304's completed delivery and paired cleanup evidence to the row-17 roadmap, leaving row 17 and later N-findings open.
+- [x] Advance the authored version once to `0.1.0-dev.120` and retire the completed `.119` plan in this same first substantive commit.
+- [x] Run the focused Application and relevant Integration tests, then commit through the normal staged-snapshot hook.
 
 ## Task 3: Review, publish, merge and retire the execution unit
 
