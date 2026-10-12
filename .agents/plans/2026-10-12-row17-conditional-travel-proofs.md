@@ -63,7 +63,7 @@
 
 **Interfaces:**
 - Consumes: `CreateSixDayQuietSession`, `ForceTravelOverrideHandler`, `AdvanceTravelDayHandler`, `AcknowledgeJourneyArrivalHandler`, and their current command/result contracts.
-- Produces: one deterministic Application scenario covering six successful trail-day commands, completed status retained before acknowledgment, destination applied after acknowledgment, and complete diary retention.
+- Produces: one deterministic Application scenario covering six successful trail-day commands, destination arrival and completed status on day six before acknowledgment, and complete diary retention after acknowledgment.
 
 - [x] Replace `HandleAsyncKeepsCompletedJourneyUntilArrivalIsAcknowledged` and `HandleAsyncCompletesSixFullTrailDaysBeforeArrival` with one coherent six-day orchestration scenario; remove both conditional completion guards.
 - [x] Force one Quiet override through the existing Application dev command before each day advance, then require each handler result to succeed and report `Active` for days one through five and `Completed` for day six.
