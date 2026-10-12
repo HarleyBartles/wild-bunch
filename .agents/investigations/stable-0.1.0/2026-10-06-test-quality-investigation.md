@@ -118,6 +118,10 @@ Known runner boundaries deserve focused negative proof: a failing target stops t
 
 `test_agent_routers.py`, `test_operating_standards.py` and `test_plugin_subscriptions.py` exercise invalid routes, malformed declarations and subscription failures against actual validator boundaries. These are expected failure tests of declared contracts, not obsolete placement detectors. Preserve them while updating ownership and adopted contracts as separately agreed. No blanket deletion of source or document validation tests follows from this audit.
 
+### 2026-10-12 implementation disposition
+
+N-01 is corrected in PR #302: the replay test now uses the canonical uncommitted setup history, verifies the setup snapshot contains the clue only in the public pool, then compares command and replay discovery, spent source and clock state. N-02 is corrected in the same slice: the reset scenario builds heat and starts travel on one aggregate, proves successful trail-day progression remains heat-free, and reaches acknowledged arrival in the destination; the separate next-town rollover scenario now requires actual completion, destination and acknowledgement. Remaining test inventory and findings stay open under roadmap row 17.
+
 ## .NET assessment
 
 ### N-01: Replay proof starts from the action's result

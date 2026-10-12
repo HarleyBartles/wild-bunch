@@ -55,55 +55,38 @@ public sealed class HeatSemanticGuardrailTests
     [Fact]
     public void StartingJourney_ResetsHeatToZero()
     {
-        var session = TestSessionFactory.CreateDefault();
+        var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
 
-        // Build up heat by rolling over a full town day.
+        // Heat accumulates during town time on the same aggregate that will travel.
         session.EnterActionContext(TownActionContext.SheriffOffice);
         session.EnterActionContext(TownActionContext.Saloon);
         session.EnterActionContext(TownActionContext.Store);
-        session.EnterActionContext(TownActionContext.Stable);
+        session.EnterActionContext(TownActionContext.SheriffOffice);
         Assert.Equal(1, session.PursuitState.Heat);
 
-        // Start a journey — heat resets to 0.
-        var (travelSession, preview) = TravelTestFactory.CreateEasyShortJourney();
-        travelSession.StartJourney(preview);
-
-        Assert.Equal(0, travelSession.PursuitState.Heat);
-    }
-
-    [Fact]
-    public void AdvancingTrailDays_DoesNotIncreaseHeat()
-    {
-        var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
-        session.StartJourney(preview);
+        var destinationTownId = preview.DestinationTownId;
+        var freshPreview = TravelTestFactory.ResolvePreviewFor(session, destinationTownId);
+        var start = session.StartJourney(freshPreview);
+        Assert.True(start.Success, start.Message);
         Assert.Equal(0, session.PursuitState.Heat);
 
-        // Advance all days of the journey — heat should never rise on the trail.
-        for (var i = 0; i < 6; i++)
+        var status = JourneyStatus.Active;
+        for (var dayIndex = 0; dayIndex < 20 && status == JourneyStatus.Active; dayIndex++)
         {
-            var result = session.AdvanceJourneyDay();
-            if (result.Status == JourneyStatus.Completed)
-                break;
+            session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+            var day = session.AdvanceJourneyDay();
+            Assert.True(day.Success, day.Message);
+            Assert.Equal(0, session.PursuitState.Heat);
+            status = day.Status;
         }
 
+        Assert.Equal(JourneyStatus.Completed, status);
+        Assert.Equal(destinationTownId, session.Player.CurrentTownId);
         Assert.Equal(0, session.PursuitState.Heat);
-    }
-
-    [Fact]
-    public void ArrivalInNewTown_DoesNotRetroactivelyAddTravelHeat()
-    {
-        var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
-        session.StartJourney(preview);
-
-        // Advance until the journey completes.
-        for (var i = 0; i < 6; i++)
-        {
-            var result = session.AdvanceJourneyDay();
-            if (result.Status == JourneyStatus.Completed)
-                break;
-        }
-
-        // Heat should still be 0 after arrival — travel does not add heat.
+        var arrival = session.AcknowledgeJourneyArrival();
+        Assert.True(arrival.Success, arrival.Message);
+        Assert.Equal(destinationTownId, session.Player.CurrentTownId);
+        Assert.Null(session.Journey);
         Assert.Equal(0, session.PursuitState.Heat);
     }
 
@@ -111,20 +94,25 @@ public sealed class HeatSemanticGuardrailTests
     public void TownDayRolloverInNextTown_StartsIncrementingHeatAgain()
     {
         var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
-        session.StartJourney(preview);
+        var destinationTownId = preview.DestinationTownId;
+        Assert.True(session.StartJourney(preview).Success);
 
-        // Advance until the journey completes.
-        for (var i = 0; i < 6; i++)
+        var status = JourneyStatus.Active;
+        for (var dayIndex = 0; dayIndex < 20 && status == JourneyStatus.Active; dayIndex++)
         {
+            session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
             var result = session.AdvanceJourneyDay();
-            if (result.Status == JourneyStatus.Completed)
-                break;
+            Assert.True(result.Success, result.Message);
+            status = result.Status;
         }
 
+        Assert.Equal(JourneyStatus.Completed, status);
+        Assert.Equal(destinationTownId, session.Player.CurrentTownId);
         Assert.Equal(0, session.PursuitState.Heat);
 
-        // Acknowledge arrival to clear the journey and enter the new town.
-        session.AcknowledgeJourneyArrival();
+        var arrival = session.AcknowledgeJourneyArrival();
+        Assert.True(arrival.Success, arrival.Message);
+        Assert.Equal(destinationTownId, session.Player.CurrentTownId);
 
         // Roll over a full day in the new town by cycling through action contexts.
         session.EnterActionContext(TownActionContext.SheriffOffice);
