@@ -32,7 +32,7 @@ Verify the three event declarations no longer expose computed occurrence timesta
 **Files:**
 - Add: `.agents/plans/2026-10-12-row16-domain-occurrence-truth.md`
 
-- [ ] Commit this plan by itself before changing the Domain investigation, roadmap, or version.
+- [x] Commit this plan by itself before changing the Domain investigation, roadmap, or version.
 
 ### Task 2: Date and close the DN-13 source finding
 
