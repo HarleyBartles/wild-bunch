@@ -69,6 +69,8 @@ The entries below record the current assertion, its disposition, the replacement
 
 **Dated disposition, 2026-10-08:** AP-01, AP-03, AP-05, AP-06 and the prepped-state part of AP-07 described the manual town-layout override and its exclusive preparation lifecycle. That lifecycle is retired for 0.1.0; its handler, endpoint, panel and feature-only tests are removed rather than repaired. Deterministic scenarios now provide `SaltSource.CreateFixed(...)` at session/factory genesis. Retained proof covers normal player setup (`CompletePlayerSetupHandlerTests`), layout generation (`MapGeneratorLayoutSaltsTests`), and persisted `WorldGenerated` layout facts (`EventSourcingEndToEndTests.GeneratedTownLayoutFacts_SurvivePersistenceAndEventReplay`). AP-20's ordinary player map/rendering contract remains. These test audits remain historical evidence; the retired lifecycle is not a future implementation recommendation.
 
+**Dated disposition, 2026-10-12, AP-18 narration façade:** `BeatNarrationRendererTests` exercised only the removed Application pass-through, so its tests were retired with the façade. `BeatNarrationDomainTests` remains the behavior proof through real `GameSession` actions; no delegation or source-shape replacement test was added. Other AP-18 response-shape and compatibility findings remain open.
+
 ## Minimal coverage clusters
 
 1. **Normal player setup and generated layout:** Protect the Go-created world and its generated layout facts through the ordinary setup flow and PostgreSQL event replay. The developer prep/inject/start lifecycle is retired; AP-01, AP-03, AP-05, AP-06 and the prepped-state part of AP-07 no longer call for implementation or tests.

@@ -35,6 +35,7 @@
 - Delete: `tests/WildBunch.Application.Tests/Renderers/BeatNarrationRendererTests.cs`
 - Modify: `src/WildBunch.Domain/Game/BeatNarration.cs` to remove its stale reference to the Application façade.
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md`
+- Modify: `.agents/investigations/stable-0.1.0/2026-10-07-application-test-followup.md` with the dated AP-18 proof disposition.
 - Modify: `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`
 - Modify: `Directory.Build.props`
 - Delete: `.agents/plans/2026-10-12-row16-api-request-contracts.md`
@@ -44,12 +45,12 @@
 - Consumes: Domain `BeatNarration`, `GameSession` narration results, current saloon Application handlers, current town-layout game read DTO, Domain narration behavior tests.
 - Produces: no Application pass-through renderer; unchanged Domain-authored narration and public layout rendering contract; accurate dated disposition of AP-18 and AP-20.
 
-- [ ] Before editing, confirm `BeatNarrationRenderer` has no production consumer, confirm the existing tests only exercise the pass-through wrapper, and run `BeatNarrationDomainTests` to establish the retained behavior.
-- [ ] Add a dated AP-20 disposition explaining that commit `290b9cf4f30dce90d76c68ade12866c030f47a49` moved `TownLayoutSaltsDto` from Dev to Games on 2026-10-08, and that the subsequent developer-control retirement removed the dev mutation/query surface while retaining salts in the player renderer contract. Preserve the original finding as historical evidence.
-- [ ] Delete the Application façade and its two tests, remove the stale Domain XML-documentation reference to that façade, and add the dated AP-18 disposition in the same implementation commit. State that Domain narration and its callers remain; leave the other AP-18 factory/compatibility findings open for later JIT decisions. Do not create replacement tests for delegation or source shape; `BeatNarrationDomainTests` proves narration through real GameSession behavior.
-- [ ] In the first substantive commit, record PR #285's reviewed source `86bf1225ad139d1667b4f17d6e9bd4952caea8bb`, merge `8548ef8698111df35906ad7a736384cc05d26fcc`, fresh-review approval, exact-head hosted gate `38198520836`, develop-push gate `38198899235`, primary-checkout fast-forward, and verified worktree-first paired branch cleanup in row 16. Link this plan as the active successor, advance to `0.1.0-dev.101`, and retire the `.100` plan.
-- [ ] Verify the Application source and tests have no remaining `BeatNarrationRenderer` reference, while `GameSession` still calls Domain narration and the live saloon handlers still return the Domain result. Verify `TownLayoutDto` and its mapper still use the Games-owned `TownLayoutSaltsDto`.
-- [ ] Run the focused behavior tests and Application build through the command bus, then run `git diff --check`:
+- [x] Before editing, confirm `BeatNarrationRenderer` has no production consumer, confirm the existing tests only exercise the pass-through wrapper, and run `BeatNarrationDomainTests` to establish the retained behavior.
+- [x] Add a dated AP-20 disposition explaining that commit `290b9cf4f30dce90d76c68ade12866c030f47a49` moved `TownLayoutSaltsDto` from Dev to Games on 2026-10-08, and that the subsequent developer-control retirement removed the dev mutation/query surface while retaining salts in the player renderer contract. Preserve the original finding as historical evidence.
+- [x] Delete the Application façade and its two tests, remove the stale Domain XML-documentation reference to that façade, and add dated AP-18 dispositions to both investigation records in the same implementation commit. State that Domain narration and its callers remain; leave the other AP-18 factory/compatibility findings open for later JIT decisions. Do not create replacement tests for delegation or source shape; `BeatNarrationDomainTests` proves narration through real GameSession behavior.
+- [x] In the first substantive commit, record PR #285's reviewed source `86bf1225ad139d1667b4f17d6e9bd4952caea8bb`, merge `8548ef8698111df35906ad7a736384cc05d26fcc`, fresh-review approval, exact-head hosted gate `38198520836`, develop-push gate `38198899235`, primary-checkout fast-forward, and verified worktree-first paired branch cleanup in row 16. Link this plan as the active successor, advance to `0.1.0-dev.101`, and retire the `.100` plan.
+- [x] Verify the Application source and tests have no remaining `BeatNarrationRenderer` reference, while `GameSession` still calls Domain narration and the live saloon handlers still return the Domain result. Verify `TownLayoutDto` and its mapper still use the Games-owned `TownLayoutSaltsDto`.
+- [x] Run the focused behavior tests and Application build through the command bus, then run `git diff --check`:
 
 ```powershell
 py -3 tools/run.py dotnet-test --check -- --filter "FullyQualifiedName~BeatNarrationDomainTests|FullyQualifiedName~TownLayoutMapperTests|FullyQualifiedName~TownLayoutMapperLayoutSaltsTests"

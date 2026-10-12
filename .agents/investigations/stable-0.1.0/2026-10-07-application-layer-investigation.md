@@ -329,4 +329,6 @@ The following tables preserve the exhaustive assessment. `Keep` means justified 
 
 ## Dated row 16 dispositions, 2026-10-12
 
+**AP-18:** The unreferenced `BeatNarrationRenderer` Application façade and its wrapper-only tests were removed on 2026-10-12. Domain `BeatNarration` remains the owner, `GameSession` still supplies the narration fact, and the saloon handlers still return it. This closes only the façade finding; the overlapping `GameTurnResultFactory` overloads and compatibility aliases remain open for later JIT disposition. The original finding is retained above as historical evidence.
+
 **AP-20:** The original ownership concern was resolved on 2026-10-08 when commit `290b9cf4f30dce90d76c68ade12866c030f47a49` moved `TownLayoutSaltsDto` from `Application.Dev.Models` to `Application.Games.Models` and changed its documented purpose to generated town-layout rendering data. The later developer-control retirement removed the salt mutation/query surface; the ordinary player layout response still carries the renderer inputs. The historical ownership finding remains preserved, but no current Dev-owned DTO is used by the player map contract.
