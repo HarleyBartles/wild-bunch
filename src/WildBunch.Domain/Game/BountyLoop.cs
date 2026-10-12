@@ -994,7 +994,7 @@ internal sealed class BountyLoop
             hash = (hash * 31) + day;
             hash = (hash * 31) + turn;
             hash = (hash * 31) + visitNumber;
-            return Math.Abs(hash);
+            return hash == int.MinValue ? int.MaxValue : Math.Abs(hash);
         }
     }
 }
