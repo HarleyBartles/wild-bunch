@@ -178,7 +178,7 @@ Paths below are relative to `src/WildBunch.Persistence`. Each row represents a f
 | `Versioning/IPayloadUpcaster.cs` | Keep real event capability; remove inert projection extension, PS-12. |
 | `Versioning/PayloadUpcasterRegistry.cs` | Keep useful event chain validation; narrow PS-12 unused kind. |
 | `Versioning/PersistedPayloadLoader.cs` | Correct cache validity/rebuild boundary, PS-04-06/11. |
-| `Versioning/ProjectionVersions.cs` | Keep explicit rebuild versions; assess granularity/replay once per load, PS-11. |
+| `Versioning/ProjectionVersions.cs` | Keep explicit rebuild versions; shared component version is now v2 after the TownVisit cache shape change and still triggers one event reconstruction per load; broader granularity/replay assessment remains PS-11. |
 | `Versioning/WorldGeneratedV1ToV2Upcaster.cs` | Keep actual historical compatibility transform. |
 | `Migrations/20260529130641_InitialCreate.cs` | Preserve original monolithic schema history. |
 | `Migrations/20260529130641_InitialCreate.Designer.cs` | Preserve corresponding historical target model. |

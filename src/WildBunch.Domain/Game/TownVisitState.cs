@@ -1,5 +1,4 @@
 using WildBunch.Domain.Cases;
-using WildBunch.Domain.Actions;
 using WildBunch.Domain.World;
 
 namespace WildBunch.Domain.Game;
@@ -55,11 +54,7 @@ public sealed class TownVisitState
         CurrentTownId = townId;
         var townState = GetOrCreateTownState(townId);
         townState.AdvanceVisit();
-        townState.RefreshSources(TownSourceCatalog.Default);
     }
-
-    public void PrimeCurrentTown()
-        => CurrentTownState.RefreshSources(TownSourceCatalog.Default);
 
     public bool TryGetTownState(TownId townId, out TownVisitTownState? townState)
         => _townStates.TryGetValue(townId, out townState);

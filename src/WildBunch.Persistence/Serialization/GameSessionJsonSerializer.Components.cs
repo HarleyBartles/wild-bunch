@@ -874,24 +874,18 @@ public sealed partial class GameSessionJsonSerializer
     private sealed record TownSourceVisitStateSnapshot(
         string TownId,
         InvestigationSourceKind SourceKind,
-        TownSourceRefreshPolicy RefreshPolicy,
-        int LastRefreshedVisitNumber,
         int LastCheckedVisitNumber)
     {
         public static TownSourceVisitStateSnapshot FromDomain(TownSourceVisitState sourceState)
             => new(
                 sourceState.TownId.Value,
                 sourceState.SourceKind,
-                sourceState.RefreshPolicy,
-                sourceState.LastRefreshedVisitNumber,
                 sourceState.LastCheckedVisitNumber);
 
         public TownSourceVisitState ToDomain()
             => new(
                 new TownId(TownId),
                 SourceKind,
-                RefreshPolicy,
-                LastRefreshedVisitNumber,
                 LastCheckedVisitNumber);
     }
 }

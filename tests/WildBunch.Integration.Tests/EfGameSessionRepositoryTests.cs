@@ -969,6 +969,83 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(1, secondReload.CompletedJourneyHistory[0].JourneySequence);
     }
 
+    [Fact]
+    public async Task VersionOneTownVisitCacheContradictedByInvestigationEventRebuildsFromHistoryWithoutReadWriteback()
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var writer = CreateRepository(fixture, out var writerUnitOfWork);
+        var session = CreateSession();
+        Assert.True(session.GatherLocalGossip().Success);
+        await PersistAsync(writer, writerUnitOfWork, session);
+
+        string stalePayload;
+        PersistedEnvelopeState expectedEnvelope;
+        PersistedEventState[] expectedEvents;
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+            var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
+            var townState = Assert.Single(payload["townStates"]!.AsArray(), entry =>
+                entry?["townId"]?.GetValue<string>() == session.CurrentTownVisit.CurrentTownId.Value);
+            var sourceState = Assert.Single(townState!["sourceStates"]!.AsArray(), entry =>
+                entry?["sourceKind"]?.GetValue<int>() == (int)InvestigationSourceKind.LocalGossip);
+            sourceState!["lastCheckedVisitNumber"] = 0;
+            component.PayloadJson = payload.ToJsonString();
+            component.ComponentVersion = 1;
+            stalePayload = component.PayloadJson;
+            expectedEnvelope = await context.GameSessions.AsNoTracking()
+                .Where(entity => entity.Id == session.Id.Value)
+                .Select(entity => new PersistedEnvelopeState(
+                    entity.SnapshotVersion,
+                    entity.StreamVersion,
+                    entity.TravelDiaryProjectionStreamVersion,
+                    entity.TravelDiaryProjectionDayCount))
+                .SingleAsync();
+            expectedEvents = await context.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new PersistedEventState(
+                    storedEvent.Sequence,
+                    storedEvent.EventId,
+                    storedEvent.EventType,
+                    storedEvent.PayloadJson,
+                    storedEvent.SchemaVersion))
+                .ToArrayAsync();
+            await context.SaveChangesAsync();
+        }
+
+        var recovered = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
+
+        Assert.NotNull(recovered);
+        Assert.True(recovered!.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
+        await using var verifyContext = fixture.CreateContext();
+        var persistedComponent = await verifyContext.GameSessionComponents.AsNoTracking().SingleAsync(candidate =>
+            candidate.SessionId == session.Id.Value && candidate.ComponentName == "townVisitState");
+        var persistedEnvelope = await verifyContext.GameSessions.AsNoTracking()
+            .Where(entity => entity.Id == session.Id.Value)
+            .Select(entity => new PersistedEnvelopeState(
+                entity.SnapshotVersion,
+                entity.StreamVersion,
+                entity.TravelDiaryProjectionStreamVersion,
+                entity.TravelDiaryProjectionDayCount))
+            .SingleAsync();
+        var persistedEvents = await verifyContext.StoredEvents.AsNoTracking()
+            .Where(storedEvent => storedEvent.StreamId == session.Id.Value)
+            .OrderBy(storedEvent => storedEvent.Sequence)
+            .Select(storedEvent => new PersistedEventState(
+                storedEvent.Sequence,
+                storedEvent.EventId,
+                storedEvent.EventType,
+                storedEvent.PayloadJson,
+                storedEvent.SchemaVersion))
+            .ToArrayAsync();
+        Assert.Equal(1, persistedComponent.ComponentVersion);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(stalePayload), JsonNode.Parse(persistedComponent.PayloadJson)));
+        Assert.Equal(expectedEnvelope, persistedEnvelope);
+        Assert.Equal(expectedEvents, persistedEvents);
+    }
+
     [Theory]
     [InlineData("missing-row")]
     [InlineData("null-root")]

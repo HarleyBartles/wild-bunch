@@ -37,7 +37,7 @@ Primary-source research supports the particular boundaries being assessed. Event
 | Baseline decision | Candidates and consequence |
 |---|---|
 | Retain and correct | Ordinary saloon confrontation, deterministic salt/event behavior and legal travel resources/progression are candidates for core behavior correction. Their inclusion remains subject to the agreed minimum playable scope. |
-| Remove/defer an unfinished feature | Unrelated-criminal parity/settlement is the clearest candidate: partial events and snapshots do not establish complete event authority. Distinct NPC interactions, dormant killer-release advancement and unused refresh-policy variants also need a deliberate scope decision rather than automatic completion. |
+| Remove/defer an unfinished feature | Unrelated-criminal parity/settlement is the clearest candidate: partial events and snapshots do not establish complete event authority. Distinct NPC interactions and dormant killer-release advancement still need deliberate scope decisions rather than automatic completion; the unused refresh-policy variants were retired under the dated DN-14 disposition below. |
 | Remove obsolete scaffolding | Dead branches, unused convenience APIs, dispatcher drift and task comments can be retired where consumer review establishes that they serve no retained contract. |
 | Preserve or explicitly retire history | Removing a live feature must account for its event types, snapshots, projections, callers and historical playthroughs. Preserve replay/compatibility where promised or explicitly invalidate affected pre-alpha playthroughs under the selected migration policy. Keep applied migrations and record material removals truthfully in the ADR log. A database reset is not the default migration strategy. |
 
@@ -134,6 +134,8 @@ Remove obsolete code when nearby remediation establishes its consumers. Record i
 **Dated disposition, 2026-10-12:** Command production, event replay, and committed-event catch-up now use one `GameSession.ApplyEvent` dispatcher. `StartSetup`, `ViewPrologue`, `SelectStartingTown`, and `CompleteGameStart` route their existing events through `ProduceEvent`; the duplicate command dispatcher and unused replay local are removed. Existing start-flow and replay outcomes are unchanged. This closes only the dispatcher-drift and unused-local observations; the remaining DN-14 findings stay open for separate disposition.
 
 **Dated disposition, 2026-10-12:** This successor removes the uncalled `Inventory.GetHorseStateOrNull` alias, `Inventory.CanAddItem` predicate, `Inventory.AdvanceHorseState` wrapper, `HorseTravelState.AdvanceTravelDay` legacy calculation, and unused `CitizenCast` reveal helpers. Their helper-only tests were removed or redirected to the retained inventory state setters; current horse daily upkeep remains owned by `JourneyUpkeepRules.ApplyDailyUpkeep`. The unreachable duplicate zero-encounter branch and numbered-task comments in `JourneyLoop` were removed. This closes only these DN-14 findings; refresh-policy semantics and other observations remain open.
+
+**Dated disposition, 2026-10-12:** `TownSourceRefreshPolicy` and its refresh-only metadata are removed. `RefreshForVisit` assigned the same visit number for both declared policies and its default branch; all current catalog entries used `PerVisit`. The actual one-check-per-town-visit rule remains owned by `TownVisitTownState.VisitNumber` and `TownSourceVisitState.LastCheckedVisitNumber`, so this removes unsupported policy scaffolding without changing the player rule in ADR-0008. This closes only the refresh-policy finding.
 
 ### DN-15: Accepted-value and deterministic-index edges need narrower contracts
 
@@ -235,7 +237,7 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Game/GameClock.cs](../../../src/WildBunch.Domain/Game/GameClock.cs) | Keep clock behavior; exposed mutation DN-09 and pre-event advance DN-06. |
 | [Game/GameLogEntry.cs](../../../src/WildBunch.Domain/Game/GameLogEntry.cs) | Keep consumed projection contract pending transfer; not dead because of legacy wording. |
 | [Game/GameLogEntryKind.cs](../../../src/WildBunch.Domain/Game/GameLogEntryKind.cs) | Keep projected log identifiers. |
-| [Game/GameSession.cs](../../../src/WildBunch.Domain/Game/GameSession.cs) | Correct DN-01 through DN-07; public authority seams DN-09; shared command/replay dispatcher closes one DN-14 subfinding. |
+| [Game/GameSession.cs](../../../src/WildBunch.Domain/Game/GameSession.cs) | Correct DN-01 through DN-07; public authority seams DN-09; shared command/replay dispatcher closes one DN-14 subfinding; removed inert town-source priming under DN-14. |
 | [Game/GameSessionEventReplay.cs](../../../src/WildBunch.Domain/Game/GameSessionEventReplay.cs) | Correct ordered ledger DN-03 and salt fallback DN-01; shared dispatcher and unused-local removal close one DN-14 subfinding; history policy DN-16. |
 | [Game/GameSessionId.cs](../../../src/WildBunch.Domain/Game/GameSessionId.cs) | Keep typed identity/new-session factory; not replay-time gameplay RNG. |
 | [Game/GameStatus.cs](../../../src/WildBunch.Domain/Game/GameStatus.cs) | Keep statuses; Completed/Failed membership does not establish implemented transitions. |
@@ -249,9 +251,9 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Game/StoreLoop.cs](../../../src/WildBunch.Domain/Game/StoreLoop.cs) | Keep decision child; duplicate checks prevent normal nonstackable purchase bypass. |
 | [Game/TimeOfDay.cs](../../../src/WildBunch.Domain/Game/TimeOfDay.cs) | Keep four-slot names. |
 | [Game/TownActionContext.cs](../../../src/WildBunch.Domain/Game/TownActionContext.cs) | Keep town-context vocabulary and event ownership. |
-| [Game/TownAggregate.cs](../../../src/WildBunch.Domain/Game/TownAggregate.cs) | Thin town-definition/visit-state wrapper; public mutation surface noted in DN-09. |
-| [Game/TownSourceVisitState.cs](../../../src/WildBunch.Domain/Game/TownSourceVisitState.cs) | See DN-09 and DN-14; no other independent issue found. |
-| [Game/TownVisitState.cs](../../../src/WildBunch.Domain/Game/TownVisitState.cs) | Visit/source state owner; public mutation surface noted in DN-09. |
+| [Game/TownAggregate.cs](../../../src/WildBunch.Domain/Game/TownAggregate.cs) | Thin town-definition/visit-state wrapper; public mutation surface noted in DN-09; inert priming proxy removed under DN-14. |
+| [Game/TownSourceVisitState.cs](../../../src/WildBunch.Domain/Game/TownSourceVisitState.cs) | Visit source checks use `LastCheckedVisitNumber`; inert refresh-policy metadata removed under DN-14. Public mutation surface remains noted in DN-09. |
+| [Game/TownVisitState.cs](../../../src/WildBunch.Domain/Game/TownVisitState.cs) | Visit/source state owner; public mutation surface noted in DN-09; visit increment remains the source-revisit boundary after inert priming removal under DN-14. |
 | [Game/TravelDayOutcome.cs](../../../src/WildBunch.Domain/Game/TravelDayOutcome.cs) | Keep travel outcome vocabulary. |
 | [Game/WantedSuspectPresenceLedger.cs](../../../src/WildBunch.Domain/Game/WantedSuspectPresenceLedger.cs) | Missing state defaults to Unavailable, which is material to DN-02; duplicate entries are normalized by replacement. |
 | [IAggregateRoot.cs](../../../src/WildBunch.Domain/IAggregateRoot.cs) | Keep selected marker; marker cannot enforce mutation authority. |
@@ -294,6 +296,6 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [World/LayoutSalts.cs](../../../src/WildBunch.Domain/World/LayoutSalts.cs) | Keep split inputs; seed/entropy determinism comment omits runtime salt and needs qualification. |
 | [World/PathSegment.cs](../../../src/WildBunch.Domain/World/PathSegment.cs) | Keep path value; constructor bypasses factory bounds, DN-15. |
 | [World/TownLayout.cs](../../../src/WildBunch.Domain/World/TownLayout.cs) | Keep layout value; mutable grid/shallow collection contract DN-09. |
-| [World/TownSourceModels.cs](../../../src/WildBunch.Domain/World/TownSourceModels.cs) | Keep source capability rules; catalog preservation DN-11, refresh distinction DN-14. |
+| [World/TownSourceModels.cs](../../../src/WildBunch.Domain/World/TownSourceModels.cs) | Keep source capability catalog; the unsupported refresh-policy distinction was removed under DN-14. |
 | [World/WorldModels.cs](../../../src/WildBunch.Domain/World/WorldModels.cs) | Keep world graph; custom catalogs DN-11 and permissive input contracts DN-15. |
 | [World/WorldSnapshot.cs](../../../src/WildBunch.Domain/World/WorldSnapshot.cs) | Correct custom-catalog loss if supported, DN-11; typed domain snapshot is legitimate. |

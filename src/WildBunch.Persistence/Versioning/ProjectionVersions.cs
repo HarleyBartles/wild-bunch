@@ -20,12 +20,12 @@ namespace WildBunch.Persistence.Versioning;
 internal static class ProjectionVersions
 {
     /// <summary>
-    /// Current version for all component projections. All components start
-    /// at v1. When a component's JSON shape changes, bump this to 2 and the
-    /// PersistedPayloadLoader will rebuild that component from the event
-    /// stream on next load.
+    /// Current version for all component projections. Version 2 invalidates
+    /// v1 component caches after the TownVisitState JSON shape change. When a
+    /// component's JSON shape changes again, bump this value so the
+    /// PersistedPayloadLoader rebuilds stale components from the event stream.
     /// </summary>
-    private const int ComponentVersion = 1;
+    private const int ComponentVersion = 2;
 
     /// <summary>
     /// Current version for diary day projections. Starts at v1. When the
