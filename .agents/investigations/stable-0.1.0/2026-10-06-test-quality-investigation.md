@@ -182,6 +182,8 @@ Domain `ClueSurfacingResolverTests.SaltMode_DifferentSaltCanSelectDifferentClue`
 
 **Dated disposition, 2026-10-08:** The prep/inject/start capability is retired from the 0.1.0 candidate, so its feature-specific orchestration and override tests were removed rather than strengthened. The retained independent proof is ordinary generated layout persistence/replay in `EventSourcingEndToEndTests.GeneratedTownLayoutFacts_SurvivePersistenceAndEventReplay`; its target is normal `WorldGenerated` facts, not a developer override.
 
+**Dated disposition, 2026-10-12:** The map concerns above were already resolved by PR #245 (`bf5899b6`, unify setup and travel world-map reads): `GetWorldMapHandlerTests.ProjectsTheLoadedSetupWorldTownAndTrailFacts` now compares every projected town identity/name/coordinate and trail identity/endpoint/distance with the loaded world, and the missing-session negative belongs to that same query handler. The former split starting-map and starting-town handlers are absent. This slice changes only `SaltMode_DifferentSaltCanSelectDifferentClue`: its old loops varied town and visit along with salt, so ignoring salt could still satisfy the variation assertion. The corrected test holds surface, town slot, and visit fixed, then requires distinct non-null clue IDs for the two fixed salts.
+
 ### N-10: Nonmutation and order claims need independent values
 
 Application `ProjectionTests.Projectors_DoNotMutateInputEvents` projects twice and compares a few output values. A projector can mutate its input once to a stable wrong value and still pass. Snapshot populated nested inputs before projection and compare afterwards, retaining repeatability as a separate claim only if useful.

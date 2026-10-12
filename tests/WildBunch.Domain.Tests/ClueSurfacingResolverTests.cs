@@ -91,28 +91,15 @@ public sealed class ClueSurfacingResolverTests
     {
         var caseFile = BuildTestCaseFile();
         var resolver = new ClueSurfacingResolver();
-
-        // Two distinct fixed salts over the two gossip clues should be able to
-        // land on different indices for at least one (townSlotIndex, visitCount) pair.
         var saltA = SaltSource.CreateFixed("salt-a");
         var saltB = SaltSource.CreateFixed("salt-b");
 
-        var cluesA = new HashSet<string>();
-        var cluesB = new HashSet<string>();
-        for (var town = 0; town < 5; town++)
-        {
-            for (var visit = 0; visit < 5; visit++)
-            {
-                var a = resolver.Resolve(caseFile, InvestigationSourceKind.LocalGossip, town, visit, saltA);
-                var b = resolver.Resolve(caseFile, InvestigationSourceKind.LocalGossip, town, visit, saltB);
-                if (a is not null) cluesA.Add(a.Id.Value);
-                if (b is not null) cluesB.Add(b.Id.Value);
-            }
-        }
+        var first = resolver.Resolve(caseFile, InvestigationSourceKind.LocalGossip, 0, 0, saltA);
+        var second = resolver.Resolve(caseFile, InvestigationSourceKind.LocalGossip, 0, 0, saltB);
 
-        // The two salts should not select the exact same single clue across all input pairs;
-        // both gossip clues should be reachable under at least one salt.
-        Assert.True(cluesA.Count > 1 || cluesB.Count > 1);
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.NotEqual(first!.Id, second!.Id);
     }
 
     [Fact]
