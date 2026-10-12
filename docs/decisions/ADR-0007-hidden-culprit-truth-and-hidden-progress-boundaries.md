@@ -8,6 +8,7 @@
 
 - `2026-06-01` - Chose to keep culprit identity and hidden case progress out of player-facing DTOs and read surfaces.
 - `2026-10-08` - Editorial clarification: developer diagnostics are an explicit, separately controlled exception; they do not authorize disclosure through player APIs or UI.
+- `2026-10-12` - Editorial clarification: an affiliation stated by public warrant terms is legitimately learned poster information; internal target kind and pressure routing do not make gang membership public, and neither reveals culprit identity or hidden progress.
 
 ## Decision Type
 
@@ -24,7 +25,7 @@ The mystery depends on separating what is true in the world from what the player
 
 ## Decision
 
-Keep hidden culprit truth and hidden progress internal to the domain. Player-facing APIs and projections expose what the player has legitimately learned, not raw hidden state. Developer diagnostics may expose explicit truth only through the controlled developer surface described by ADR-0030 and ADR-0032.
+Keep hidden culprit truth and hidden progress internal to the domain. Player-facing APIs and projections expose what the player has legitimately learned, not raw hidden state. A poster may expose gang affiliation only when public warrant terms state it; internal target kind or pressure routing alone remains hidden. Developer diagnostics may expose explicit truth only through the controlled developer surface described by ADR-0030 and ADR-0032.
 
 ## Rationale and Alternatives
 

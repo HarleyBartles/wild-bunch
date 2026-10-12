@@ -23,7 +23,7 @@ Use the catalogue to select records relevant to the code, contract, or change un
 | [ADR-0004](ADR-0004-postgresql-local-development-and-validation-lane.md) | live | Use PostgreSQL for local development and the repository's database validation lane. |
 | [ADR-0005](ADR-0005-casefile-is-a-session-owned-case-component.md) | live | `CaseFile` owns case-local invariants and evidence beneath `GameSession`, not as a separate command root or repository. |
 | [ADR-0006](ADR-0006-investigation-reveals-knowledge-not-gang-pressure.md) | live | Investigation actions reveal knowledge; any gang-pressure model is a separate decision. |
-| [ADR-0007](ADR-0007-hidden-culprit-truth-and-hidden-progress-boundaries.md) | live | Keep culprit identity and hidden progress inside the domain and out of player-facing read surfaces. |
+| [ADR-0007](ADR-0007-hidden-culprit-truth-and-hidden-progress-boundaries.md) | live | Keep culprit identity and progress hidden while exposing only legitimately learned facts, including public warrant disclosures. |
 | [ADR-0008](ADR-0008-town-visit-investigation-source-refresh.md) | live | Scope investigation-source use to town visits and preserve per-town history in session-owned state. |
 | [ADR-0009](ADR-0009-structured-clue-anchors-and-lead-plausibility.md) | live | Represent clue subjects, places, times, and directions with structured anchors for plausible leads and readable case-board rendering. |
 | [ADR-0010](ADR-0010-lawman-evidence-is-event-derived-not-seeded.md) | planned | Lawman evidence is to derive from gameplay events and state changes rather than a seeded evidence roster. |

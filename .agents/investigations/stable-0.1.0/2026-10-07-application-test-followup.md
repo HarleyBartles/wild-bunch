@@ -95,3 +95,9 @@ Fixed `[Fact(Skip=...)]` tests remain inert even with healthy PostgreSQL. Replac
 ## Dated row 08 disposition, 2026-10-10, AP-16/AP-17
 
 AP-16's incomplete no-caller projector and its archive IL-shape test were removed. AP-17's old captured-evidence disappearance behavior was replaced by mapper tests proving same-name records remain distinct, exact identity alone receives settlement, known clues survive capture, and legacy null associations stay active. PostgreSQL cache recovery and HTTP response tests cover persisted/replayed identity and the player serialization boundary. The new and changed tests have independent failure oracles; none checks file presence or a source-code shape.
+
+## Dated row 16 dispositions, 2026-10-12
+
+**AP-12:** The existing real setup-to-start PostgreSQL HTTP scenario already proves the truthful unknown-state contract: setup retains the player name while town, health and inventory are unknown, pre-start HUD is `204 No Content`, and started state appears after `GameStarted`. This behavior was corrected in the `.10` setup-projection slice. The original test recommendation remains as audit-time evidence; no duplicate regression test is needed.
+
+**AP-13:** The public-knowledge policy is settled: public warrant terms may disclose gang affiliation; internal target kind and pressure routing do not. The existing positive API behavior remains, the mapper's positive fixture no longer leaks affiliation in its summary prose, and a new negative mapper test proves hidden fields alone cannot create public affiliation. A mutation using internal target/progression fields caused that test to fail as intended. The original conditional recommendation is retained as historical audit evidence and is now resolved by this policy and proof.
