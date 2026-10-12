@@ -126,8 +126,7 @@ public sealed record GameTurnResultDto(
     GameSessionDto CurrentSession,
     JourneyStatus? JourneyStatus = null,
     TravelJourneyDto? Journey = null,
-    JourneyTrailEventDto? TrailEvent = null,
-    TravelDiaryDto? TravelDiary = null);
+    JourneyTrailEventDto? TrailEvent = null);
 
 public sealed record TravelPreviewDto(
     string OriginTownId,

@@ -46,10 +46,10 @@ public sealed class AdvanceTravelDayHandlerTests
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
-        Assert.NotNull(result.TravelDiary);
-        var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(result.TravelDiary!.JourneyEntries, entry => entry.Message.StartsWith("I ", StringComparison.Ordinal));
-        Assert.DoesNotContain(result.TravelDiary.JourneyEntries, entry => entry.Message.Contains("you found", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(result.CurrentSession.TravelDiary);
+        var diaryDay = Assert.Single(result.CurrentSession.TravelDiary!.Days);
+        Assert.Contains(result.CurrentSession.TravelDiary!.JourneyEntries, entry => entry.Message.StartsWith("I ", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message.Contains("you found", StringComparison.OrdinalIgnoreCase));
         Assert.True(diaryDay.CurrentFood >= 2);
         Assert.Equal(0, diaryDay.CurrentAmmo);
         Assert.Equal(result.CurrentSession.Player.Health, diaryDay.CurrentHealth);
@@ -67,10 +67,10 @@ public sealed class AdvanceTravelDayHandlerTests
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, result.JourneyStatus);
-        Assert.NotNull(result.TravelDiary);
-        var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(result.TravelDiary.JourneyEntries, entry => entry.Message == "A hard-eyed rider cuts across my path.");
-        Assert.DoesNotContain(result.TravelDiary.JourneyEntries, entry => entry.Message.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(result.CurrentSession.TravelDiary);
+        var diaryDay = Assert.Single(result.CurrentSession.TravelDiary!.Days);
+        Assert.Contains(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message == "A hard-eyed rider cuts across my path.");
+        Assert.DoesNotContain(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -89,10 +89,10 @@ public sealed class AdvanceTravelDayHandlerTests
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
-        Assert.NotNull(result.TravelDiary);
-        var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Single(result.TravelDiary!.JourneyEntries, entry => entry.Message.Contains("Your horse went lame", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(result.TravelDiary.JourneyEntries, entry => entry.Message.Contains("One trail day passes on foot", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(result.CurrentSession.TravelDiary);
+        var diaryDay = Assert.Single(result.CurrentSession.TravelDiary!.Days);
+        Assert.Single(result.CurrentSession.TravelDiary!.JourneyEntries, entry => entry.Message.Contains("Your horse went lame", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message.Contains("One trail day passes on foot", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class AdvanceTravelDayHandlerTests
             Assert.True(acknowledged.Success);
             Assert.Null(acknowledged.CurrentSession.Journey);
             Assert.Equal("openpass", acknowledged.CurrentSession.Player.CurrentTownId);
-            Assert.NotNull(acknowledged.TravelDiary);
+            Assert.NotNull(acknowledged.CurrentSession.TravelDiary);
         }
     }
 
@@ -146,7 +146,7 @@ public sealed class AdvanceTravelDayHandlerTests
 
             Assert.True(acknowledged.Success);
             Assert.Null(acknowledged.CurrentSession.Journey);
-            Assert.NotNull(acknowledged.TravelDiary);
+            Assert.NotNull(acknowledged.CurrentSession.TravelDiary);
         }
     }
 

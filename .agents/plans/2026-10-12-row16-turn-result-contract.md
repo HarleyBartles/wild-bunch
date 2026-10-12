@@ -37,6 +37,15 @@
 - Modify: `tests/WildBunch.Application.Tests/Handlers/AdvanceTravelDayHandlerTests.cs`
 - Modify: `tests/WildBunch.Application.Tests/Handlers/ResolveJourneyEncounterHandlerTests.cs`
 - Modify: `tests/WildBunch.Integration.Tests/GameApiTests.cs`
+- Modify: `tests/WildBunch.Integration.Tests/TestInfrastructure/ScenarioSeedCatalog.cs`
+- Modify: `src/WildBunch.Web/src/tests/AppShell.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/GameSettingsOverlay.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/StartOverConfirmation.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/StartOverRegression.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/StorePlaceFeedback.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/TrailFlowSurfaceCompleted.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/TravelPanel.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx`
 - Modify: `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md`
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-application-test-followup.md`
@@ -49,15 +58,15 @@
 - Consumes: `GameSessionDto.TravelDiary` and command-specific journey status/snapshot/trail-event fields.
 - Produces: one `GameTurnResultDto` shape whose journal is only `CurrentSession.TravelDiary`.
 
-- [ ] Confirm all production and test consumers of `GameTurnResultDto.TravelDiary`; verify browser behavior reads the cached `currentSession.travelDiary` and no client reads the top-level result diary.
-- [ ] Update the existing handler/API behavior assertions from `result.TravelDiary` to `result.CurrentSession.TravelDiary`, preserving concrete expected entry/day/effect assertions. Do not add a test that merely checks a property was deleted.
-- [ ] Run the focused API travel acceptance test with the nested journal assertion. Temporarily make `GameSessionMapper` omit the session travel diary, verify the acceptance test fails at that assertion, restore the mapper exactly and rerun green.
-- [ ] Remove `TravelDiary` from `GameTurnResultDto` and the matching optional TypeScript field. Keep `GameSessionDto.TravelDiary` and all session-level browser usage.
-- [ ] Remove the exact three-argument overload from `GameTurnResultFactory`; retain one `Create` method with optional journey-specific parameters and no duplicated diary projection. Ensure simple purchase and failed-preview calls still return valid current-session DTOs.
-- [ ] Add dated AP-18 dispositions to the source and test follow-up records. State that the earlier overloads emitted the same journal nested and top-level only for the extended call path; browser consumers use the session cache; API/handler tests now prove nested response facts. Mark this response-shape item resolved without claiming journal projector consolidation beyond this slice.
-- [ ] In the first substantive commit, record PR #287's exact head, merge and hosted gate result in the roadmap; retire the completed saloon-alias plan, add this successor, and advance the application version from `.102` to `.103` once.
-- [ ] Compare the changed response contract against applicable ADRs and `docs/features.md`; record why no ADR or feature matrix update is required.
-- [ ] Ensure PostgreSQL with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, run the focused API travel acceptance test, focused Application handler tests, web validation and `git diff --check` through the command bus.
+- [x] Confirm all production and test consumers of `GameTurnResultDto.TravelDiary`; verify browser behavior reads the cached `currentSession.travelDiary` and no client reads the top-level result diary. Update the high-risk scenario contract fixture to inspect `blockedAdvance.CurrentSession.TravelDiary`.
+- [x] Update the existing handler/API behavior assertions from `result.TravelDiary` to `result.CurrentSession.TravelDiary`, preserving concrete expected entry/day/effect assertions. Do not add a test that merely checks a property was deleted.
+- [x] Run the focused API travel acceptance test with the nested journal assertion. Temporarily make `GameSessionMapper` omit the session travel diary, verify the acceptance test fails at that assertion, restore the mapper exactly and rerun green.
+- [x] Remove `TravelDiary` from `GameTurnResultDto` and the matching optional TypeScript field. Keep `GameSessionDto.TravelDiary` and all session-level browser usage.
+- [x] Remove the exact three-argument overload from `GameTurnResultFactory`; retain one `Create` method with optional journey-specific parameters and no duplicated diary projection. Ensure simple purchase and failed-preview calls still return valid current-session DTOs.
+- [x] Add dated AP-18 dispositions to the source and test follow-up records. State that the earlier overloads emitted the same journal nested and top-level only for the extended call path; browser consumers use the session cache; API/handler tests now prove nested response facts. Mark this response-shape item resolved without claiming journal projector consolidation beyond this slice.
+- [x] In the first substantive commit, record PR #287's exact head, merge and hosted gate result in the roadmap; retire the completed saloon-alias plan, add this successor, and advance the application version from `.102` to `.103` once.
+- [x] Compare the changed response contract against applicable ADRs and `docs/features.md`; record why no ADR or feature matrix update is required.
+- [x] Ensure PostgreSQL with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, run the focused API travel acceptance test, focused Application handler tests, web validation and `git diff --check` through the command bus.
 - [ ] Let the staged-snapshot pre-commit hook run the canonical full gate on the implementation commit; do not rerun it immediately before or after a successful hooked commit.
 - [ ] Obtain a fresh whole-branch review, publish the PR to `develop`, verify the exact head and hosted gate before merge, fast-forward the primary checkout, then remove the clean worktree before deleting and verifying its matching local/upstream branch refs.
 

@@ -266,7 +266,6 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedReadWantedPosters.mockResolvedValue({
     success: true,
@@ -308,7 +307,6 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
@@ -645,7 +643,6 @@ describe("AppShell", () => {
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/trail");

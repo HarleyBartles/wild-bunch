@@ -21,16 +21,6 @@ public static class GameTurnResultFactory
             currentSession,
             journeyStatus,
             journey is null ? null : TravelMapper.ToDto(journey),
-            trailEvent is null ? null : TravelMapper.ToDto(trailEvent),
-            currentSession.TravelDiary);
+            trailEvent is null ? null : TravelMapper.ToDto(trailEvent));
     }
-
-    public static GameTurnResultDto Create(
-        bool success,
-        string message,
-        GameSession session)
-        => new(
-            success,
-            message,
-            GameSessionMapper.ToDto(session));
 }

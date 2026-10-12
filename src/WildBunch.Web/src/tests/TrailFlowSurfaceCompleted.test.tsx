@@ -249,7 +249,6 @@ describe("TrailFlowSurface completed-journey view", () => {
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
@@ -277,7 +276,6 @@ describe("TrailFlowSurface completed-journey view", () => {
       journeyStatus: JourneyStatus.Completed,
       journey: completedSession.journey,
       trailEvent: null,
-      travelDiary: null,
     });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
@@ -319,7 +317,6 @@ describe("TrailFlowSurface completed-journey view", () => {
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     });
 
     await waitFor(() => {
