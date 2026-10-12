@@ -24,6 +24,7 @@
 - Before review, compare the actual diff with ADR-0028 and `docs/features.md`; no durable decision, product promise, dependency, or disposition changes, but PLAT-001's evidence must record the new diary-cache behavior proof and its loader-level limit.
 - Use the normal staged-snapshot hook, which validates without mutating or staging files; do not run `git commit --no-verify`.
 - Require fresh whole-branch review, passing exact-head hosted CI, and passing develop-push CI before paired worktree and branch cleanup.
+- If hosted CI cannot pull the existing PostgreSQL service image because its registry data limit is exhausted, use the official `postgres:16` Docker Hub image for the GitHub-hosted service container; public Docker Hub pulls are exempt from the hosted-runner rate limit. Keep the database version and health contract unchanged and re-review the workflow adjustment as part of this PR.
 
 ## Review Focus
 
@@ -37,6 +38,7 @@
 ### Task 1: Prove supported diary payload-version behavior
 
 **Files:**
+- Modify: `.github/workflows/ci.yml` (only if the existing public ECR data limit blocks hosted CI; retain PostgreSQL 16 and health semantics)
 - Modify: `tests/WildBunch.Integration.Tests/Versioning/VersionMismatchBehaviorTests.cs`
 - Modify: `docs/features.md`
 - Delete: `tests/WildBunch.Integration.Tests/Versioning/ProjectionVersionCompletenessTests.cs`
