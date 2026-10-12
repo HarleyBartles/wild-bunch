@@ -483,6 +483,101 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
+    public void Project_CompletedJourneyWithEncounterResolution_EmitsExactJournalSequence()
+    {
+        var journey = JourneySnapshot(1);
+        var interruptedJourney = journey with
+        {
+            Status = JourneyStatus.Interrupted,
+            PendingEncounter = JourneyEncounterState.CreateChoiceEncounter(
+                "foe",
+                "A rider blocked the trail.",
+                [new JourneyEncounterChoiceState("run", "Run")])
+        };
+        var completedJourney = journey with
+        {
+            Status = JourneyStatus.Completed,
+            RemainingDays = 0,
+            RemainingRideDayDistance = 0
+        };
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new JourneyStarted { JourneySnapshot = journey, DiaryMessage = "The road opens.", PursuitHeat = 0 },
+            new TravelDayAdvanced
+            {
+                Day = 2,
+                JourneySnapshot = interruptedJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Interrupted,
+                AdditionalDiaryMessages = ["A rider's horse kicked up dust."],
+                DiaryMessage = "A rider blocked the trail.",
+                HorseLostMessage = string.Empty
+            },
+            new JourneyEncounterResolved
+            {
+                ChoiceId = "run",
+                ChoiceLabel = "Run",
+                Resolved = true,
+                PlayerHealth = 100,
+                WalletCash = 25m,
+                AmmoSpent = 0,
+                StolenItemKind = null,
+                StolenItemQuantity = 0,
+                PursuitHeat = 0,
+                HorseExhaustionDelta = 0,
+                ContinuedOnFoot = false,
+                JourneySnapshot = journey,
+                DiaryMessage = "The rider fled before I could learn more.",
+                DayCompleted = true,
+                JourneyCompleted = false,
+                AdditionalDiaryMessages = ["I pass a broken wagon."]
+            },
+            new TravelDayAdvanced
+            {
+                Day = 3,
+                JourneySnapshot = completedJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Completed,
+                DiaryMessage = "The final stretch opens.",
+                HorseLostMessage = string.Empty
+            },
+            new JourneyCompleted
+            {
+                DestinationTownId = new TownId("dustfork"),
+                DestinationTownName = "Dust Fork",
+                JourneySnapshot = completedJourney,
+                DiaryMessage = "Dust Fork appears at sundown."
+            },
+            new JourneyArrivalAcknowledged
+            {
+                JourneySequence = 1,
+                JourneySnapshot = completedJourney,
+                DiaryMessage = "I ride into Dust Fork."
+            }
+        };
+
+        var entries = new JournalLogProjector().Project(events);
+
+        Assert.Equal(
+            new GameLogEntry[]
+            {
+                new(GameLogEntryKind.Opening, "The hunt begins in Pinecross.", 1, 0),
+                new(GameLogEntryKind.Travel, "The road opens.", 1, 0, 1),
+                new(GameLogEntryKind.Travel, "A rider's horse kicked up dust.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "A rider blocked the trail.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "I pass a broken wagon.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "The rider fled before I could learn more.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "The final stretch opens.", 3, 0, 1),
+                new(GameLogEntryKind.Travel, "Dust Fork appears at sundown.", 3, 0, 1),
+                new(GameLogEntryKind.Travel, "I ride into Dust Fork.", 3, 0, 1)
+            },
+            entries);
+    }
+
+    [Fact]
     public void EmptyMessagesAndHorseLostMessage_AreSkippedOrEmittedExactlyAsLegacy()
     {
         var projector = new JournalLogProjector();
