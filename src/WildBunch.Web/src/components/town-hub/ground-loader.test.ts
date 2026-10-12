@@ -61,34 +61,28 @@ describe("ground-loader", () => {
     );
   });
 
-  it("picks deterministic dirt variants from a salt", () => {
-    const first = pickDirtVariantIndex("dirt-salt", 1, 2);
-    const second = pickDirtVariantIndex("dirt-salt", 1, 2);
-    expect(first).toBe(second);
-    expect(first).toBeGreaterThanOrEqual(0);
-    expect(first).toBeLessThan(3);
+  it("preserves the dirt variant selected by the recorded salt and cell", () => {
+    expect(pickDirtVariantIndex("dirt-salt", 1, 2)).toBe(1);
   });
 
-  it("picks deterministic dirt mirroring from a salt", () => {
-    const first = pickDirtMirroring("dirt-salt", 1, 2);
-    const second = pickDirtMirroring("dirt-salt", 1, 2);
-    expect(first).toEqual(second);
+  it("preserves dirt mirroring selected by the recorded salt and cell", () => {
+    expect(pickDirtMirroring("dirt-salt", 1, 2)).toEqual({ flipX: true, flipY: true });
   });
 
-  it("picks deterministic prop placement from a salt", () => {
-    const first = pickPropPlacement("prop-salt", 4, 5, "cactus");
-    const second = pickPropPlacement("prop-salt", 4, 5, "cactus");
-    expect(first).toEqual(second);
-    expect(first.scale).toBe(0.6);
+  it("preserves prop placement selected by the recorded salt and cell", () => {
+    expect(pickPropPlacement("prop-salt", 4, 5, "cactus")).toEqual({
+      offsetX: 2,
+      offsetY: 7,
+      scale: 0.6,
+    });
   });
 
-  it("picks deterministic prop kinds from a salt", () => {
-    const first = pickPropKind("prop-salt", 4, 5);
-    const second = pickPropKind("prop-salt", 4, 5);
-    expect(first).toBe(second);
+  it("preserves the prop kind selected by the recorded salt and cell", () => {
+    expect(pickPropKind("prop-salt", 4, 5)).toBe("cactus");
   });
 
-  it("suppresses props when a building blocks the tile", () => {
-    expect(shouldPlaceProp("prop-salt", 4, 5, true)).toBe(false);
+  it("places an eligible prop unless a building occupies the cell", () => {
+    expect(shouldPlaceProp("prop-salt", 5, 4)).toBe(true);
+    expect(shouldPlaceProp("prop-salt", 5, 4, true)).toBe(false);
   });
 });
