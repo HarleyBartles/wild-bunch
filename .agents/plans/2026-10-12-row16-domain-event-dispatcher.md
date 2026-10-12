@@ -48,7 +48,7 @@ Verify that setup, prologue, starting-town selection, and game-start commands st
 - [ ] Route `ProduceEvent` through the shared dispatcher before appending to `UncommittedEvents`.
 - [ ] Route `StartSetup`, `ViewPrologue`, `SelectStartingTown`, and `CompleteGameStart` through `ProduceEvent`, preserving their current event order and idempotent/rejection behavior.
 - [ ] Remove the duplicate production dispatcher and the unused `firstEvent` local; do not add a second event inventory or reflection-based dispatch.
-- [ ] Run `py -3 tools/run.py dotnet-test -- --filter FullyQualifiedName~StartFlowEventSourcingTests` and `py -3 tools/run.py dotnet-test -- --filter FullyQualifiedName~GameSessionEventReplayTests`; both must pass against the command and replay paths.
+- [ ] Run `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~StartFlowEventSourcingTests` and `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~GameSessionEventReplayTests`; both must pass against the command and replay paths.
 - [ ] Inspect the focused diff and `git diff --check`; confirm no event payload, migration, upcaster, or externally visible gameplay change was introduced.
 
 ### Task 3: Correct the DN-14 disposition
