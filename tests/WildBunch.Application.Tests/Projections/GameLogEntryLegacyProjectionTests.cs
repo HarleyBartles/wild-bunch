@@ -9,20 +9,16 @@ using WildBunch.Domain.World;
 namespace WildBunch.Application.Tests.Projections;
 
 /// <summary>
-/// Tests that prove the event stream is the authoritative source of game history
-/// and that the legacy GameLogEntry table is a projection-legacy per ADR-0028.
-/// The FullAuditProjector derives the same information from events that the
-/// legacy log entries table stored directly.
+/// Behavior tests for event-derived journal entries, including the purchase
+/// entry produced for a mixed event stream.
 /// </summary>
 public sealed class GameLogEntryLegacyProjectionTests
 {
     /// <summary>
-    /// Projector behavior: JournalLogProjector reproduces the legacy GameLogEntry
-    /// sequence for a mixed event stream, including a Purchase entry for
-    /// StoreItemPurchased — matching Apply(StoreItemPurchased) which records the
-    /// purchase log entry. This is a projector behavior test, not a table-removal
-    /// proof; the read-path switch is proven by
-    /// ReadStoreLoaderJournalProjectionGuardrailTests.
+    /// JournalLogProjector produces the expected entries for a mixed event
+    /// stream, including a Purchase entry for StoreItemPurchased. The persisted
+    /// journal read path is exercised against PostgreSQL by
+    /// ReadRepositoriesProjectComposedSessionAndJournalViews.
     /// </summary>
     [Fact]
     public void JournalLogProjector_ReproducesLegacyLogSequence_IncludesPurchaseEntries()

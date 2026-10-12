@@ -48,13 +48,13 @@
 - Delete `.agents/plans/2026-10-12-row17-discovered-suspect-projection-proof.md`.
 - Modify `Directory.Build.props`.
 
-- [ ] Run `.\tools\postgres-dev.ps1 ensure`, then run the existing PostgreSQL test `ReadRepositoriesProjectComposedSessionAndJournalViews` and inspect its output.
-- [ ] Temporarily replace the journal projection in `GameSessionReadStoreLoader` with an empty result; rerun that focused integration test and confirm it fails because the expected journal entries are missing. Restore the production line and rerun the test successfully.
-- [ ] Delete the source-inspection guardrail and revise only the stale commentary that directed readers to it. Preserve the pure `JournalLogProjector` behavior test and the PostgreSQL integration test.
-- [ ] Add the dated N-07 disposition without rewriting the original observation or inventing why the IL test is absent.
-- [ ] Record PR #306's N-06 merge, validation, matching-tree, and paired-cleanup evidence in roadmap row 17; select N-07 as active `.122`, preserve the remaining findings, and do not mark row 17 complete.
-- [ ] Retire the N-06 plan in this same first substantive commit and advance the version once to `0.1.0-dev.122`.
-- [ ] Run the focused PostgreSQL integration command and `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj`; compare each result with expected behavior. Commit through the normal staged-snapshot hook, which runs the canonical fail-fast `ci --check` gate; do not redundantly run the full gate immediately before or after a successful hooked commit.
+- [x] Run `.\tools\postgres-dev.ps1 ensure`, then run the existing PostgreSQL test `ReadRepositoriesProjectComposedSessionAndJournalViews` and inspect its output.
+- [x] Temporarily replace the journal projection in `GameSessionReadStoreLoader` with an empty result; rerun that focused integration test and confirm it fails because the expected journal entries are missing. Restore the production line and rerun the test successfully.
+- [x] Delete the source-inspection guardrail and revise only the stale commentary that directed readers to it. Preserve the pure `JournalLogProjector` behavior test and the PostgreSQL integration test.
+- [x] Add the dated N-07 disposition without rewriting the original observation or inventing why the IL test is absent.
+- [x] Record PR #306's N-06 merge, validation, matching-tree, and paired-cleanup evidence in roadmap row 17; select N-07 as active `.122`, preserve the remaining findings, and do not mark row 17 complete.
+- [x] Retire the N-06 plan in this same first substantive commit and advance the version once to `0.1.0-dev.122`.
+- [x] Run the focused PostgreSQL integration command and `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj`; compare each result with expected behavior. Commit through the normal staged-snapshot hook, which runs the canonical fail-fast `ci --check` gate; do not redundantly run the full gate immediately before or after a successful hooked commit.
 
 ## Task 3: Review, publish, merge, and retire the execution unit
 
