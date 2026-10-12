@@ -1,4 +1,4 @@
-namespace WildBunch.Application.Dev.Models;
+namespace WildBunch.Api.Dev;
 
 public sealed record ForceTravelOverrideRequestDto(
     string ForcedCategory,

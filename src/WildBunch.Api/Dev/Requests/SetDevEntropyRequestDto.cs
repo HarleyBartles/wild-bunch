@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace WildBunch.Application.Dev.Models;
+namespace WildBunch.Api.Dev;
 
 public sealed record SetDevEntropyRequestDto
 {

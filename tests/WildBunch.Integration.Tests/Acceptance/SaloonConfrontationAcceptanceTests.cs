@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using WildBunch.Api.Dev;
 using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Dev.Models;
