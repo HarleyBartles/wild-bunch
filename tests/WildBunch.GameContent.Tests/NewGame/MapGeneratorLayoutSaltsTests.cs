@@ -36,6 +36,20 @@ public sealed class MapGeneratorLayoutSaltsTests
     }
 
     [Fact]
+    public void Generate_ReportsCurrentTownLayoutResolverVersionForEveryTown()
+    {
+        var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
+        var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString();
+        var world = MapGenerator.Generate(
+            seedWorld,
+            new GameSetupDeterministicSource(seedCode),
+            GameEntropy.Classic,
+            null);
+
+        Assert.All(world.Towns, town => Assert.Equal(TownLayout.CurrentResolverVersion, town.Layout?.ResolverVersion));
+    }
+
+    [Fact]
     public void Generate_SameSeedEntropyTownSalts_ReproducesSameLayout()
     {
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());

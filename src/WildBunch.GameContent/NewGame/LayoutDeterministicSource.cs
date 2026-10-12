@@ -6,9 +6,8 @@ namespace WildBunch.GameContent.NewGame;
 
 /// <summary>
 /// Layout-scoped deterministic source for town hub layout generation.
-/// Uses layout salts to influence only layout-specific decisions, ensuring
-/// that dev layout overrides do not leak into unrelated game setup decisions
-/// like case file choices or mystery truth.
+/// Uses concern-specific salts so layout decisions remain deterministic and
+/// separate from world and mystery setup.
 /// </summary>
 internal sealed class LayoutDeterministicSource
 {

@@ -153,24 +153,6 @@ public sealed class GetSaloonDevContextHandlerTests
         Assert.Equal("Mira Cline", result.PendingDevOverride.ForcedSuspectName);
     }
 
-    [Fact]
-    public async Task HandleAsync_HiddenTruthDoesNotLeakIntoPlayerDtoSerialization()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateSessionWithSaloonSuspect();
-        repository.Seed(session);
-
-        var handler = new GetSaloonDevContextHandler(repository);
-
-        var result = await handler.HandleAsync(new GetSaloonDevContextQuery(session.Id.Value));
-
-        // The dev DTO deliberately contains hidden truth. Verify it's present in dev DTO.
-        Assert.NotNull(result.HiddenTruth);
-        // This test documents the boundary: the dev DTO is separate from player DTOs.
-        // Player DTOs (GameSessionDto, JournalDto) must NOT contain trueCulpritId.
-        // That boundary is enforced by the GameSessionMapper and JournalResolver tests.
-    }
-
     private static GameSession CreateSessionWithSaloonSuspect()
     {
         var town = new WildBunch.Domain.World.Town(
