@@ -31,8 +31,8 @@ public sealed class GameSetupResolverTests
     [Fact]
     public void DifferentSeedCodesCanChangeAtLeastOneSetupSurface()
     {
-        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 11));
-        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(1, 2, 4, 6, tail: 42));
+        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, highBits: 11));
+        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(1, 2, 4, 6, highBits: 42));
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var entropy = EntropyPolicy.For(GameEntropy.Classic);
 
@@ -105,8 +105,8 @@ public sealed class GameSetupResolverTests
         // With direct bit encoding, different case fields produce different UUIDs,
         // which changes the GameSetupDeterministicSource hash that drives turf
         // assignment.
-        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 0));
-        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 2, 4, 5, tail: 0));
+        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, highBits: 0));
+        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 2, 4, 5, highBits: 0));
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var entropy = EntropyPolicy.For(GameEntropy.Classic);
 
@@ -219,8 +219,8 @@ public sealed class GameSetupResolverTests
     private static string DescribeClue(Clue clue)
         => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}";
 
-    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, highBits);
 
     private static SeedWorld CreateCanonicalSeedWorldWithCashBonus(int cashBonus)
     {

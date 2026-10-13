@@ -30,18 +30,17 @@ public sealed class SeedWorldResolverTests
     [Fact]
     public void MultipleUuidSeedsCanResolveToTheSameSeedWorld()
     {
-        var seedA = CreateSeedCode(0, 1, 3, 0, tail: 1);
-        var seedB = CreateSeedCode(0, 1, 3, 0, tail: 2);
+        var seedA = CreateSeedCode(0, 1, 3, 0, highBits: 1);
+        var seedB = CreateSeedCode(0, 1, 3, 0, highBits: 2);
+
+        Assert.NotEqual(seedA, seedB);
 
         var seedWorldA = SeedWorldResolver.Resolve(seedA);
         var seedWorldB = SeedWorldResolver.Resolve(seedB);
 
-        Assert.Equal(seedWorldA.WorldVariant, seedWorldB.WorldVariant);
-        Assert.Equal(seedWorldA.TownCount, seedWorldB.TownCount);
-        Assert.Equal(seedWorldA.GetSelectedTownIds(), seedWorldB.GetSelectedTownIds());
-        Assert.Equal(seedWorldA.AccusationIndex, seedWorldB.AccusationIndex);
-        Assert.Equal(seedWorldA.DefaultCulpritIndex, seedWorldB.DefaultCulpritIndex);
-        Assert.Equal(seedWorldA.CashBonus, seedWorldB.CashBonus);
+        Assert.Equal(seedA, seedWorldA.SeedCode);
+        Assert.Equal(seedB, seedWorldB.SeedCode);
+        Assert.Equal(seedWorldA with { SeedCode = Guid.Empty }, seedWorldB with { SeedCode = Guid.Empty });
     }
 
     [Fact]
@@ -109,7 +108,7 @@ public sealed class SeedWorldResolverTests
                 {
                     for (var cash = 0; cash <= 8; cash++)
                     {
-                        var seed = CreateSeedCode((byte)variant, (byte)accusation, (byte)culprit, (byte)cash, tail: 0);
+                        var seed = CreateSeedCode((byte)variant, (byte)accusation, (byte)culprit, (byte)cash, highBits: 0);
                         var seedWorld = SeedWorldResolver.Resolve(seed);
                         var validation = SeedWorldResolver.Validate(seedWorld);
 
@@ -203,8 +202,8 @@ public sealed class SeedWorldResolverTests
     {
         // Different cash bonus values change the derivation seed, producing
         // different name shuffles.
-        var seedA = CreateSeedCode(0, 1, 3, 0, tail: 0);
-        var seedB = CreateSeedCode(0, 1, 3, 3, tail: 0);
+        var seedA = CreateSeedCode(0, 1, 3, 0, highBits: 0);
+        var seedB = CreateSeedCode(0, 1, 3, 3, highBits: 0);
 
         var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).GetSelectedTownIds().OrderBy(id => id));
         var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).GetSelectedTownIds().OrderBy(id => id));
@@ -254,6 +253,6 @@ public sealed class SeedWorldResolverTests
             OutlierSlotType: 0));
     }
 
-    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, highBits);
 }
