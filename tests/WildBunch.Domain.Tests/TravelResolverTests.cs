@@ -766,12 +766,16 @@ public sealed class TravelResolverTests
         Assert.True(result.Success, result.Message);
         Assert.True(result.SessionChanged);
         Assert.Equal(JourneyStatus.Active, result.Status);
-        Assert.NotNull(result.Journey);
+        var lameHorse = new HorseTravelState(0, 0, session.TravelRules.HorseExhaustionLameThreshold);
+        var returnedJourney = Assert.IsType<TravelJourneySnapshot>(result.Journey);
+        Assert.Equal(TravelMode.Foot, returnedJourney.TravelMode);
+        Assert.Equal(0.75m, returnedJourney.RemainingRideDayDistance);
+        Assert.Equal(2, returnedJourney.RemainingDays);
+        Assert.Equal(lameHorse, returnedJourney.HorseState);
         Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
         Assert.Equal(TravelMode.Foot, session.Journey.TravelMode);
         Assert.Equal(0.75m, session.Journey.RemainingRideDayDistance);
         Assert.Equal(2, session.Journey.RemainingDays);
-        var lameHorse = new HorseTravelState(0, 0, session.TravelRules.HorseExhaustionLameThreshold);
         Assert.Equal(lameHorse, session.Journey.HorseState);
         Assert.True(lameHorse.IsLameFor(session.TravelRules));
         Assert.False(lameHorse.IsDeadFor(session.TravelRules));
