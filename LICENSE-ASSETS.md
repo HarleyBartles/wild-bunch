@@ -44,7 +44,6 @@ The following files and directories were inspected and identified as containing 
 - `src/WildBunch.Domain/Travel/JourneyEncounterModels.cs`
 - `src/WildBunch.Domain/Travel/JourneyTrailEventModels.cs`
 - `src/WildBunch.Domain/Travel/TravelDiaryModels.cs`
-- `src/WildBunch.Domain/Travel/TrailEventCatalog.cs`
 - `src/WildBunch.Domain/World/BuildingLayoutPalette.cs`
 - `src/WildBunch.Domain/World/TownSourceModels.cs`
 - `src/WildBunch.Domain/World/WorldModels.cs`

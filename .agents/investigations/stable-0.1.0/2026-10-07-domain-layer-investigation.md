@@ -285,7 +285,6 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [Travel/JourneyUpkeepRules.cs](../../../src/WildBunch.Domain/Travel/JourneyUpkeepRules.cs) | Keep terrain/water/horse upkeep; horse-loss progression DN-05. |
 | [Travel/TrailBeatSlotMapper.cs](../../../src/WildBunch.Domain/Travel/TrailBeatSlotMapper.cs) | Keep slot mapping. |
 | [Travel/TrailBeatSlotType.cs](../../../src/WildBunch.Domain/Travel/TrailBeatSlotType.cs) | Keep slot vocabulary. |
-| [Travel/TrailEventCatalog.cs](../../../src/WildBunch.Domain/Travel/TrailEventCatalog.cs) | Keep authored effect identifiers. |
 | [Travel/TravelDayGenerationContext.cs](../../../src/WildBunch.Domain/Travel/TravelDayGenerationContext.cs) | Keep explicit deterministic inputs and history. |
 | [Travel/TravelDayPlanFactory.cs](../../../src/WildBunch.Domain/Travel/TravelDayPlanFactory.cs) | Keep forced preparation; validation/default debt AP-04. |
 | [Travel/TravelDayPlanGenerator.Context.cs](../../../src/WildBunch.Domain/Travel/TravelDayPlanGenerator.Context.cs) | Correct dust legality DN-06; unreachable duplicate branch retired under DN-14; NPC question DN-16. |
@@ -309,3 +308,5 @@ Every tracked Domain file has a row below. “Keep” means its role is justifie
 | [World/TownSourceModels.cs](../../../src/WildBunch.Domain/World/TownSourceModels.cs) | Keep source capability catalog; the unsupported refresh-policy distinction was removed under DN-14. |
 | [World/WorldModels.cs](../../../src/WildBunch.Domain/World/WorldModels.cs) | Keep world graph; custom catalogs DN-11 and remaining TownLayout grid/list questions DN-09/15. |
 | [World/WorldSnapshot.cs](../../../src/WildBunch.Domain/World/WorldSnapshot.cs) | Correct custom-catalog loss if supported, DN-11; typed domain snapshot is legitimate. |
+
+**Dated disposition, 2026-10-13, N-34:** The Domain source inventory no longer includes `TrailEventCatalog.cs`, removed as unreachable duplicate producer after repository-wide source and test search found no callers. The live `TravelDayPlanGenerator` remains the reachable producer; event identifiers and event state remain unchanged. No behavior test was added for the unreachable class.
