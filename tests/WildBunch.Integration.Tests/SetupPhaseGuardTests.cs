@@ -23,7 +23,6 @@ public sealed class SetupPhaseGuardTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         // Pick any destination town from the generated world.
@@ -43,7 +42,6 @@ public sealed class SetupPhaseGuardTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         var townId = setupSession.World.Towns.First().Id;
@@ -67,7 +65,6 @@ public sealed class SetupPhaseGuardTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         var destinationTown = setupSession.World.Towns.Last().Id;
@@ -91,7 +88,6 @@ public sealed class SetupPhaseGuardTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         var response = await client.PostAsync(

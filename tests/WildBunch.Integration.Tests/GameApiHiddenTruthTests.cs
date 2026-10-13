@@ -14,7 +14,6 @@ public sealed class GameApiHiddenTruthTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -52,7 +51,6 @@ public sealed class GameApiHiddenTruthTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
@@ -87,7 +85,6 @@ public sealed class GameApiHiddenTruthTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);

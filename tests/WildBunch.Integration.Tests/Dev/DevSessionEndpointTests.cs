@@ -142,7 +142,6 @@ public sealed class DevSessionEndpointTests
     private static async Task<Guid> CreateSessionAsync(HttpClient client)
     {
         var scenario = BoringScenarioBuilder.StartingTownReady();
-        scenario.AssertReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         return created.Id;

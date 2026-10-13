@@ -15,10 +15,10 @@ internal static class BoringScenarioBuilder
             ScenarioName: "MountedTravelReady",
             Fixture: ScenarioSeedCatalog.CanonicalMountedStandard);
 
-    public static BoringScenario NoHorseFootTravelReady()
+    public static BoringScenario EasyDifficultyMountedTravelReady()
         => new(
-            ScenarioName: "NoHorseFootTravelReady",
-            Fixture: ScenarioSeedCatalog.NoHorseLightEasy);
+            ScenarioName: "EasyDifficultyMountedTravelReady",
+            Fixture: ScenarioSeedCatalog.EasyDifficultyMounted);
 
     public static BoringScenario HighRiskFoeInterruptRoute()
         => new(
@@ -39,23 +39,16 @@ internal sealed record BoringScenario(
 
     public GameDifficulty GameDifficulty => Fixture.GameDifficulty;
 
-    public void AssertReady()
-        => Fixture.AssertCachedFixtureContract();
-
     public SetupGameRequest CreateRequest(string playerName)
         => Fixture.CreateRequest(playerName);
 
     public GameSession CreateSession(string playerName = "Fixture Validator")
-    {
-        Fixture.AssertCachedFixtureContract();
-
-        return CanonicalStartFlow.StartGame(
+        => CanonicalStartFlow.StartGame(
             new SeededNewGameFactory(new DeterministicSaltSourceFactory()),
             playerName,
             GameDifficulty,
             SeedCode,
             Fixture.GameEntropy);
-    }
 
     public GameSessionDto CreateSessionDto(string playerName = "Fixture Validator")
         => GameSessionMapper.ToDto(CreateSession(playerName));

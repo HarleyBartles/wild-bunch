@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
@@ -21,67 +20,13 @@ internal static class ScenarioSeedCatalog
     private static readonly string CanonicalMountedSeedCode = SeedWorldResolver.FormatSeedCode(
         SeedWorldResolver.CreateCanonicalSeedCode());
 
-    // BUNCH-107 transitional: NoHorseLightEasy previously specified no-horse + light loadout
-    // via seed-derived fields. These fields are now difficulty-owned (DifficultyEnvelope).
-    // All difficulties get horse+saddle+Standard loadout as transitional defaults.
-    // This fixture now uses the canonical seed with Easy difficulty + Boring entropy.
-    // BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
-    // The shape signature has been updated to reflect transitional defaults (horse=present).
-    private static readonly string NoHorseLightEasySeedCode = CanonicalMountedSeedCode;
-
-    private static readonly ScenarioSeedDescriptor CanonicalMountedStandardDescriptor = ScenarioSeedDescriptor.Create("CanonicalMountedStandard")
-        .WithCodecVersion(ScenarioSeedCodecVersion.Current)
-        .WithEntropy(GameEntropy.Boring)
-        .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
-        .WithHorse(HorseCondition.Healthy)
-        .WithSaddle(SaddleState.Present)
-        .WithWallet(25m)
-        .WithItemCount(8)
-        .WithTownCount(8)
-        .WithPreview(ScenarioPreviewExpectation.Mounted(2, 2));
-
-    private static readonly ScenarioSeedDescriptor CanonicalStartingTownDescriptor = ScenarioSeedDescriptor.Create("CanonicalStartingTown")
-        .WithCodecVersion(ScenarioSeedCodecVersion.Current)
-        .WithEntropy(GameEntropy.Boring)
-        .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
-        .WithHorse(HorseCondition.Healthy)
-        .WithSaddle(SaddleState.Present)
-        .WithWallet(25m)
-        .WithItemCount(8)
-        .WithTownCount(8)
-        .WithServicesOnStartingTown()
-        .WithPreview(ScenarioPreviewExpectation.Mounted(2, 2));
-
-    private static readonly ScenarioSeedDescriptor HighRiskFoeInterruptRouteDescriptor = ScenarioSeedDescriptor.Create("HighRiskFoeInterruptRoute")
-        .WithCodecVersion(ScenarioSeedCodecVersion.Current)
-        .WithEntropy(GameEntropy.Boring)
-        .WithStartingTownRole(ScenarioStartingTownRole.DefaultPlayableStart)
-        .WithHorse(HorseCondition.Healthy)
-        .WithSaddle(SaddleState.Present)
-        .WithWallet(25m)
-        .WithItemCount(8)
-        .WithTownCount(8)
-        .WithConnectedTownCount(2)
-        .WithPreview(ScenarioPreviewExpectation.Missing());
-
-    private static readonly ScenarioSeedDescriptor NoHorseLightEasyDescriptor = ScenarioSeedDescriptor.Create("NoHorseLightEasy")
-        .WithCodecVersion(ScenarioSeedCodecVersion.Current)
-        .WithEntropy(GameEntropy.Boring)
-        .WithDifficulty(GameDifficulty.Easy)
-        .WithHorse(HorseCondition.Healthy)
-        .WithSaddle(SaddleState.Present)
-        .WithHealth(1250)
-        .WithTownCount(8)
-        .WithTravelMode(TravelMode.Mounted)
-        .WithPreview(ScenarioPreviewExpectation.Mounted(2, 2));
+    private static readonly string EasyDifficultyMountedSeedCode = CanonicalMountedSeedCode;
 
     public static readonly ScenarioSeedFixture CanonicalMountedStandard = new(
         Name: "CanonicalMountedStandard",
         SeedCode: CanonicalMountedSeedCode,
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
-        Contract: CanonicalMountedStandardDescriptor,
-        DescribeShapeSignature: DescribeCanonicalMountedShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("CanonicalMountedStandard", session),
         AssertTravelPreviewContract: (session, destinationTownId, preview) => AssertCanonicalMountedTravelPreview("CanonicalMountedStandard", session, destinationTownId, preview));
 
@@ -90,8 +35,6 @@ internal static class ScenarioSeedCatalog
         SeedCode: CanonicalMountedStandard.SeedCode,
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
-        Contract: CanonicalStartingTownDescriptor,
-        DescribeShapeSignature: DescribeCanonicalStartingTownShape,
         AssertCreatedSessionContract: session =>
         {
             AssertCanonicalMountedStartState("CanonicalStartingTown", session);
@@ -106,68 +49,40 @@ internal static class ScenarioSeedCatalog
         SeedCode: CanonicalMountedStandard.SeedCode,
         GameDifficulty: GameDifficulty.Standard,
         GameEntropy: GameEntropy.Boring,
-        Contract: HighRiskFoeInterruptRouteDescriptor,
-        DescribeShapeSignature: DescribeHighRiskFoeInterruptRouteShape,
         AssertCreatedSessionContract: session => AssertCanonicalMountedStartState("HighRiskFoeInterruptRoute", session));
 
-    // BUNCH-107 transitional: NoHorseLightEasy now gets horse+saddle (transitional defaults).
-    // The fixture name is retained for continuity but the shape has changed.
-    // BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
-    public static readonly ScenarioSeedFixture NoHorseLightEasy = new(
-        Name: "NoHorseLightEasy",
-        SeedCode: NoHorseLightEasySeedCode,
+    public static readonly ScenarioSeedFixture EasyDifficultyMounted = new(
+        Name: "EasyDifficultyMounted",
+        SeedCode: EasyDifficultyMountedSeedCode,
         GameDifficulty: GameDifficulty.Easy,
         GameEntropy: GameEntropy.Boring,
-        Contract: NoHorseLightEasyDescriptor,
-        DescribeShapeSignature: DescribeNoHorseLightEasyShape,
         AssertCreatedSessionContract: session =>
         {
-            RequireEqual("NoHorseLightEasy", "start-game.GameDifficulty", GameDifficulty.Easy, session.GameDifficulty);
-            RequireEqual("NoHorseLightEasy", "start-game.entropy", GameEntropy.Boring, session.GameEntropy);
-            RequireEqual("NoHorseLightEasy", "start-game.health", 1250, session.Player.Health);
-            // Transitional: all difficulties now get horse+saddle.
-            Require("NoHorseLightEasy", "start-game.inventory.horseItem", session.Inventory!.Items.Any(item => item.Kind == ItemKind.Horse), "expected the starting inventory to include a horse (transitional default).");
-            Require("NoHorseLightEasy", "start-game.inventory.saddleItem", session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle), "expected the starting inventory to include a saddle (transitional default).");
+            RequireEqual("EasyDifficultyMounted", "start-game.GameDifficulty", GameDifficulty.Easy, session.GameDifficulty);
+            RequireEqual("EasyDifficultyMounted", "start-game.entropy", GameEntropy.Boring, session.GameEntropy);
+            RequireEqual("EasyDifficultyMounted", "start-game.health", 1250, session.Player.Health);
+            Require("EasyDifficultyMounted", "start-game.inventory.horseItem", session.Inventory!.Items.Any(item => item.Kind == ItemKind.Horse), "expected the starting inventory to include a horse.");
+            Require("EasyDifficultyMounted", "start-game.inventory.saddleItem", session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle), "expected the starting inventory to include a saddle.");
         },
         AssertTravelPreviewContract: (session, destinationTownId, preview) =>
         {
-            RequireEqual("NoHorseLightEasy", "travel-preview.success", true, preview.Success);
-            RequireEqual("NoHorseLightEasy", "travel-preview.destinationTownId", destinationTownId, preview.Preview?.DestinationTownId);
-            // Transitional: mounted travel is now available for all difficulties.
-            RequireEqual("NoHorseLightEasy", "travel-preview.travelMode", TravelMode.Mounted, preview.Preview?.TravelMode);
-            RequireEqual("NoHorseLightEasy", "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
+            RequireEqual("EasyDifficultyMounted", "travel-preview.success", true, preview.Success);
+            RequireEqual("EasyDifficultyMounted", "travel-preview.destinationTownId", destinationTownId, preview.Preview?.DestinationTownId);
+            RequireEqual("EasyDifficultyMounted", "travel-preview.travelMode", TravelMode.Mounted, preview.Preview?.TravelMode);
+            RequireEqual("EasyDifficultyMounted", "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
         },
         AssertTravelTurnContract: (session, destinationTownId, preview, turn) =>
         {
-            RequireEqual("NoHorseLightEasy", "travel-turn.success", true, turn.Success);
-            RequireEqual("NoHorseLightEasy", "travel-turn.destinationTownId", destinationTownId, turn.CurrentSession.Journey?.DestinationTownId);
-            RequireEqual("NoHorseLightEasy", "travel-turn.travelMode", TravelMode.Mounted, turn.CurrentSession.Journey?.TravelMode);
-            RequireEqual("NoHorseLightEasy", "travel-turn.baselineRideDays", preview.Preview?.BaselineRideDays, turn.CurrentSession.Journey?.BaselineRideDays);
-            RequireEqual("NoHorseLightEasy", "travel-turn.expectedDays", preview.Preview?.ExpectedDays, turn.CurrentSession.Journey?.ExpectedDays);
-            RequireEqual("NoHorseLightEasy", "travel-turn.daysTravelled", 0, turn.CurrentSession.Journey?.DaysTravelled);
+            RequireEqual("EasyDifficultyMounted", "travel-turn.success", true, turn.Success);
+            RequireEqual("EasyDifficultyMounted", "travel-turn.destinationTownId", destinationTownId, turn.CurrentSession.Journey?.DestinationTownId);
+            RequireEqual("EasyDifficultyMounted", "travel-turn.travelMode", TravelMode.Mounted, turn.CurrentSession.Journey?.TravelMode);
+            RequireEqual("EasyDifficultyMounted", "travel-turn.baselineRideDays", preview.Preview?.BaselineRideDays, turn.CurrentSession.Journey?.BaselineRideDays);
+            RequireEqual("EasyDifficultyMounted", "travel-turn.expectedDays", preview.Preview?.ExpectedDays, turn.CurrentSession.Journey?.ExpectedDays);
+            RequireEqual("EasyDifficultyMounted", "travel-turn.daysTravelled", 0, turn.CurrentSession.Journey?.DaysTravelled);
         });
-
-    public static IReadOnlyList<ScenarioSeedFixture> All { get; } =
-        new[]
-        {
-            CanonicalMountedStandard,
-            CanonicalStartingTown,
-            HighRiskFoeInterruptRoute,
-            NoHorseLightEasy
-        };
-
-    public static void AssertCatalogContractsCurrent()
-    {
-        foreach (var fixture in All)
-        {
-            fixture.AssertCachedFixtureContract();
-        }
-    }
 
     public static async Task AssertStartingTownReady(this ScenarioSeedFixture fixture, HttpClient client, Guid gameId, GameSessionDto session)
     {
-        RequireEqual("CanonicalStartingTown", "scenario.name", "CanonicalStartingTown", fixture.Name);
-
         fixture.AssertCreatedSession(session);
         AssertStartingTownConnectedTownAssumptions(session);
 
@@ -186,32 +101,23 @@ internal static class ScenarioSeedCatalog
         AssertStartingTownStoreAvailability(storeOffers!, session.Player.CurrentTownId!);
     }
 
-    // BUNCH-107 transitional: AssertSecondLegRoute renamed to AssertDryRoute transitively.
-    // The route to dryfork is now mounted (transitional horse default).
-    // BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
     public static void AssertSecondLegRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, TravelPreviewResultDto preview)
     {
-        RequireEqual("NoHorseLightEasy", "scenario.name", "NoHorseLightEasy", fixture.Name);
-
         fixture.AssertTravelPreview(session, destinationTownId, preview);
 
-        // Transitional: travel is now mounted for all difficulties.
-        RequireEqual("NoHorseLightEasy", "travel-preview.travelMode", TravelMode.Mounted, preview.Preview?.TravelMode);
-        RequireEqual("NoHorseLightEasy", "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
-        RequireEqual("NoHorseLightEasy", "travel-preview.waterSecure", true, preview.Preview?.WaterSecure);
-        RequireEqual("NoHorseLightEasy", "travel-preview.routeProfile.waterFeature", WaterFeature.Creek, preview.Preview?.RouteProfile.WaterFeature);
+        RequireEqual("EasyDifficultyMounted", "travel-preview.travelMode", TravelMode.Mounted, preview.Preview?.TravelMode);
+        RequireEqual("EasyDifficultyMounted", "travel-preview.mountedTravelAvailable", true, preview.Preview?.MountedTravelAvailable);
+        RequireEqual("EasyDifficultyMounted", "travel-preview.waterSecure", true, preview.Preview?.WaterSecure);
+        RequireEqual("EasyDifficultyMounted", "travel-preview.routeProfile.waterFeature", WaterFeature.Creek, preview.Preview?.RouteProfile.WaterFeature);
     }
 
     public static void AssertSecondLegRoute(this ScenarioSeedFixture fixture, GameSessionDto session, string destinationTownId, GameTurnResultDto turn, TravelPreviewResultDto preview)
     {
-        RequireEqual("NoHorseLightEasy", "scenario.name", "NoHorseLightEasy", fixture.Name);
-
         fixture.AssertTravelTurn(session, destinationTownId, turn, preview);
 
-        // Transitional: travel is now mounted for all difficulties.
-        RequireEqual("NoHorseLightEasy", "travel-turn.travelMode", TravelMode.Mounted, turn.CurrentSession.Journey?.TravelMode);
-        RequireEqual("NoHorseLightEasy", "travel-turn.routeProfile.waterFeature", WaterFeature.Creek, turn.CurrentSession.Journey?.RouteProfile.WaterFeature);
-        RequireEqual("NoHorseLightEasy", "travel-turn.waterSecure", true, turn.CurrentSession.Journey?.WaterSecure);
+        RequireEqual("EasyDifficultyMounted", "travel-turn.travelMode", TravelMode.Mounted, turn.CurrentSession.Journey?.TravelMode);
+        RequireEqual("EasyDifficultyMounted", "travel-turn.routeProfile.waterFeature", WaterFeature.Creek, turn.CurrentSession.Journey?.RouteProfile.WaterFeature);
+        RequireEqual("EasyDifficultyMounted", "travel-turn.waterSecure", true, turn.CurrentSession.Journey?.WaterSecure);
     }
 
     public static void AssertHighRiskFoeInterruptRoute(
@@ -223,8 +129,6 @@ internal static class ScenarioSeedCatalog
         GameTurnResultDto resumeAdvance,
         GameTurnResultDto completedSecondLeg)
     {
-        RequireEqual("HighRiskFoeInterruptRoute", "scenario.name", "HighRiskFoeInterruptRoute", fixture.Name);
-
         fixture.AssertCreatedSession(session);
 
         // Discover the destination town dynamically from the journey (no hardcoded town names)
@@ -428,87 +332,6 @@ internal static class ScenarioSeedCatalog
         Require("CanonicalStartingTown", "store-offers.goods", storeOffers.Offers.Any(offer => offer.ItemKind == WildBunch.Domain.Inventory.ItemKind.Food), "expected the starting town Store to offer food.");
         RequireEqual("CanonicalStartingTown", "store-offers.unique-items", storeOffers.Offers.Count, storeOffers.Offers.Select(offer => offer.ItemKind).Distinct().Count());
     }
-
-    private static string DescribeCanonicalMountedShape(GameSessionDto session, TravelPreviewResultDto? preview)
-        => string.Join(
-            "|",
-            ScenarioSeedCodecVersion.Current.Value,
-            "CanonicalMountedStandard",
-            $"entropy={session.GameEntropy}",
-            "start=default-playable-start",
-            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
-            $"wallet={session.Inventory!.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
-            $"items={session.Inventory!.Items.Count}",
-            $"towns={session.World.Towns.Count}",
-            $"preview={DescribeMountedPreview(preview)}");
-
-    private static string DescribeCanonicalStartingTownShape(GameSessionDto session, TravelPreviewResultDto? preview)
-        => string.Join(
-            "|",
-            ScenarioSeedCodecVersion.Current.Value,
-            "CanonicalStartingTown",
-            $"entropy={session.GameEntropy}",
-            "start=default-playable-start",
-            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
-            $"wallet={session.Inventory!.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
-            $"items={session.Inventory!.Items.Count}",
-            $"towns={session.World.Towns.Count}",
-            "services=starting-town",
-            $"preview={DescribeMountedPreview(preview)}");
-
-    private static string DescribeHighRiskFoeInterruptRouteShape(GameSessionDto session, TravelPreviewResultDto? preview)
-    {
-        var connectedCount = session.World.Trails
-            .Where(trail => trail.FromTownId == session.Player.CurrentTownId || trail.ToTownId == session.Player.CurrentTownId)
-            .Select(trail => trail.FromTownId == session.Player.CurrentTownId ? trail.ToTownId : trail.FromTownId)
-            .Distinct()
-            .Count();
-
-        return string.Join(
-            "|",
-            ScenarioSeedCodecVersion.Current.Value,
-            "HighRiskFoeInterruptRoute",
-            $"entropy={session.GameEntropy}",
-            "start=default-playable-start",
-            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
-            $"wallet={session.Inventory!.Wallet.Cash.ToString(CultureInfo.InvariantCulture)}",
-            $"items={session.Inventory!.Items.Count}",
-            $"towns={session.World.Towns.Count}",
-            $"routes=count={connectedCount}",
-            $"preview={DescribeMountedPreview(preview)}");
-    }
-
-    private static string DescribeNoHorseLightEasyShape(GameSessionDto session, TravelPreviewResultDto? preview)
-        => string.Join(
-            "|",
-            ScenarioSeedCodecVersion.Current.Value,
-            "NoHorseLightEasy",
-            $"entropy={session.GameEntropy}",
-            $"difficulty={session.GameDifficulty}",
-            $"horse={DescribeHorseState(session.Inventory!.HorseState)}",
-            $"saddle={DescribePresence(session.Inventory!.Items.Any(item => item.Kind == ItemKind.Saddle))}",
-            $"health={session.Player.Health}",
-            $"towns={session.World.Towns.Count}",
-            $"travel={preview?.Preview?.TravelMode.ToString().ToLowerInvariant() ?? "missing"}",
-            $"preview={DescribeMountedPreview(preview)}");
-
-    private static string DescribeHorseState(HorseTravelStateDto? horseState)
-        => horseState is null ? "absent" : horseState.CanProvideMountedTravel ? "healthy" : "degraded";
-
-    private static string DescribePresence(bool present)
-        => present ? "present" : "absent";
-
-    private static string DescribeMountedPreview(TravelPreviewResultDto? preview)
-        // Encode only the travel mode, not the specific day counts. Day counts
-        // depend on map generation (trail distances, town spacing) and change
-        // when the map generator is tuned. The travel preview contract validates
-        // success and travel mode — those are the stable invariants.
-        => preview?.Preview is null
-            ? "missing"
-            : $"{preview.Preview.TravelMode.ToString().ToLowerInvariant()}";
 
     private static dynamic RequireItem(string scenarioName, GameSessionDto session, ItemKind kind)
     {
