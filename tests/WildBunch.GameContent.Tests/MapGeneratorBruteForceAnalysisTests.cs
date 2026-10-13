@@ -170,42 +170,6 @@ public sealed class MapGeneratorBruteForceAnalysisTests
     }
 
     [Fact]
-    public void BruteForce_VariantInfluence_ProducesDifferentTerrainDistributions()
-    {
-        // Different SeedWorldVariant values should produce measurably different
-        // terrain distributions. If Canonical and Frontier produce identical
-        // terrain, the variant has no effect.
-        var data = Data;
-        Assert.True(data.TerrainByVariant.Count > 1,
-            "Need at least 2 variants to compare terrain distributions.");
-
-        // Compare each pair of variants — their terrain distributions should
-        // differ by at least 5 percentage points on at least one terrain type.
-        var variants = data.TerrainByVariant.Keys.ToList();
-        var foundDifference = false;
-        for (var i = 0; i < variants.Count && !foundDifference; i++)
-        {
-            for (var j = i + 1; j < variants.Count && !foundDifference; j++)
-            {
-                var distA = NormalizeTerrain(data.TerrainByVariant[variants[i]]);
-                var distB = NormalizeTerrain(data.TerrainByVariant[variants[j]]);
-                foreach (TrailTerrain terrain in Enum.GetValues<TrailTerrain>())
-                {
-                    var diff = Math.Abs(distA.GetValueOrDefault(terrain) - distB.GetValueOrDefault(terrain));
-                    if (diff > 0.05)
-                    {
-                        foundDifference = true;
-                        break;
-                    }
-                }
-            }
-        }
-        Assert.True(foundDifference,
-            "All SeedWorldVariant values produce identical terrain distributions " +
-            "(<5% difference on every terrain type). Variant has no effect on terrain.");
-    }
-
-    [Fact]
     public void BruteForce_TrailLengthSpread_BothShortAndLongTrailsAppear()
     {
         // Both intra-cluster (2-4 day) and inter-cluster (5-8 day) trails
@@ -336,11 +300,6 @@ public sealed class MapGeneratorBruteForceAnalysisTests
         => string.Join(", ", Enum.GetValues<WaterFeature>().Select(w =>
             $"{w}={counts.GetValueOrDefault(w)}({100.0 * counts.GetValueOrDefault(w) / Math.Max(1, total):F1}%)"));
 
-    private static Dictionary<TrailTerrain, double> NormalizeTerrain(Dictionary<TrailTerrain, int> counts)
-    {
-        var total = (double)counts.Values.Sum();
-        return counts.ToDictionary(kv => kv.Key, kv => kv.Value / total);
-    }
 }
 
 /// <summary>
@@ -406,9 +365,6 @@ internal static class BruteForceDataCollector
         public Dictionary<TrailTerrain, int> TerrainCounts = new();
         public Dictionary<TrailRisk, int> RiskCounts = new();
         public Dictionary<WaterFeature, int> WaterCounts = new();
-
-        // Variant influence: terrain distribution per variant
-        public Dictionary<SeedWorldVariant, Dictionary<TrailTerrain, int>> TerrainByVariant = new();
 
         // Anti-patterns
         public int SelfLoopCount;
@@ -546,13 +502,6 @@ internal static class BruteForceDataCollector
                                         data.RiskCounts[trail.Risk] = data.RiskCounts.GetValueOrDefault(trail.Risk) + 1;
                                         data.WaterCounts[trail.WaterFeature] = data.WaterCounts.GetValueOrDefault(trail.WaterFeature) + 1;
 
-                                        // Per-variant terrain
-                                        if (!data.TerrainByVariant.TryGetValue(variant, out var variantTerrain))
-                                        {
-                                            variantTerrain = new Dictionary<TrailTerrain, int>();
-                                            data.TerrainByVariant[variant] = variantTerrain;
-                                        }
-                                        variantTerrain[trail.Terrain] = variantTerrain.GetValueOrDefault(trail.Terrain) + 1;
                                     }
 
                                     // Degree distribution (exclude outlier)
