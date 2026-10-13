@@ -621,33 +621,41 @@ public sealed class TravelResolverTests
     [Fact]
     public void AdvanceJourneyDayCompletesTheRouteAfterTheFinalDay()
     {
-        var session = CreateMountedSession();
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
-        session.StartJourney(preview);
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
+        var start = session.StartJourney(preview);
+        Assert.True(start.Success, start.Message);
 
-        var safetyLimit = 4;
-        while (session.Journey is not null && session.Journey.Status == JourneyStatus.Active && safetyLimit-- > 0)
+        for (var day = 1; day <= 4; day++)
         {
-            var step = session.AdvanceJourneyDay();
-            if (!step.Success)
-            {
-                session.Journey!.ResumeFromEncounter();
-                session.Journey.SetCurrentDayPlan(null);
-            }
+            var result = session.AdvanceJourneyDay();
+
+            Assert.True(result.Success, result.Message);
+            var expectedStatus = day == 4 ? JourneyStatus.Completed : JourneyStatus.Active;
+            Assert.True(result.Status == expectedStatus, $"route day {day}: expected {expectedStatus}, got {result.Status}");
         }
 
         Assert.NotNull(session.Journey);
         Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
-        Assert.Equal(new TownId("holloway"), session.Player.CurrentTownId);
-        Assert.True(session.Clock.Day >= 3);
+        Assert.Equal(4, session.Journey.DaysTravelled);
+        Assert.Equal(0, session.Journey.RemainingDays);
+        Assert.Equal(0m, session.Journey.RemainingRideDayDistance);
+        Assert.Equal(new TownId("d2"), session.Player.CurrentTownId);
+        Assert.Equal(5, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
-        // Resource amounts after completion depend on which trail events/encounters
-        // fired during the journey, which is seed-determined. The guardrail is that
-        // the route completes and the player arrives at the destination.
-        Assert.True(session.Player.Inventory.GetQuantity(DomainItemKind.Food) >= 0);
-        Assert.True(session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed) >= 0);
-        Assert.NotNull(session.Player.Inventory.GetCanteenState());
+
+        var completed = Assert.Single(session.AllEvents.OfType<JourneyCompleted>());
+        Assert.Equal(new TownId("d2"), completed.DestinationTownId);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+
+        Assert.Equal(new TownId("d2"), replayed.Player.CurrentTownId);
+        Assert.NotNull(replayed.Journey);
+        Assert.Equal(JourneyStatus.Completed, replayed.Journey!.Status);
+        Assert.Equal(4, replayed.Journey.DaysTravelled);
+
+        var sourceSnapshot = session.Journey.ToSnapshot(session.TravelRules);
+        var replayedSnapshot = replayed.Journey.ToSnapshot(replayed.TravelRules);
+        Assert.Equivalent(sourceSnapshot, replayedSnapshot, strict: true);
     }
 
     [Fact]

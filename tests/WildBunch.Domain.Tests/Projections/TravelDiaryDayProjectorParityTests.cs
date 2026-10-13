@@ -19,7 +19,7 @@ public sealed class TravelDiaryDayProjectorParityTests
     public void Projector_FullJourneyCycle_MatchesCommandPathDiaryDays()
     {
         var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
+            TravelTestFactory.CreateFourDayQuietJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
 
         // Force quiet days through the dev-travel override seam so the journey

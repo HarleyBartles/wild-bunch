@@ -83,9 +83,9 @@ public sealed class TravelResourceTrackingCharacterizationTests
     }
 
     [Fact]
-    public void SixDayQuietJourney_CompletesWithExactState()
+    public void FourDayQuietJourney_CompletesWithExactState()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
         TravelJourneyStepResult result;
@@ -113,7 +113,7 @@ public sealed class TravelResourceTrackingCharacterizationTests
     [Fact]
     public void AcknowledgeJourneyArrival_ClearsJourneyAndChangesTown()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
         var destinationTown = preview.DestinationTownId;
         Assert.Equal(new TownId("o2"), session.Player.CurrentTownId);
@@ -138,10 +138,10 @@ public sealed class TravelResourceTrackingCharacterizationTests
     [Fact]
     public void FullJourneyCycle_ExactStateAtEachStep()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
-        // Per-day captured values for CreateSixDayQuietJourney.
+        // Per-day captured values for CreateFourDayQuietJourney.
         // Indexed by day number (1-based). The journey completes on day 4.
         var expectedFoodRemaining = new[] { 9, 8, 7, 6 };
         var expectedHealth = new[] { 1250, 1250, 1250, 1250 };
