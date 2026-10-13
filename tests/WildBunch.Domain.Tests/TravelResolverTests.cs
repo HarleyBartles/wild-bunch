@@ -294,6 +294,56 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
+    public void AdvanceJourneyDayAppliesMountedSpookedHorseExhaustionAndReplays()
+    {
+        var session = CreateProgressionSession(
+            HorseTravelState.Healthy,
+            TrailTerrain.Hills,
+            WaterFeature.River,
+            GameDifficulty: GameDifficulty.Challenging,
+            saltSource: new SaltSource(SaltSourceMode.Runtime, "n31-horse-trouble-1"));
+        var preview = new TravelResolver().PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId!.Value,
+            new TownId("midway"),
+            session.Player.Inventory,
+            session.TravelRules).Preview!;
+        session.StartJourney(preview);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent.Kind);
+        Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent.Id);
+        Assert.True(result.TrailEvent.HorseExhaustionDelta > 0);
+        var applied = Assert.Single(session.AllEvents.OfType<TrailEventApplied>());
+        Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, applied.TrailEventId);
+        Assert.Equal(result.TrailEvent.HorseExhaustionDelta, applied.HorseExhaustionDelta);
+
+        var dailyUpkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
+            TrailTerrain.Hills,
+            WaterFeature.River,
+            HorseTravelState.Healthy,
+            new CanteenState(2, 2),
+            0,
+            session.TravelRules);
+        Assert.NotNull(dailyUpkeep.HorseState);
+        var expectedHorseState = dailyUpkeep.HorseState!.IncreaseExhaustion(applied.HorseExhaustionDelta);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(expectedHorseState, applied.JourneySnapshot.HorseState);
+        Assert.Equal(expectedHorseState, result.Journey.HorseState);
+        Assert.Equal(expectedHorseState, session.Journey!.HorseState);
+        Assert.Equal(expectedHorseState, session.Player.Inventory.GetHorseState());
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+
+        Assert.NotNull(replayed.Journey);
+        Assert.Equal(session.Journey.ToSnapshot(session.TravelRules), replayed.Journey!.ToSnapshot(replayed.TravelRules));
+        Assert.Equal(expectedHorseState, replayed.Journey.HorseState);
+        Assert.Equal(expectedHorseState, replayed.Player.Inventory.GetHorseState());
+    }
+
+    [Fact]
     public void AdvanceJourneyDayDoesNotApplyHardRouteOnlyBadLuckOnModerateRoutes()
     {
         var session = CreateBadLuckSession();
@@ -1453,7 +1503,8 @@ public sealed class TravelResolverTests
         TrailRisk trailRisk = TrailRisk.Low,
         GameDifficulty GameDifficulty = GameDifficulty.Standard,
         Wallet? wallet = null,
-        decimal rideDayDistance = 1m)
+        decimal rideDayDistance = 1m,
+        SaltSource? saltSource = null)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var midway = new Town(new TownId("midway"), "Midway");
@@ -1478,7 +1529,7 @@ public sealed class TravelResolverTests
             items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
         }
 
-        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), new DomainInventory(items), GameDifficulty, saltSource: DeterministicSaltSource);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, wallet ?? Wallet.Starting(25m), new DomainInventory(items), GameDifficulty, saltSource: saltSource ?? DeterministicSaltSource);
     }
 
     private static GameSession CreateArrivalSession(bool withCanteen)
