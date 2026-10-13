@@ -495,18 +495,58 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayCanTriggerALuckyWaterSeepEventOnHardMountedHillsRoutes()
+    public void AdvanceJourneyDayAppliesHardMountedLuckyWaterSeepToTheCanteenAndReplays()
     {
         var session = CreateHardMountedHorseSession();
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("ridgeway"), session.Player.Inventory, session.TravelRules).Preview!;
+        var initialCanteenState = session.Player.Inventory.GetCanteenState();
+        var initialHorseState = session.Player.Inventory.GetHorseState();
+        Assert.Equal(new CanteenState(7, 10), initialCanteenState);
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
 
         Assert.True(result.Success || result.Status == JourneyStatus.Interrupted);
-        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, result.TrailEvent?.Id);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, result.TrailEvent!.Id);
+        Assert.Equal(session.TravelRules.LuckyTrailWaterRecovery, result.TrailEvent.CanteenChargeDelta);
         Assert.True(result.TrailEvent!.CanteenChargeDelta > 0);
+
+        var appliedEvents = session.AllEvents.OfType<TrailEventApplied>().ToArray();
+        var appliedWaterFacts = appliedEvents
+            .Where(trailEvent => trailEvent.TrailEventId == JourneyTrailEventId.LuckyWaterSeep)
+            .ToArray();
+        Assert.NotEmpty(appliedWaterFacts);
+        Assert.Contains(appliedWaterFacts, trailEvent => trailEvent.CanteenChargeDelta > 0);
+
+        var dailyUpkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
+            TrailTerrain.Hills,
+            WaterFeature.River,
+            initialHorseState,
+            initialCanteenState,
+            session.Player.Inventory.GetQuantity(DomainItemKind.HorseFeed),
+            session.TravelRules);
+        Assert.NotNull(dailyUpkeep.CanteenState);
+        var expectedCanteenCharges = dailyUpkeep.CanteenState!.Charges;
+        foreach (var appliedEvent in appliedEvents)
+        {
+            expectedCanteenCharges = Math.Clamp(
+                expectedCanteenCharges + appliedEvent.CanteenChargeDelta,
+                0,
+                initialCanteenState!.Capacity);
+            Assert.Equal(expectedCanteenCharges, appliedEvent.JourneySnapshot.AvailableCanteenCharges);
+        }
+
+        Assert.NotNull(result.Journey);
+        Assert.Equal(expectedCanteenCharges, result.Journey.AvailableCanteenCharges);
+        Assert.Equal(expectedCanteenCharges, session.Journey!.AvailableCanteenCharges);
+        Assert.Equal(expectedCanteenCharges, session.Player.Inventory.GetCanteenState()!.Charges);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+        Assert.NotNull(replayed.Journey);
+        Assert.Equal(expectedCanteenCharges, replayed.Journey!.AvailableCanteenCharges);
+        Assert.Equal(expectedCanteenCharges, replayed.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     [Fact]
@@ -1491,7 +1531,7 @@ public sealed class TravelResolverTests
         var inventory = new DomainInventory(new[]
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
-            new DomainInventoryItem(DomainItemKind.Canteen, 1),
+            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(7, 10)),
             new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
             new DomainInventoryItem(DomainItemKind.Saddle, 1),
             new DomainInventoryItem(DomainItemKind.Knife, 1)
