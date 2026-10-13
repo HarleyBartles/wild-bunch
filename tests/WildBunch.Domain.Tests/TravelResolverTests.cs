@@ -1,5 +1,6 @@
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Domain.Cases;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
@@ -727,18 +728,76 @@ public sealed class TravelResolverTests
     [Fact]
     public void ResolveJourneyEncounterRunCanLameMountedHorseAndFallBackToFoot()
     {
-        var session = CreateHighRiskSession(GameDifficulty: GameDifficulty.Challenging);
+        var session = CreateProgressionSession(
+            HorseTravelState.Healthy,
+            TrailTerrain.OpenRange,
+            WaterFeature.River,
+            GameDifficulty: GameDifficulty.Challenging,
+            rideDayDistance: 1.5m);
         var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryfork"), session.Player.Inventory, session.TravelRules).Preview!;
-        session.StartJourney(preview);
-        session.AdvanceJourneyDay();
-        session.Journey!.SetCurrentDayPlan(null);
-        session.Player.Inventory.SetHorseState(new HorseTravelState(1, 0, 4));
-        session.Journey!.SetHorseState(new HorseTravelState(1, 0, 4));
-        session.Journey!.MarkInterrupted(CreateFoeEncounter(profile: new JourneyFoeProfile(0, 5, 8m)));
+        var preview = resolver.PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId!.Value,
+            new TownId("midway"),
+            session.Player.Inventory,
+            session.TravelRules).Preview!;
+        Assert.Equal(TravelMode.Mounted, preview.TravelMode);
+
+        var started = session.StartJourney(preview);
+        Assert.True(started.Success, started.Message);
+        session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
+        var encounter = session.AdvanceJourneyDay();
+
+        Assert.Equal(JourneyStatus.Interrupted, encounter.Status);
+        Assert.NotNull(session.Journey);
+        Assert.Equal(TravelMode.Mounted, session.Journey!.TravelMode);
+        Assert.Equal(0.75m, session.Journey.RemainingRideDayDistance);
+        Assert.Equal(1, session.Journey.RemainingDays);
+        Assert.NotNull(session.Journey.HorseState);
+        Assert.Equal(HorseTravelState.Healthy, session.Journey.HorseState);
+        Assert.False(session.Journey.HorseState!.IsDeadFor(session.TravelRules));
+        Assert.False(session.Journey.HorseState.IsLameFor(session.TravelRules));
+        Assert.True(session.Journey.HorseState.CanProvideMountedTravelFor(session.TravelRules));
+        Assert.NotNull(session.Journey.PendingEncounter);
+        Assert.Equal("foe", session.Journey.PendingEncounter!.Kind);
+
         var result = session.ResolveJourneyEncounter("run", null, null, 0UL);
 
-        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+        Assert.True(result.SessionChanged);
+        Assert.Equal(JourneyStatus.Active, result.Status);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(JourneyStatus.Active, session.Journey!.Status);
+        Assert.Equal(TravelMode.Foot, session.Journey.TravelMode);
+        Assert.Equal(0.75m, session.Journey.RemainingRideDayDistance);
+        Assert.Equal(2, session.Journey.RemainingDays);
+        var lameHorse = new HorseTravelState(0, 0, session.TravelRules.HorseExhaustionLameThreshold);
+        Assert.Equal(lameHorse, session.Journey.HorseState);
+        Assert.True(lameHorse.IsLameFor(session.TravelRules));
+        Assert.False(lameHorse.IsDeadFor(session.TravelRules));
+        Assert.Equal(lameHorse, session.Player.Inventory.GetHorseState());
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Saddle));
+
+        var resolvedEvent = Assert.Single(session.AllEvents.OfType<JourneyEncounterResolved>());
+        Assert.Equal(2, resolvedEvent.HorseExhaustionDelta);
+        Assert.True(resolvedEvent.ContinuedOnFoot);
+        Assert.Equal(TravelMode.Foot, resolvedEvent.JourneySnapshot.TravelMode);
+        Assert.Equal(0.75m, resolvedEvent.JourneySnapshot.RemainingRideDayDistance);
+        Assert.Equal(2, resolvedEvent.JourneySnapshot.RemainingDays);
+        Assert.Equal(lameHorse, resolvedEvent.JourneySnapshot.HorseState);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+
+        Assert.NotNull(replayed.Journey);
+        Assert.Equal(session.Journey.ToSnapshot(session.TravelRules), replayed.Journey!.ToSnapshot(replayed.TravelRules));
+        Assert.Equal(TravelMode.Foot, replayed.Journey.TravelMode);
+        Assert.Equal(0.75m, replayed.Journey.RemainingRideDayDistance);
+        Assert.Equal(2, replayed.Journey.RemainingDays);
+        Assert.Equal(lameHorse, replayed.Journey.HorseState);
+        Assert.Equal(lameHorse, replayed.Player.Inventory.GetHorseState());
+        Assert.Equal(1, replayed.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+        Assert.Equal(1, replayed.Player.Inventory.GetQuantity(DomainItemKind.Saddle));
     }
 
     [Fact]
