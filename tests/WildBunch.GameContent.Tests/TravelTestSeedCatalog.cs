@@ -39,8 +39,7 @@ internal static class TravelTestSeedCatalog
 
     /// <summary>
     /// Canonical world, Standard difficulty, Boring entropy, mounted.
-    /// Encounters suppressed. Used for resource-mechanics and trail-event tests
-    /// that need a quiet journey without heat priming.
+    /// Fixed salt gives repeatable travel outcomes. Used for resource-mechanics and trail-event tests.
     /// Route: pinecross -> hardpan (Low/Badlands/None, 3m) — dry resource pressure.
     /// </summary>
     internal static readonly SeedWorldEntry CanonicalMountedBoring = new(
@@ -51,7 +50,7 @@ internal static class TravelTestSeedCatalog
     /// <summary>
     /// Canonical world (all 8 towns), Standard difficulty, Boring entropy.
     /// Transitional: was no-horse/light-loadout, now gets transitional defaults
-    /// (horse+saddle+Standard). Encounters suppressed. Used for foot-travel resource tests.
+    /// (horse+saddle+Standard). Fixed salt gives repeatable travel outcomes. Used for foot-travel resource tests.
     /// BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
     /// </summary>
     internal static readonly SeedWorldEntry CanonicalFootBoringLight = new(
