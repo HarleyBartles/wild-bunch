@@ -49,16 +49,7 @@ public sealed class MapGeneratorTests
         var a = MapGenerator.Generate(seed, source, GameEntropy.Wild, salt);
         var b = MapGenerator.Generate(seed, source, GameEntropy.Wild, salt);
 
-        var townsA = a.Towns.ToArray();
-        var townsB = b.Towns.ToArray();
-
-        Assert.Equal(townsA.Length, townsB.Length);
-        for (var i = 0; i < townsA.Length; i++)
-        {
-            Assert.Equal(townsA[i].MapX, townsB[i].MapX);
-            Assert.Equal(townsA[i].MapY, townsB[i].MapY);
-        }
-        Assert.Equal(a.Trails.Count, b.Trails.Count);
+        AssertSameGeneratedWorld(a, b);
     }
 
     [Fact]
@@ -197,77 +188,6 @@ public sealed class MapGeneratorTests
         Assert.Equal(8, world.Towns.Count);
     }
 
-    [Fact]
-    public void Generate_OutlierSlot_NeverProducesDuplicateTownIds()
-    {
-        // Regression: MapGenerator previously called DeriveTownNames(townCount: 1, ...)
-        // for the outlier name, which uses a different seed/shuffle than the main call
-        // and could pick a name already in the main list. The fix derives the full
-        // shuffled pool from the outlier seed and picks the first name not in the main set.
-        //
-        // This test brute-forces all valid parameter combinations through the fix logic
-        // to prove the outlier name is always unique.
-        var variants = Enum.GetValues<SeedWorldVariant>();
-        var prosperityPalettes = Enum.GetValues<ProsperityPalette>();
-        var townNameDerivationBits = Enumerable.Range(0, 8).ToArray();
-        var failures = new List<string>();
-
-        for (var v = 0; v < variants.Length; v++)
-        {
-            for (var pp = 0; pp < prosperityPalettes.Length; pp++)
-            {
-                for (var bits = 0; bits < townNameDerivationBits.Length; bits++)
-                {
-                    for (var townCount = 5; townCount <= 9; townCount++)
-                    {
-                        for (var ai = 0; ai <= 6; ai++)
-                        {
-                            for (var di = 0; di <= 6; di++)
-                            {
-                                for (var cb = 0; cb <= 8; cb++)
-                                {
-                                    var mainNames = SeedWorldFactory.DeriveTownNames(
-                                        variants[v], townCount, ai, di, cb,
-                                        prosperityPalettes[pp],
-                                        townNameDerivationBits[bits]);
-                                    var existingIds = new HashSet<string>(mainNames.Select(t => t.Id));
-
-                                    // Replicate the fix: derive the full outlier pool and pick
-                                    // the first name not in the main set.
-                                    var outlierPool = SeedWorldFactory.DeriveTownNames(
-                                        variants[v],
-                                        townCount: SeedWorldFactory.NamePool.Count,
-                                        accusationIndex: 0,
-                                        defaultCulpritIndex: 0,
-                                        cashBonus: 0,
-                                        prosperityPalette: prosperityPalettes[pp],
-                                        reservedTownNameDerivationBits: townNameDerivationBits[bits]);
-
-                                    var outlierName = outlierPool.FirstOrDefault(
-                                        entry => !existingIds.Contains(entry.Id));
-
-                                    if (outlierName is null)
-                                    {
-                                        failures.Add(
-                                            $"variant={variants[v]}, townCount={townCount}, " +
-                                            $"accusationIndex={ai}, defaultCulpritIndex={di}, " +
-                                            $"cashBonus={cb}, prosperity={prosperityPalettes[pp]}, " +
-                                            $"townNameBits={townNameDerivationBits[bits]}: " +
-                                            "no unique outlier name available");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Assert.True(failures.Count == 0,
-            $"Outlier uniqueness failures ({failures.Count}).\n" +
-            "First 5:\n" + string.Join("\n", failures.Take(5)));
-    }
-
     [Theory]
     [InlineData(5, 1, "salt-a")]
     [InlineData(5, 1, "salt-b")]
@@ -283,6 +203,9 @@ public sealed class MapGeneratorTests
         var source = NewSource();
 
         var world = MapGenerator.Generate(seed, source, GameEntropy.Wild, SaltSource.CreateFixed(salt));
+
+        Assert.Equal(townCount + 1, world.Towns.Count);
+        Assert.Single(world.Towns, t => t.IsOutlier);
 
         var townIds = world.Towns.Select(t => t.Id.Value).ToArray();
         Assert.Equal(townIds.Length, townIds.Distinct().Count());
@@ -645,21 +568,82 @@ public sealed class MapGeneratorTests
         var a = MapGenerator.Generate(seed, source, GameEntropy.Boring, salt);
         var b = MapGenerator.Generate(seed, source, GameEntropy.Boring, salt);
 
-        var townsA = a.Towns.OrderBy(t => t.Id.Value).ToArray();
-        var townsB = b.Towns.OrderBy(t => t.Id.Value).ToArray();
+        AssertSameGeneratedWorld(a, b);
+    }
 
-        Assert.Equal(townsA.Length, townsB.Length);
-        for (var i = 0; i < townsA.Length; i++)
+    private static void AssertSameGeneratedWorld(World expected, World actual)
+    {
+        var expectedTowns = expected.Towns.OrderBy(town => town.Id.Value).ToArray();
+        var actualTowns = actual.Towns.OrderBy(town => town.Id.Value).ToArray();
+        Assert.Equal(expectedTowns.Length, actualTowns.Length);
+
+        for (var i = 0; i < expectedTowns.Length; i++)
         {
-            var layoutA = townsA[i].Layout;
-            var layoutB = townsB[i].Layout;
-            Assert.NotNull(layoutA);
-            Assert.NotNull(layoutB);
-            Assert.Equal(layoutA!.Buildings.Count, layoutB!.Buildings.Count);
-            for (var j = 0; j < layoutA.Buildings.Count; j++)
+            var expectedTown = expectedTowns[i];
+            var actualTown = actualTowns[i];
+            Assert.Equal(expectedTown.Id, actualTown.Id);
+            Assert.Equal(expectedTown.Name, actualTown.Name);
+            Assert.Equal(expectedTown.Prosperity, actualTown.Prosperity);
+            Assert.Equal(expectedTown.MapX, actualTown.MapX);
+            Assert.Equal(expectedTown.MapY, actualTown.MapY);
+            Assert.Equal(expectedTown.IsOutlier, actualTown.IsOutlier);
+
+            if (expectedTown.Layout is null)
             {
-                Assert.Equal(layoutA.Buildings[j], layoutB.Buildings[j]);
+                Assert.Null(actualTown.Layout);
+                continue;
             }
+
+            Assert.NotNull(actualTown.Layout);
+            AssertSameTownLayout(expectedTown.Layout, actualTown.Layout!);
+        }
+
+        var expectedTrails = expected.Trails
+            .OrderBy(trail => trail.Id.Value)
+            .Select(trail => (
+                trail.Id.Value,
+                trail.FromTownId.Value,
+                trail.ToTownId.Value,
+                trail.Risk,
+                trail.Terrain,
+                trail.WaterFeature,
+                trail.RideDayDistance))
+            .ToArray();
+        var actualTrails = actual.Trails
+            .OrderBy(trail => trail.Id.Value)
+            .Select(trail => (
+                trail.Id.Value,
+                trail.FromTownId.Value,
+                trail.ToTownId.Value,
+                trail.Risk,
+                trail.Terrain,
+                trail.WaterFeature,
+                trail.RideDayDistance))
+            .ToArray();
+        Assert.Equal(expectedTrails, actualTrails);
+    }
+
+    private static void AssertSameTownLayout(TownLayout expected, TownLayout actual)
+    {
+        Assert.Equal(expected.Buildings.AsEnumerable(), actual.Buildings.AsEnumerable());
+        Assert.Equal(expected.PlayerSpawnX, actual.PlayerSpawnX);
+        Assert.Equal(expected.PlayerSpawnY, actual.PlayerSpawnY);
+        Assert.Equal(expected.Prosperity, actual.Prosperity);
+        Assert.Equal(expected.Paths.AsEnumerable(), actual.Paths.AsEnumerable());
+        Assert.Equal(expected.ResolverVersion, actual.ResolverVersion);
+        Assert.Equal(expected.LayoutSalts, actual.LayoutSalts);
+
+        if (expected.TileGrid is null)
+        {
+            Assert.Null(actual.TileGrid);
+            return;
+        }
+
+        Assert.NotNull(actual.TileGrid);
+        Assert.Equal(expected.TileGrid.Length, actual.TileGrid!.Length);
+        for (var row = 0; row < expected.TileGrid.Length; row++)
+        {
+            Assert.Equal(expected.TileGrid[row].AsEnumerable(), actual.TileGrid[row].AsEnumerable());
         }
     }
 
