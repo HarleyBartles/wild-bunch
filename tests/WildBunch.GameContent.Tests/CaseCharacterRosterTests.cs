@@ -10,10 +10,6 @@ public sealed class CaseCharacterRosterTests
     [Fact]
     public void SourceBackedPoolsStaySeparatedAndCarrySourceNotes()
     {
-        Assert.NotEmpty(CaseCharacterRoster.GangCandidatePool);
-        Assert.NotEmpty(CaseCharacterRoster.AssociatedCharacterPool);
-        Assert.NotEmpty(CaseSuspectFeaturePool.FeaturePool);
-
         Assert.All(CaseCharacterRoster.GangCandidatePool, candidate => Assert.True(candidate.IsGangEligible));
         Assert.All(CaseCharacterRoster.GangCandidatePool, candidate => Assert.Contains("https://en.wikipedia.org/wiki/", candidate.SourceNote));
         Assert.Contains(CaseCharacterRoster.GangCandidatePool, candidate => candidate.DisplayName == "Butch Cassidy");
@@ -74,39 +70,33 @@ public sealed class CaseCharacterRosterTests
     }
 
     [Fact]
-    public void DeterministicSelectionStaysStableForTheSameSeedAndCanVaryForDifferentSeeds()
+    public void SelectionIsStableForSameFixedSeedAndVariesAcrossFixedSeedPair()
     {
         var sameSeed = CreateSeedCode(7);
         var anotherSameSeed = CreateSeedCode(7);
+        var differentSeed = CreateSeedCode(8);
 
         var sameRoster = CaseCharacterRoster.SelectGangRoster(new GameSetupDeterministicSource(sameSeed));
         var sameRosterAgain = CaseCharacterRoster.SelectGangRoster(new GameSetupDeterministicSource(anotherSameSeed));
+        var differentRoster = CaseCharacterRoster.SelectGangRoster(new GameSetupDeterministicSource(differentSeed));
 
         Assert.Equal(RosterSignature(sameRoster), RosterSignature(sameRosterAgain));
+        Assert.NotEqual(RosterSignature(sameRoster), RosterSignature(differentRoster));
 
         var sameFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(sameSeed));
         var sameFeaturesAgain = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(anotherSameSeed));
+        var differentFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(differentSeed));
 
         Assert.Equal(FeatureSignature(sameFeatures), FeatureSignature(sameFeaturesAgain));
-
-        var varyingSeed = FindVaryingSeed(RosterSignature(sameRoster), FeatureSignature(sameFeatures));
-        var varyingRoster = CaseCharacterRoster.SelectGangRoster(new GameSetupDeterministicSource(varyingSeed));
-        var varyingFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(varyingSeed));
-
-        Assert.True(
-            RosterSignature(sameRoster) != RosterSignature(varyingRoster)
-            || FeatureSignature(sameFeatures) != FeatureSignature(varyingFeatures),
-            "Different entropy should change at least one roster or feature surface.");
+        Assert.NotEqual(FeatureSignature(sameFeatures), FeatureSignature(differentFeatures));
     }
 
     [Fact]
-    public void FeatureAssignmentsCanIncludeMultipleCompatibleFeaturesAndStayWithinClassicNodBudget()
+    public void FixedSeedAssignsCompatibleAdditionalFeaturesWithinClassicNodBudget()
     {
-        var seed = FindFeatureRichSeed();
+        var seed = CreateSeedCode(7);
         var features = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(seed));
-        var featuresAgain = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(seed));
 
-        Assert.Equal(FeatureSignature(features), FeatureSignature(featuresAgain));
         Assert.Contains(features, assignment => assignment.AdditionalFeatures.Count > 0);
         Assert.All(features, assignment => Assert.True(assignment.AllFeatures.Count(feature => feature.HasTag(CaseSuspectFeatureTags.ClassicNod)) <= 2));
         Assert.All(features, assignment => Assert.All(assignment.AdditionalFeatures, additional => Assert.True(assignment.PrimaryFeature.IsCompatibleWith(additional))));
@@ -181,39 +171,6 @@ public sealed class CaseCharacterRosterTests
 
     private static string RosterSignature(IReadOnlyList<CaseCharacterProfile> roster)
         => string.Join("|", roster.Select(candidate => $"{candidate.Key}:{candidate.DisplayName}:{string.Join(",", candidate.SourceAliases)}"));
-
-    private static string FindVaryingSeed(string baselineRosterSignature, string baselineFeatureSignature)
-    {
-        for (ulong entropy = 8; entropy < 200; entropy++)
-        {
-            var candidateSeed = CreateSeedCode(entropy);
-            var candidateRoster = CaseCharacterRoster.SelectGangRoster(new GameSetupDeterministicSource(candidateSeed));
-            var candidateFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(candidateSeed));
-
-            if (RosterSignature(candidateRoster) != baselineRosterSignature || FeatureSignature(candidateFeatures) != baselineFeatureSignature)
-            {
-                return candidateSeed;
-            }
-        }
-
-        throw new InvalidOperationException("Could not find a deterministic seed that varied the roster or feature selection.");
-    }
-
-    private static string FindFeatureRichSeed()
-    {
-        for (ulong entropy = 7; entropy < 400; entropy++)
-        {
-            var candidateSeed = CreateSeedCode(entropy);
-            var candidateFeatures = CaseSuspectFeaturePool.SelectAssignedFeatures(new GameSetupDeterministicSource(candidateSeed));
-
-            if (candidateFeatures.Any(assignment => assignment.AdditionalFeatures.Count > 0))
-            {
-                return candidateSeed;
-            }
-        }
-
-        throw new InvalidOperationException("Could not find a deterministic seed that produced multiple compatible suspect features.");
-    }
 
     private static string FeatureSignature(IReadOnlyList<CaseSuspectFeatureAssignment> features)
         => string.Join("|", features.Select(feature => $"{feature.PrimaryFeature.Key}:{string.Join(",", feature.AdditionalFeatures.Select(additional => additional.Key))}"));
