@@ -104,7 +104,7 @@
 
 - [x] **Step 2: Run focused validation and commit the disposition.** Run the focused Domain selection and focused GameContent selection. Commit the investigation disposition through the normal check-only hook; do not bypass the hook.
 
-- [ ] **Step 3: Verify the committed tree with the canonical gate.** Run `py -3 tools/run.py ci --check` against the final committed implementation and require it to pass; report any existing skip truthfully. Do not run diagnostics unless this fail-fast gate fails.
+- [x] **Step 3: Verify the committed tree with the canonical gate.** Run `py -3 tools/run.py ci --check` against the final committed implementation and require it to pass; report any existing skip truthfully. Do not run diagnostics unless this fail-fast gate fails.
 
 - [ ] **Step 4: Review and publish.** Compare the final diff with ADR-0023/0024/0040 and `docs/features.md`, stating why their current durable truth is unchanged. Run the PR author decision-record and feature-matrix checks and obtain a fresh whole-branch review. Create one PR to `develop`, verify its exact head and passing hosted canonical gate, and merge only after that gate passes.
 
