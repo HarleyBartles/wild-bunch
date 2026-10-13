@@ -20,21 +20,22 @@
 
 ## Task 1: Record N-33 succession and commit this plan
 
-Update `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md` to link this N-34 plan in row 17, set its version to `0.1.0-dev.152`, include PRs #335 and #336 in the delivered PR list, and append the verified N-33 delivery details: PR #336, source `c0d5858e38ae82fad31ed5fb131a93cc5087dd21`, squash merge `361c9fb2625cb1b9ce2e89eb0e359dc610216028`, identical tree `6e75d36c5e8ac85bf49387c5031572522e8e0e08`, exact-head gate 38467645145, develop gate 38468387552, clean independent review, and paired worktree/ref cleanup. Do not rewrite older delivery history.
-
-Delete `.agents/plans/2026-10-13-row17-n33-event-backed-journey-completion.md`, update `Directory.Build.props` to `0.1.0-dev.152`, inspect for stale N-33 plan links, verify the roadmap points to this plan, verify one-source version identity, and commit through the staged-snapshot hook before implementation.
+- [x] Retire the N-33 plan, update row 17 and its delivery evidence, advance the shared version to `0.1.0-dev.152`, and commit this successor plan as `3047ffa7`.
 
 ## Task 2: Retire the unreachable producer and close its audit trail
 
-Delete `src/WildBunch.Domain/Travel/TrailEventCatalog.cs` and remove its obsolete entry from `LICENSE-ASSETS.md`. Update `.agents/investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-06-dotnet-test-dispositions.md`, and `.agents/investigations/stable-0.1.0/2026-10-07-domain-layer-investigation.md` with a dated N-34 disposition: no production or test call sites existed; this unreachable duplicate producer is removed; the live generator remains the only route outcome producer; its behavioral tests remain; no replacement test was added for dead code; other travel findings remain open. Keep the language scoped to this class and do not imply all generator concerns are closed.
+- [x] Confirm the only pre-change source hits were the class and inventory entry; no callers existed.
+- [x] Remove the class and its inventory entry, then preserve the dated disposition in test-quality, .NET test, and Domain source audits while leaving earlier dated claims intact.
+- [x] Confirm remaining references are limited to historical/planning dispositions, preserve event types and live generator, and pass the Domain suite (539 passed, 1 pre-existing skip).
 
-Before removal, record the repository-wide `TrailEventCatalog` reference search. After removal, prove there are no remaining references to the class, inspect that `JourneyTrailEventId`, `JourneyTrailEventState`, and live generator branches are unchanged, and run `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --no-restore`. No production behavior mutation test is applicable because the deleted class is unreachable; the existing reachable behavior tests remain the relevant proof.
+No behavior test was added for unreachable code. The class had no caller; existing tests continue to exercise reachable generator outcomes.
 
 ## Task 3: Review and deliver N-34
 
-Review the whole diff against the baseline specification, backend unslop profile, feature matrix, and applicable ADRs. State that ADR and feature truth do not change and why. Run `py -3 tools/run.py ci --check`, check the staged version/build identity, and require its staged-candidate hook to pass. Build the review package and dispatch the already-authorized fresh-context reviewer; resolve any material findings before publication.
-
-Push and open a PR to `develop`; ensure hosted canonical CI passes on the exact PR head before squash merge. Verify the merge commit and tree against the PR source and the develop-push gate. Fast-forward the primary checkout, then remove this clean worktree before deleting its exact local and upstream refs; verify all three are absent and preserve the AWS learning worktree.
+- [ ] Compare the final diff with the spec, backend profile, feature matrix, and relevant ADRs; record why product and durable decision truth are unchanged.
+- [ ] Run the full fail-fast repository gate and commit through the staged-candidate hook.
+- [ ] Build the review package, obtain the already-authorized fresh-context review, and resolve any material findings.
+- [ ] Open the PR to `develop`, pass exact-head hosted CI, squash-merge, verify the develop gate, fast-forward primary, and perform paired worktree/ref cleanup.
 
 ## Review Focus
 
