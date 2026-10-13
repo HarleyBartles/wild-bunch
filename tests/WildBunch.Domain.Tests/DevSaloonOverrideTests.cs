@@ -281,23 +281,38 @@ public sealed class DevSaloonOverrideTests
     }
 
     [Fact]
+    public void EventReplay_ForcedAndUnconsumed_RestoresPendingOverride()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        var setupEvents = session.AllEvents.ToArray();
+        var suspectId = new SuspectId("suspect-1");
+
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+
+        var events = setupEvents.Concat(session.AllEvents.Skip(setupEvents.Length)).ToList();
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, session.World, events);
+
+        Assert.Equal(DevSaloonOverride.ForSuspect(suspectId), rehydrated.PendingDevSaloonOverride);
+    }
+
+    [Fact]
     public void EventReplay_ForcedThenConsumed_ReconstructsCorrectState()
     {
         var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
-        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        var setupEvents = session.AllEvents.ToArray();
+        var suspectId = new SuspectId("suspect-1");
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
         session.MarkEventsCommitted();
 
         session.LookAroundSaloon();
         session.MarkEventsCommitted();
 
-        // Rehydrate from the full event stream: Forced -> Consumed -> SaloonPersonOfInterestSpotted
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
-        var events = setupEvents.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = setupEvents.Concat(session.AllEvents.Skip(setupEvents.Length)).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
-        // Critical replay-safety proof: override is null after replay
         Assert.Null(rehydrated.PendingDevSaloonOverride);
+        Assert.Equal(suspectId, rehydrated.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
     }
 
     [Fact]
