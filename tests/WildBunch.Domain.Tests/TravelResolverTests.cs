@@ -434,6 +434,8 @@ public sealed class TravelResolverTests
         var session = CreateEasyLuckyWaterSession();
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("dryspring"), session.Player.Inventory, session.TravelRules).Preview!;
+        var initialCanteenState = session.Player.Inventory.GetCanteenState();
+        Assert.Equal(new CanteenState(1, 2), initialCanteenState);
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
@@ -442,8 +444,23 @@ public sealed class TravelResolverTests
         Assert.NotNull(result.TrailEvent);
         Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent!.Kind);
         Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, result.TrailEvent.Id);
-        Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
+        Assert.True(result.TrailEvent.CanteenChargeDelta > 0);
+
+        var applied = Assert.Single(
+            session.AllEvents.OfType<TrailEventApplied>(),
+            trailEvent => trailEvent.TrailEventId == JourneyTrailEventId.LuckyWaterSeep && trailEvent.CanteenChargeDelta > 0);
+        Assert.Equal(JourneyTrailEventId.LuckyWaterSeep, applied.TrailEventId);
+        Assert.Equal(result.TrailEvent.CanteenChargeDelta, applied.CanteenChargeDelta);
+        Assert.Equal(2, applied.JourneySnapshot.AvailableCanteenCharges);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(2, result.Journey.AvailableCanteenCharges);
         Assert.Equal(2, session.Journey!.AvailableCanteenCharges);
+        Assert.Equal(2, session.Player.Inventory.GetCanteenState()!.Charges);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+        Assert.NotNull(replayed.Journey);
+        Assert.Equal(2, replayed.Journey!.AvailableCanteenCharges);
+        Assert.Equal(2, replayed.Player.Inventory.GetCanteenState()!.Charges);
     }
 
     [Fact]
@@ -452,14 +469,29 @@ public sealed class TravelResolverTests
         var session = CreateHardBadLuckSession();
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("hardpan"), session.Player.Inventory, session.TravelRules).Preview!;
+        var startingCash = session.Player.Wallet.Cash;
+        Assert.Equal(25m, startingCash);
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
 
         Assert.True(result.Success || result.Status == JourneyStatus.Interrupted);
-        Assert.Equal(JourneyTrailEventId.LuckyCoinCache, result.TrailEvent?.Id);
-        Assert.True(result.TrailEvent!.WalletDelta > 0);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventId.LuckyCoinCache, result.TrailEvent!.Id);
+        Assert.True(result.TrailEvent.WalletDelta > 0);
         Assert.True(session.Journey!.DelayDays >= 0);
+
+        var applied = Assert.Single(
+            session.AllEvents.OfType<TrailEventApplied>(),
+            trailEvent => trailEvent.TrailEventId == JourneyTrailEventId.LuckyCoinCache && trailEvent.WalletDelta > 0);
+        Assert.Equal(JourneyTrailEventId.LuckyCoinCache, applied.TrailEventId);
+        Assert.Equal(result.TrailEvent.WalletDelta, applied.WalletDelta);
+        var expectedCash = startingCash + applied.WalletDelta;
+        Assert.Equal(expectedCash, applied.WalletCash);
+        Assert.Equal(expectedCash, session.Player.Wallet.Cash);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+        Assert.Equal(expectedCash, replayed.Player.Wallet.Cash);
     }
 
     [Fact]
