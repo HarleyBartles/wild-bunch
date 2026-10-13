@@ -173,7 +173,7 @@ public sealed class SeededNewGameFactoryTests
     [Fact]
     public void FrontierDescriptorKeepsTheRetainedStartingClueSources()
     {
-        var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 1, 3, 0, tail: 13));
+        var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 1, 3, 0, highBits: 13));
         var factory = new SeededNewGameFactory();
 
         var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
@@ -187,9 +187,9 @@ public sealed class SeededNewGameFactoryTests
     {
         var factory = new SeededNewGameFactory();
 
-        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 0));
-        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, tail: 0));
-        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 2, 3, 0, tail: 0));
+        var seedA = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, highBits: 0));
+        var seedASame = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 1, 3, 0, highBits: 0));
+        var seedB = SeedWorldResolver.FormatSeedCode(CreateSeedCode(0, 2, 3, 0, highBits: 0));
 
         var first = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, seedA, GameEntropy.Classic);
         var firstAgain = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Easy, seedASame, GameEntropy.Classic);
@@ -367,6 +367,6 @@ public sealed class SeededNewGameFactoryTests
     private static string TurfSignature(WildBunch.Domain.Game.GameSession session)
         => string.Join("|", session.CaseFile.SuspectTurfAssignments.Select(assignment => $"{assignment.SuspectId.Value}:{assignment.TurfTownId.Value}"));
 
-    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, highBits);
 }

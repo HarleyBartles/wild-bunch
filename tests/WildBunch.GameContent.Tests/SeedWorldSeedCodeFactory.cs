@@ -9,7 +9,7 @@ internal static class SeedWorldSeedCodeFactory
     /// Creates a UUID seed code that produces a SeedWorld with the given
     /// world variant and case fields. Uses 8 towns with default palettes.
     /// </summary>
-    internal static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong salt)
+    internal static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
     {
         var variant = (SeedWorldVariant)worldVariant;
         var townCount = 8;
@@ -29,7 +29,10 @@ internal static class SeedWorldSeedCodeFactory
             cashBonus,
             OutlierSlotType: 0);
 
-        return SeedWorldResolver.CreateRepresentativeSeedCode(target);
+        var representativeCode = SeedWorldResolver.CreateRepresentativeSeedCode(target);
+        var bytes = representativeCode.ToByteArray();
+        BitConverter.TryWriteBytes(bytes.AsSpan(8), highBits);
+        return new Guid(bytes);
     }
 
     /// <summary>

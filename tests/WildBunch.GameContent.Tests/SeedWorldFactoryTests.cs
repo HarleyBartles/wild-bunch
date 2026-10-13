@@ -24,8 +24,8 @@ public sealed class SeedWorldFactoryTests
         // Different encoded fields produce different name shuffles, so different
         // town name selections. We use two different cash bonus values to get
         // different derivation seeds.
-        var seedA = CreateSeedCode(0, 1, 3, 0, tail: 0);
-        var seedB = CreateSeedCode(0, 1, 3, 3, tail: 0);
+        var seedA = CreateSeedCode(0, 1, 3, 0, highBits: 0);
+        var seedB = CreateSeedCode(0, 1, 3, 3, highBits: 0);
 
         var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).GetSelectedTownIds().OrderBy(id => id));
         var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).GetSelectedTownIds().OrderBy(id => id));
@@ -145,6 +145,6 @@ public sealed class SeedWorldFactoryTests
         Assert.Contains(TownProsperity.Destitute, observedTiers);
     }
 
-    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, highBits);
 }
