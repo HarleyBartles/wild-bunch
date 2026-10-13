@@ -53,7 +53,7 @@
 - [x] **Step 2: Run the focused test and correct fixture setup only.** Ran the test alone with `dotnet test tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj --no-restore --filter FullyQualifiedName~JourneyRoundTrip_ReturningToSameTownResetsSaloonContextAndAdvancesTime`. Used the event-backed `DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet)` before each real day advance to isolate town-context behavior from generated encounters; both journeys still complete and are acknowledged through the ordinary aggregate path.
 - [x] **Step 3: Prove the test detects the missing reset.** Temporarily removed the `ResetActionContextForTownChange()` call from `RefreshTownVisit`; the new test failed with expected `None` and actual `Saloon` after outbound arrival. Restored production code and reran the focused test green. The mutation was not committed.
 - [x] **Step 4: Record the finding disposition.** The test-quality investigation now records that the old tests simulated town changes by directly mutating location and resetting context; it records the real round-trip path and witnessed missing-reset mutation. Other Domain findings remain open. No ADR, feature-matrix, or production behavior changed.
-- [ ] **Step 5: Run owning validation and commit.** Run all `ClockTurnCorrectionTests`, inspect the test and disposition diff, and commit. The commit hook runs the canonical fail-fast gate; do not redundantly run the full gate immediately before committing.
+- [x] **Step 5: Run owning validation and commit.** Ran all `ClockTurnCorrectionTests` (12 passed), inspected the test and disposition diff, and committed the slice. The commit hook's canonical fail-fast gate passed.
 
 ### Task 3: Review, publish, merge, and close out
 
