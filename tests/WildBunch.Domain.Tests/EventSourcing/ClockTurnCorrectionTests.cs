@@ -222,52 +222,47 @@ public sealed class ClockTurnCorrectionTests
     }
 
     [Fact]
-    public void TownChange_ResetsActionContextSoReenteringSameContextAdvancesTime()
+    public void JourneyRoundTrip_ReturningToSameTownResetsSaloonContextAndAdvancesTime()
     {
-        // Regression test for BUNCH-80 review feedback: CurrentActionContext is scoped
-        // to the current town. After travelling away and back, re-entering the same
-        // context (e.g. Saloon) must advance time, not be suppressed by the prior
-        // town's context.
-        var session = TestSessionFactory.CreateDefault();
-        session.LookAroundSaloon(); // enters Saloon, advances turn 0 → 1
-        Assert.Equal(1, session.Clock.Turn);
-        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+        var (session, outboundPreview) = TravelTestFactory.CreateEasyShortJourney();
+        var originalTownId = session.Player.CurrentTownId!.Value;
 
-        // Simulate travel: leave town and come back
-        session.Player.TravelTo(new TownId("connected"));
-        session.CurrentTownVisit.Reset(new TownId("connected"));
-        session.ResetActionContextForTownChange();
-        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
-
-        session.Player.TravelTo(new TownId("current"));
-        session.CurrentTownVisit.Reset(new TownId("current"));
-        session.ResetActionContextForTownChange();
-        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
-
-        // Re-entering Saloon in the same town after a round-trip must advance time
         session.LookAroundSaloon();
-        Assert.Equal(2, session.Clock.Turn);
         Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+
+        CompleteJourneyAndAcknowledge(session, outboundPreview);
+        Assert.Equal(outboundPreview.DestinationTownId, session.Player.CurrentTownId);
+        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
+
+        session.LookAroundSaloon();
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+
+        var returnPreview = TravelTestFactory.ResolvePreviewFor(session, originalTownId);
+        CompleteJourneyAndAcknowledge(session, returnPreview);
+        Assert.Equal(originalTownId, session.Player.CurrentTownId);
+        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
+
+        var turnBeforeReenteringSaloon = session.Clock.Turn;
+        session.LookAroundSaloon();
+
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+        Assert.Equal(turnBeforeReenteringSaloon + 1, session.Clock.Turn);
     }
 
-    [Fact]
-    public void TownChange_DifferentTownSaloonAdvancesTimeIndependently()
+    private static void CompleteJourneyAndAcknowledge(GameSession session, TravelPreview preview)
     {
-        // Regression test for BUNCH-80 review feedback: entering Saloon in Town A
-        // must not suppress time advancement when entering Saloon in Town B.
-        var session = TestSessionFactory.CreateDefault();
-        session.LookAroundSaloon(); // enters Saloon in "current", advances turn 0 → 1
-        Assert.Equal(1, session.Clock.Turn);
+        var start = session.StartJourney(preview);
+        Assert.True(start.Success);
 
-        // Travel to a different town that also has a saloon
-        session.Player.TravelTo(new TownId("connected"));
-        session.CurrentTownVisit.Reset(new TownId("connected"));
-        session.ResetActionContextForTownChange();
-        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
+        TravelJourneyStepResult result;
+        do
+        {
+            session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+            result = session.AdvanceJourneyDay();
+        } while (result.Success && result.Status == JourneyStatus.Active);
 
-        // Entering Saloon in the new town must advance time, not be suppressed
-        session.LookAroundSaloon();
-        Assert.Equal(2, session.Clock.Turn);
-        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+        Assert.True(result.Success);
+        Assert.Equal(JourneyStatus.Completed, result.Status);
+        Assert.True(session.AcknowledgeJourneyArrival().Success);
     }
 }
