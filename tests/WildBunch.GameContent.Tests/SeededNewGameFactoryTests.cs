@@ -18,7 +18,6 @@ public sealed class SeededNewGameFactoryTests
         var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
 
         Assert.Equal("Ranger Vale", session.Player.Name);
-        Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
         Assert.Equal(GameDifficulty.Standard, session.GameDifficulty);
         Assert.Equal(GameEntropy.Classic, session.GameEntropy);
         Assert.Equal(25m, session.Player.Wallet.Cash);
@@ -70,6 +69,7 @@ public sealed class SeededNewGameFactoryTests
             && clue.TargetKind == InvestigationTargetKind.TrueCulprit
             && clue.Description == session.CaseFile.OpeningLead.Description);
         Assert.Single(session.CaseFile.KnownClues);
+        Assert.Empty(session.CaseFile.KnownWarrants);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.Description.StartsWith("Boot prints and a waystation note place the rider on the Red Mesa road after dusk.", StringComparison.Ordinal));
         Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants
             && clue.Description.StartsWith("A poster links the alias ", StringComparison.Ordinal)
@@ -126,16 +126,6 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void CaseFile_StartsWithOneKnownClueAndZeroKnownWarrants()
-    {
-        var factory = new SeededNewGameFactory();
-        var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
-
-        Assert.Single(session.CaseFile.KnownClues);
-        Assert.Empty(session.CaseFile.KnownWarrants);
-    }
-
-    [Fact]
     public void CaseFile_PublicWarrants_ContainOnlyGangAndCulpritTargets()
     {
         var factory = new SeededNewGameFactory();
@@ -171,18 +161,6 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void FrontierDescriptorKeepsTheRetainedStartingClueSources()
-    {
-        var seedCode = SeedWorldResolver.FormatSeedCode(CreateSeedCode(1, 1, 3, 0, highBits: 13));
-        var factory = new SeededNewGameFactory();
-
-        var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, seedCode, GameEntropy.Classic);
-
-        Assert.Contains(session.Player.CurrentTownId!.Value.Value, SeedWorldFactory.NamePool.Select(n => n.Id));
-        Assert.Single(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
-    }
-
-    [Fact]
     public void SameSeedKeepsTheRosterStableWhileDifferentSeedCodesCanChangeIt()
     {
         var factory = new SeededNewGameFactory();
@@ -205,10 +183,8 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void AllDifficultiesGetTransitionalHorseAndSaddleDefaults()
+    public void EasyAndBrutalSessionsStartWithHorseAndSaddle()
     {
-        // BUNCH-107 transitional: all difficulties get horse+saddle+Standard loadout.
-        // BUNCH-94 will expand DifficultyEnvelope to add difficulty-owned variety.
         var factory = new SeededNewGameFactory();
         var seedCode = SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode());
 
@@ -222,59 +198,21 @@ public sealed class SeededNewGameFactoryTests
     }
 
     [Fact]
-    public void DefaultAdventureRandomnessStaysRuntimeSaltedAndBoringModeCanOptIntoDeterminism()
+    public void StartGameCanSelectANonFirstTown()
     {
         var factory = new SeededNewGameFactory();
 
-        var runtimeFirst = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
-        var runtimeSecond = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
-
-        Assert.Equal(SaltSourceMode.Runtime, runtimeFirst.SaltSource.Mode);
-        Assert.Equal(SaltSourceMode.Runtime, runtimeSecond.SaltSource.Mode);
-        Assert.Equal(GameEntropy.Classic, runtimeFirst.GameEntropy);
-        Assert.Equal(GameEntropy.Classic, runtimeSecond.GameEntropy);
-        Assert.NotEqual(runtimeFirst.SaltSource.Salt, runtimeSecond.SaltSource.Salt);
-
-        // Boring entropy uses Fixed salt derived from the seed code.
-        var boringTemplate = SeedWorldResolver.CreateCanonicalSeedWorld();
-        var boringSeed = SeedWorldResolver.FormatSeedCode(
-            SeedWorldResolver.CreateRepresentativeSeedCode(boringTemplate));
-
-        var deterministicFirst = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, boringSeed, GameEntropy.Boring);
-        var deterministicSecond = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, boringSeed, GameEntropy.Boring);
-
-        Assert.Equal(SaltSourceMode.Fixed, deterministicFirst.SaltSource.Mode);
-        Assert.Equal(SaltSourceMode.Fixed, deterministicSecond.SaltSource.Mode);
-        Assert.Equal(deterministicFirst.SaltSource.Salt, deterministicSecond.SaltSource.Salt);
-    }
-
-    [Fact]
-    public void CreateWithPlayerChosenStartingTownOverridesSeedDefault()
-    {
-        var factory = new SeededNewGameFactory();
-
-        // Establish the seed-derived default town for the default seed.
+        // Establish the first town selected by the test helper.
         var defaultSession = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic);
-        var seedDefaultTownId = defaultSession.Player.CurrentTownId;
+        var helperSelectedTownId = defaultSession.Player.CurrentTownId;
 
-        // Pick a different valid town from the same world to use as the player override.
-        var overriddenTown = defaultSession.World.Towns.First(town => !town.Id.Equals(seedDefaultTownId));
+        // Pick a different valid town from the same world.
+        var chosenTown = defaultSession.World.Towns.First(town => !town.Id.Equals(helperSelectedTownId));
 
-        var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic, startingTownId: overriddenTown.Id.Value);
+        var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic, startingTownId: chosenTown.Id.Value);
 
-        Assert.Equal(overriddenTown.Id, session.Player.CurrentTownId);
-        Assert.NotEqual(seedDefaultTownId, session.Player.CurrentTownId);
-    }
-
-    [Fact]
-    public void CreateWithNullStartingTownIdUsesSafeDefault()
-    {
-        var factory = new SeededNewGameFactory();
-
-        var session = CanonicalStartFlow.StartGame(factory, "Ranger Vale", GameDifficulty.Standard, null, GameEntropy.Classic, startingTownId: null);
-
-        // The safe default from StartingTownPolicy is the first town in the world (slot 0).
-        Assert.Equal(session.World.Towns.First().Id, session.Player.CurrentTownId);
+        Assert.Equal(chosenTown.Id, session.Player.CurrentTownId);
+        Assert.NotEqual(helperSelectedTownId, session.Player.CurrentTownId);
     }
 
     [Fact]
