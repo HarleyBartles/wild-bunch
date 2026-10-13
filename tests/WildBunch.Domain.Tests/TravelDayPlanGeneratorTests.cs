@@ -431,7 +431,7 @@ public sealed class TravelDayPlanGeneratorTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        var context = session.CreateTravelDayGenerationContext(gameSeed: "seed-no-horse-badluck", scenarioProfileId: "profile-no-horse") with
+        var context = session.CreateTravelDayGenerationContext(gameSeed: "n28-lawful-1", scenarioProfileId: "profile-no-horse") with
         {
             RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
             RecentTrailEventIds = new[] { JourneyTrailEventId.BadLuckWashout },
@@ -441,10 +441,15 @@ public sealed class TravelDayPlanGeneratorTests
         var plan = TravelDayPlanGenerator.Generate(context);
 
         Assert.NotEmpty(plan.Encounters);
-        Assert.All(plan.Encounters, encounter =>
+        var unluckyEncounters = plan.Encounters
+            .Where(encounter => encounter.Category == TravelDayEncounterCategory.Unlucky)
+            .ToArray();
+        Assert.NotEmpty(unluckyEncounters);
+        Assert.All(unluckyEncounters, encounter =>
         {
-            Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, encounter.TrailEvent?.Id);
-            Assert.False(encounter.TrailEvent?.Kind == JourneyTrailEventKind.BadLuck && encounter.TrailEvent.DelayDays > 0);
+            Assert.Equal(JourneyTrailEventId.BadLuckDustStorm, encounter.TrailEvent?.Id);
+            Assert.Equal(JourneyTrailEventKind.BadLuck, encounter.TrailEvent?.Kind);
+            Assert.Equal(0, encounter.TrailEvent?.DelayDays);
         });
     }
 
@@ -490,10 +495,13 @@ public sealed class TravelDayPlanGeneratorTests
         var plan = TravelDayPlanGenerator.Generate(context);
 
         Assert.NotEmpty(plan.Encounters);
-        Assert.All(plan.Encounters, encounter =>
+        var quietEncounters = plan.Encounters
+            .Where(encounter => encounter.Category == TravelDayEncounterCategory.Quiet)
+            .ToArray();
+        Assert.NotEmpty(quietEncounters);
+        Assert.All(quietEncounters, encounter =>
         {
-            Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, encounter.TrailEvent?.Id);
-            Assert.False(encounter.TrailEvent?.Kind == JourneyTrailEventKind.BadLuck && encounter.TrailEvent.DelayDays > 0);
+            Assert.Null(encounter.TrailEvent);
         });
     }
 
