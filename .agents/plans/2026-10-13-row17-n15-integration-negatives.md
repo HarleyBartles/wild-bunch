@@ -23,7 +23,7 @@
 - Do not add duplicate upcaster-transition or invalid-category coverage; Registry_DuplicateTransition_ThrowsAtConstruction and the existing retired-category HTTP case already exercise those rejections.
 - Do not add a second no-trail travel negative: the Application handler test already reaches a real existing town with no trail and proves no save or commit.
 - No production code, ADR, or feature-matrix change is in scope.
-- Require fresh whole-branch review, passing exact-head hosted CI, and passing develop-push CI before removing this plan's worktree and paired branch refs.
+- Require fresh whole-branch review and passing exact-head hosted CI before merge. After merge, require the develop-push gate to pass before removing this plan's worktree and paired branch refs.
 
 ## Review Focus
 
@@ -85,4 +85,4 @@
 
 - [x] **Step 3: Run the repository gate and inspect the committed tree.** Run py -3 tools/run.py ci --check; require the complete fail-fast gate to pass. Run git diff --check origin/develop...HEAD and verify row 17, version, plan retirement and test dispositions agree. Do not add a test asserting plan/checklist/document shape.
 
-- [ ] **Step 4: Review, publish and close out.** Complete a fresh whole-branch review, create one PR against develop, and require passing exact-head and develop-push hosted gates before merge. Fast-forward the primary checkout, remove the clean worktree first, delete only its exact local and upstream refs, and verify all three are absent before the next plan.
+- [ ] **Step 4: Review, publish and close out.** Complete a fresh whole-branch review, create one PR against develop, and require its exact-head hosted gate to pass before merge. After merge, fast-forward the primary checkout and require the develop-push gate to pass. Then remove the clean worktree first, delete only its exact local and upstream refs, and verify all three are absent before the next plan.
