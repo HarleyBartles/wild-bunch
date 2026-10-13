@@ -507,16 +507,6 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
-    public void GenerateDoesNotSelectHorseTroubleCategoryWhenTravelingWithoutAHorse()
-    {
-        var context = CreateHorseTroubleContext("n32-nohorse-category-11", HorseConditionBand.None, TravelMode.Foot);
-        var plan = TravelDayPlanGenerator.Generate(context);
-
-        Assert.DoesNotContain(plan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble);
-        Assert.DoesNotContain(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
-    }
-
-    [Fact]
     public void GenerateFallsBackWhenOnlyTheHorseSpecificUnluckyEventRemainsWithoutAHorse()
     {
         const string seed = "n32-nohorse-probe-7";

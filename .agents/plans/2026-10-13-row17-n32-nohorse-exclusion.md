@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
-**Goal:** Replace the seed-loop smoke test with fixed behavior tests proving that a traveler without a horse cannot receive a horse-only encounter through either independent generator path.
+**Goal:** Replace the seed-loop smoke test with a fixed behavior test proving that a traveler without a horse cannot receive the horse-specific Unlucky event when it is the only remaining candidate.
 
 **Architecture:** Test the Domain travel-plan generator at its behavior boundary. This is a test and audit correction only; no production behavior, feature promise, event shape, or architecture change is expected.
 
 **Specification and evidence:** The stable 0.1.0 baseline specification, row 17 roadmap, N-18 test-quality investigation, and `TravelDayPlanGeneratorTests` disposition govern scope. The Domain unslop profile governs event-sourced travel and behavior-test quality. No product ADR or feature-matrix change is expected.
 
-**Governing behavior:** Without a horse, generation excludes the `HorseTrouble` category and excludes horse-required events from the `Unlucky` category. If the latter category has no legal candidate after history and resource filters, generation uses the existing quiet fallback.
+**Governing behavior:** Without a horse, the `Unlucky` category excludes horse-required events. If it has no legal candidate after history and resource filters, generation uses the existing quiet fallback.
 
-**Execution Strategy:** Native inline execution. Two fixed-context tests isolate the category-selection path and the event-candidate path. Each uses a mutation of its responsible production filter to show that the test fails for the missing behavior.
+**Execution Strategy:** Native inline execution. One fixed context isolates the horse-specific event-candidate path and uses a mutation of its responsible filter to show that the test fails for the missing behavior.
 
 ## Global Constraints
 
@@ -18,14 +18,14 @@
 - Each merged plan PR advances the single authored application version exactly once; N-32 uses `0.1.0-dev.150`.
 - Commit this successor plan/version before implementation; retire the completed N-31 plan in this first substantive commit.
 - Do not retain seed searches, loops over arbitrary salts, conditional assertions, or temporary mutation code.
-- Keep the two generator causes distinct: a category-selection filter and a horse-specific event-candidate filter.
+- `HorseTrouble` starts with zero weight whenever the context lacks a horse or mounted travel, and all current weight modifiers preserve that restriction. The later legality guard is redundant for these valid contexts, so do not add a test that only repeats the same zero-weight outcome.
 - Do not change production code, feature promises, ADRs, or architecture. Keep unrelated travel-generator and N-18 findings open.
 - Obtain a fresh independent whole-branch review for this PR, and require exact-head hosted CI and the post-merge develop-push gate to pass before cleanup.
 - Remove the clean worktree before deleting its exact local and upstream branch refs; preserve the separate AWS learning worktree.
 
 ## Review Focus
 
-Confirm that each fixed context reaches the named generator branch, and that disabling only its responsible no-horse filter causes the test to fail on the prohibited outcome. Verify the Unlucky test reaches an empty legal candidate set and requires the quiet fallback. Ensure these tests do not claim to cover the route-specific `TrailEventCatalog` producer or the real travel command consumer.
+Confirm that the fixed context reaches the Unlucky generator branch, and that disabling only its `RequiresHorse` filter causes the test to fail on the prohibited outcome. Verify it reaches an empty legal candidate set and requires the quiet fallback. The test does not cover the redundant `HorseTrouble` category legality guard, route-specific `TrailEventCatalog` producer, or real travel command consumer.
 
 ## Task 1: Successor plan and version
 
@@ -33,15 +33,11 @@ Verify PR #334 source `b90d7ba487852a1bdab9ddbc19ff5100f89d88f7` and squash merg
 
 Retire `.agents/plans/2026-10-13-row17-n31-spooked-horse-effect-application.md`, make this N-32 plan active in roadmap row 17, append PR #334's verified delivery facts, and advance `Directory.Build.props` to `0.1.0-dev.150`. Validate the plan and roadmap links, single-source version identity, and intended changes. Commit this successor-plan/version update through the normal check-only hook before implementation.
 
-## Task 2: Prove both no-horse exclusion paths
+## Task 2: Prove the horse-specific Unlucky candidate exclusion
 
-In `tests/WildBunch.Domain.Tests/TravelDayPlanGeneratorTests.cs`, replace `GenerateDoesNotSelectHorseOnlyEventsWhenTravelingWithoutAHorse` and its 12-seed loop with two fixed-context tests.
+In `tests/WildBunch.Domain.Tests/TravelDayPlanGeneratorTests.cs`, replace `GenerateDoesNotSelectHorseOnlyEventsWhenTravelingWithoutAHorse` and its 12-seed loop with one fixed-context test. The context has no horse, an active BadLuck delay cooldown, and all other eligible BadLuck event IDs in recent history, leaving only the horse-specific event as an otherwise eligible Unlucky candidate. Require the generator's Quiet encounter with no trail event and exclude `BadLuckSpookedHorse`. Temporarily remove only the event candidate's `RequiresHorse` filter; prove this test fails because the prohibited horse event is selected instead of the quiet fallback, then restore production byte-for-byte.
 
-The first fixes a context that reaches `HorseTrouble` category selection for a foot traveler without a horse. Require that no encounter uses the `HorseTrouble` category and that no `BadLuckSpookedHorse` event appears. Temporarily make `HorseTrouble` selectable in the no-horse category weighting path; prove this test fails on the prohibited encounter, then restore production byte-for-byte.
-
-The second fixes a context with no horse, an active BadLuck delay cooldown, and all other eligible BadLuck event IDs in recent history, leaving only the horse-specific event as an otherwise eligible Unlucky candidate. Require the generator's Quiet encounter with no trail event and exclude `BadLuckSpookedHorse`. Temporarily remove only the event candidate's `RequiresHorse` filter; prove this test fails because the prohibited horse event is selected instead of the quiet fallback, then restore production byte-for-byte.
-
-Run both focused tests and the complete `TravelDayPlanGeneratorTests` suite. Do not broaden this slice into producer catalog, travel consumer, or other generator behavior. Add dated N-32 dispositions to the N-18 test-quality investigation and the `TravelDayPlanGeneratorTests` row in the .NET dispositions. State the two filters and mutation outcomes precisely, and leave other N-18 travel effects and generator findings open.
+Run the focused test and the complete `TravelDayPlanGeneratorTests` suite. Do not add a separate `HorseTrouble` category test: the category weight is already zero for a no-horse context before the legality guard, and removing that guard alone does not change observable output. Do not broaden this slice into producer catalog, travel consumer, or other generator behavior. Add dated N-32 dispositions to the N-18 test-quality investigation and the `TravelDayPlanGeneratorTests` row in the .NET dispositions. State the remaining scope and mutation outcome precisely; leave other N-18 travel effects and generator findings open.
 
 ## Task 3: Review and deliver
 
