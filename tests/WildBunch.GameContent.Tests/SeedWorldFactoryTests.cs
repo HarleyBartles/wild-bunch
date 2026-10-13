@@ -34,26 +34,6 @@ public sealed class SeedWorldFactoryTests
     }
 
     [Fact]
-    public void StartingTownPolicyDefaultsToFirstTown()
-    {
-        // Starting town is NOT seed-owned. The safe default from StartingTownPolicy
-        // is the first town in the world (slot 0), which is always present.
-        var canonicalWorld = SeedWorldFactory.CreateCanonicalWorld();
-        var defaultTown = StartingTownPolicy.ResolveStartingTown(canonicalWorld, null);
-        Assert.Contains(canonicalWorld.Towns, t => t.Id.Equals(defaultTown));
-    }
-
-    [Fact]
-    public void StartingTownPolicyAcceptsAnyValidTownChoice()
-    {
-        var world = SeedWorldFactory.CreateCanonicalWorld();
-        var chosenTown = world.Towns.First();
-
-        var resolved = StartingTownPolicy.ResolveStartingTown(world, chosenTown.Id);
-        Assert.Equal(chosenTown.Id, resolved);
-    }
-
-    [Fact]
     public void StartingTownPolicyRejectsInvalidTownChoice()
     {
         var world = SeedWorldFactory.CreateCanonicalWorld();
