@@ -1,28 +1,11 @@
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
-using WildBunch.Domain.World;
 using WildBunch.GameContent.NewGame;
 
 namespace WildBunch.GameContent.Tests;
 
 /// <summary>
-/// Covers travel setup salt modes and runtime salt variance; generated difficulty
-/// and entropy pressure behavior is owned by the Domain generator tests.
-///
-/// Entropy ladder (BUNCH-93):
-///   Boring      — near-deterministic. SaltSourceMode.Fixed means no salt in the
-///                 seed, so the same route/session inputs produce the same plan
-///                 every time. No weight adjustment needed.
-///   Classic     — standard gameplay. Runtime salt provides ordinary variance.
-///   Adventurous — more swing than Classic (wider count spread, more lucky/unlucky).
-///   Wild        — most volatile (biggest swings, most lucky/unlucky, least quiet).
-///
-/// Tests use the seed codec round-trip (SeedWorld -&gt; UUID via
-/// CreateRepresentativeSeedCode) rather than stored UUIDs, so codec changes
-/// don't break them. Tests establish fixed salt inputs at player genesis, while
-/// the supported travel override isolates specific encounter scenarios.
-///
-/// See BUNCH-93.
+/// Covers the salt posture selected by Boring and Classic entropy during real game setup.
 /// </summary>
 public sealed class TravelEntropyVarianceTests
 {
@@ -31,7 +14,7 @@ public sealed class TravelEntropyVarianceTests
     [Fact]
     public void BoringEntropy_UsesFixedSaltMode()
     {
-        var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedBoring);
+        var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalBoring);
 
         Assert.Equal(SaltSourceMode.Fixed, session.SaltSource.Mode);
     }
@@ -41,7 +24,7 @@ public sealed class TravelEntropyVarianceTests
     [Fact]
     public void ClassicEntropy_UsesRuntimeSaltMode()
     {
-        var session = TravelTestSeedCatalog.CreateSessionWithRuntimeSalt(TravelTestSeedCatalog.CanonicalMountedStandard);
+        var session = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalClassic);
 
         Assert.Equal(SaltSourceMode.Runtime, session.SaltSource.Mode);
     }
@@ -49,8 +32,8 @@ public sealed class TravelEntropyVarianceTests
     [Fact]
     public void ClassicEntropy_DifferentSessionsProduceDifferentSalt()
     {
-        var session1 = TravelTestSeedCatalog.CreateSessionWithRuntimeSalt(TravelTestSeedCatalog.CanonicalMountedStandard);
-        var session2 = TravelTestSeedCatalog.CreateSessionWithRuntimeSalt(TravelTestSeedCatalog.CanonicalMountedStandard);
+        var session1 = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalClassic);
+        var session2 = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalClassic);
 
         Assert.Equal(SaltSourceMode.Runtime, session1.SaltSource.Mode);
         Assert.NotEqual(session1.SaltSource.Salt, session2.SaltSource.Salt);
@@ -63,11 +46,18 @@ public sealed class TravelEntropyVarianceTests
     {
         // Both use the same canonical seed world, but Boring gets Fixed salt
         // and Classic gets Runtime salt. This is the core entropy distinction.
-        var boringSession = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedBoring);
-        var classicSession = TravelTestSeedCatalog.CreateSessionWithRuntimeSalt(TravelTestSeedCatalog.CanonicalMountedStandard);
+        var boringSession = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalBoring);
+        var classicSession = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalClassic);
 
         Assert.Equal(SaltSourceMode.Fixed, boringSession.SaltSource.Mode);
         Assert.Equal(SaltSourceMode.Runtime, classicSession.SaltSource.Mode);
+        Assert.Equal(TownSignature(boringSession), TownSignature(classicSession));
     }
 
+    private static string TownSignature(GameSession session)
+        => string.Join(
+            "|",
+            session.World.Towns
+                .OrderBy(town => town.Id.Value, StringComparer.Ordinal)
+                .Select(town => $"{town.Id.Value}:{town.Name}:{town.Prosperity}"));
 }
