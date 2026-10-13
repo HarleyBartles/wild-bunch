@@ -16,10 +16,9 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_JourneyStarted_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
+        var (commandSession, preview) = TravelTestFactory.CreateEasyShortJourney();
         commandSession.StartJourney(preview);
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -39,11 +38,10 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_AdvanceJourneyDay_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
+        var (commandSession, preview) = TravelTestFactory.CreateEasyShortJourney();
         commandSession.StartJourney(preview);
         commandSession.AdvanceJourneyDay();
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -61,8 +59,7 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_FullJourneyCycle_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateFourDayQuietJourneyWithSetupEvents();
+        var (commandSession, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         commandSession.StartJourney(preview);
 
         // Force quiet days through the dev-travel override seam so the journey
@@ -75,7 +72,7 @@ public sealed class TravelReplayEqualityTests
         } while (result.Status == JourneyStatus.Active && result.Success);
         commandSession.AcknowledgeJourneyArrival();
 
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -96,8 +93,7 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_HorseLossFootTravel_PreservesDistanceUntilArrival()
     {
-        var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateThreeUnitJourneyWithCriticalHorseAndSetupEvents();
+        var (commandSession, preview) = TravelTestFactory.CreateThreeUnitJourneyWithCriticalHorse();
         var originTownId = commandSession.Player.CurrentTownId;
         var destinationTownId = preview.DestinationTownId;
         var start = commandSession.StartJourney(preview);
@@ -137,7 +133,7 @@ public sealed class TravelReplayEqualityTests
         Assert.True(commandSession.AcknowledgeJourneyArrival().Success);
         Assert.Null(commandSession.Journey);
 
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
         var replayed = GameSession.RehydrateFromEvents(commandSession.Id, commandSession.World, events);
 
         Assert.Equal(commandSession.Player.CurrentTownId, replayed.Player.CurrentTownId);
@@ -155,7 +151,6 @@ public sealed class TravelReplayEqualityTests
     public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(commandSession);
         commandSession.StartJourney(preview);
 
         // Force a foe encounter through the dev-travel override seam instead of
@@ -166,7 +161,7 @@ public sealed class TravelReplayEqualityTests
 
         var resolved = commandSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);
         Assert.True(resolved.Success);
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,

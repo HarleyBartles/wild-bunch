@@ -1,6 +1,5 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
-using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -42,32 +41,8 @@ internal static class TravelTestFactory
         return (session, preview);
     }
 
-    /// <summary>
-    /// Creates an EasyShortJourney session and captures the full setup event stream
-    /// before it is committed. Used by replay-equality tests that need the full event stream.
-    /// </summary>
-    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateEasyShortJourneyWithSetupEvents()
-    {
-        var (session, preview) = CreateEasyShortJourney();
-        var setupEvents = RecaptureSetupEventsForReplay(session);
-        return (session, preview, setupEvents);
-    }
-
-    /// <summary>
-    /// Creates a FourDayQuietJourney session and captures the full setup event stream
-    /// before it is committed. Used by replay-equality tests that need the full event stream.
-    /// </summary>
-    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateFourDayQuietJourneyWithSetupEvents()
-    {
-        var (session, preview) = CreateFourDayQuietJourney();
-        var setupEvents = RecaptureSetupEventsForReplay(session);
-        return (session, preview, setupEvents);
-    }
-
-    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateThreeUnitJourneyWithCriticalHorseAndSetupEvents()
+    internal static (GameSession session, TravelPreview preview)
+        CreateThreeUnitJourneyWithCriticalHorse()
     {
         var origin = new Town(new TownId("horse-origin"), "Pinecross");
         var destination = new Town(new TownId("horse-destination"), "Midway");
@@ -109,30 +84,7 @@ internal static class TravelTestFactory
         session.MarkEventsCommitted();
 
         var preview = ResolvePreview(session, destination.Id);
-        var setupEvents = RecaptureSetupEventsForReplay(session);
-        return (session, preview, setupEvents);
-    }
-
-    /// <summary>
-    /// Recaptures the full setup event stream for a session by re-running the canonical
-    /// start flow (<see cref="TestSessionFactory.StartGameCanonical"/>) with the same
-    /// world/case-file/inventory seed. The factory sessions already commit their setup
-    /// events, so replay tests must prepend this stream to the journey event stream
-    /// manually. Returns all 6 canonical setup events so the replayed session starts at
-    /// the same version as the command session.
-    /// </summary>
-    internal static IReadOnlyList<IDomainEvent> RecaptureSetupEventsForReplay(GameSession session)
-    {
-        var seed = TestSessionFactory.StartGameCanonical(
-            session.Player.Name,
-            session.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(session),
-            session.Player.CurrentTownId!.Value,
-            session.Player.Wallet,
-            session.Player.Inventory,
-            session.GameDifficulty,
-            session.SaltSource);
-        return seed.UncommittedEvents;
+        return (session, preview);
     }
 
     /// <summary>
@@ -143,6 +95,7 @@ internal static class TravelTestFactory
     internal static (GameSession session, TravelPreview preview) CreateHighRiskJourney(
         int startingFood = 3,
         bool includeHorse = true,
+        int startingHorseFeed = 0,
         SaltSource? saltSource = null)
     {
         // Mirror the CreateHighRiskSession pattern from AdvanceTravelDayHandlerTests
@@ -167,6 +120,10 @@ internal static class TravelTestFactory
             inventoryItems.Add(new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy));
             inventoryItems.Add(new InventoryItem(ItemKind.Saddle, 1));
             inventoryItems.Add(new InventoryItem(ItemKind.Knife, 1));
+        }
+        if (startingHorseFeed > 0)
+        {
+            inventoryItems.Add(new InventoryItem(ItemKind.HorseFeed, startingHorseFeed));
         }
 
         var inventory = new DomainInventory(inventoryItems);

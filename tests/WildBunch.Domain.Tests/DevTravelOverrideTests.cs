@@ -132,13 +132,13 @@ public sealed class DevTravelOverrideTests
         session.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Foe));
         session.MarkEventsCommitted();
 
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
-        var events = setupEvents.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = session.AllEvents.ToArray();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
         Assert.NotNull(rehydrated.PendingDevTravelOverride);
         Assert.Equal(TravelDayEncounterCategory.Foe, rehydrated.PendingDevTravelOverride!.ForcedCategory);
+        Assert.Equal(session.Version, rehydrated.Version);
     }
 
     [Fact]
@@ -152,13 +152,13 @@ public sealed class DevTravelOverrideTests
         session.MarkEventsCommitted();
 
         // Rehydrate from the full event stream: Forced -> Consumed -> TravelDayAdvanced
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
-        var events = setupEvents.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = session.AllEvents.ToArray();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
         // Critical replay-safety proof: override is null after replay
         Assert.Null(rehydrated.PendingDevTravelOverride);
+        Assert.Equal(session.Version, rehydrated.Version);
     }
 
     [Fact]
@@ -168,11 +168,11 @@ public sealed class DevTravelOverrideTests
         session.AdvanceJourneyDay();
         session.MarkEventsCommitted();
 
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
-        var events = setupEvents.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = session.AllEvents.ToArray();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
         Assert.Null(rehydrated.PendingDevTravelOverride);
+        Assert.Equal(session.Version, rehydrated.Version);
     }
 }
