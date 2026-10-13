@@ -70,6 +70,6 @@
 - Review: complete branch diff and staged-tree result.
 - Modify: the active plan checkboxes as each step is completed.
 
-- [ ] **Step 1: Obtain fresh independent whole-branch review.** Review the committed branch against this plan, the test-quality investigation, and repository review runbook. Correct actionable findings and rerun affected checks through the normal hook; write no development receipt files into the repository.
+- [x] **Step 1: Obtain fresh independent whole-branch review.** Review the committed branch against this plan, the test-quality investigation, and repository review runbook. Correct actionable findings and rerun affected checks through the normal hook; write no development receipt files into the repository. The review of `a7551daaa796b112cf92c2636c9a69cefd4bcb78..6ce0d36edd1930f55d4a4816ceb5fe1313555c5a` approved without actionable findings; the review report is in branch scratch.
 - [ ] **Step 2: Publish and merge.** Push this branch, open one PR to `develop`, verify the diff and development version, obtain passing exact-head hosted CI, and merge only after review and gates are clean. The successor plan will record this PR's merge and cleanup evidence in row 17.
 - [ ] **Step 3: Complete paired cleanup.** Fast-forward the primary checkout to the merge and verify the develop-push gate passes. Confirm this worktree is clean and merged, remove it, delete its exact local and upstream branch refs, and verify the worktree and both refs are absent. Preserve unrelated worktrees and branches.
