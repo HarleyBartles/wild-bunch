@@ -74,37 +74,42 @@ public sealed class DevTravelEndpointTests
         Assert.Equal(5, context.PendingDevOverride.FoeProfile!.Speed);
     }
 
-    [Fact]
-    public async Task ForceTravelOverride_Returns400_ForRetiredCategory_WithoutChangingTravelContext()
+    [Theory]
+    [InlineData("", "ForcedCategory is required.")]
+    [InlineData("Npc", "Invalid ForcedCategory value.")]
+    public async Task ForceTravelOverride_Returns400_ForBlankOrRetiredCategory_WithoutChangingPersistedState(
+        string forcedCategory,
+        string expectedError)
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
         var (gameId, _) = await CreateSessionAndStartTravelAsync(client);
-        var auditBeforeResponse = await client.GetAsync($"/api/dev/sessions/{gameId}/audit");
-        var auditBefore = await auditBeforeResponse.Content.ReadFromJsonAsync<SessionAuditDto>();
+        var sessionBefore = await ReadGameAsync(client, gameId);
+        var travelContextBefore = await ReadTravelContextAsync(client, gameId);
+        var auditBefore = await ReadAuditAsync(client, gameId);
+        Assert.NotNull(sessionBefore);
+        Assert.NotNull(travelContextBefore);
         Assert.NotNull(auditBefore);
 
         var response = await client.PostAsJsonAsync(
             $"/api/dev/sessions/{gameId}/travel/force-override",
-            new ForceTravelOverrideRequestDto("Npc", null, null, null, null));
+            new ForceTravelOverrideRequestDto(forcedCategory, null, null, null, null));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(expectedError, await response.Content.ReadFromJsonAsync<string>());
 
-        var contextResponse = await client.GetAsync($"/api/dev/sessions/{gameId}/travel-context");
-        Assert.Equal(HttpStatusCode.OK, contextResponse.StatusCode);
-        var context = await contextResponse.Content.ReadFromJsonAsync<TravelDevContextDto>();
-        Assert.NotNull(context);
-        Assert.Null(context!.PendingDevOverride);
-        Assert.True(context.HasActiveJourney);
-        Assert.Equal("Active", context.JourneyStatus);
+        var sessionAfter = await ReadGameAsync(client, gameId);
+        var travelContextAfter = await ReadTravelContextAsync(client, gameId);
+        var auditAfter = await ReadAuditAsync(client, gameId);
 
-        var auditAfterResponse = await client.GetAsync($"/api/dev/sessions/{gameId}/audit");
-        var auditAfter = await auditAfterResponse.Content.ReadFromJsonAsync<SessionAuditDto>();
+        AssertSessionStateUnchanged(sessionBefore!, sessionAfter!);
+        Assert.Equal(travelContextBefore, travelContextAfter);
         Assert.NotNull(auditAfter);
         Assert.Equal(
-            auditBefore!.Entries.Select(entry => (entry.Sequence, entry.EventType, entry.Summary)),
-            auditAfter!.Entries.Select(entry => (entry.Sequence, entry.EventType, entry.Summary)));
+            auditBefore!.Entries.Select(entry => (entry.Sequence, entry.EventType, entry.Summary, entry.OccurredAtUtc)),
+            auditAfter!.Entries.Select(entry => (entry.Sequence, entry.EventType, entry.Summary, entry.OccurredAtUtc)));
+        Assert.DoesNotContain(auditAfter.Entries, entry => entry.EventType == "DevTravelOverrideForced");
     }
 
     [Fact]
@@ -176,5 +181,51 @@ public sealed class DevTravelEndpointTests
         Assert.True(turnResult!.Success);
 
         return (created.Id, turnResult);
+    }
+
+    private static async Task<GameSessionDto?> ReadGameAsync(HttpClient client, Guid gameId)
+    {
+        using var response = await client.GetAsync($"/api/games/{gameId}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await response.Content.ReadFromJsonAsync<GameSessionDto>();
+    }
+
+    private static async Task<TravelDevContextDto?> ReadTravelContextAsync(HttpClient client, Guid gameId)
+    {
+        using var response = await client.GetAsync($"/api/dev/sessions/{gameId}/travel-context");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await response.Content.ReadFromJsonAsync<TravelDevContextDto>();
+    }
+
+    private static async Task<SessionAuditDto?> ReadAuditAsync(HttpClient client, Guid gameId)
+    {
+        using var response = await client.GetAsync($"/api/dev/sessions/{gameId}/audit");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return await response.Content.ReadFromJsonAsync<SessionAuditDto>();
+    }
+
+    private static void AssertSessionStateUnchanged(GameSessionDto before, GameSessionDto after)
+    {
+        Assert.Equal(before.Status, after.Status);
+        Assert.Equal(before.Player, after.Player);
+        Assert.Equal(before.Clock, after.Clock);
+        Assert.Equal(before.PursuitState, after.PursuitState);
+        Assert.Equal(before.Journey?.Status, after.Journey?.Status);
+        Assert.Equal(before.Journey?.DaysTravelled, after.Journey?.DaysTravelled);
+        Assert.Equal(before.Journey?.RemainingDays, after.Journey?.RemainingDays);
+        Assert.Equal(before.Journey?.PendingEncounter?.Kind, after.Journey?.PendingEncounter?.Kind);
+        Assert.Equal(before.Journey?.PendingEncounter?.Message, after.Journey?.PendingEncounter?.Message);
+        Assert.NotNull(before.Inventory);
+        Assert.NotNull(after.Inventory);
+        Assert.Equal(before.Inventory!.Wallet, after.Inventory!.Wallet);
+        Assert.Equal(before.Inventory.HorseState, after.Inventory.HorseState);
+        Assert.Equal(before.Inventory.CanteenState, after.Inventory.CanteenState);
+        Assert.Equal(before.Inventory.Capabilities, after.Inventory.Capabilities);
+        Assert.Equal(
+            before.Inventory.Items.Select(item => (item.Kind, item.Quantity, item.HorseState, item.CanteenState)),
+            after.Inventory.Items.Select(item => (item.Kind, item.Quantity, item.HorseState, item.CanteenState)));
+        Assert.Equal(
+            before.LogEntries.Select(entry => (entry.Kind, entry.Message, entry.Day, entry.Turn)),
+            after.LogEntries.Select(entry => (entry.Kind, entry.Message, entry.Day, entry.Turn)));
     }
 }

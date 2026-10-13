@@ -206,7 +206,7 @@ public sealed class GameApiValidationTests
     }
 
     [Fact]
-    public async Task TravelToUnconnectedTownReturnsSuccessFalse()
+    public async Task TravelToNonexistentTownReturnsSuccessFalse()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
