@@ -442,6 +442,60 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
+    public void TrailEventApplied_BeforeTravelDayAdvanced_UsesAdvancedDayInJournal()
+    {
+        var journey = JourneySnapshot(1);
+        IDomainEvent[] events =
+        [
+            GameStartedEvent(),
+            new JourneyStarted { JourneySnapshot = journey, DiaryMessage = "The road opens.", PursuitHeat = 0 },
+            new TrailEventApplied
+            {
+                JourneySnapshot = journey,
+                TrailEventKind = JourneyTrailEventKind.Lucky,
+                TrailEventId = JourneyTrailEventId.LuckyCoinCache,
+                Title = "A forgotten cache",
+                Message = "I find biscuits beside the trail.",
+                WalletDelta = 0m,
+                WalletCash = 25m,
+                FoodDelta = 0,
+                CanteenChargeDelta = 0,
+                HorseHungerDelta = 0,
+                HorseThirstDelta = 0,
+                HorseExhaustionDelta = 0,
+                DelayDays = 0,
+                HeatIncrease = 0,
+                PursuitHeat = 0,
+                TravelModeChangedTo = null,
+                DiaryMessage = "I find biscuits beside the trail.",
+                HorseLostMessage = string.Empty
+            },
+            new TravelDayAdvanced
+            {
+                Day = 2,
+                JourneySnapshot = journey,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Ongoing,
+                DiaryMessage = "Another day on the trail.",
+                HorseLostMessage = string.Empty
+            }
+        ];
+
+        var entries = new JournalLogProjector().Project(events);
+
+        Assert.Equal(
+            new GameLogEntry[]
+            {
+                new(GameLogEntryKind.Opening, "The hunt begins in Pinecross.", 1, 0),
+                new(GameLogEntryKind.Travel, "The road opens.", 1, 0, 1),
+                new(GameLogEntryKind.Travel, "I find biscuits beside the trail.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "Another day on the trail.", 2, 0, 1)
+            },
+            entries);
+    }
+
+    [Fact]
     public void TravelEntries_KeepTheirRecordedJourneySequenceAcrossMultipleJourneys()
     {
         var firstJourney = JourneySnapshot(1);

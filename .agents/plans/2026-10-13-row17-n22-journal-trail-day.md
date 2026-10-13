@@ -55,7 +55,7 @@
 - Consumes: `JourneyLoop.ApplyTrailEvent`, which appends `TrailEventApplied` before `HandleOngoingTravelDay` or `HandleCompletedTravelDay` appends `TravelDayAdvanced`; `JournalLogProjector.Project` uses the immediate next event's absolute day for the trail narration.
 - Produces: an exact projected entry sequence that distinguishes the previous day from the next recorded day and confirms the travel journey sequence, plus dated closure of this journal-projection finding while leaving the dev-context and Domain-arrival findings open.
 
-- [ ] **Step 1: Add the focused failing projection test.** Add this test to `JournalLogProjectorTests`; use the existing `GameStartedEvent` and `JourneySnapshot` helpers:
+- [x] **Step 1: Add the focused failing projection test.** Add this test to `JournalLogProjectorTests`; use the existing `GameStartedEvent` and `JourneySnapshot` helpers:
 
 ```csharp
 [Fact]
@@ -114,9 +114,9 @@ public void TrailEventApplied_BeforeTravelDayAdvanced_UsesAdvancedDayInJournal()
 ```
 
 The exact sequence makes a projector that leaves trail narration on day 1 fail specifically at the trail entry, while also requiring the separate day-advance narration and journey identity.
-- [ ] **Step 2: Prove RED and GREEN at the actual behavior.** Temporarily remove the projector's immediate-following `TravelDayAdvanced` look-ahead so `TrailEventApplied` uses the current day; run only the new test and require it to fail because the trail entry is day 1 instead of day 2. Restore production code and require the same test to pass.
-- [ ] **Step 3: Record the finding disposition.** Add a dated entry stating that `JourneyLoop` emits trail-event facts before the absolute travel-day fact, the exact journal test now proves the trail narration receives that next event's day, and the mutation failed as intended. Update the `JournalLogProjectorTests` disposition; preserve the remaining dev mapper and Domain arrival/context findings as open. Do not describe this projection behavior as a product feature change or an ADR change.
-- [ ] **Step 4: Run owning validation and commit.** Run `py -3 tools/run.py dotnet-test -- tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter FullyQualifiedName~JournalLogProjectorTests`, inspect the test and dated disposition diff, then commit. The commit hook runs the full canonical gate; do not redundantly run the full gate immediately before committing.
+- [x] **Step 2: Prove RED and GREEN at the actual behavior.** Temporarily remove the projector's immediate-following `TravelDayAdvanced` look-ahead so `TrailEventApplied` uses the current day; run only the new test and require it to fail because the trail entry is day 1 instead of day 2. Restore production code and require the same test to pass.
+- [x] **Step 3: Record the finding disposition.** Add a dated entry stating that `JourneyLoop` emits trail-event facts before the absolute travel-day fact, the exact journal test now proves the trail narration receives that next event's day, and the mutation failed as intended. Update the `JournalLogProjectorTests` disposition; preserve the remaining dev mapper and Domain arrival/context findings as open. Do not describe this projection behavior as a product feature change or an ADR change.
+- [ ] **Step 4: Run owning validation and commit.** Run `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Application.Tests/WildBunch.Application.Tests.csproj --filter FullyQualifiedName~JournalLogProjectorTests`, inspect the test and dated disposition diff, then commit. The commit hook runs the full canonical gate; do not redundantly run the full gate immediately before committing.
 
 ### Task 3: Review, publish, merge, and close out
 
