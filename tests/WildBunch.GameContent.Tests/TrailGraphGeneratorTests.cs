@@ -24,7 +24,7 @@ public sealed class TrailGraphGeneratorTests
     }
 
     [Fact]
-    public void Generate_ProducesConnectedGraph()
+    public void Generate_SparseBoring_IsConnectedAndEveryTownHasTwoConnections()
     {
         var seed = NewSeedWorld(townCount: 8, clusterCount: 2, density: GraphDensity.Sparse);
         var placement = PlaceTowns(seed, GameEntropy.Boring, SaltSource.CreateFixed("salt"));
@@ -33,6 +33,8 @@ public sealed class TrailGraphGeneratorTests
         var edges = TrailGraphGenerator.Generate(seed, placement.Towns, placement.ClusterAssignments, source, GameEntropy.Boring, SaltSource.CreateFixed("salt"));
 
         var adjacency = BuildAdjacency(edges, seed.TownCount);
+        Assert.All(adjacency, kv => Assert.True(kv.Value.Count >= 2,
+            $"Town slot {kv.Key} has degree {kv.Value.Count}, expected >= 2"));
         Assert.True(IsConnected(adjacency, seed.TownCount), "Generated graph must be connected.");
     }
 
@@ -83,33 +85,6 @@ public sealed class TrailGraphGeneratorTests
 
         Assert.True(denseEdges.Count >= sparseEdges.Count,
             $"Dense ({denseEdges.Count} edges) should have at least as many edges as Sparse ({sparseEdges.Count} edges).");
-    }
-
-    [Fact]
-    public void Generate_SparseBoring_ConnectedWithMinimumDegree2()
-    {
-        // Sparse + Boring starts from the MST (N-1 edges) but the minimum-degree
-        // pass adds extra edges so no town is a dead-end (degree < 2). The result
-        // is a connected graph where every town has at least 2 connections.
-        var seed = NewSeedWorld(townCount: 8, clusterCount: 2, density: GraphDensity.Sparse);
-        var placement = PlaceTowns(seed, GameEntropy.Boring, SaltSource.CreateFixed("salt"));
-        var source = NewSource();
-
-        var edges = TrailGraphGenerator.Generate(seed, placement.Towns, placement.ClusterAssignments, source, GameEntropy.Boring, SaltSource.CreateFixed("salt"));
-
-        // At least N-1 edges (MST), possibly more from the minimum-degree pass.
-        Assert.True(edges.Count >= seed.TownCount - 1,
-            $"Expected at least {seed.TownCount - 1} edges, got {edges.Count}");
-
-        // Every town has at least degree 2.
-        var degree = new Dictionary<int, int>();
-        foreach (var edge in edges)
-        {
-            degree[edge.FromSlot] = degree.GetValueOrDefault(edge.FromSlot) + 1;
-            degree[edge.ToSlot] = degree.GetValueOrDefault(edge.ToSlot) + 1;
-        }
-        Assert.All(degree, kv => Assert.True(kv.Value >= 2,
-            $"Town slot {kv.Key} has degree {kv.Value}, expected >= 2"));
     }
 
     [Fact]
