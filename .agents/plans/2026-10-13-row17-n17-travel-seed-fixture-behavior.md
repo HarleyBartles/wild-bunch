@@ -51,11 +51,12 @@
 - Modify: `tests/WildBunch.GameContent.Tests/TravelTestSeedCatalog.cs`
 - Modify: `tests/WildBunch.GameContent.Tests/TravelEntropyVarianceTests.cs`
 - Modify: `tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs`
+- Delete: `tests/WildBunch.GameContent.Tests/TravelTestSeedCatalogGuardrailTests.cs`
 - Review unchanged: `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs`
 - Review unchanged: `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`
 
 **Interfaces:**
-- Consumes: `SeedWorldResolver.CreateRepresentativeSeedCode`, `TravelTestSeedCatalog.CreateSession` / `CreateSessionWithRuntimeSalt`, `SeededNewGameFactory`, and the retained roster's culprit-eligibility behavior.
+- Consumes: `SeedWorldResolver.CreateRepresentativeSeedCode`, `TravelTestSeedCatalog.ResolveSeedCode` / `CreateSession`, `SeededNewGameFactory`, and the retained roster's culprit-eligibility behavior.
 - Produces: test evidence from actual game sessions that seed-owned world facts are stable across entropy modes while salt posture follows entropy; a fixture catalogue whose entries and helpers all have current consumers; and roster eligibility asserted in its owning test suite.
 
 - [x] **Step 1: Inspect the current catalog consumers and codec owner.** Confirm every `TravelTestSeedCatalog` member reference with repository search, and verify `SeedWorldResolver` tests already exercise seed encoding/decoding. Do not replace those codec tests or rely on repeated `ResolveSeedCode -> Resolve` smoke assertions.
