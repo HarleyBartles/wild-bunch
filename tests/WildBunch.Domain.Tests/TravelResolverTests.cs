@@ -319,6 +319,8 @@ public sealed class TravelResolverTests
         var applied = Assert.Single(session.AllEvents.OfType<TrailEventApplied>());
         Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, applied.TrailEventId);
         Assert.Equal(result.TrailEvent.HorseExhaustionDelta, applied.HorseExhaustionDelta);
+        Assert.Equal(TravelMode.Foot, applied.TravelModeChangedTo);
+        Assert.Equal(TravelMode.Foot, applied.JourneySnapshot.TravelMode);
 
         var dailyUpkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
             TrailTerrain.Hills,
