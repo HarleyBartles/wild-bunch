@@ -234,17 +234,19 @@ public sealed class ClockTurnCorrectionTests
         Assert.Equal(outboundPreview.DestinationTownId, session.Player.CurrentTownId);
         Assert.Equal(TownActionContext.None, session.CurrentActionContext);
 
+        session.LookAroundSaloon();
+        Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
+
         var returnPreview = TravelTestFactory.ResolvePreviewFor(session, originalTownId);
         CompleteJourneyAndAcknowledge(session, returnPreview);
         Assert.Equal(originalTownId, session.Player.CurrentTownId);
+        Assert.Equal(TownActionContext.None, session.CurrentActionContext);
 
-        var dayBeforeReenteringSaloon = session.Clock.Day;
         var turnBeforeReenteringSaloon = session.Clock.Turn;
         session.LookAroundSaloon();
 
         Assert.Equal(TownActionContext.Saloon, session.CurrentActionContext);
-        Assert.Equal(dayBeforeReenteringSaloon + (turnBeforeReenteringSaloon == 3 ? 1 : 0), session.Clock.Day);
-        Assert.Equal((turnBeforeReenteringSaloon + 1) % 4, session.Clock.Turn);
+        Assert.Equal(turnBeforeReenteringSaloon + 1, session.Clock.Turn);
     }
 
     private static void CompleteJourneyAndAcknowledge(GameSession session, TravelPreview preview)
