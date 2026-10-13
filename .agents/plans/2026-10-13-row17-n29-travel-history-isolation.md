@@ -15,12 +15,16 @@
 ## Constraints
 
 - Keep production source unchanged in the committed tree. Temporarily mutate only the relevant history filter to discover literals and prove each final test can fail; restore production byte-for-byte after each mutation.
-- The Lucky-category test compares two populated day-2 plans with identical route, literal game seed, profile, and other inputs. Only the prior Lucky-kind history differs. Require the no-history context to reach a Lucky result and the cooldown context to produce no Lucky result. A mutation disabling the category cooldown must make this test fail for that outcome.
+- The Lucky-category test compares two populated day-2 plans with identical route, literal game seed, profile, and other inputs. Set both contexts to `GameEntropy.Adventurous`, whose category-weight adjustment leaves Lucky eligible even when cooldown history is present, so `FilterCategoryWeightsForLegality` owns the observed exclusion. Only the prior Lucky-kind history differs. Require the no-history context to reach a Lucky result and the cooldown context to produce no Lucky result. A mutation disabling the category filter must make this test fail for that outcome.
 - The BadLuck event-ID test compares two day-2 contexts with identical inputs, including the same recent BadLuck kind. Only the prior `BadLuckDustStorm` event ID differs. Require both contexts to reach an Unlucky result, require the no-ID context to select `BadLuckDustStorm`, and require the ID-history context not to repeat it. A mutation disabling event-ID exclusion must make this test fail for that outcome.
 - Find bounded deterministic literal inputs while each targeted filter is temporarily disabled, then retain one literal per behavior. No seed-search loop, `Count >= 0`, or helper that loses the selected seed may remain in these test paths.
 - Remove `FindPlanWithTrailEvent` only if this is its final call site. Do not expand scope to other generator, travel-effect, completion, replay-fixture, map, or feature findings.
 - Update only `TravelDayPlanGeneratorTests.cs` and the N-18 test-quality and test-disposition records for implementation. No production code, ADR, specification, or feature-matrix change belongs in the committed diff.
 - Advance the single authored application version to `0.1.0-dev.147` in the successor planning commit.
+
+## Review Focus
+
+Check that paired contexts differ only in the named history fact, that the Lucky test reaches a still-positive Lucky category weight before its legality filter, and that the event-ID test reaches Unlucky in both contexts before checking the exact event exclusion. Verify each disabled-filter mutation failed for the repeated outcome and production was restored byte-for-byte. Confirm the audit closes only these two oracles and that ADR-0028, ADR-0029, and PG-007 remain truthful.
 
 ## Task 1: Successor planning and version
 
