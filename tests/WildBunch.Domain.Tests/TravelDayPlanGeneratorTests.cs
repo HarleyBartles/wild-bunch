@@ -522,20 +522,20 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
-    public void GenerateCanStillSelectHorseOnlyEventsWhenAHorseIsPresent()
+    public void GenerateAppliesHorseExhaustionToMountedHorseTroubleEvent()
     {
-        foreach (var seed in Enumerable.Range(1, 48).Select(index => $"seed-horse-present-{index}"))
-        {
-            var context = CreateHorseTroubleContext(seed, HorseConditionBand.Worn, TravelMode.Mounted);
-            var plan = TravelDayPlanGenerator.Generate(context);
-            if (plan.Encounters.Any(encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble))
-            {
-                Assert.Contains(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
-                return;
-            }
-        }
+        var context = CreateHorseTroubleContext("seed-horse-present-1", HorseConditionBand.Worn, TravelMode.Mounted);
+        var plan = TravelDayPlanGenerator.Generate(context);
+        var horseTroubleEncounters = plan.Encounters
+            .Where(encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble)
+            .ToArray();
 
-        throw new Xunit.Sdk.XunitException("Did not find a horse-trouble day to validate horse-only selection.");
+        Assert.NotEmpty(horseTroubleEncounters);
+        Assert.All(horseTroubleEncounters, encounter =>
+        {
+            Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, encounter.TrailEvent?.Id);
+            Assert.True(encounter.TrailEvent!.HorseExhaustionDelta > 0);
+        });
     }
 
     private static TravelDayGenerationContext CreateHorseTroubleContext(string seed, HorseConditionBand horseConditionBand, TravelMode travelMode)
