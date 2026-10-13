@@ -100,9 +100,9 @@
 - Consumes: passing Domain and GameContent behavior tests, the test-quality disposition, current difficulty/randomness decisions and current feature promises.
 - Produces: a dated N-16 test disposition limited to entropy/difficulty behavior and reached Boring travel; remaining N-16 roster, generator, graph, layout and map findings stay explicitly open.
 
-- [ ] **Step 1: Record only the implemented N-16 disposition.** Describe the fixed-corpus generated Foe comparisons, the multi-day aggregate outcome/resource proof, removal of enum-only/one-day assertions, and corrected Boring fixture description. Do not mark N-16 or row 17 complete and do not convert this into a product feature change.
+- [x] **Step 1: Record only the implemented N-16 disposition.** Describe the fixed-corpus generated Foe comparisons, the multi-day aggregate outcome/resource proof, removal of enum-only/one-day assertions, and corrected Boring fixture description. Do not mark N-16 or row 17 complete and do not convert this into a product feature change.
 
-- [ ] **Step 2: Run focused validation and commit the disposition.** Run the focused Domain selection and focused GameContent selection. Commit the investigation disposition through the normal check-only hook; do not bypass the hook.
+- [x] **Step 2: Run focused validation and commit the disposition.** Run the focused Domain selection and focused GameContent selection. Commit the investigation disposition through the normal check-only hook; do not bypass the hook.
 
 - [ ] **Step 3: Verify the committed tree with the canonical gate.** Run `py -3 tools/run.py ci --check` against the final committed implementation and require it to pass; report any existing skip truthfully. Do not run diagnostics unless this fail-fast gate fails.
 
