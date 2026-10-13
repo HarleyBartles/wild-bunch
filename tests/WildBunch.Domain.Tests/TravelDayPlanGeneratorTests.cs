@@ -18,6 +18,9 @@ namespace WildBunch.Domain.Tests;
 public sealed class TravelDayPlanGeneratorTests
 {
     private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
+    private static readonly string[] FoePressureSeedCorpus = Enumerable.Range(1, 128)
+        .Select(index => $"n16-foe-pressure-{index:D3}")
+        .ToArray();
 
     [Fact]
     public void CreateTravelDayGenerationContextDerivesPressureBandsFromSessionState()
@@ -78,6 +81,38 @@ public sealed class TravelDayPlanGeneratorTests
             Assert.Equal("foe", encounter.PendingEncounter!.Kind);
             Assert.NotNull(encounter.PendingEncounter.FoeProfile);
         });
+    }
+
+    [Fact]
+    public void Generate_BrutalDifficultyProducesMoreFoeEncountersThanStandardForFixedHighRiskCorpus()
+    {
+        var session = CreateHighRiskEncounterSession();
+        var baseContext = session.CreateTravelDayGenerationContext(gameSeed: "n16-foe-pressure", scenarioProfileId: "difficulty-pressure");
+
+        var standardFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Standard, GameEntropy.Classic);
+        var brutalFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Brutal, GameEntropy.Classic);
+
+        Assert.True(standardFoeCount > 0, "The fixed Standard/Classic corpus must reach generated Foe encounters.");
+        Assert.True(brutalFoeCount > 0, "The fixed Brutal/Classic corpus must reach generated Foe encounters.");
+        Assert.True(
+            brutalFoeCount > standardFoeCount * 1.1m,
+            $"Brutal should produce at least 10% more actual Foe encounters than Standard over the fixed corpus. Standard: {standardFoeCount}, Brutal: {brutalFoeCount}.");
+    }
+
+    [Fact]
+    public void Generate_WildEntropyDoesNotProduceMoreFoeEncountersThanClassicAtStandardDifficulty()
+    {
+        var session = CreateHighRiskEncounterSession();
+        var baseContext = session.CreateTravelDayGenerationContext(gameSeed: "n16-foe-pressure", scenarioProfileId: "entropy-pressure");
+
+        var classicFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Standard, GameEntropy.Classic);
+        var wildFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Standard, GameEntropy.Wild);
+
+        Assert.True(classicFoeCount > 0, "The fixed Standard/Classic corpus must reach generated Foe encounters.");
+        Assert.True(wildFoeCount > 0, "The fixed Standard/Wild corpus must reach generated Foe encounters.");
+        Assert.True(
+            wildFoeCount <= classicFoeCount,
+            $"Wild entropy must not produce more actual Foe encounters than Classic over the fixed corpus. Classic: {classicFoeCount}, Wild: {wildFoeCount}.");
     }
 
     [Fact]
@@ -655,6 +690,17 @@ public sealed class TravelDayPlanGeneratorTests
         session.StartJourney(preview);
         return session;
     }
+
+    private static int CountFoeEncounters(
+        TravelDayGenerationContext baseContext,
+        GameDifficulty difficulty,
+        GameEntropy entropy)
+        => FoePressureSeedCorpus.Sum(gameSeed => TravelDayPlanGenerator.Generate(baseContext with
+        {
+            GameSeed = gameSeed,
+            GameDifficulty = difficulty,
+            GameEntropy = entropy
+        }).Encounters.Count(encounter => encounter.Category == TravelDayEncounterCategory.Foe));
 
     private static bool PlansAreEquivalent(TravelDayPlanState left, TravelDayPlanState right)
     {
