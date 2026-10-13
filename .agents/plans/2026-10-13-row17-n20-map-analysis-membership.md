@@ -62,7 +62,7 @@
 - [x] **Step 3: Stop silently omitting failed worlds.** Remove the catch-and-continue path around `MapGenerator.Generate`. Wrap and rethrow failures with variant, density, cluster count, outlier mode, town count, entropy, and salt. Repeating the injected first-sample exception makes analysis fail immediately with that sample identity and inner exception; restore production source and rerun the focused test.
 - [x] **Step 4: Prove actual membership is behavior-sensitive.** Temporarily force the production placement generator to assign all towns to one cluster; `BruteForce_ClusterSeparation_IsReal` fails because no inter-cluster pairs were collected. Restore production source and confirm the focused test passes.
 - [x] **Step 5: Update finding dispositions.** Record that pair labels now come from actual slot assignments, the legal matrix cardinality is explicit, and unexpected generator exceptions cannot disappear from analysis. Keep the copied outlier-name test, variant influence, terrain-labelled test, and rich-world-repeatability findings open for later slices.
-- [ ] **Step 6: Commit the analysis correction.** Run the focused cluster-analysis test and complete GameContent suite, inspect the intended diff, then commit without bypassing the check-only hook. The hook runs the canonical `py -3 tools/run.py ci --check` gate on the staged candidate.
+- [x] **Step 6: Commit the analysis correction.** Run the focused cluster-analysis test and complete GameContent suite, inspect the intended diff, then commit without bypassing the check-only hook. The hook ran the canonical `py -3 tools/run.py ci --check` gate on the staged candidate.
 
 ### Task 3: Review, publish, and close out
 
