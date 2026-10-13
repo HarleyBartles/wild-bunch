@@ -348,21 +348,32 @@ public sealed class TravelResolverTests
     [Fact]
     public void AdvanceJourneyDayCanTriggerAnAdditionalLuckyFoodCacheEventOnEasyOpenRangeRoutes()
     {
-        var session = CreateEasyLuckyFoodSession();
+        var session = CreateEasyLuckyFoodSession(new SaltSource(SaltSourceMode.Runtime, "n27-lucky-food-1"));
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("openpass"), session.Player.Inventory, session.TravelRules).Preview!;
+        Assert.Equal(3, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
         session.StartJourney(preview);
 
         var result = session.AdvanceJourneyDay();
 
-        Assert.True(result.Success || result.Status == JourneyStatus.Interrupted);
-        if (result.TrailEvent is not null)
-        {
-            Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent.Kind);
-            Assert.Equal(JourneyTrailEventId.LuckyFoodCache, result.TrailEvent.Id);
-        }
-        Assert.Equal(2, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
-        Assert.True(session.Journey!.DelayDays >= 0);
+        Assert.NotNull(result.TrailEvent);
+        Assert.Equal(JourneyTrailEventKind.Lucky, result.TrailEvent.Kind);
+        Assert.Equal(JourneyTrailEventId.LuckyFoodCache, result.TrailEvent.Id);
+        Assert.Equal(2, result.TrailEvent.FoodDelta);
+        Assert.NotNull(result.Journey);
+        Assert.Equal(4, result.Journey.AvailableFood);
+
+        var applied = Assert.Single(session.AllEvents.OfType<TrailEventApplied>());
+        Assert.Equal(JourneyTrailEventId.LuckyFoodCache, applied.TrailEventId);
+        Assert.Equal(2, applied.FoodDelta);
+        Assert.Equal(4, applied.JourneySnapshot.AvailableFood);
+        Assert.Equal(4, session.Journey!.FoodRemaining);
+        Assert.Equal(4, session.Player.Inventory.GetQuantity(DomainItemKind.Food));
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+        Assert.Equal(session.Journey.Status, replayed.Journey!.Status);
+        Assert.Equal(4, replayed.Journey.FoodRemaining);
+        Assert.Equal(4, replayed.Player.Inventory.GetQuantity(DomainItemKind.Food));
     }
 
     [Fact]
@@ -1301,7 +1312,7 @@ public sealed class TravelResolverTests
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
     }
 
-    private static GameSession CreateEasyLuckyFoodSession()
+    private static GameSession CreateEasyLuckyFoodSession(SaltSource saltSource)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var openpass = new Town(new TownId("openpass"), "Open Pass");
@@ -1322,7 +1333,7 @@ public sealed class TravelResolverTests
             new DomainInventoryItem(DomainItemKind.Knife, 1)
         });
 
-        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: DeterministicSaltSource);
+        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Easy, saltSource: saltSource);
     }
 
     private static GameSession CreateEasyLuckyWaterSession()
