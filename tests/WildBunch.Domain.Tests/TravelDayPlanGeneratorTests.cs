@@ -507,18 +507,35 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
-    public void GenerateDoesNotSelectHorseOnlyEventsWhenTravelingWithoutAHorse()
+    public void GenerateDoesNotSelectHorseTroubleCategoryWhenTravelingWithoutAHorse()
     {
-        var seeds = Enumerable.Range(1, 12).Select(index => $"seed-no-horse-{index}");
+        var context = CreateHorseTroubleContext("n32-nohorse-category-11", HorseConditionBand.None, TravelMode.Foot);
+        var plan = TravelDayPlanGenerator.Generate(context);
 
-        foreach (var seed in seeds)
+        Assert.DoesNotContain(plan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble);
+        Assert.DoesNotContain(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
+    }
+
+    [Fact]
+    public void GenerateFallsBackWhenOnlyTheHorseSpecificUnluckyEventRemainsWithoutAHorse()
+    {
+        const string seed = "n32-nohorse-probe-7";
+        var context = CreateHorseTroubleContext(seed, HorseConditionBand.None, TravelMode.Foot) with
         {
-            var context = CreateHorseTroubleContext(seed, HorseConditionBand.None, TravelMode.Foot);
-            var plan = TravelDayPlanGenerator.Generate(context);
+            ScenarioProfileId = "profile-no-horse-unlucky",
+            RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
+            RecentTrailEventIds = new[]
+            {
+                JourneyTrailEventId.BadLuckWashout,
+                JourneyTrailEventId.BadLuckFoodLoss,
+                JourneyTrailEventId.BadLuckDustStorm
+            }
+        };
 
-            Assert.DoesNotContain(plan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble);
-            Assert.DoesNotContain(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
-        }
+        var plan = TravelDayPlanGenerator.Generate(context);
+
+        Assert.Contains(plan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.Quiet && encounter.TrailEvent is null);
+        Assert.DoesNotContain(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
     }
 
     [Fact]
