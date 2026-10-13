@@ -117,12 +117,12 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Null(day.EncounterResolution);
     }
 
-    // ----- SixDayQuietJourney: Travel-kind log entry accumulation -----
+    // ----- FourDayQuietJourney: Travel-kind log entry accumulation -----
 
     [Fact]
-    public void StartJourney_SixDayQuietJourney_AppendsSingleTravelLogEntry()
+    public void StartJourney_FourDayQuietJourney_AppendsSingleTravelLogEntry()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
 
         session.StartJourney(preview);
 
@@ -139,9 +139,9 @@ public sealed class TravelDiaryCharacterizationTests
     }
 
     [Fact]
-    public void AdvanceJourneyDay_SixDayQuietJourney_AfterOneAdvance_AccumulatesThreeTravelLogEntries()
+    public void AdvanceJourneyDay_FourDayQuietJourney_AfterOneAdvance_AccumulatesThreeTravelLogEntries()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
         session.AdvanceJourneyDay();
@@ -164,9 +164,9 @@ public sealed class TravelDiaryCharacterizationTests
     }
 
     [Fact]
-    public void AdvanceJourneyDay_SixDayQuietJourney_AfterOneAdvance_RecordsSingleActiveDiaryDay()
+    public void AdvanceJourneyDay_FourDayQuietJourney_AfterOneAdvance_RecordsSingleActiveDiaryDay()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
         session.AdvanceJourneyDay();
@@ -217,12 +217,12 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Null(day.EncounterResolution);
     }
 
-    // ----- SixDayQuietJourney: full completion accumulation -----
+    // ----- FourDayQuietJourney: full completion accumulation -----
 
     [Fact]
-    public void SixDayQuietJourney_FullCompletion_AccumulatesSevenTravelLogEntries()
+    public void FourDayQuietJourney_FullCompletion_AccumulatesSevenTravelLogEntries()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
         TravelJourneyStepResult result;
@@ -266,9 +266,9 @@ public sealed class TravelDiaryCharacterizationTests
     }
 
     [Fact]
-    public void SixDayQuietJourney_FullCompletion_AccumulatesFourDiaryDays()
+    public void FourDayQuietJourney_FullCompletion_AccumulatesFourDiaryDays()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
         // Heat stays 0 throughout — travel no longer raises heat from route risk.
         // The day-plan seed changed from Wary/Hot progression to Calm throughout,
@@ -379,12 +379,12 @@ public sealed class TravelDiaryCharacterizationTests
         Assert.Null(day4.TrailEvent);
     }
 
-    // ----- SixDayQuietJourney: acknowledge preserves diary/log accumulation -----
+    // ----- FourDayQuietJourney: acknowledge preserves diary/log accumulation -----
 
     [Fact]
-    public void AcknowledgeJourneyArrival_SixDayQuietJourney_PreservesDiaryAndLogAccumulation()
+    public void AcknowledgeJourneyArrival_FourDayQuietJourney_PreservesDiaryAndLogAccumulation()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
         TravelJourneyStepResult result;
@@ -411,9 +411,9 @@ public sealed class TravelDiaryCharacterizationTests
     // ----- Diary day opening narration only on first day -----
 
     [Fact]
-    public void SixDayQuietJourney_OnlyFirstDiaryDayHasOpeningNarration()
+    public void FourDayQuietJourney_OnlyFirstDiaryDayHasOpeningNarration()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
         TravelJourneyStepResult result;

@@ -132,7 +132,7 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void CompletedJourneyOffersNoFurtherAdvanceUntilArrivalIsAcknowledged()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         var start = session.StartJourney(preview);
         Assert.True(start.Success, start.Message);
 

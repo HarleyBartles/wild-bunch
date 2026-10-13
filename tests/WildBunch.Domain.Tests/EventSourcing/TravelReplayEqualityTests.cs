@@ -62,7 +62,7 @@ public sealed class TravelReplayEqualityTests
     public void Replay_FullJourneyCycle_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
+            TravelTestFactory.CreateFourDayQuietJourneyWithSetupEvents();
         commandSession.StartJourney(preview);
 
         // Force quiet days through the dev-travel override seam so the journey

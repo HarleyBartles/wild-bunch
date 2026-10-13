@@ -55,13 +55,13 @@ internal static class TravelTestFactory
     }
 
     /// <summary>
-    /// Creates a SixDayQuietJourney session and captures the full setup event stream
+    /// Creates a FourDayQuietJourney session and captures the full setup event stream
     /// before it is committed. Used by replay-equality tests that need the full event stream.
     /// </summary>
     internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateSixDayQuietJourneyWithSetupEvents()
+        CreateFourDayQuietJourneyWithSetupEvents()
     {
-        var (session, preview) = CreateSixDayQuietJourney();
+        var (session, preview) = CreateFourDayQuietJourney();
         var setupEvents = RecaptureSetupEventsForReplay(session);
         return (session, preview, setupEvents);
     }
@@ -195,7 +195,7 @@ internal static class TravelTestFactory
     /// for this exact combination of trail id, town ids, terrain and difficulty, so the
     /// journey reliably reaches <see cref="JourneyStatus.Completed"/>.
     /// </summary>
-    internal static (GameSession session, TravelPreview preview) CreateSixDayQuietJourney()
+    internal static (GameSession session, TravelPreview preview) CreateFourDayQuietJourney()
     {
         // The trail id, town ids, terrain and difficulty are tuned together so the
         // deterministic TravelDayPlanGenerator produces no hostile encounters across
