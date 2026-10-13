@@ -42,8 +42,8 @@
 - Consumes: N-20 PR #323 source `d9e101759db695e1526b288aa0aa564d36fa36de`, squash merge `a2bcbcc2e7edf72e6d26a45c09065cfbfe53f13b`, identical tree `253aa696be0cb82283b3ba988c3f0c5e55103919`, exact-head hosted gate `38383329297`, develop-push gate `38384048089`, approved independent review, and verified paired worktree/local/upstream branch cleanup.
 - Produces: active N-21 plan at development version `0.1.0-dev.139`, N-20 retirement, and dated N-20 delivery evidence in the roadmap.
 
-- [ ] **Step 1: Record N-20 delivery and select this successor.** Add PR #323 to row 17 and record its reviewed source, merge identity/tree, hosted checks, review, and paired cleanup. Point the active row to N-21, advance the version to `.139`, and state that N-20 closed actual cluster membership and legal sample accounting while this successor addresses the remaining map output behavior findings.
-- [ ] **Step 2: Retire N-20 and commit the plan before test edits.** Confirm N-20's entire scope is shipped and durable findings remain in the investigation/disposition documents. Delete its completed plan, add this plan, validate version and links, and commit only these planning/version changes before changing tests.
+- [x] **Step 1: Record N-20 delivery and select this successor.** Add PR #323 to row 17 and record its reviewed source, merge identity/tree, hosted checks, review, and paired cleanup. Point the active row to N-21, advance the version to `.139`, and state that N-20 closed actual cluster membership and legal sample accounting while this successor addresses the remaining map output behavior findings.
+- [x] **Step 2: Retire N-20 and commit the plan before test edits.** Confirm N-20's entire scope is shipped and durable findings remain in the investigation/disposition documents. Delete its completed plan, add this plan, validate version and links, and commit only these planning/version changes before changing tests.
 
 ### Task 2: Prove generated outlier uniqueness
 
@@ -54,9 +54,9 @@
 - Consumes: `MapGenerator.Generate(SeedWorld, GameSetupDeterministicSource, GameEntropy, SaltSource?)` and the existing non-Boring outlier scenario theory.
 - Produces: an end-to-end generated-world assertion that the configured outlier is present exactly once and all generated town IDs, including the outlier, are unique.
 
-- [ ] **Step 1: Strengthen the reachable generated-world theory.** In `Generate_OutlierSlot_AllTownsHaveUniqueIds`, assert exactly one generated town has `IsOutlier`, then assert the complete generated ID set has no duplicates. Keep the existing parameterized generator inputs; remove `Generate_OutlierSlot_NeverProducesDuplicateTownIds`, which only reproduces a name-pool algorithm and never calls the generator.
-- [ ] **Step 2: Prove RED and GREEN.** Before implementation, temporarily make the generated outlier reuse an existing town ID and run the focused theory; require the uniqueness assertion to fail. Restore production code, run the focused theory, and confirm all cases materialize one outlier and pass uniqueness.
-- [ ] **Step 3: Commit the focused behavior correction.** Review the test diff to ensure it has no copied name-selection algorithm and commit the test plus the completed task status.
+- [x] **Step 1: Strengthen the reachable generated-world theory.** In `Generate_OutlierSlot_AllTownsHaveUniqueIds`, assert exactly one generated town has `IsOutlier`, then assert the complete generated ID set has no duplicates. Keep the existing parameterized generator inputs; remove `Generate_OutlierSlot_NeverProducesDuplicateTownIds`, which only reproduces a name-pool algorithm and never calls the generator.
+- [x] **Step 2: Prove RED and GREEN.** Temporarily make the generated outlier reuse an existing town ID and run the focused theory; require generation to fail on the duplicate `TownId`. Restore production code, run the focused theory, and confirm all cases materialize one outlier and pass the full generated-world assertions.
+- [x] **Step 3: Commit the focused behavior correction.** Review the test diff to ensure it has no copied name-selection algorithm and commit the test plus the completed task status.
 
 ### Task 3: Prove the variant-controlled terrain behavior
 
