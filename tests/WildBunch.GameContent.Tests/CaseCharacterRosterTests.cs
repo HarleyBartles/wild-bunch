@@ -70,6 +70,12 @@ public sealed class CaseCharacterRosterTests
     }
 
     [Fact]
+    public void EveryGangCandidateIsEligibleToBeTheCulprit()
+    {
+        Assert.All(CaseCharacterRoster.GangCandidatePool, candidate => Assert.True(candidate.IsTrueCulpritEligible));
+    }
+
+    [Fact]
     public void SelectionIsStableForSameFixedSeedAndVariesAcrossFixedSeedPair()
     {
         var sameSeed = CreateSeedCode(7);
