@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -113,6 +114,83 @@ public sealed class TravelDayPlanGeneratorTests
         Assert.True(
             wildFoeCount <= classicFoeCount,
             $"Wild entropy must not produce more actual Foe encounters than Classic over the fixed corpus. Classic: {classicFoeCount}, Wild: {wildFoeCount}.");
+    }
+
+    [Fact]
+    public void AdvanceJourneyDay_BoringEntropyProducesEquivalentStateAcrossThreeReachedDays()
+    {
+        var firstSession = CreatePressureSession(
+            HorseTravelState.Healthy,
+            food: 10,
+            horseFeed: 10,
+            canteenCharges: 20,
+            wallet: 25m,
+            routeDistance: 6m,
+            gameEntropy: GameEntropy.Boring);
+        var secondSession = CreatePressureSession(
+            HorseTravelState.Healthy,
+            food: 10,
+            horseFeed: 10,
+            canteenCharges: 20,
+            wallet: 25m,
+            routeDistance: 6m,
+            gameEntropy: GameEntropy.Boring);
+
+        Assert.Equal(SaltSourceMode.Fixed, firstSession.SaltSource.Mode);
+        Assert.Equal(SaltSourceMode.Fixed, secondSession.SaltSource.Mode);
+
+        for (var day = 1; day <= 3; day++)
+        {
+            var firstAdvance = firstSession.AdvanceJourneyDay();
+            var secondAdvance = secondSession.AdvanceJourneyDay();
+
+            Assert.Equal(firstAdvance.Success, secondAdvance.Success);
+            Assert.Equal(firstAdvance.Status, secondAdvance.Status);
+            Assert.Equal(firstAdvance.Message, secondAdvance.Message);
+            Assert.Equal(firstAdvance.LogMessage, secondAdvance.LogMessage);
+            Assert.Equal(firstAdvance.HeatIncrease, secondAdvance.HeatIncrease);
+            Assert.Equal(firstAdvance.TrailEvent, secondAdvance.TrailEvent);
+            AssertJourneySnapshotsEquivalent(
+                Assert.IsType<TravelJourneySnapshot>(firstAdvance.Journey),
+                Assert.IsType<TravelJourneySnapshot>(secondAdvance.Journey));
+
+            var firstDayEvent = Assert.Single(firstSession.UncommittedEvents.OfType<TravelDayAdvanced>(), item => item.Day == firstSession.Clock.Day);
+            var secondDayEvent = Assert.Single(secondSession.UncommittedEvents.OfType<TravelDayAdvanced>(), item => item.Day == secondSession.Clock.Day);
+            AssertTravelDayAdvancedEquivalent(firstDayEvent, secondDayEvent);
+            Assert.Equal(day, firstDayEvent.JourneySnapshot.DaysTravelled);
+            Assert.Equal(day, secondDayEvent.JourneySnapshot.DaysTravelled);
+            AssertSessionStateEquivalent(firstSession, secondSession);
+
+            var encounterResolutions = 0;
+            while (firstSession.Journey?.PendingEncounter is not null || secondSession.Journey?.PendingEncounter is not null)
+            {
+                Assert.NotNull(firstSession.Journey?.PendingEncounter);
+                Assert.NotNull(secondSession.Journey?.PendingEncounter);
+                Assert.True(ResolutionsAreEquivalent(firstSession.Journey!.PendingEncounter, secondSession.Journey!.PendingEncounter));
+                Assert.True(encounterResolutions++ < 10, "A travel day must not require an unbounded number of encounter resolutions.");
+
+                var firstResolution = firstSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0UL);
+                var secondResolution = secondSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0UL);
+
+                Assert.Equal(firstResolution.Success, secondResolution.Success);
+                Assert.Equal(firstResolution.SessionChanged, secondResolution.SessionChanged);
+                Assert.Equal(firstResolution.Status, secondResolution.Status);
+                Assert.Equal(firstResolution.Message, secondResolution.Message);
+                Assert.Equal(firstResolution.AdditionalDiaryMessages, secondResolution.AdditionalDiaryMessages);
+                AssertJourneySnapshotsEquivalent(
+                    Assert.IsType<TravelJourneySnapshot>(firstResolution.Journey),
+                    Assert.IsType<TravelJourneySnapshot>(secondResolution.Journey));
+                AssertSessionStateEquivalent(firstSession, secondSession);
+            }
+
+            Assert.Equal(JourneyStatus.Active, firstSession.Journey!.Status);
+            Assert.Equal(JourneyStatus.Active, secondSession.Journey!.Status);
+            Assert.Equal(day, firstSession.Journey.DaysTravelled);
+            Assert.Equal(day, secondSession.Journey.DaysTravelled);
+        }
+
+        Assert.Equal(3, firstSession.Journey!.DaysTravelled);
+        Assert.Equal(3, secondSession.Journey!.DaysTravelled);
     }
 
     [Fact]
@@ -528,7 +606,9 @@ public sealed class TravelDayPlanGeneratorTests
         int canteenCharges = 0,
         decimal wallet = 3m,
         bool withHorse = true,
-        bool withSaddle = true)
+        bool withSaddle = true,
+        decimal routeDistance = 3m,
+        GameEntropy gameEntropy = GameEntropy.Classic)
     {
         var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
@@ -536,7 +616,7 @@ public sealed class TravelDayPlanGeneratorTests
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-pressure"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m)
+                new Trail(new TrailId("trail-pressure"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, routeDistance)
             });
 
         var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
@@ -562,7 +642,7 @@ public sealed class TravelDayPlanGeneratorTests
             items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
         }
 
-        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(wallet), new DomainInventory(items), GameDifficulty.Standard, saltSource: DeterministicSaltSource);
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(wallet), new DomainInventory(items), GameDifficulty.Standard, saltSource: DeterministicSaltSource, gameEntropy: gameEntropy);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
@@ -701,6 +781,82 @@ public sealed class TravelDayPlanGeneratorTests
             GameDifficulty = difficulty,
             GameEntropy = entropy
         }).Encounters.Count(encounter => encounter.Category == TravelDayEncounterCategory.Foe));
+
+    private static void AssertTravelDayAdvancedEquivalent(TravelDayAdvanced expected, TravelDayAdvanced actual)
+    {
+        Assert.Equal(expected.Day, actual.Day);
+        AssertJourneySnapshotsEquivalent(expected.JourneySnapshot, actual.JourneySnapshot);
+        Assert.Equal(expected.HealthDelta, actual.HealthDelta);
+        Assert.Equal(expected.PursuitHeat, actual.PursuitHeat);
+        Assert.Equal(expected.DayOutcome, actual.DayOutcome);
+        Assert.Equal(expected.DiaryMessage, actual.DiaryMessage);
+        Assert.Equal(expected.HorseLostMessage, actual.HorseLostMessage);
+        Assert.Equal(expected.AdditionalDiaryMessages, actual.AdditionalDiaryMessages);
+        Assert.Equal(expected.DayEntries, actual.DayEntries);
+    }
+
+    private static void AssertJourneySnapshotsEquivalent(TravelJourneySnapshot expected, TravelJourneySnapshot actual)
+    {
+        Assert.Equal(expected.JourneySequence, actual.JourneySequence);
+        Assert.Equal(expected.OriginTownId, actual.OriginTownId);
+        Assert.Equal(expected.DestinationTownId, actual.DestinationTownId);
+        Assert.Equal(expected.OriginTownName, actual.OriginTownName);
+        Assert.Equal(expected.DestinationTownName, actual.DestinationTownName);
+        Assert.Equal(expected.RouteProfile.TrailId, actual.RouteProfile.TrailId);
+        Assert.Equal(expected.RouteProfile.Risk, actual.RouteProfile.Risk);
+        Assert.Equal(expected.RouteProfile.Terrain, actual.RouteProfile.Terrain);
+        Assert.Equal(expected.RouteProfile.WaterFeature, actual.RouteProfile.WaterFeature);
+        Assert.Equal(expected.RouteProfile.RideDayDistance, actual.RouteProfile.RideDayDistance);
+        Assert.Equal(expected.RouteProfile.MountedRideDayProgress, actual.RouteProfile.MountedRideDayProgress);
+        Assert.Equal(expected.RouteProfile.FootRideDayProgress, actual.RouteProfile.FootRideDayProgress);
+        Assert.Equal(expected.RouteProfile.Warnings, actual.RouteProfile.Warnings);
+        Assert.Equal(expected.TravelMode, actual.TravelMode);
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.MountedTravelAvailable, actual.MountedTravelAvailable);
+        Assert.Equal(expected.WaterSecure, actual.WaterSecure);
+        Assert.Equal(expected.RideDayDistance, actual.RideDayDistance);
+        Assert.Equal(expected.RemainingRideDayDistance, actual.RemainingRideDayDistance);
+        Assert.Equal(expected.ExpectedDays, actual.ExpectedDays);
+        Assert.Equal(expected.RemainingDays, actual.RemainingDays);
+        Assert.Equal(expected.CanteenChargesPerDay, actual.CanteenChargesPerDay);
+        Assert.Equal(expected.RequiredCanteenCharges, actual.RequiredCanteenCharges);
+        Assert.Equal(expected.AvailableCanteenCharges, actual.AvailableCanteenCharges);
+        Assert.Equal(expected.CanteenReserveCharges, actual.CanteenReserveCharges);
+        Assert.Equal(expected.DelayMarginDays, actual.DelayMarginDays);
+        Assert.Equal(expected.DelayRisk, actual.DelayRisk);
+        Assert.Equal(expected.RequiredFood, actual.RequiredFood);
+        Assert.Equal(expected.AvailableFood, actual.AvailableFood);
+        Assert.Equal(expected.RequiredHorseFeed, actual.RequiredHorseFeed);
+        Assert.Equal(expected.AvailableHorseFeed, actual.AvailableHorseFeed);
+        Assert.Equal(expected.HorseState, actual.HorseState);
+        Assert.Equal(expected.OpeningNarration, actual.OpeningNarration);
+        Assert.Equal(expected.DaysTravelled, actual.DaysTravelled);
+        Assert.Equal(expected.DelayDays, actual.DelayDays);
+        Assert.Equal(expected.CurrentDayPlan is null, actual.CurrentDayPlan is null);
+        if (expected.CurrentDayPlan is not null && actual.CurrentDayPlan is not null)
+        {
+            Assert.True(PlansAreEquivalent(expected.CurrentDayPlan, actual.CurrentDayPlan));
+        }
+        Assert.True(ResolutionsAreEquivalent(expected.PendingEncounter, actual.PendingEncounter));
+        Assert.Equal(expected.Warnings, actual.Warnings);
+    }
+
+    private static void AssertSessionStateEquivalent(GameSession expected, GameSession actual)
+    {
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.Clock.Day, actual.Clock.Day);
+        Assert.Equal(expected.Clock.Turn, actual.Clock.Turn);
+        Assert.Equal(expected.Player.Health, actual.Player.Health);
+        Assert.Equal(expected.Player.Wallet.Cash, actual.Player.Wallet.Cash);
+        Assert.Equal(expected.Player.CurrentTownId, actual.Player.CurrentTownId);
+        Assert.Equal(expected.Player.GetCanteenState(), actual.Player.GetCanteenState());
+        Assert.Equal(expected.Player.GetHorseState(), actual.Player.GetHorseState());
+        Assert.Equal(
+            expected.Player.Inventory.Items.OrderBy(item => item.Kind).Select(item => (item.Kind, item.Quantity, item.HorseState, item.CanteenState)),
+            actual.Player.Inventory.Items.OrderBy(item => item.Kind).Select(item => (item.Kind, item.Quantity, item.HorseState, item.CanteenState)));
+        Assert.True(expected.Journey is not null && actual.Journey is not null);
+        AssertJourneySnapshotsEquivalent(expected.Journey!.ToSnapshot(expected.TravelRules), actual.Journey!.ToSnapshot(actual.TravelRules));
+    }
 
     private static bool PlansAreEquivalent(TravelDayPlanState left, TravelDayPlanState right)
     {

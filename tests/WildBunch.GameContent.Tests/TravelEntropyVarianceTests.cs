@@ -36,41 +36,6 @@ public sealed class TravelEntropyVarianceTests
         Assert.Equal(SaltSourceMode.Fixed, session.SaltSource.Mode);
     }
 
-    [Fact]
-    public void BoringEntropy_ProducesIdenticalTravelDaysAcrossRepeatedAdvances()
-    {
-        // Two sessions with the same seed world + Boring entropy should produce
-        // identical travel day plans because Boring uses Fixed salt (no salt in seed).
-        var session1 = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedBoring);
-        var session2 = TravelTestSeedCatalog.CreateSession(TravelTestSeedCatalog.CanonicalMountedBoring);
-
-        // Both sessions should have the same salt (Fixed, derived from seed code).
-        Assert.Equal(session1.SaltSource.Salt, session2.SaltSource.Salt);
-
-        // Start the same journey on both sessions.
-        var trail1 = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session1, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-        var trail2 = TravelTestSeedCatalog.FindRouteFromCurrentTown(
-            session2, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek);
-
-        var dest1 = TravelTestSeedCatalog.ResolveDestination(session1, trail1);
-        var dest2 = TravelTestSeedCatalog.ResolveDestination(session2, trail2);
-
-        var resolver = new TravelResolver();
-        var preview1 = resolver.PreviewJourney(session1.World, session1.Player.CurrentTownId!.Value, dest1, session1.Player.Inventory).Preview!;
-        var preview2 = resolver.PreviewJourney(session2.World, session2.Player.CurrentTownId!.Value, dest2, session2.Player.Inventory).Preview!;
-
-        session1.StartJourney(preview1);
-        session2.StartJourney(preview2);
-
-        // Advance day 1 on both — should produce identical results.
-        var result1 = session1.AdvanceJourneyDay();
-        var result2 = session2.AdvanceJourneyDay();
-
-        Assert.Equal(result1.Success, result2.Success);
-        Assert.Equal(result1.Status, result2.Status);
-    }
-
     // --- Classic: runtime salt provides variance ---
 
     [Fact]
