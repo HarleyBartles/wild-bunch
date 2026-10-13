@@ -29,7 +29,7 @@
 - Do not establish a stable public seed-code byte contract or change ADR-0021, ADR-0039, or `docs/features.md`.
 - Prove the fixed-seed behavior tests fail under temporary regressions to seed sensitivity and compatible-feature assignment, then restore production source byte-for-byte.
 - Require focused roster tests, the full GameContent test project, the canonical check-only commit gate, a fresh whole-branch review, a passing exact-head hosted gate, and a passing develop-push gate before cleanup.
-- After integration, fast-forward the primary checkout; remove this clean worktree and its exact local/upstream branch refs as one paired cleanup; verify all three are absent and preserve unrelated worktrees and branches.
+- After integration, fast-forward the primary checkout; remove this clean worktree and its exact local/upstream branch refs as one paired cleanup; verify local refs directly and query the live upstream rather than trusting remote-tracking refs alone; verify the worktree and both refs are absent and preserve unrelated worktrees and branches.
 
 ### Task 1: Record PR #318 and install this JIT successor plan
 
@@ -79,4 +79,4 @@
 - [ ] **Step 1: Complete author checks and fresh whole-branch review.** Compare the actual diff with ADR-0021 and ADR-0039; verify the internal fixtures do not promise stable public seed bytes or change setup semantics. Confirm `docs/features.md` remains truthful because product behavior does not change. Obtain a fresh whole-branch review against `develop` and resolve any actionable finding with focused proof.
 - [ ] **Step 2: Publish one PR and require exact-head hosted CI.** Push this task branch, open a PR targeting `develop`, read back its exact head and body, and mark it ready only after review is clear. Merge only after the canonical hosted gate passes for the exact local HEAD.
 - [ ] **Step 3: Fast-forward and verify the develop-push gate.** Fast-forward the clean primary checkout to the merge commit, verify it is clean, and require the push-triggered canonical gate for that merge SHA to pass.
-- [ ] **Step 4: Remove the paired execution unit.** Verify this worktree is clean and at the published PR head, remove it, delete its exact local and upstream branch refs, then verify the worktree and both refs are absent. Preserve unrelated worktrees and branches.
+- [ ] **Step 4: Remove the paired execution unit.** Verify this worktree is clean and at the published PR head, remove it, delete its exact local and upstream branch refs, then verify the worktree and local ref are absent and query the live upstream to verify its ref is absent. Preserve unrelated worktrees and branches; never infer remote absence from a missing remote-tracking ref.
