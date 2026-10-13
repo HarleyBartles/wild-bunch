@@ -41,6 +41,6 @@ Run the focused test and the complete `TravelDayPlanGeneratorTests` suite. Do no
 
 ## Task 3: Review and deliver
 
-Stage the intended test/audit diff, run `git diff --check`, and commit through the normal staged-snapshot hook. Do not rerun the canonical gate after a successful hooked commit unless a later edit changes that tree. Obtain a fresh independent whole-branch review of the exact committed diff, its two fixed-path behavior proofs and mutation evidence, N-18 wording, applicable ADRs, and feature matrix. Resolve findings and re-review any corrected head.
+Stage the intended test/audit diff, run `git diff --check`, and commit through the normal staged-snapshot hook. Do not rerun the canonical gate after a successful hooked commit unless a later edit changes that tree. Obtain a fresh independent whole-branch review of the exact committed diff, its fixed-path behavior proof and mutation evidence, N-18 wording, applicable ADRs, and feature matrix. Resolve findings and re-review any corrected head.
 
 Push and open a PR to `develop`; mark it ready after local proof and independent review. Require the hosted canonical gate to pass on the exact PR head before squash merge. Verify source/merge tree identity and the develop-push gate, fast-forward the primary checkout, then remove the clean N-32 worktree before deleting the exact local and upstream refs. Verify all three are absent and preserve the AWS learning worktree.
