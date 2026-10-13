@@ -169,7 +169,7 @@ This bounded assessment supports the active cleanup plan. It is not a permanent 
 | File | Assessment |
 |---|---|
 | [CanonicalStartFlow.cs](../../../tests/WildBunch.GameContent.Tests/CanonicalStartFlow.cs) | RETAIN shared canonical start-flow helper; use explicit fixture choice to prove nonfirst town behavior. |
-| [CaseCharacterRosterTests.cs](../../../tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs) | RETAIN compatibility/role-concealment/content obligations; REPLACE outcome-searching seed fixtures; remove arbitrary depth threshold only if no authored contract. |
+| [CaseCharacterRosterTests.cs](../../../tests/WildBunch.GameContent.Tests/CaseCharacterRosterTests.cs) | DATED 2026-10-13: REPLACE outcome-searching seed fixtures with fixed-seed determinism, variation and compatible-feature behavior; RETAIN source-backed content, role-concealment, incompatible-pair and two-classic-nod budget obligations; remove redundant nonempty pool assertions. |
 | [ClusterPlacementGeneratorTests.cs](../../../tests/WildBunch.GameContent.Tests/ClusterPlacementGeneratorTests.cs) | RETAIN actual membership/placement/determinism; own cluster membership replacement rather than map town-count smoke. |
 | [GameSetupResolverTests.cs](../../../tests/WildBunch.GameContent.Tests/GameSetupResolverTests.cs) | RETAIN resolved setup/default/supplied/derived seed and compatibility behavior. |
 | [GeometryPipelineTests.cs](../../../tests/WildBunch.GameContent.Tests/GeometryPipelineTests.cs) | RETAIN end-to-end geometry/determinism; CONSOLIDATE nonempty-trail smoke into rich world output. |
