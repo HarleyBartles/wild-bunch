@@ -142,6 +142,47 @@ describe("SessionDevPanel", () => {
     });
   });
 
+  it("preserves the backend difficulty after rejection and shows refreshed state after retry", async () => {
+    seedGameId("difficulty-retry-game");
+    mockedGetContext
+      .mockResolvedValueOnce({ ...mockContext, sessionId: "difficulty-retry-game" })
+      .mockResolvedValueOnce({
+        ...mockContext,
+        sessionId: "difficulty-retry-game",
+        gameDifficulty: "Brutal",
+      });
+    mockedForceDifficulty
+      .mockRejectedValueOnce(new Error("Difficulty update failed."))
+      .mockResolvedValueOnce(undefined);
+    renderPanel();
+    const user = userEvent.setup();
+
+    const standard = await screen.findByRole("button", { name: "Standard" });
+    const brutal = screen.getByRole("button", { name: "Brutal" });
+    expect(standard).toHaveAttribute("aria-pressed", "true");
+    expect(brutal).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(brutal);
+
+    expect(await screen.findByText("Difficulty update failed.")).toBeInTheDocument();
+    expect(standard).toHaveAttribute("aria-pressed", "true");
+    expect(brutal).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(brutal);
+
+    await waitFor(() => {
+      expect(brutal).toHaveAttribute("aria-pressed", "true");
+      expect(standard).toHaveAttribute("aria-pressed", "false");
+      expect(screen.queryByText("Difficulty update failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedForceDifficulty).toHaveBeenNthCalledWith(1, "difficulty-retry-game", {
+      difficulty: "Brutal",
+    });
+    expect(mockedForceDifficulty).toHaveBeenNthCalledWith(2, "difficulty-retry-game", {
+      difficulty: "Brutal",
+    });
+  });
+
   it("renders entropy control", async () => {
     seedGameId("test-game-6");
     mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-6" });
@@ -171,5 +212,42 @@ describe("SessionDevPanel", () => {
     await waitFor(() => {
       expect(mockedSetEntropy).toHaveBeenCalledWith("test-game-7", { entropy: "Wild" });
     });
+  });
+
+  it("preserves the backend entropy after rejection and shows refreshed state after retry", async () => {
+    seedGameId("entropy-retry-game");
+    mockedGetContext
+      .mockResolvedValueOnce({ ...mockContext, sessionId: "entropy-retry-game" })
+      .mockResolvedValueOnce({
+        ...mockContext,
+        sessionId: "entropy-retry-game",
+        gameEntropy: "Wild",
+      });
+    mockedSetEntropy
+      .mockRejectedValueOnce(new Error("Entropy update failed."))
+      .mockResolvedValueOnce(undefined);
+    renderPanel();
+    const user = userEvent.setup();
+
+    const classic = await screen.findByRole("button", { name: "Classic" });
+    const wild = screen.getByRole("button", { name: "Wild" });
+    expect(classic).toHaveAttribute("aria-pressed", "true");
+    expect(wild).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(wild);
+
+    expect(await screen.findByText("Entropy update failed.")).toBeInTheDocument();
+    expect(classic).toHaveAttribute("aria-pressed", "true");
+    expect(wild).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(wild);
+
+    await waitFor(() => {
+      expect(wild).toHaveAttribute("aria-pressed", "true");
+      expect(classic).toHaveAttribute("aria-pressed", "false");
+      expect(screen.queryByText("Entropy update failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedSetEntropy).toHaveBeenNthCalledWith(1, "entropy-retry-game", { entropy: "Wild" });
+    expect(mockedSetEntropy).toHaveBeenNthCalledWith(2, "entropy-retry-game", { entropy: "Wild" });
   });
 });
