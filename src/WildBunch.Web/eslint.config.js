@@ -28,6 +28,17 @@ export default tseslint.config(
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXAttribute[name.name='className']",
+          message: "Use styled-components instead of a className styling hook.",
+        },
+        {
+          selector: "JSXAttribute[name.name='style']",
+          message: "Use styled-components instead of an inline style prop.",
+        },
+      ],
     },
   },
   {
