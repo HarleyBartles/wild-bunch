@@ -57,28 +57,64 @@ public sealed class TravelReplayEqualityTests
     }
 
     [Fact]
-    public void Replay_FullJourneyCycle_MatchesCommandPath_ExactState()
+    public void Replay_FullQuietJourneyCycle_ReconstructsCompletedArrival()
     {
         var (commandSession, preview) = TravelTestFactory.CreateFourDayQuietJourney();
-        commandSession.StartJourney(preview);
+        var originTownId = commandSession.Player.CurrentTownId;
+        var destinationTownId = preview.DestinationTownId;
+        var start = commandSession.StartJourney(preview);
+        Assert.True(start.Success, start.Message);
 
-        // Force quiet days through the dev-travel override seam so the journey
-        // completes without seed-dependent encounter interruptions. See BUNCH-87.
-        TravelJourneyStepResult result;
-        do
+        for (var day = 1; day <= 4; day++)
         {
             commandSession.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
-            result = commandSession.AdvanceJourneyDay();
-        } while (result.Status == JourneyStatus.Active && result.Success);
-        commandSession.AcknowledgeJourneyArrival();
+            var result = commandSession.AdvanceJourneyDay();
+
+            Assert.True(result.Success, result.Message);
+            Assert.NotNull(result.Journey);
+            var expectedStatus = day == 4 ? JourneyStatus.Completed : JourneyStatus.Active;
+            Assert.Equal(expectedStatus, result.Status);
+            Assert.Equal(day, result.Journey!.DaysTravelled);
+
+            if (day < 4)
+            {
+                Assert.Equal(originTownId, commandSession.Player.CurrentTownId);
+            }
+            else
+            {
+                Assert.Equal(destinationTownId, commandSession.Player.CurrentTownId);
+            }
+        }
+
+        Assert.NotNull(commandSession.Journey);
+        Assert.Equal(JourneyStatus.Completed, commandSession.Journey!.Status);
+        Assert.Equal(4, commandSession.Journey.DaysTravelled);
+        Assert.Equal(0m, commandSession.Journey.RemainingRideDayDistance);
+        Assert.Equal(5, commandSession.Clock.Day);
+        Assert.Equal(0, commandSession.Clock.Turn);
+
+        var completed = Assert.Single(commandSession.AllEvents.OfType<JourneyCompleted>());
+        Assert.Equal(destinationTownId, completed.DestinationTownId);
+        Assert.Equal(JourneyStatus.Completed, completed.JourneySnapshot.Status);
+        Assert.Equal(0m, completed.JourneySnapshot.RemainingRideDayDistance);
+
+        var acknowledgment = commandSession.AcknowledgeJourneyArrival();
+        Assert.True(acknowledgment.Success, acknowledgment.Message);
+        Assert.Null(commandSession.Journey);
+
+        var acknowledged = Assert.Single(commandSession.AllEvents.OfType<JourneyArrivalAcknowledged>());
+        var completedHistory = Assert.Single(commandSession.CompletedJourneyHistory);
+        Assert.Equal(destinationTownId, completedHistory.DestinationTownId);
+        Assert.Equal(TravelMode.Foot, completedHistory.TravelMode);
+        Assert.Equal(4, completedHistory.DaysTravelled);
+        Assert.Equal(completedHistory, acknowledged.JourneySnapshot);
 
         var events = commandSession.AllEvents.ToArray();
-
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
             events);
 
-        Assert.Equal(commandSession.Player.CurrentTownId, replayed.Player.CurrentTownId);
+        Assert.Equal(destinationTownId, replayed.Player.CurrentTownId);
         Assert.Equal(commandSession.Player.Health, replayed.Player.Health);
         Assert.Equal(commandSession.Player.Wallet.Cash, replayed.Player.Wallet.Cash);
         Assert.Equal(commandSession.Player.GetQuantity(ItemKind.Food),
@@ -86,7 +122,7 @@ public sealed class TravelReplayEqualityTests
         Assert.Equal(commandSession.Clock.Day, replayed.Clock.Day);
         Assert.Equal(commandSession.PursuitState.Heat, replayed.PursuitState.Heat);
         Assert.Null(replayed.Journey);
-        Assert.Equal(commandSession.CompletedJourneyHistory.Count, replayed.CompletedJourneyHistory.Count);
+        Assert.Equal(completedHistory, Assert.Single(replayed.CompletedJourneyHistory));
         Assert.Equal(commandSession.Version, replayed.Version);
     }
 

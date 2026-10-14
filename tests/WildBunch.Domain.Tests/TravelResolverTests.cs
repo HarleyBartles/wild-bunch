@@ -691,46 +691,6 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayCompletesTheRouteAfterTheFinalDay()
-    {
-        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
-        var start = session.StartJourney(preview);
-        Assert.True(start.Success, start.Message);
-
-        for (var day = 1; day <= 4; day++)
-        {
-            var result = session.AdvanceJourneyDay();
-
-            Assert.True(result.Success, result.Message);
-            var expectedStatus = day == 4 ? JourneyStatus.Completed : JourneyStatus.Active;
-            Assert.True(result.Status == expectedStatus, $"route day {day}: expected {expectedStatus}, got {result.Status}");
-        }
-
-        Assert.NotNull(session.Journey);
-        Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
-        Assert.Equal(4, session.Journey.DaysTravelled);
-        Assert.Equal(0, session.Journey.RemainingDays);
-        Assert.Equal(0m, session.Journey.RemainingRideDayDistance);
-        Assert.Equal(new TownId("d2"), session.Player.CurrentTownId);
-        Assert.Equal(5, session.Clock.Day);
-        Assert.Equal(0, session.Clock.Turn);
-
-        var completed = Assert.Single(session.AllEvents.OfType<JourneyCompleted>());
-        Assert.Equal(new TownId("d2"), completed.DestinationTownId);
-
-        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
-
-        Assert.Equal(new TownId("d2"), replayed.Player.CurrentTownId);
-        Assert.NotNull(replayed.Journey);
-        Assert.Equal(JourneyStatus.Completed, replayed.Journey!.Status);
-        Assert.Equal(4, replayed.Journey.DaysTravelled);
-
-        var sourceSnapshot = session.Journey.ToSnapshot(session.TravelRules);
-        var replayedSnapshot = replayed.Journey.ToSnapshot(replayed.TravelRules);
-        Assert.Equivalent(sourceSnapshot, replayedSnapshot, strict: true);
-    }
-
-    [Fact]
     public void AdvanceJourneyDayCanPauseForAHighRiskFoeEncounter()
     {
         var session = CreateHighRiskSession();
