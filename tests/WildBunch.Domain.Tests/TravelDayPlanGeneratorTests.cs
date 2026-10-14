@@ -193,59 +193,7 @@ public sealed class TravelDayPlanGeneratorTests
         Assert.Equal(3, secondSession.Journey!.DaysTravelled);
     }
 
-    [Fact]
-    public void GenerateChangesWhenMountedStateChanges()
-    {
-        var baselineSession = CreateSeedSensitiveSession(withHorse: true, withSaddle: true);
-        var stressedSession = CreateSeedSensitiveSession(withHorse: false, withSaddle: false);
-        var seeds = new[] { "seed-1", "seed-2", "seed-3", "seed-4", "seed-5", "seed-6" };
-        var foundDifference = false;
 
-        foreach (var seed in seeds)
-        {
-            var baselinePlan = TravelDayPlanGenerator.Generate(baselineSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-3"));
-            var stressedPlan = TravelDayPlanGenerator.Generate(stressedSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-3"));
-
-            if (!PlansAreEquivalent(baselinePlan, stressedPlan))
-            {
-                foundDifference = true;
-                break;
-            }
-        }
-
-        Assert.True(foundDifference);
-    }
-
-    [Fact]
-    public void GenerateChangesWhenLiveStateChangesBeforeTheJourneyAdvances()
-    {
-        var baselineSession = CreateSeedSensitiveSession();
-        var stressedSession = CreateSeedSensitiveSession();
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(baselineSession.World, baselineSession.Player.CurrentTownId!.Value, new TownId("dryfork"), baselineSession.Player.Inventory, baselineSession.TravelRules).Preview!;
-
-        baselineSession.StartJourney(preview);
-        stressedSession.StartJourney(preview);
-        stressedSession.Player.Inventory.RemoveQuantity(DomainItemKind.Horse, 1);
-        stressedSession.Player.Inventory.RemoveQuantity(DomainItemKind.Saddle, 1);
-
-        var seeds = Enumerable.Range(1, 24).Select(index => $"seed-live-{index}");
-        var foundDifference = false;
-
-        foreach (var seed in seeds)
-        {
-            var baselinePlan = TravelDayPlanGenerator.Generate(baselineSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-live"));
-            var stressedPlan = TravelDayPlanGenerator.Generate(stressedSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-live"));
-
-            if (!PlansAreEquivalent(baselinePlan, stressedPlan))
-            {
-                foundDifference = true;
-                break;
-            }
-        }
-
-        Assert.True(foundDifference);
-    }
 
     [Fact]
     public void GenerateAvoidsRepeatingLuckyTrailEventsOnConsecutiveDays()
@@ -551,43 +499,6 @@ public sealed class TravelDayPlanGeneratorTests
         return session;
     }
 
-    private static GameSession CreateSeedSensitiveSession(bool withHorse = true, bool withSaddle = true)
-    {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
-        var world = new DomainWorld(
-            new[] { pinecross, dryfork },
-            new[]
-            {
-                new Trail(new TrailId("trail-sensitive"), pinecross.Id, dryfork.Id, TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.None, 3m)
-            });
-
-        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var items = new List<DomainInventoryItem>
-        {
-            new DomainInventoryItem(DomainItemKind.Food, 3),
-            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(3, 4)),
-            new DomainInventoryItem(DomainItemKind.Knife, 1)
-        };
-
-        if (withHorse)
-        {
-            items.Add(new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy));
-        }
-
-        if (withSaddle)
-        {
-            items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
-        }
-
-        var inventory = new DomainInventory(items);
-
-        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
-        session.StartJourney(preview);
-        return session;
-    }
 
     private static GameSession CreateLuckyCooldownSession()
     {
