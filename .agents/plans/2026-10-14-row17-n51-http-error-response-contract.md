@@ -61,12 +61,14 @@
 - Consumes: public `requestJson<T>(path, init?)`, `HttpRequestError(message, status)`, and `previewTravel(gameId, destinationTownId)`.
 - Produces: observable message/status cases through the fetch boundary, one exported API propagation case, and current dated dispositions for W-10.
 
-- [ ] **Step 1: Write the failure-response cases.** Add public-call tests for JSON `title` precedence, `error`, the first validation message in `errors`, `detail`, plain-text body, and generic status fallback for an unrecognized or malformed JSON error body. Each case must assert both exact message and status.
-- [ ] **Step 2: Prove the behavior test is sensitive.** Temporarily remove only the production `errors`-collection extraction branch, run the new validation-error case and confirm it fails on the expected message, then restore `httpClient.ts` byte-for-byte before continuing.
-- [ ] **Step 3: Prove the public API wrapper propagates the failure.** Stub only global `fetch` with an actual non-success `Response`, call exported `previewTravel`, and require the rejection to retain the server message and status. Keep the existing fetch-rejection test proving transport errors remain distinct.
-- [ ] **Step 4: Reconcile the audit records.** Add `httpClient.test.ts` to the frontend inventory and record the tested error contract. Correct W-10 to state that current `TravelPrepSurface` and `TravelPanel` tests already cover preview/departure or command failures, retry, stale result identity, and unchanged session state. Keep the unmounted `TravelRoutesPanel` component/test disposition conditional and outside this API slice. State that successful malformed-JSON and empty-body semantics remain untested and unchanged.
-- [ ] **Step 5: Recheck durable truth and run focused tests.** Read ADR-0019 and the relevant feature entries; state why no durable decision or product promise changes. Run `npm test -- src/tests/httpClient.test.ts src/tests/wildBunchApi.test.ts` from `src/WildBunch.Web` and compare exact output/messages against the plan.
-- [ ] **Step 6: Commit the test and evidence changes.** Run focused web formatting and lint checks through `py -3 tools/run.py format --check <paths>` and `py -3 tools/run.py lint --check <paths>`, stage only the two tests and investigation edits, inspect the complete staged diff, and commit with message `test: prove HTTP error response messages`.
+- [x] **Step 1: Write the failure-response cases.** Add public-call tests for JSON `title` precedence, `error`, the first validation message in `errors`, `detail`, plain-text body, and generic status fallback for an unrecognized or malformed JSON error body. Each case must assert both exact message and status.
+- [x] **Step 2: Prove the behavior test is sensitive.** Temporarily remove only the production `errors`-collection extraction branch, run the new validation-error case and confirm it fails on the expected message, then restore `httpClient.ts` byte-for-byte before continuing.
+- [x] **Step 3: Prove the public API wrapper propagates the failure.** Stub only global `fetch` with an actual non-success `Response`, call exported `previewTravel`, and require the rejection to retain the server message and status. Keep the existing fetch-rejection test proving transport errors remain distinct.
+- [x] **Step 4: Reconcile the audit records.** Add `httpClient.test.ts` to the frontend inventory and record the tested error contract. Correct W-10 to state that current `TravelPrepSurface` and `TravelPanel` tests already cover preview/departure or command failures, retry, stale result identity, and unchanged session state. Keep the unmounted `TravelRoutesPanel` component/test disposition conditional and outside this API slice. State that successful malformed-JSON and empty-body semantics remain untested and unchanged.
+- [x] **Step 5: Recheck durable truth and run focused tests.** Read ADR-0019 and the relevant feature entries; state why no durable decision or product promise changes. Run `npm test -- src/tests/httpClient.test.ts src/tests/wildBunchApi.test.ts` from `src/WildBunch.Web` and compare exact output/messages against the plan.
+- [x] **Step 6: Commit the test and evidence changes.** Run focused web formatting and lint checks through `py -3 tools/run.py format --check <paths>` and `py -3 tools/run.py lint --check <paths>`, stage only the two tests and investigation edits, inspect the complete staged diff, and commit with message `test: prove HTTP error response messages`.
+
+**Ruling:** The command-bus format and lint targets reject Markdown investigation paths as unsupported. Applied focused format/lint checks to both changed TypeScript tests, reviewed the Markdown edits and ran `git diff --check`; the canonical staged-candidate gate will validate the complete documentation change.
 
 ### Task 3: Review, publish, integrate, and retire N-51
 
@@ -78,10 +80,14 @@
 - Consumes: Task 2's exact message/status cases and one mutation-proven extraction branch.
 - Produces: N-51 merged into `develop` at `0.1.0-dev.169`, with reviewed exact-head evidence and paired worktree/ref retirement.
 
-- [ ] **Step 1: Verify the committed tree.** Confirm the version is `0.1.0-dev.169`, no generated version field is authored separately, the staged-candidate canonical hook passed, and the complete `py -3 tools/run.py web --check` lane passes on the implementation commit.
-- [ ] **Step 2: Complete author truth checks.** Compare the actual diff against ADR-0019 and PG-007/PG-008 through the decision-record and feature-matrix playbooks; record why no ADR or feature-matrix change is warranted.
+- [x] **Step 1: Verify the committed tree.** Confirm the version is `0.1.0-dev.169`, no generated version field is authored separately, the staged-candidate canonical hook passed, and the complete `py -3 tools/run.py web --check` lane passes on the implementation commit.
+- [x] **Step 2: Complete author truth checks.** Compare the actual diff against ADR-0019 and PG-007/PG-008 through the decision-record and feature-matrix playbooks; record why no ADR or feature-matrix change is warranted.
 - [ ] **Step 3: Obtain independent review and publish.** Build the exact merge-base-to-HEAD review package, dispatch a fresh-context whole-branch reviewer, resolve any findings and re-review corrections, then publish a Draft PR to `develop`, read back its exact head/body, mark it ready, and require exact-head hosted CI to pass.
 - [ ] **Step 4: Verify integration and clean up.** Squash-merge to `develop`, require the develop push gate to pass on the exact merge SHA, fast-forward the primary checkout, remove this clean worktree with the `finishing-a-development-branch` skill script, delete the matching local and upstream branches, and verify all three refs/paths are absent.
+
+**Ruling:** The roadmap's dated delivery ledger is updated by the next successor's first substantive commit, when this PR's merge SHA and hosted run identities are known. N-51 remains the active plan through this PR; N-52 will promote N-51's completed delivery evidence and retire this plan together, avoiding a post-merge evidence-only commit.
+
+**Author truth check:** ADR-0019 remains satisfied because `requestJson` stays the sole manual typed HTTP boundary. PG-007 and PG-008 promises, dependencies, dispositions and evidence assessments do not change; these tests clarify the existing transport contract without changing player-facing capability.
 
 ## Acceptance Criteria
 
