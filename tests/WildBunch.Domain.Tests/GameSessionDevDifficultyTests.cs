@@ -73,14 +73,14 @@ public sealed class GameSessionDevDifficultyTests
         // changes the rehydrated difficulty — if the case were missing, the
         // rehydrated session would stay at Easy.
         var session = TestSessionFactory.CreateDefault();
-        var originalSetupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
+        var originalStart = Assert.Single(session.AllEvents.OfType<GameStarted>());
+        Assert.Equal(GameDifficulty.Easy, originalStart.GameDifficulty);
+        Assert.Equal(GameEntropy.Classic, originalStart.GameEntropy);
+        Assert.Equal("test-seed", originalStart.SeedCode);
+        Assert.Equal(SaltSource.CreateFixed(string.Empty), originalStart.SaltSource);
 
         session.ForceDevDifficulty(GameDifficulty.Challenging);
-        session.MarkEventsCommitted();
-
-        var events = originalSetupEvents
-            .Concat(session.CommittedEvents.OfType<IDomainEvent>())
-            .ToList();
+        var events = session.AllEvents.ToArray();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
@@ -88,5 +88,9 @@ public sealed class GameSessionDevDifficultyTests
         // event must override it to Challenging during replay.
         Assert.Equal(GameDifficulty.Challenging, rehydrated.GameDifficulty);
         Assert.Equal(GameDifficulty.Challenging, rehydrated.TravelRules.Difficulty);
+        Assert.Equal(originalStart.GameEntropy, rehydrated.GameEntropy);
+        Assert.Equal(originalStart.SeedCode, rehydrated.SeedCode);
+        Assert.Equal(originalStart.SaltSource, rehydrated.SaltSource);
+        Assert.Equal(session.Version, rehydrated.Version);
     }
 }

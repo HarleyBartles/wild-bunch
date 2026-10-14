@@ -31,7 +31,6 @@ public sealed class TravelResourceSettlementTests
             startingQuantity = session.Journey.HorseFeedRemaining;
         }
 
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
         var forcedRoll = FindRetaliationRoll(session, encounter, stolenKind);
         var nonRetaliationRoll = FindNonRetaliationRoll(session, encounter);
         var nonRetaliatingPlan = JourneyEncounterResolutionEngine.ResolveBribe(
@@ -72,7 +71,7 @@ public sealed class TravelResourceSettlementTests
         Assert.Equal(0, Assert.Single(session.Journey.CurrentDayPlan!.Encounters,
             dayEncounter => dayEncounter.Resolution is not null).Resolution!.HeatIncrease);
 
-        var history = setupEvents.Concat(session.CommittedEvents).Concat(session.UncommittedEvents).ToArray();
+        var history = session.AllEvents.ToArray();
         var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, history);
         Assert.Equal(resolution.PlayerHealth, replayed.Player.Health);
         Assert.Equal(resolution.WalletCash, replayed.Player.Wallet.Cash);
@@ -81,6 +80,7 @@ public sealed class TravelResourceSettlementTests
             dayEncounter => dayEncounter.Resolution is not null).Resolution!.HeatIncrease);
         Assert.Equal(expectedQuantity, replayed.Player.Inventory.GetQuantity(stolenKind));
         Assert.Equal(expectedQuantity, Quantity(replayed.Journey.ToSnapshot(replayed.TravelRules), stolenKind));
+        Assert.Equal(session.Version, replayed.Version);
     }
 
     [Fact]
@@ -94,8 +94,6 @@ public sealed class TravelResourceSettlementTests
                 includeHorse: false,
                 saltSource: saltSource);
             session.StartJourney(preview);
-            var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
-
             session.AdvanceJourneyDay();
 
             var dustLoss = session.UncommittedEvents
@@ -111,11 +109,12 @@ public sealed class TravelResourceSettlementTests
             Assert.Equal(0, session.Journey!.FoodRemaining);
             Assert.Equal(0, session.Player.Inventory.GetQuantity(ItemKind.Food));
 
-            var history = setupEvents.Concat(session.CommittedEvents).Concat(session.UncommittedEvents).ToArray();
+            var history = session.AllEvents.ToArray();
             var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, history);
             Assert.Equal(0, replayed.Journey!.FoodRemaining);
             Assert.Equal(0, replayed.Journey.ToSnapshot(replayed.TravelRules).AvailableFood);
             Assert.Equal(0, replayed.Player.Inventory.GetQuantity(ItemKind.Food));
+            Assert.Equal(session.Version, replayed.Version);
             return;
         }
 
@@ -152,7 +151,6 @@ public sealed class TravelResourceSettlementTests
             IsComplete: false));
         session.Journey.MarkInterrupted(encounter);
 
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
         var forcedRoll = FindRetaliationRoll(session, encounter, ItemKind.Food);
 
         session.ResolveJourneyEncounter("bribe", bulletSpend: null, bribeAmount: 1m, forcedRoll: forcedRoll);
@@ -172,30 +170,23 @@ public sealed class TravelResourceSettlementTests
         Assert.Contains("no remaining food", trailEvents[1].DiaryMessage, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("1 food", trailEvents[1].DiaryMessage, StringComparison.OrdinalIgnoreCase);
 
-        var history = setupEvents.Concat(session.CommittedEvents).Concat(session.UncommittedEvents).ToArray();
+        var history = session.AllEvents.ToArray();
         var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, history);
         Assert.Equal(0, replayed.Journey!.FoodRemaining);
         Assert.Equal(0, replayed.Journey.AvailableCanteenCharges);
         Assert.Equal(0, replayed.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(0, replayed.Player.GetCanteenState()!.Charges);
+        Assert.Equal(session.Version, replayed.Version);
     }
 
     private static (GameSession Session, JourneyEncounterState Encounter) StartInterruptedJourney(
         ItemKind? onlyStolenKind,
         int startingFood = 3)
     {
-        var (session, _) = TravelTestFactory.CreateHighRiskJourney();
-        var food = session.Player.Inventory.GetQuantity(ItemKind.Food);
-        if (food > startingFood)
-        {
-            session.Player.RemoveQuantity(ItemKind.Food, food - startingFood);
-        }
-
-        if (onlyStolenKind == ItemKind.HorseFeed)
-        {
-            session.Player.RemoveQuantity(ItemKind.Horse, 1);
-            session.Player.AddItem(ItemKind.HorseFeed, 1);
-        }
+        var (session, _) = TravelTestFactory.CreateHighRiskJourney(
+            startingFood,
+            includeHorse: onlyStolenKind != ItemKind.HorseFeed,
+            startingHorseFeed: onlyStolenKind == ItemKind.HorseFeed ? 1 : 0);
 
         var preview = new TravelResolver().PreviewJourney(
             session.World,
