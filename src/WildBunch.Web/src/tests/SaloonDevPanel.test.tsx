@@ -446,6 +446,74 @@ describe("SaloonDevPanel", () => {
     });
   });
 
+  it("keeps the saloon override absent after rejection and shows the selected suspect after retry", async () => {
+    seedGameId("saloon-force-retry-game");
+    const suspect = makeSuspect({ suspectId: "suspect-retry", name: "Mira Cline" });
+    mockedGetContext
+      .mockResolvedValueOnce(
+        makeContext({ sessionId: "saloon-force-retry-game", suspects: [suspect] }),
+      )
+      .mockResolvedValueOnce(
+        makeContext({
+          sessionId: "saloon-force-retry-game",
+          pendingDevOverride: {
+            forcedKind: "Suspect",
+            forcedSuspectId: "suspect-retry",
+            forcedSuspectName: "Mira Cline",
+            forcedCitizenRoleKey: null,
+          },
+          suspects: [suspect],
+        }),
+      );
+    let rejectCommand!: (reason: Error) => void;
+    mockedForce
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((_resolve, reject) => {
+            rejectCommand = reject;
+          }),
+      )
+      .mockResolvedValueOnce(undefined);
+
+    renderPanel();
+    const user = userEvent.setup();
+    const force = await screen.findByRole("button", { name: /force next poi/i });
+    const clear = screen.getByRole("button", { name: /clear override/i });
+    await user.selectOptions(screen.getByTestId("force-suspect-select"), "suspect-retry");
+    await user.click(force);
+
+    expect(force).toBeDisabled();
+    expect(clear).toBeDisabled();
+    await act(async () => {
+      rejectCommand(new Error("Saloon override failed."));
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Saloon override failed.")).toBeInTheDocument();
+    const overrideSection = screen.getByText("Pending dev override").closest("section");
+    expect(overrideSection).toHaveTextContent("None pending.");
+    expect(force).toBeEnabled();
+    expect(clear).toBeEnabled();
+
+    await user.click(force);
+
+    await waitFor(() => {
+      expect(overrideSection).toHaveTextContent("Mira Cline");
+      expect(screen.queryByText("Saloon override failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedForce).toHaveBeenCalledTimes(2);
+    expect(mockedForce).toHaveBeenNthCalledWith(
+      1,
+      "saloon-force-retry-game",
+      expect.objectContaining({ forcedKind: "Suspect", forcedSuspectId: "suspect-retry" }),
+    );
+    expect(mockedForce).toHaveBeenNthCalledWith(
+      2,
+      "saloon-force-retry-game",
+      expect.objectContaining({ forcedKind: "Suspect", forcedSuspectId: "suspect-retry" }),
+    );
+  });
+
   it("sends forcedCitizenRoleKey when a citizen role is selected and Force is clicked", async () => {
     seedGameId("test-game-citizen-role-force");
     mockedGetContext.mockResolvedValue(
@@ -597,6 +665,54 @@ describe("SaloonDevPanel", () => {
     await waitFor(() => {
       expect(mockedClear).toHaveBeenCalledWith("test-game-4");
     });
+  });
+
+  it("preserves the saloon override after a rejected clear and shows its removal after retry", async () => {
+    seedGameId("saloon-clear-retry-game");
+    const pendingOverride = {
+      forcedKind: "Suspect" as const,
+      forcedSuspectId: "suspect-clear",
+      forcedSuspectName: "Mira Cline",
+      forcedCitizenRoleKey: null,
+    };
+    mockedGetContext
+      .mockResolvedValueOnce(
+        makeContext({
+          sessionId: "saloon-clear-retry-game",
+          hiddenTruth: null,
+          pendingDevOverride: pendingOverride,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeContext({ sessionId: "saloon-clear-retry-game", hiddenTruth: null }),
+      );
+    mockedClear
+      .mockRejectedValueOnce(new Error("Saloon override clear failed."))
+      .mockResolvedValueOnce(undefined);
+
+    renderPanel();
+    const user = userEvent.setup();
+    const force = await screen.findByRole("button", { name: /force next poi/i });
+    const clear = screen.getByRole("button", { name: /clear override/i });
+    const overrideSection = screen.getByText("Pending dev override").closest("section");
+    expect(overrideSection).toHaveTextContent("Mira Cline");
+
+    await user.click(clear);
+
+    expect(await screen.findByText("Saloon override clear failed.")).toBeInTheDocument();
+    expect(overrideSection).toHaveTextContent("Mira Cline");
+    expect(force).toBeEnabled();
+    expect(clear).toBeEnabled();
+
+    await user.click(clear);
+
+    await waitFor(() => {
+      expect(overrideSection).toHaveTextContent("None pending.");
+      expect(screen.queryByText("Saloon override clear failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedClear).toHaveBeenCalledTimes(2);
+    expect(mockedClear).toHaveBeenNthCalledWith(1, "saloon-clear-retry-game");
+    expect(mockedClear).toHaveBeenNthCalledWith(2, "saloon-clear-retry-game");
   });
 
   it("shows warrant facts in suspect descriptors", async () => {

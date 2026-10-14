@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TravelDevPanel } from "../dev/panels/TravelDevPanel";
 import { GameSessionContext } from "../state/GameSessionProvider";
@@ -162,6 +162,80 @@ describe("TravelDevPanel", () => {
     });
   });
 
+  it("keeps the travel override absent after rejection and shows the refreshed override after retry", async () => {
+    seedGameId("travel-force-retry-game");
+    const noOverride = {
+      sessionId: "travel-force-retry-game",
+      hasActiveJourney: true,
+      journeyStatus: "Active",
+      daysTravelled: 0,
+      remainingDays: 2,
+      pendingEncounterKind: null,
+      pendingEncounterMessage: null,
+      pendingFoeProfile: null,
+      pendingDevOverride: null,
+    };
+    mockedGetContext.mockResolvedValueOnce(noOverride).mockResolvedValueOnce({
+      ...noOverride,
+      pendingDevOverride: {
+        forcedCategory: "Foe",
+        foeProfile: {
+          speed: 5,
+          fightStrength: 4,
+          minimumBribe: 8,
+          speedBand: "fast",
+          fightBand: "tough",
+          bribeBand: "high",
+        },
+        encounterMessage: "A hard-eyed rider blocks the trail.",
+      },
+    });
+    let rejectCommand!: (reason: Error) => void;
+    mockedForce.mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectCommand = reject;
+        }),
+    );
+
+    renderPanel();
+    const user = userEvent.setup();
+    const force = await screen.findByRole("button", { name: /force override/i });
+    const clear = screen.getByRole("button", { name: /clear override/i });
+    await user.click(force);
+
+    expect(force).toBeDisabled();
+    expect(clear).toBeDisabled();
+    await act(async () => {
+      rejectCommand(new Error("Travel override failed."));
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Travel override failed.")).toBeInTheDocument();
+    expect(screen.getByText("None pending.")).toBeInTheDocument();
+    expect(force).toBeEnabled();
+    expect(clear).toBeEnabled();
+
+    mockedForce.mockResolvedValueOnce(undefined);
+    await user.click(force);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Foe.*S5.*F4.*\$8/)).toBeInTheDocument();
+      expect(screen.queryByText("Travel override failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedForce).toHaveBeenCalledTimes(2);
+    expect(mockedForce).toHaveBeenNthCalledWith(
+      1,
+      "travel-force-retry-game",
+      expect.objectContaining({ forcedCategory: "Foe" }),
+    );
+    expect(mockedForce).toHaveBeenNthCalledWith(
+      2,
+      "travel-force-retry-game",
+      expect.objectContaining({ forcedCategory: "Foe" }),
+    );
+  });
+
   it("calls clearTravelOverride when Clear button is clicked", async () => {
     seedGameId("test-game-4");
     mockedGetContext.mockResolvedValue({
@@ -193,6 +267,63 @@ describe("TravelDevPanel", () => {
     await waitFor(() => {
       expect(mockedClear).toHaveBeenCalledWith("test-game-4");
     });
+  });
+
+  it("preserves the travel override after a rejected clear and shows its removal after retry", async () => {
+    seedGameId("travel-clear-retry-game");
+    mockedGetContext
+      .mockResolvedValueOnce({
+        sessionId: "travel-clear-retry-game",
+        hasActiveJourney: true,
+        journeyStatus: "Active",
+        daysTravelled: 0,
+        remainingDays: 2,
+        pendingEncounterKind: null,
+        pendingEncounterMessage: null,
+        pendingFoeProfile: null,
+        pendingDevOverride: {
+          forcedCategory: "Foe",
+          foeProfile: null,
+          encounterMessage: null,
+        },
+      })
+      .mockResolvedValueOnce({
+        sessionId: "travel-clear-retry-game",
+        hasActiveJourney: true,
+        journeyStatus: "Active",
+        daysTravelled: 0,
+        remainingDays: 2,
+        pendingEncounterKind: null,
+        pendingEncounterMessage: null,
+        pendingFoeProfile: null,
+        pendingDevOverride: null,
+      });
+    mockedClear
+      .mockRejectedValueOnce(new Error("Travel override clear failed."))
+      .mockResolvedValueOnce(undefined);
+
+    renderPanel();
+    const user = userEvent.setup();
+    const force = await screen.findByRole("button", { name: /force override/i });
+    const clear = screen.getByRole("button", { name: /clear override/i });
+    expect(screen.getByText("Override:").parentElement?.textContent).toMatch(/Foe/);
+
+    await user.click(clear);
+
+    expect(await screen.findByText("Travel override clear failed.")).toBeInTheDocument();
+    expect(screen.getByText("Override:").parentElement?.textContent).toMatch(/Foe/);
+    expect(force).toBeEnabled();
+    expect(clear).toBeEnabled();
+
+    await user.click(clear);
+
+    await waitFor(() => {
+      expect(screen.getByText("None pending.")).toBeInTheDocument();
+      expect(screen.queryByText("Travel override clear failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedClear).toHaveBeenCalledTimes(2);
+    expect(mockedClear).toHaveBeenNthCalledWith(1, "travel-clear-retry-game");
+    expect(mockedClear).toHaveBeenNthCalledWith(2, "travel-clear-retry-game");
   });
 
   it("does not submit travel draft values from the previous playthrough", async () => {
