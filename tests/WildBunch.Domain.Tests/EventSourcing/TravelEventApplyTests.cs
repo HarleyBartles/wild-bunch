@@ -7,9 +7,7 @@ using WildBunch.Domain.World;
 namespace WildBunch.Domain.Tests.EventSourcing;
 
 /// <summary>
-/// Apply tests for the 6 typed travel domain events. Each test drives a single Apply
-/// method in isolation and asserts exact state. These prove the event-sourced mutation
-/// path matches the direct-mutation path field-for-field.
+/// Isolated aggregate Apply tests for selected travel event payload effects.
 /// </summary>
 public sealed class TravelEventApplyTests
 {
@@ -38,12 +36,12 @@ public sealed class TravelEventApplyTests
     }
 
     [Fact]
-    public void Apply_TravelDayAdvanced_SetsClockAndJourneyFromSnapshot()
+    public void Apply_TravelDayAdvanced_SetsSnapshotClockAndHealthHeatEffects()
     {
         var (setup, preview) = TravelTestFactory.CreateEasyShortJourney();
-        setup.StartJourney(preview);
+        Assert.True(setup.StartJourney(preview).Success);
+        setup.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
         var startSnapshot = setup.Journey!.ToSnapshot(setup.TravelRules);
-        setup.MarkEventsCommitted();
 
         var session = TestSessionFactory.CreateDefault();
         session.MarkEventsCommitted();
@@ -54,56 +52,28 @@ public sealed class TravelEventApplyTests
             PursuitHeat = 0
         });
 
-        setup.AdvanceJourneyDay();
+        var advanceResult = setup.AdvanceJourneyDay();
+        Assert.True(advanceResult.Success, advanceResult.Message);
         var advancedSnapshot = setup.Journey!.ToSnapshot(setup.TravelRules);
+        var healthBefore = session.Player.Health;
+        var journeyDaysBefore = session.Journey!.DaysTravelled;
 
         session.Apply(new TravelDayAdvanced
         {
             Day = 2,
             JourneySnapshot = advancedSnapshot,
-            HealthDelta = 0,
-            PursuitHeat = 1,
-            DayOutcome = TravelDayOutcome.Completed,
-            DiaryMessage = "Day passes.",
-            HorseLostMessage = ""
+            HealthDelta = -2,
+            PursuitHeat = 3,
+            DayOutcome = TravelDayOutcome.Ongoing,
+            DiaryMessage = "The trail exacts a toll.",
+            HorseLostMessage = string.Empty
         });
 
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
+        Assert.NotEqual(journeyDaysBefore, advancedSnapshot.DaysTravelled);
         Assert.Equal(advancedSnapshot.DaysTravelled, session.Journey!.DaysTravelled);
         Assert.Equal(advancedSnapshot.AvailableFood, session.Journey.FoodRemaining);
-    }
-
-    [Fact]
-    public void Apply_TravelDayAdvanced_AddsHealthAndHeatDeltas()
-    {
-        var (setup, preview) = TravelTestFactory.CreateEasyShortJourney();
-        setup.StartJourney(preview);
-        var startSnapshot = setup.Journey!.ToSnapshot(setup.TravelRules);
-
-        var session = TestSessionFactory.CreateDefault();
-        session.MarkEventsCommitted();
-        session.Apply(new JourneyStarted
-        {
-            JourneySnapshot = startSnapshot,
-            DiaryMessage = "You head out at dawn.",
-            PursuitHeat = 0
-        });
-
-        var healthBefore = session.Player.Health;
-        var heatBefore = session.PursuitState.Heat;
-
-        session.Apply(new TravelDayAdvanced
-        {
-            Day = 2,
-            JourneySnapshot = startSnapshot,
-            HealthDelta = -2,
-            PursuitHeat = 3,
-            DayOutcome = TravelDayOutcome.Ongoing,
-            DiaryMessage = "Day passes.",
-            HorseLostMessage = ""
-        });
-
         Assert.Equal(healthBefore - 2, session.Player.Health);
         Assert.Equal(3, session.PursuitState.Heat);
     }
@@ -157,6 +127,68 @@ public sealed class TravelEventApplyTests
     }
 
     [Fact]
+    public void Apply_JourneyEncounterResolved_SetsAbsoluteFieldsAndSpendsAmmo()
+    {
+        var (session, progressedSnapshot) = CreateSessionWithProgressedJourney();
+        session.Player.AddItem(ItemKind.RevolverAmmo, 5);
+        var journeyDaysBefore = session.Journey!.DaysTravelled;
+
+        session.Apply(new JourneyEncounterResolved
+        {
+            ChoiceId = "run",
+            ChoiceLabel = "Run for it",
+            Resolved = false,
+            PlayerHealth = 18,
+            WalletCash = 16m,
+            AmmoSpent = 2,
+            StolenItemKind = null,
+            StolenItemQuantity = 0,
+            PursuitHeat = 4,
+            HorseExhaustionDelta = 0,
+            ContinuedOnFoot = false,
+            JourneySnapshot = progressedSnapshot,
+            DiaryMessage = "The rider cuts across the trail.",
+            DayCompleted = false,
+            JourneyCompleted = false
+        });
+
+        Assert.Equal(18, session.Player.Health);
+        Assert.Equal(16m, session.Player.Wallet.Cash);
+        Assert.Equal(3, session.Player.GetQuantity(ItemKind.RevolverAmmo));
+        Assert.Equal(4, session.PursuitState.Heat);
+        Assert.NotEqual(journeyDaysBefore, progressedSnapshot.DaysTravelled);
+        Assert.Equal(progressedSnapshot.DaysTravelled, session.Journey!.DaysTravelled);
+    }
+
+    [Fact]
+    public void Apply_JourneyEncounterResolved_RemovesStolenRevolverAmmo()
+    {
+        var (session, progressedSnapshot) = CreateSessionWithProgressedJourney();
+        session.Player.AddItem(ItemKind.RevolverAmmo, 5);
+
+        session.Apply(new JourneyEncounterResolved
+        {
+            ChoiceId = "hide",
+            ChoiceLabel = "Hide",
+            Resolved = false,
+            PlayerHealth = session.Player.Health,
+            WalletCash = session.Player.Wallet.Cash,
+            AmmoSpent = 0,
+            StolenItemKind = ItemKind.RevolverAmmo,
+            StolenItemQuantity = 2,
+            PursuitHeat = session.PursuitState.Heat,
+            HorseExhaustionDelta = 0,
+            ContinuedOnFoot = false,
+            JourneySnapshot = progressedSnapshot,
+            DiaryMessage = "Someone slips away with your cartridges.",
+            DayCompleted = false,
+            JourneyCompleted = false
+        });
+
+        Assert.Equal(3, session.Player.GetQuantity(ItemKind.RevolverAmmo));
+    }
+
+    [Fact]
     public void Apply_JourneyCompleted_SetsPlayerTownAndJourneyFromSnapshot()
     {
         var (setup, preview) = TravelTestFactory.CreateEasyShortJourney();
@@ -203,5 +235,28 @@ public sealed class TravelEventApplyTests
         Assert.Null(session.Journey);
         Assert.Single(session.CompletedJourneyHistory);
         Assert.Equal(sequence, session.CompletedJourneyHistory[0].JourneySequence);
+    }
+
+    private static (GameSession Session, TravelJourneySnapshot ProgressedSnapshot)
+        CreateSessionWithProgressedJourney()
+    {
+        var (setup, preview) = TravelTestFactory.CreateEasyShortJourney();
+        Assert.True(setup.StartJourney(preview).Success);
+        setup.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+        var startingSnapshot = setup.Journey!.ToSnapshot(setup.TravelRules);
+        var advanceResult = setup.AdvanceJourneyDay();
+        Assert.True(advanceResult.Success, advanceResult.Message);
+        var progressedSnapshot = setup.Journey!.ToSnapshot(setup.TravelRules);
+
+        var session = TestSessionFactory.CreateDefault();
+        session.MarkEventsCommitted();
+        session.Apply(new JourneyStarted
+        {
+            JourneySnapshot = startingSnapshot,
+            DiaryMessage = "You head out at dawn.",
+            PursuitHeat = 0
+        });
+
+        return (session, progressedSnapshot);
     }
 }
