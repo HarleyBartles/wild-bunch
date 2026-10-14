@@ -77,22 +77,25 @@ afterEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-function renderShell() {
+function renderShell(initialPath?: string) {
+  if (initialPath) {
+    window.history.replaceState({}, "", initialPath);
+  }
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+  const router = createAppRouter();
 
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <RouterProvider router={createAppRouter()} />
+        <RouterProvider router={router} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );
-  return { queryClient };
 }
 
 function createSession(): GameSessionDto {
@@ -405,6 +408,31 @@ describe("AppShell", () => {
     expect(await screen.findByRole("heading", { name: /^wild bunch$/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ride on/i })).toBeInTheDocument();
+  });
+
+  it.each([
+    ["/town/store", "Store"],
+    ["/town/sheriff", "Sheriff Office"],
+    ["/town/saloon", "Saloon"],
+    ["/town/trailhead", "Hit the trail"],
+  ])("renders the requested player place at %s", async (path, heading) => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell(path);
+
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Tumbleweed" })).not.toBeInTheDocument();
+  });
+
+  it("does not show an arrival notice for an unrecognized search value", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell("/town?arrived=unexpected");
+
+    expect(await screen.findByRole("heading", { name: "Tumbleweed" })).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("opens the Case file overlay and renders the case surface", async () => {
