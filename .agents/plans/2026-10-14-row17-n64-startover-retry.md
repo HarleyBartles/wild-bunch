@@ -24,7 +24,7 @@
 
 ## Review Focus
 
-- A transient archive failure followed by a failed status read must leave the saved game selected and the confirmation available; a second user confirmation must make a new server request and finish only after success.
+- A transient archive failure followed by a failed status read must leave the saved game selected and the confirmation available; if the retry receives a conflict because the first request already archived the game, only a fresh server read reporting `Archived` permits local cleanup.
 - While the retry request is pending, both dialog actions remain disabled and repeated confirmation must not dispatch a duplicate archive request.
 - The web test proves the UI's server-response behavior only; it must not claim that a mocked client call proves event persistence or replay.
 
@@ -56,36 +56,38 @@
 - Consumes: the rendered Start Over dialog, `archiveGame`, `getGame`, and the current stored session ID.
 - Produces: one scenario proving failure preserves the current playthrough and a deliberate retry completes it without duplicate dispatch while pending.
 
-- [ ] Add one rendered scenario where the first `archiveGame` request fails, the follow-up `getGame` reconciliation also fails, and the error remains visible while `wild-bunch.current-game-id`, the Game Settings overlay, and Start Over confirmation remain available.
-- [ ] Retry by clicking the same confirmation action. Hold the second archive request pending and assert it was dispatched exactly once and both dialog actions are disabled. Resolve it successfully and assert the local ID is cleared, both dialogs close, setup returns, the success notice appears, and the previous error is gone.
-- [ ] Run `npm exec -- vitest run src/tests/StartOverConfirmation.test.tsx` from `src/WildBunch.Web`; the focused suite must pass.
-- [ ] Temporarily break the retried success path in `useGameSessionMutations.ts` so a successful retry does not reconcile local session state, run the new test and confirm it fails on the stale selected game or missing success state, then restore production source byte-for-byte and rerun the focused suite.
-- [ ] Make no production change if the existing implementation passes this behavior. If the new scenario exposes a real contract violation, fix only that path test-first and preserve the same externally visible contract.
+- [x] Add one rendered scenario where the first `archiveGame` request fails and its `getGame` reconciliation also fails; assert the error is visible and the saved game plus both dialogs remain.
+- [x] Retry through the same confirmation. Hold the second archive request pending and assert one retry dispatch and disabled dialog actions. Reject that retry with the existing 409 already-archived outcome; return `GameStatus.Archived` from the next `getGame` read and assert only then that local state clears, setup returns, success is shown, and the error and dialogs disappear.
+- [x] Run `npm exec -- vitest run src/tests/StartOverConfirmation.test.tsx` from `src/WildBunch.Web`; the focused suite must pass.
+- [x] Temporarily make archive-conflict reconciliation fail even when the server read returns `GameStatus.Archived`; confirm the new scenario fails, restore production source byte-for-byte, and rerun the focused suite.
+- [x] Make no production change if the existing implementation passes this behavior. If the new scenario exposes a real contract violation, fix only that path test-first and preserve the same externally visible contract.
 
 ### Task 3: Date the W-08 archive retry disposition
 
 **Files:**
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md`
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`
-- Review: `docs/decisions/README.md`, relevant archive/event ADRs, and `docs/features.md`
+- Modify: `docs/features.md`
+- Review: `docs/decisions/README.md` and relevant archive/event ADRs
 
 **Interfaces:**
 - Consumes: the final behavior test and its mutation proof.
 - Produces: a dated W-08 disposition that closes only archive retry/reconciliation coverage, while keeping the original audit history and distinguishing frontend orchestration proof from server event/replay proof.
 
-- [ ] Record the actual failure, retained-session, pending-guard, retry, and success behavior at W-08 and the `StartOverConfirmation.test.tsx` owner; do not record test counts or a development receipt.
-- [ ] Confirm the scenario remains aligned with PG-002 and its applicable ADRs. Update neither the decision catalogue nor feature matrix because this slice adds no player promise, dependency, event, or durable rule; pause if live evidence requires different treatment.
-- [ ] Remove no neighboring lifecycle coverage and leave the primary checkout's user edit untouched.
+- [x] Record the actual failure, retained-session, pending-guard, retry, and success behavior at W-08 and the `StartOverConfirmation.test.tsx` owner; do not record test counts or a development receipt.
+- [x] Update PG-002's evidence assessment to include the rendered retry path while preserving its Partial assessment and current 0.1.0 promise; state that the API/domain/event boundary remains covered by existing tests and that browser tests do not prove persistence or deployed resume.
+- [x] Confirm the scenario remains aligned with PG-002 and its applicable ADRs. Do not change the decision catalogue because this slice adds no player promise, dependency, event, or durable rule; pause if live evidence requires different treatment.
+- [x] Remove no neighboring lifecycle coverage and leave the primary checkout's user edit untouched.
 
 ### Task 4: Validate and commit the behavior correction
 
 **Files:**
 - Review: the complete candidate produced by Tasks 1-3.
 
-- [ ] Run `py -3 tools/run.py format --check src/WildBunch.Web/src/tests/StartOverConfirmation.test.tsx` and `py -3 tools/run.py lint --check src/WildBunch.Web/src/tests/StartOverConfirmation.test.tsx` from the repository root. Markdown is excluded from those targets; use `git diff --check` for whitespace validation.
-- [ ] From the repository root, run `git diff --check` and `py -3 tools/run.py ci --check`; stop at the first failed canonical lane and repair it before proceeding.
-- [ ] Inspect the full candidate diff and confirm it contains only N-63 promotion, the single authored version increment, the retry behavior test, and dated W-08 dispositions.
-- [ ] Commit the behavior and disposition through the normal check-only staged-candidate hook.
+- [x] Run `py -3 tools/run.py format --check src/WildBunch.Web/src/tests/StartOverConfirmation.test.tsx` and `py -3 tools/run.py lint --check src/WildBunch.Web/src/tests/StartOverConfirmation.test.tsx` from the repository root. Markdown is excluded from those targets; use `git diff --check` for whitespace validation.
+- [x] From the repository root, run `git diff --check` and `py -3 tools/run.py ci --check`; stop at the first failed canonical lane and repair it before proceeding.
+- [x] Inspect the full candidate diff and confirm it contains only N-63 promotion, the single authored version increment, the retry behavior test, the PG-002 evidence update, and dated W-08 dispositions.
+- [x] Commit the behavior and disposition through the normal check-only staged-candidate hook.
 
 ### Task 5: Review and deliver N-64
 
@@ -97,6 +99,6 @@
 ## Acceptance
 
 - A failed archive plus failed authoritative reconciliation does not clear the saved session or dismiss Start Over; a later deliberate retry makes a new request and completes only after success.
-- A pending retry blocks duplicate confirmation, and the new test fails when the successful retry no longer reconciles local session state.
+- A pending retry blocks duplicate confirmation, and a 409 retry closes only after the server read confirms the archived state. The endpoint's existing double-archive test remains the event-boundary proof that no second archive event is emitted.
 - Existing cancellation, conflict, lost-response, read-failure, reload, event-history, and replay coverage remains intact.
 - N-63 is promoted and retired; N-64 merges to `develop` at `0.1.0-dev.182`, with independent review, passing exact-head/develop-push CI, and paired worktree/branch cleanup verified.

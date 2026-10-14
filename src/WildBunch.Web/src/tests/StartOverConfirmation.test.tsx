@@ -26,6 +26,7 @@ import {
   travel,
 } from "../api/wildBunchApi";
 import { getSessionAudit } from "../dev/devApi";
+import { HttpRequestError } from "../api/httpClient";
 
 vi.mock("../api/wildBunchApi", () => ({
   archiveGame: vi.fn(),
@@ -447,6 +448,61 @@ describe("Start Over confirmation", () => {
     expect(mockedGetGame).toHaveBeenNthCalledWith(2, "game-1");
     expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
     expect(screen.getByRole("dialog", { name: /start over\?/i })).toBeInTheDocument();
+  });
+
+  it("reconciles an archive retry conflict when the server confirms the archived state", async () => {
+    primeMocks();
+    mockedGetGame
+      .mockResolvedValueOnce(createSession())
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce({ ...createSession(), status: GameStatus.Archived });
+    let rejectRetry!: (reason?: unknown) => void;
+    const retryResponse = new Promise<void>((_, reject) => {
+      rejectRetry = reject;
+    });
+    mockedArchiveGame
+      .mockRejectedValueOnce(new TypeError("Connection dropped"))
+      .mockImplementationOnce(() => retryResponse);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+    const user = userEvent.setup();
+    const confirmDialog = await openConfirmDialog(user);
+    const confirmButton = within(confirmDialog).getByRole("button", {
+      name: /archive and start over/i,
+    });
+
+    await user.click(confirmButton);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/unable to confirm/i);
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+    expect(screen.getByRole("dialog", { name: /start over\?/i })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
+
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockedArchiveGame).toHaveBeenCalledTimes(2);
+    });
+    expect(confirmButton).toBeDisabled();
+    expect(within(confirmDialog).getByRole("button", { name: /keep riding/i })).toBeDisabled();
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+
+    rejectRetry(new HttpRequestError("The playthrough has already been archived.", 409));
+
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenNthCalledWith(3, "game-1");
+      expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull();
+    });
+    expect(await screen.findByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your old playthrough has been archived. Start a new one when you are ready.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /game settings/i })).not.toBeInTheDocument();
   });
 
   it("returns to setup on reload when the saved session is already archived", async () => {
