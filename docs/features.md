@@ -92,6 +92,8 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 **Dated evidence, 2026-10-12, row 16 DN-15 money invariants:** Domain tests reject negative wallet cash, warrant bounty terms, settlement state and constructed settlement events while preserving zero; a production event-serializer test rejects a persisted negative settlement before projection rebuild. Wallet deconstruction remains available, and valid bounty payouts and the separately capped fine remain covered by existing command and replay tests. Current authored content was not found to contain negative bounty values; these tests close permissive input and event-ingress contracts, not a reported ordinary-play failure.
 
+**Dated evidence, 2026-10-14, row 17 N-38:** A deterministic Domain replay case forces a named eligible non-culprit saloon suspect, then requires the emitted wanted-POI fact, command state and event-reconstructed state to agree on identity and kind. It also checks context, turn and version. This adds focused replay evidence; the capability remains partial and no deployed browser journey is claimed.
+
 **0.1.0 disposition:** Retain and repair named take-in, citizen/wanted distinction, correct/wrong-name settlement and the five-of-six release gate. Resistance rolls, escape/injury, saloon gunfights, sheriff poster circulation and murder consequences from killing an innocent are future features.
 
 ### PG-007 - Travel between towns

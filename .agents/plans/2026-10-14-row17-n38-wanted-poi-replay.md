@@ -38,13 +38,13 @@
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md`
 - Modify: `docs/features.md`
 
-- [ ] Inspect the current saloon replay setup and use the existing canonical confrontable-suspect fixture with its evented `DevSaloonOverride.ForSuspect` command to force a known eligible non-culprit suspect; avoid reproducing a parallel game-start fixture.
-- [ ] Replace setup-event concatenation with one post-command `session.AllEvents.ToArray()` replay input; assert the emitted spotted fact has the expected suspect ID and `WantedSuspect` kind, require that exact ID and kind in command state and replay state, preserve context and turn checks, and compare replayed and command versions.
-- [ ] Remove the local setup helper if it has no remaining caller; do not add a test for helper absence.
-- [ ] Prove the assertion is behavior-sensitive by temporarily disabling forced wanted-suspect selection in the owning Domain path, observing the test fail because the expected wanted person is missing, restoring production byte-for-byte, and confirming the focused test passes.
-- [ ] Update the test disposition and N-18 with the precise closed gap while keeping unrelated travel-effect, completion and generator findings open; add a concise PG-006 dated evidence note for deterministic wanted-POI replay proof without implying broader feature completion.
-- [ ] Compare the diff with ADR-0028 and the stable spec; retain both because the event and replay decision is unchanged. Do not add a feature dependency, release disposition or gameplay promise.
-- [ ] Run the focused test, the full Domain test project, and `py -3 tools/run.py ci --check` on the committed candidate.
+- [x] Inspect the current saloon replay setup and use the existing canonical confrontable-suspect fixture with its evented `DevSaloonOverride.ForSuspect` command to force a known eligible non-culprit suspect; avoid reproducing a parallel game-start fixture.
+- [x] Replace setup-event concatenation with one post-command `session.AllEvents.ToArray()` replay input; assert the emitted spotted fact has the expected suspect ID and `WantedSuspect` kind, require that exact ID and kind in command state and replay state, preserve context and turn checks, and compare replayed and command versions.
+- [x] Remove the local setup helper if it has no remaining caller; do not add a test for helper absence.
+- [x] Prove the assertion is behavior-sensitive by temporarily skipping `SaloonPersonOfInterestSpotted` while `RehydrateFromEvents` dispatches events, observing replay fail with expected `suspect-1` versus actual `null`, restoring production byte-for-byte, and confirming the focused test passes.
+- [x] Update the test disposition and N-18 with the precise closed gap while keeping unrelated travel-effect, completion and generator findings open; add a concise PG-006 dated evidence note for deterministic wanted-POI replay proof without implying broader feature completion.
+- [x] Compare the diff with ADR-0028 and the stable spec; retain both because the event and replay decision is unchanged. Do not add a feature dependency, release disposition or gameplay promise.
+- [x] Run the focused test, the full Domain test project, and `py -3 tools/run.py ci --check` on the committed candidate.
 
 ## Task 3: Review and deliver N-38
 
