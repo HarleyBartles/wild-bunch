@@ -78,6 +78,8 @@ The session RNG-lock assertion uses `objectContaining({})`, which proves no salt
 
 `SetupHuntStep.test.tsx` freezes thumb markup, transparency and nowrap styling alongside valid value-selection and accessible-label tests. Retain durable interaction and accessibility contracts; use browser evidence for visual requirements rather than asserting an incidental DOM/CSS construction. `TownHubSurface.test.tsx` verifies focus but its focus-ring title promises visual proof it cannot supply. Historic old-copy absence checks in town hub and travel prep should be replaced or retired in favor of current player interactions. Preserve actual alternative-navigation and action-selection behavior.
 
+**Dated disposition, 2026-10-14, N-63 W-11 presentation-only assertions:** `SetupHuntStep.test.tsx` no longer inspects the segmented-toggle thumb, computed button backgrounds or `flexWrap`; its five negative legacy-label exclusions were removed because the retained exact ordered option lists already reject those values. Name/value/error behavior and accessible setup controls remain covered. `TownHubSurface.test.tsx` no longer treats old place-card copy absence as the town-hub contract; its Phaser test names only game creation, and its fallback focus test states that it proves focus and tab order, not visual focus styling. `TravelPrepSurface.test.tsx` no longer checks absence of the old text destination-list phrase; Phaser map rendering plus destination selection, preview, failure/retry, identity and departure behavior remain covered. No production behavior, ADR decision, map-level keyboard-selection scope or feature promise changed.
+
 ### W-12: Several action predicates have only positive examples
 
 `actionTypePredicates.test.ts` must prove that every retained action predicate accepts its matching kind and rejects a different currently available kind. Do not expand this into speculative malformed-object validation.
@@ -371,7 +373,7 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/SaloonDevPanel.test.tsx` | Retain force/clear semantics; rejected force/clear recovery, server readback, and pending-control restoration now have behavior proof (W-09). |
 | `tests/SessionAuditDevPanel.test.tsx` | Retain actual diagnostic rendering, loading and failure behavior; dev audit visibility is intentionally distinct from player secrecy. |
 | `tests/SessionDevPanel.test.tsx` | Difficulty/entropy rejection, retry, and authoritative refreshed readback now have behavior proof (W-09). |
-| `tests/SetupHuntStep.test.tsx` | Retain draft/value selection and accessible control semantics; retire incidental thumb/markup/style construction assertions (W-11). |
+| `tests/SetupHuntStep.test.tsx` | Retain draft/value selection, exact option order and accessible control semantics; retire incidental thumb/markup/style construction and redundant legacy-label exclusions (W-11, N-63). |
 | `tests/SheriffPlace.test.tsx` | Retain wanted-poster/records interaction and public rendering; coordinate shared notice setup with beat-narration tests. |
 | `tests/StartFlow.test.tsx` | Consolidate repeated successful walks; repair overclaimed name-preservation assertion and add failed transition scenarios (W-08). |
 | `tests/StartOverConfirmation.test.tsx` | Consolidate confirmation side effects and cancellation; preserve pending interaction and add distinct archive failures (W-08). |
@@ -381,12 +383,12 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/StorySoFarStep.test.tsx` | Retain pending, loaded, retry and actual variant omission; consolidate repeated happy path and remove unsupported secret/placeholder claims (W-06). |
 | `tests/TownHubScene.test.ts` | Retain scene data/selection/availability behavior; remove ineffective key smoke and property-absence detectors (W-04). |
 | `tests/TownHubScene.tiles.test.ts` | Retain tile placement, overlap and transform behavior; deterministic visual construction has an independently meaningful renderer contract. |
-| `tests/TownHubSurface.test.tsx` | Retain accessible alternate navigation and action dispatch; retire historic copy-absence checks and narrow visual-focus claims (W-11). |
+| `tests/TownHubSurface.test.tsx` | Retain Phaser game creation, accessible alternate navigation, focus/tab order and action dispatch; retire historic copy-absence checks and narrow visual-focus claims (W-11, N-63). |
 | `tests/TownLayoutDevPanel.test.tsx` | Retired 2026-10-08 with the unsupported town-layout override; no new failure-recovery panel test. |
 | `tests/TrailFlowSurfaceCompleted.test.tsx` | Consolidate heading, affordance and invocation into completed-arrival behavior; add acknowledgment failure at its owner. |
 | `tests/TravelDevPanel.test.tsx` | Retain force/clear behavior; rejected mutation recovery, server readback, and pending-control restoration now have behavior proof (W-09). |
 | `tests/TravelPanel.test.tsx` | Retain journey-state, pending, hydration, request payload and current rejected-command state-preservation proof; see the dated W-10 correction below. |
-| `tests/TravelPrepSurface.test.tsx` | Retain meaningful preview presentation, dispatch, domain/transport failure, retry and identity guards; see the dated W-10 correction below. |
+| `tests/TravelPrepSurface.test.tsx` | Retain map rendering, destination interaction, preview, dispatch, domain/transport failure, retry and identity guards; retire historic text-list absence (W-11, N-63); see the dated W-10 correction below. |
 | `tests/TravelRoutesPanel.test.tsx` | Conditional obsolete shell: do not extend its failure matrix; transfer retained behavior to routed travel or retire with the component. |
 | `tests/actionTypePredicates.test.ts` | Retain matching and mismatching kinds for the three live action predicates; each always-true mutation fails (W-12, N-62). |
 | `tests/beatFormatters.test.ts` | Retain labels, fallback/null handling and pluralization; table-driven cases can reduce repetitive declarations without erasing distinct branches. |

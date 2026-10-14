@@ -583,16 +583,4 @@ describe("TravelPrepSurface map integration", () => {
     // The map should render (PhaserMapHost renders an img element).
     expect(await screen.findByRole("img", { name: /trail map/i })).toBeInTheDocument();
   });
-
-  it("does not render the old text destination list", async () => {
-    primeMocks();
-    mockedPreviewTravel.mockResolvedValue(createPreview());
-    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
-    renderPrep();
-
-    await screen.findByRole("img", { name: /trail map/i });
-
-    // The old text list showed "Click to check the ride" on each card.
-    expect(screen.queryByText(/click to check the ride/i)).not.toBeInTheDocument();
-  });
 });
