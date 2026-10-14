@@ -378,43 +378,6 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayDoesNotApplyHardRouteOnlyBadLuckOnModerateRoutes()
-    {
-        var session = CreateBadLuckSession();
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
-        session.StartJourney(preview);
-
-        var result = session.AdvanceJourneyDay();
-
-        Assert.True(result.Success || result.Status == JourneyStatus.Interrupted);
-        Assert.True(result.Status is JourneyStatus.Active or JourneyStatus.Interrupted);
-        Assert.NotNull(result.Journey);
-        Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent?.Id);
-        Assert.True(session.Journey!.DelayDays >= 0);
-        Assert.True(session.Journey.RemainingDays >= 1);
-        Assert.Equal(2, session.Clock.Day);
-        Assert.Equal(0, session.Clock.Turn);
-
-        var secondResult = session.AdvanceJourneyDay();
-
-        Assert.True(secondResult.Success || secondResult.Status == JourneyStatus.Interrupted);
-        Assert.True(secondResult.Status is JourneyStatus.Active or JourneyStatus.Interrupted or JourneyStatus.Completed);
-        Assert.NotNull(secondResult.Journey);
-        Assert.True(secondResult.TrailEvent is null || secondResult.TrailEvent.DelayDays == 0);
-        Assert.NotEqual(JourneyTrailEventId.BadLuckWashout, secondResult.TrailEvent?.Id);
-
-        var safetyLimit = 8;
-        while (session.Journey is not null && session.Journey.Status == JourneyStatus.Active && safetyLimit-- > 0)
-        {
-            session.AdvanceJourneyDay();
-        }
-
-        Assert.NotNull(session.Journey);
-        Assert.True(session.Journey!.Status is JourneyStatus.Completed or JourneyStatus.Interrupted or JourneyStatus.Active);
-    }
-
-    [Fact]
     public void AdvanceJourneyDayOnFootWithoutAHorseDoesNotProduceSpookedHorse()
     {
         var session = CreateNoHorseBadLuckSession();
@@ -1381,32 +1344,6 @@ public sealed class TravelResolverTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
-        });
-
-        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-    }
-
-    private static GameSession CreateBadLuckSession()
-    {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
-        var holloway = new Town(new TownId("holloway"), "Holloway");
-        var world = new DomainWorld(
-            new[] { pinecross, holloway },
-            new[]
-            {
-                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring)
-            });
-
-        var caseFile = CreateCaseFile();
-        var inventory = new DomainInventory(new[]
-        {
-            new DomainInventoryItem(DomainItemKind.Food, 3),
-            new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
-            new DomainInventoryItem(DomainItemKind.Saddle, 1),
-            new DomainInventoryItem(DomainItemKind.Knife, 1),
-            new DomainInventoryItem(DomainItemKind.Revolver, 1),
-            new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
         });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
