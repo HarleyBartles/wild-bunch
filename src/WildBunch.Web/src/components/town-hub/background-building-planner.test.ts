@@ -77,6 +77,8 @@ describe("background building planner", () => {
     grid[0][5] = 1;
     grid[9][4] = 1;
     grid[9][5] = 1;
+    grid[4][4] = 1;
+    grid[4][5] = 1;
 
     const layout = createLayout({
       tileGrid: grid,
@@ -102,18 +104,12 @@ describe("background building planner", () => {
 
     const slots = collectEligibleBackgroundSlots(layout);
 
-    expect(slots).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ row: 0, col: 3 }),
-        expect.objectContaining({ row: 0, col: 6 }),
-        expect.objectContaining({ row: 1, col: 3 }),
-        expect.objectContaining({ row: 1, col: 6 }),
-        expect.objectContaining({ row: 8, col: 3 }),
-        expect.objectContaining({ row: 8, col: 6 }),
-        expect.objectContaining({ row: 9, col: 3 }),
-        expect.objectContaining({ row: 9, col: 6 }),
-      ]),
-    );
+    const slotKeys = new Set(slots.map(({ row, col }) => `${row}:${col}`));
+    for (const key of ["0:3", "0:6", "9:3", "9:6"]) {
+      expect(slotKeys.has(key)).toBe(false);
+    }
+    expect(slotKeys.has("4:3")).toBe(true);
+    expect(slotKeys.has("4:6")).toBe(true);
   });
 
   it("keeps destitute coverage within the expected filler range", () => {
@@ -126,10 +122,16 @@ describe("background building planner", () => {
     const layout = createLayout({
       prosperity: TownProsperity.Destitute,
       tileGrid: grid,
+      layoutSalts: {
+        resolverVersion: "1.0.0",
+        buildingsSalt: "n56-destitute-13",
+        roadsSalt: "roads-salt",
+        dirtSalt: "dirt-salt",
+        propsSalt: "props-salt",
+      },
     });
 
     const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-    expect(placements.length).toBeGreaterThanOrEqual(0);
     expect(placements.length).toBeLessThanOrEqual(2);
   });
 
@@ -155,7 +157,7 @@ describe("background building planner", () => {
     expect(placements.length).toBeLessThanOrEqual(max);
   });
 
-  it("makes boomtown leave one or two empty eligible spaces", () => {
+  it("leaves at most two eligible spaces empty in boomtown", () => {
     const grid = createGrid();
     grid[1][4] = 1;
     grid[1][5] = 1;
@@ -167,11 +169,19 @@ describe("background building planner", () => {
     const layout = createLayout({
       prosperity: TownProsperity.Boomtown,
       tileGrid: grid,
+      layoutSalts: {
+        resolverVersion: "1.0.0",
+        buildingsSalt: "n56-boomtown-1",
+        roadsSalt: "roads-salt",
+        dirtSalt: "dirt-salt",
+        propsSalt: "props-salt",
+      },
     });
 
     const eligibleCount = collectEligibleBackgroundSlots(layout).length;
     const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-    expect(placements.length).toBeGreaterThanOrEqual(Math.max(0, eligibleCount - 2));
+    expect(eligibleCount).toBeGreaterThan(2);
+    expect(placements.length).toBeGreaterThanOrEqual(eligibleCount - 2);
     expect(placements.length).toBeLessThanOrEqual(eligibleCount);
   });
 
@@ -190,8 +200,6 @@ describe("background building planner", () => {
     ]);
 
     for (const [prosperity, range] of tierRanges) {
-      const observedCounts = new Set<number>();
-
       for (let seedIndex = 0; seedIndex < 64; seedIndex++) {
         const layout = createLayout({
           prosperity,
@@ -206,12 +214,9 @@ describe("background building planner", () => {
         });
 
         const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-        observedCounts.add(placements.length);
         expect(placements.length).toBeGreaterThanOrEqual(range.min);
         expect(placements.length).toBeLessThanOrEqual(range.max);
       }
-
-      expect(observedCounts.size).toBeGreaterThan(0);
     }
   });
 
