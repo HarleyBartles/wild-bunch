@@ -55,12 +55,12 @@
 - Consumes: `CreateProgressionSession`, canonical `StartJourney` and `AdvanceJourneyDay`, Brutal travel rules, mountain upkeep, `TravelDayPlanGenerator`, `TrailEventApplied`, and exact-stream `GameSession.RehydrateFromEvents`.
 - Produces: a deterministic aggregate behavior proof that day upkeep can kill a previously mounted horse before generation and that the reachable `BadLuckSpookedHorse` outcome is then excluded; replay restores the same settled state.
 
-- [ ] Construct a Brutal Mountains journey with a living horse at exhaustion 1. Prove the start preview is mounted and daily upkeep crosses the horse's death threshold before generation.
-- [ ] Discover one fixed game seed using the existing generator and context builders where the same eligible pre-upkeep context reaches `BadLuckSpookedHorse`; use that seed in the aggregate scenario and demonstrate that the post-upkeep command path excludes it.
-- [ ] Assert the resulting command state removes the dead horse but retains the saddle, the day result contains no `BadLuckSpookedHorse` application, and the command event stream records the actual settled journey state.
-- [ ] Rehydrate from the original ordered `AllEvents` stream and assert the complete relevant journey, horse inventory and clock state matches the command result.
-- [ ] Prove the test's bite by temporarily disabling the horse-required candidate exclusion or supplying the pre-upkeep horse eligibility to generation; the focused test must fail for an attempted spooked-horse outcome. Restore production byte-for-byte.
-- [ ] Update the two audit dispositions to close only the ordering/eligibility gap. Compare ADR-0028 and the feature matrix; record why neither changes.
+- [x] Construct a Brutal Mountains journey with a living horse at exhaustion 1. Prove the start preview is mounted and daily upkeep crosses the horse's death threshold before generation.
+- [x] Discover one fixed game seed using the existing generator and context builders where the same eligible pre-upkeep context reaches `BadLuckSpookedHorse`; use that seed in the aggregate scenario and demonstrate that the post-upkeep command path excludes it.
+- [x] Assert the resulting command state removes the dead horse but retains the saddle, the day result contains no `BadLuckSpookedHorse` application, and the command event stream records the actual settled journey state.
+- [x] Rehydrate from the original ordered `AllEvents` stream and assert the complete relevant journey, horse inventory and clock state matches the command result.
+- [x] Prove the test's bite by temporarily disabling the horse-required candidate exclusion or supplying the pre-upkeep horse eligibility to generation; the focused test must fail for an attempted spooked-horse outcome. Restore production byte-for-byte.
+- [x] Update the two audit dispositions to close only the ordering/eligibility gap. Compare ADR-0028 and the feature matrix; record why neither changes.
 - [ ] Run the focused `TravelResolverTests` and complete Domain test project, then commit through the check-only hook and require its fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
 
 ## Task 3: Review and deliver N-41

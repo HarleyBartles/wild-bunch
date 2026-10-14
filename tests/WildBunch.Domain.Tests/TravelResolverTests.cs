@@ -1684,6 +1684,77 @@ public sealed class TravelResolverTests
 
         return ulong.MaxValue;
     }
+
+    [Fact]
+    public void AdvanceJourneyDayUsesPostUpkeepHorseEligibilityForBadLuckSpookedHorse()
+    {
+        const string salt = "n41-spooked-62";
+        var session = CreateProgressionSession(
+            new HorseTravelState(0, 0, 1),
+            TrailTerrain.Mountains,
+            WaterFeature.None,
+            canteenCharges: 0,
+            trailRisk: TrailRisk.High,
+            GameDifficulty: GameDifficulty.Brutal,
+            saltSource: new SaltSource(SaltSourceMode.Runtime, salt));
+        Assert.Equal(GameDifficulty.Brutal, session.GameDifficulty);
+        Assert.Equal(3, session.TravelRules.HorseExhaustionDeathThreshold);
+        var preview = new TravelResolver().PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId!.Value,
+            new TownId("midway"),
+            session.Player.Inventory,
+            session.TravelRules).Preview!;
+
+        Assert.Equal(TravelMode.Mounted, preview.TravelMode);
+        Assert.True(session.Player.Inventory.GetHorseState()!.CanProvideMountedTravelFor(session.TravelRules));
+        Assert.True(session.StartJourney(preview).Success);
+        var preUpkeepPlan = TravelDayPlanGenerator.Generate(
+            session.CreateTravelDayGenerationContext() with { DayNumber = 1 });
+        Assert.Contains(
+            preUpkeepPlan.Encounters,
+            encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
+
+        var result = session.AdvanceJourneyDay();
+
+        Assert.NotNull(result.Journey);
+        Assert.DoesNotContain(
+            session.AllEvents.OfType<TrailEventApplied>(),
+            applied => applied.TrailEventId == JourneyTrailEventId.BadLuckSpookedHorse);
+        Assert.Equal(2, session.Clock.Day);
+        Assert.Equal(0, session.Clock.Turn);
+        Assert.Null(session.Player.Inventory.GetHorseState());
+        Assert.Equal(0, session.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+        Assert.Equal(1, session.Player.Inventory.GetQuantity(DomainItemKind.Saddle));
+        var dayAdvanced = Assert.Single(session.AllEvents.OfType<TravelDayAdvanced>());
+        Assert.True(dayAdvanced.JourneySnapshot.HorseState!.IsDeadFor(session.TravelRules));
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+
+        var commandJourney = session.Journey!.ToSnapshot(session.TravelRules);
+        var replayedJourney = replayed.Journey!.ToSnapshot(replayed.TravelRules);
+        Assert.Equal(commandJourney.OriginTownId, replayedJourney.OriginTownId);
+        Assert.Equal(commandJourney.DestinationTownId, replayedJourney.DestinationTownId);
+        Assert.Equal(commandJourney.RouteProfile.TrailId, replayedJourney.RouteProfile.TrailId);
+        Assert.Equal(commandJourney.TravelMode, replayedJourney.TravelMode);
+        Assert.Equal(commandJourney.Status, replayedJourney.Status);
+        Assert.Equal(commandJourney.RemainingRideDayDistance, replayedJourney.RemainingRideDayDistance);
+        Assert.Equal(commandJourney.RemainingDays, replayedJourney.RemainingDays);
+        Assert.Equal(commandJourney.HorseState, replayedJourney.HorseState);
+        Assert.Equal(commandJourney.DaysTravelled, replayedJourney.DaysTravelled);
+        Assert.Equal(commandJourney.DelayDays, replayedJourney.DelayDays);
+        Assert.Equal(
+            commandJourney.CurrentDayPlan?.CurrentEncounterIndex,
+            replayedJourney.CurrentDayPlan?.CurrentEncounterIndex);
+        Assert.Equal(
+            commandJourney.CurrentDayPlan?.IsComplete,
+            replayedJourney.CurrentDayPlan?.IsComplete);
+        Assert.Equal(session.Clock.Day, replayed.Clock.Day);
+        Assert.Equal(session.Clock.Turn, replayed.Clock.Turn);
+        Assert.Null(replayed.Player.Inventory.GetHorseState());
+        Assert.Equal(0, replayed.Player.Inventory.GetQuantity(DomainItemKind.Horse));
+        Assert.Equal(1, replayed.Player.Inventory.GetQuantity(DomainItemKind.Saddle));
+    }
 }
 
 
