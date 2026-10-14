@@ -54,10 +54,10 @@
 - Consumes: Task 1's passing mutation evidence and the existing N-30 and N-32 assertions.
 - Produces: a test inventory that no longer treats arbitrary output differences as a player-facing invariant.
 
-- [ ] **Step 1: Remove only the two unsupported comparisons.** Delete `GenerateChangesWhenMountedStateChanges` and `GenerateChangesWhenLiveStateChangesBeforeTheJourneyAdvances`; remove `CreateSeedSensitiveSession` only if repository search confirms it has no other callers. Leave the focused N-30 and N-32 tests unchanged.
-- [ ] **Step 2: Record the durable disposition.** Explain that one test changes horse and saddle together (also changing derived context) and accepts any difference across six seeds; the other removes both after journey start and accepts any difference across 24 seeds. Record that the controlled horse-filter mutation left both green while N-32 failed, and that no replacement is warranted because these tests promised only arbitrary random-output difference.
-- [ ] **Step 3: Retire the predecessor plan.** Remove the N-46 plan artifact as the N-47 successor. Keep this N-47 plan as the active plan until a later successor retires it.
-- [ ] **Step 4: Commit the test and inventory changes.** Use commit message `test: remove horse state output comparison tests` after `git diff --check` and the focused generator suite pass. Expected after removal: 14 `TravelDayPlanGeneratorTests` pass.
+- [x] **Step 1: Remove only the two unsupported comparisons.** Delete `GenerateChangesWhenMountedStateChanges` and `GenerateChangesWhenLiveStateChangesBeforeTheJourneyAdvances`; remove `CreateSeedSensitiveSession` only if repository search confirms it has no other callers. Leave the focused N-30 and N-32 tests unchanged.
+- [x] **Step 2: Record the durable disposition.** Explain that one test changes horse and saddle together (also changing derived context) and accepts any difference across six seeds; the other removes both after journey start and accepts any difference across 24 seeds. Record that the controlled horse-filter mutation left both green while N-32 failed, and that no replacement is warranted because these tests promised only arbitrary random-output difference.
+- [x] **Step 3: Retire the predecessor plan.** Remove the N-46 plan artifact as the N-47 successor. Keep this N-47 plan as the active plan until a later successor retires it.
+- [x] **Step 4: Commit the test and inventory changes.** Use commit message `test: remove horse state output comparison tests` after `git diff --check` and the focused generator suite pass. Expected after removal: 14 `TravelDayPlanGeneratorTests` pass.
 
 ### Task 3: Verify, review, publish, and close the slice
 
@@ -71,9 +71,9 @@
 - Consumes: Task 2's test and disposition changes.
 - Produces: reviewed N-47 implementation merged into `develop` at `0.1.0-dev.165`, with its predecessor plan retired and its worktree and paired branch refs removed.
 
-- [ ] **Step 1: Run the complete Domain suite and canonical gate.** Ensure PostgreSQL with `.\tools\postgres-dev.ps1 ensure`; run `py -3 tools/run.py ci --check`. Expected: all fail-fast repository lanes pass; the gate includes Domain tests and all configured application, persistence, API, content, integration, web, and script checks.
-- [ ] **Step 2: Update the active plan and version evidence.** Mark completed steps, record validation and review outcomes needed to understand the disposition, and confirm only `Directory.Build.props` carries the authored version change to `0.1.0-dev.165`.
-- [ ] **Step 3: Reconcile durable truth.** Compare the final diff with ADR-0023, ADR-0024, ADR-0028, ADR-0029, ADR-0040, PG-007 in `docs/features.md`, and the full feature matrix. State in the PR description why no ADR or feature-matrix change is required.
+- [x] **Step 1: Run the complete Domain suite and canonical gate.** Ensure PostgreSQL with `.\tools\postgres-dev.ps1 ensure`; run `py -3 tools/run.py ci --check`. Expected: all fail-fast repository lanes pass; the gate includes Domain tests and all configured application, persistence, API, content, integration, web, and script checks.
+- [x] **Step 2: Update the active plan and version evidence.** Mark completed steps, record validation and review outcomes needed to understand the disposition, and confirm only `Directory.Build.props` carries the authored version change to `0.1.0-dev.165`.
+- [x] **Step 3: Reconcile durable truth.** Compare the final diff with ADR-0023, ADR-0024, ADR-0028, ADR-0029, ADR-0040, PG-007 in `docs/features.md`, and the full feature matrix. State in the PR description why no ADR or feature-matrix change is required.
 - [ ] **Step 4: Review and publish.** Build the exact whole-branch review package; obtain an independent fresh-context review; fix any actionable findings with evidence. Publish the PR to `develop`, require its exact-head hosted gate to pass, then merge.
 - [ ] **Step 5: Verify and clean up.** Require the develop push gate to pass on the exact merge commit, fast-forward the primary checkout, remove this exact worktree with the cleanup script, delete the paired local and upstream branches, and verify all three are absent while preserving unrelated worktrees.
 
