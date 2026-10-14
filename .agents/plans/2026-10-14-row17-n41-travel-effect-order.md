@@ -61,7 +61,7 @@
 - [x] Rehydrate from the original ordered `AllEvents` stream and assert the complete relevant journey, horse inventory and clock state matches the command result.
 - [x] Prove the test's bite by temporarily disabling the horse-required candidate exclusion or supplying the pre-upkeep horse eligibility to generation; the focused test must fail for an attempted spooked-horse outcome. Restore production byte-for-byte.
 - [x] Update the two audit dispositions to close only the ordering/eligibility gap. Compare ADR-0028 and the feature matrix; record why neither changes.
-- [ ] Run the focused `TravelResolverTests` and complete Domain test project, then commit through the check-only hook and require its fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
+- [x] Run the focused `TravelResolverTests` and complete Domain test project, then commit through the check-only hook and require its fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
 
 ## Task 3: Review and deliver N-41
 
