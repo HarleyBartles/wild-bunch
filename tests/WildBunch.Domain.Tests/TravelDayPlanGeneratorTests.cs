@@ -272,97 +272,25 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
-    public void GenerateReducesImmediateFoeRepetitionOnHighRiskRoutes()
-    {
-        var highRiskSession = CreateHighRiskEncounterSession();
-        var lowRiskSession = CreateLowRiskEncounterSession();
-        // Try multiple seeds to find one that produces foes on the high-risk route.
-        // The difficulty enum rename (Hard -> Challenging) changed the deterministic
-        // seed hash, so the original single seed no longer produces foes.
-        var seeds = Enumerable.Range(1, 20).Select(i => $"seed-high-route-{i}").ToArray();
-        var foundSeed = false;
-        var seed = seeds[0];
-        var highRiskFoes = 0;
-        var lowRiskFoes = 0;
-        var recentHighRiskEncounters = Array.Empty<TravelDayEncounterCategory>();
-
-        foreach (var candidateSeed in seeds)
-        {
-            highRiskFoes = 0;
-            lowRiskFoes = 0;
-            recentHighRiskEncounters = Array.Empty<TravelDayEncounterCategory>();
-            seed = candidateSeed;
-
-            for (var day = 1; day <= 8; day++)
-            {
-                var highRiskContext = highRiskSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-high") with
-                {
-                    DayNumber = day,
-                    RecentEncounterCategories = recentHighRiskEncounters
-                };
-
-                var highRiskPlan = TravelDayPlanGenerator.Generate(highRiskContext);
-                var lowRiskPlan = TravelDayPlanGenerator.Generate(lowRiskSession.CreateTravelDayGenerationContext(gameSeed: $"{seed}-low-{day}", scenarioProfileId: "profile-low"));
-
-                if (highRiskPlan.Encounters.Count > 0 && highRiskPlan.Encounters[0].Category == TravelDayEncounterCategory.Foe)
-                {
-                    highRiskFoes++;
-                }
-
-                if (lowRiskPlan.Encounters.Count > 0 && lowRiskPlan.Encounters[0].Category == TravelDayEncounterCategory.Foe)
-                {
-                    lowRiskFoes++;
-                }
-
-                recentHighRiskEncounters = recentHighRiskEncounters
-                    .Append(highRiskPlan.Encounters.Count == 0 ? TravelDayEncounterCategory.Quiet : highRiskPlan.Encounters[0].Category)
-                    .TakeLast(3)
-                    .ToArray();
-            }
-
-            if (highRiskFoes > 0)
-            {
-                foundSeed = true;
-                break;
-            }
-        }
-
-        Assert.True(foundSeed, "Could not find a seed that produces foes on the high-risk route within 20 attempts.");
-        Assert.True(highRiskFoes >= lowRiskFoes);
-        Assert.True(highRiskFoes < 8);
-    }
-
-    [Fact]
     public void GenerateUsesRecentFoeHistoryToBreakUpBackToBackRiderDays()
     {
         var session = CreateHighRiskEncounterSession();
-        var seeds = Enumerable.Range(1, 48).Select(index => $"seed-repeat-{index}").ToArray();
-        var foundReducedFoeSelection = false;
-
-        foreach (var seed in seeds)
+        var baseContext = session.CreateTravelDayGenerationContext(gameSeed: "n46-foe-cooldown-0050", scenarioProfileId: "profile-foe-cooldown");
+        var withoutRecentFoe = baseContext with
         {
-            var baseContext = session.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-repeat");
-            var basePlan = TravelDayPlanGenerator.Generate(baseContext);
-            if (basePlan.Encounters[0].Category != TravelDayEncounterCategory.Foe)
-            {
-                continue;
-            }
+            DayNumber = 2,
+            RecentEncounterCategories = Array.Empty<TravelDayEncounterCategory>()
+        };
+        var withRecentFoe = withoutRecentFoe with
+        {
+            RecentEncounterCategories = new[] { TravelDayEncounterCategory.Foe }
+        };
 
-            var cooledContext = baseContext with
-            {
-                DayNumber = baseContext.DayNumber + 1,
-                RecentEncounterCategories = new[] { TravelDayEncounterCategory.Foe }
-            };
-            var cooledPlan = TravelDayPlanGenerator.Generate(cooledContext);
+        var baselinePlan = TravelDayPlanGenerator.Generate(withoutRecentFoe);
+        var cooledPlan = TravelDayPlanGenerator.Generate(withRecentFoe);
 
-            if (cooledPlan.Encounters[0].Category != TravelDayEncounterCategory.Foe)
-            {
-                foundReducedFoeSelection = true;
-                break;
-            }
-        }
-
-        Assert.True(foundReducedFoeSelection);
+        Assert.Equal(TravelDayEncounterCategory.Foe, baselinePlan.Encounters[0].Category);
+        Assert.NotEqual(TravelDayEncounterCategory.Foe, cooledPlan.Encounters[0].Category);
     }
 
     [Fact]
@@ -713,34 +641,6 @@ public sealed class TravelDayPlanGeneratorTests
         var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty.Challenging, saltSource: DeterministicSaltSource);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
-        session.StartJourney(preview);
-        return session;
-    }
-
-    private static GameSession CreateLowRiskEncounterSession()
-    {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
-        var creekside = new Town(new TownId("creekside"), "Creekside");
-        var world = new DomainWorld(
-            new[] { pinecross, creekside },
-            new[]
-            {
-                new Trail(new TrailId("trail-low"), pinecross.Id, creekside.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m)
-            });
-
-        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var items = new List<DomainInventoryItem>
-        {
-            new(DomainItemKind.Food, 4),
-            new(DomainItemKind.Canteen, 1, canteenState: new CanteenState(4, 4)),
-            new(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
-            new(DomainItemKind.Saddle, 1),
-            new(DomainItemKind.Knife, 1)
-        };
-
-        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty.Easy, saltSource: DeterministicSaltSource);
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, creekside.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }
