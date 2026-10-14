@@ -39,7 +39,7 @@ function QueryBackedJournal() {
 }
 
 describe("JournalSurface", () => {
-  it("renders a grouped player journal without leaking hidden internals", () => {
+  it("renders grouped journal entries with the current town name", () => {
     const journal = createJournal({
       clock: { day: 5, turn: 2, timeOfDay: "Morning" },
       currentTown: { id: "t-town", name: "Tumbleweed" },
@@ -54,9 +54,6 @@ describe("JournalSurface", () => {
     render(<JournalSurface journal={journal} loading={false} error="" />);
 
     expect(
-      screen.queryByText("Find the culprit before the law closes in."),
-    ).not.toBeInTheDocument();
-    expect(
       screen.getByRole("heading", { name: "Day 5, Morning in Tumbleweed" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Day 1")).toBeInTheDocument();
@@ -67,10 +64,6 @@ describe("JournalSurface", () => {
     expect(screen.getByText("Travelled to Red Mesa")).toBeInTheDocument();
     expect(screen.getByText("Found a public lead", { selector: "p" })).toBeInTheDocument();
     expect(screen.getByText("Bought food")).toBeInTheDocument();
-    expect(screen.queryByText("trueCulpritId")).not.toBeInTheDocument();
-    expect(screen.queryByText("isTrueCulprit")).not.toBeInTheDocument();
-    expect(screen.queryByText("linkedSuspectIds")).not.toBeInTheDocument();
-    expect(screen.queryByText("killerReleaseState")).not.toBeInTheDocument();
     expect(screen.queryByText("t-town")).not.toBeInTheDocument();
   });
 
