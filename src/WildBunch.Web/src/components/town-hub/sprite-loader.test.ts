@@ -56,10 +56,10 @@ describe("getSpriteUrl", () => {
 
   it("maps every prosperity tier to the matching sprite directories", () => {
     const tiers = [
-      { prosperity: TownProsperity.Boomtown, dir: "boomtown" },
-      { prosperity: TownProsperity.Prosperous, dir: "prosperous" },
-      { prosperity: TownProsperity.Poor, dir: "poor" },
-      { prosperity: TownProsperity.Destitute, dir: "destitute" },
+      { prosperity: 0, dir: "boomtown" },
+      { prosperity: 1, dir: "prosperous" },
+      { prosperity: 2, dir: "poor" },
+      { prosperity: 3, dir: "destitute" },
     ] as const;
 
     for (const { prosperity, dir } of tiers) {

@@ -18,7 +18,7 @@ The main problem is overstated confidence: initializer echoes, source/IL spellin
 
 ### W-01: An object literal is tested against its own assignments
 
-`src/WildBunch.Web/src/tests/types.test.ts`, `PathSegmentDto / stores coordinates`, constructs a TypeScript interface-typed object literal and reads its four assigned values back. No production operation runs, and the interface is erased at runtime. Remove this test. Type checking supplies the relevant type proof. The `TownProsperity` numeric encoding assertions are a separate potential protocol contract; assess against the backend wire contract before retaining or replacing them, rather than treating enum stability as inherently slop.
+`src/WildBunch.Web/src/tests/types.test.ts`, `PathSegmentDto / stores coordinates`, constructs a TypeScript interface-typed object literal and reads its four assigned values back. No production operation runs, and the interface is erased at runtime. Remove this test. Type checking supplies the relevant type proof. The `TownProsperity` numeric encoding assertions are a separate potential protocol contract; assess against the backend wire contract before retaining or replacing them, rather than treating enum stability as inherently slop. N-59 resolves that assessment below.
 
 ### W-02: Router tests freeze source spelling and can prove unrelated code
 
@@ -392,11 +392,14 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/routingConventions.test.ts` | Replace spelling/topology searches with actual navigation/search/reachability contracts (W-02). |
 | `tests/stylingEnforcement.test.ts` | Retire historic deletion detectors; reconcile and separately own any intentional policy validator (W-03). |
 | `tests/test-utils/setup.test.ts` | Retain bounded proof that the browser harness's scroll stub avoids a JSDOM error; do not mistake it for game behavior coverage. |
-| `tests/types.test.ts` | Remove literal-assignment tautology; separately assess enum wire encoding (W-01). |
+| `tests/types.test.ts` | Deleted in N-59 because both cases were non-behavioral; persisted/API prosperity numeric encoding is protected at its actual event, HTTP and client-consumption boundaries (W-01, 2026-10-14). |
+
 | `tests/useDevSurfaceSync.test.tsx` | Retain real route/phase-to-dev-surface behavior; shared fixtures may reduce setup repetition. |
 | `tests/usePhaseRouteSync.test.tsx` | Retain redirect, matching phase and pending deep-link behavior; negative no-redirect assertions need settled effects before claiming enduring absence. |
 | `tests/httpClient.test.ts` | Retain public fetch-boundary message/status behavior for supported HTTP error bodies, malformed/unrecognized fallback and distinct transport rejection (W-10, 2026-10-14). |
 | `tests/wildBunchApi.test.ts` | Retain preview path contract and prove structured HTTP failure propagation through exported `previewTravel` (W-10, 2026-10-14). |
+
+**Dated disposition, 2026-10-14, N-59 W-01 and prosperity encoding:** Deleted `src/WildBunch.Web/src/tests/types.test.ts` because both tests were non-behavioral: the `PathSegmentDto` case echoed its object literal, and the enum case asserted constants against themselves. The numeric prosperity codes remain a real persisted/API/client contract: `WorldGenerated` event serialization and the actual game GET response carry numbers consumed by the web sprite selector. Focused event tests pin all four persisted values; a deterministic MixedBag endpoint fixture exercises all four API values against the independently generated domain session by town ID; the sprite selector test supplies literal wire values and checks their directories. Mutating the domain enum value, API layout mapper, or frontend prosperity mapping caused the corresponding behavior test to fail, and each production mutation was restored. Type checking remains responsible for DTO shape. No production behavior, ADR or feature promise changed.
 
 Shared `tests/test-utils/factories.ts`, `renderHelpers.tsx`, `setup.ts`, the tests README and `vite.config.ts` were also read to assess fixtures, routing and discovery. They are support/configuration, not additional test files.
 
