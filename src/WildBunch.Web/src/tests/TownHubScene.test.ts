@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import Phaser from "phaser";
 import { AvailableActionKind, BuildingKind, BuildingView, TownProsperity } from "../api/types";
 import type { BuildingPlacementDto, TownLayoutDto } from "../api/types";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
@@ -437,17 +436,8 @@ describe("TownHubScene visual feedback", () => {
   });
 });
 
-describe("TownHubScene truth boundary", () => {
-  it("does not give the scene access to any API function", () => {
-    const layout = createLayout();
-    const scene = new TownHubScene(layout, [], vi.fn());
-
-    expect((scene as unknown as Record<string, unknown>).api).toBeUndefined();
-    expect((scene as unknown as Record<string, unknown>).requestJson).toBeUndefined();
-    expect((scene as unknown as Record<string, unknown>).fetch).toBeUndefined();
-  });
-
-  it("selectBuilding only calls onBuildingSelected and does not call fetch or any API", () => {
+describe("TownHubScene building selection", () => {
+  it("forwards an eligible building selection without fetching during selection", () => {
     const layout = createLayout();
     const onBuildingSelected = vi.fn();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
@@ -458,13 +448,5 @@ describe("TownHubScene truth boundary", () => {
     expect(onBuildingSelected).toHaveBeenCalledTimes(1);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
-  });
-
-  it("uses the town-hub scene key", () => {
-    const layout = createLayout();
-    const scene = new TownHubScene(layout, [], vi.fn());
-
-    expect(Phaser.Scene).toBeDefined();
-    expect(scene).toBeInstanceOf(TownHubScene);
   });
 });

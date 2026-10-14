@@ -363,8 +363,8 @@ describe("PhaserMapHost", () => {
   });
 });
 
-describe("PhaserMapHost truth boundary", () => {
-  it("selectTown only calls onTownSelected and does not call fetch or any API", () => {
+describe("PhaserMapHost town selection", () => {
+  it("forwards the selected town without fetching during selection", () => {
     const onTownSelected = vi.fn();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     renderHost({ onTownSelected });
