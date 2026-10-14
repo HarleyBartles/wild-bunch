@@ -23,7 +23,7 @@
 ## Review Focus
 
 - The selected seed reaches `BadLuckSpookedHorse` when generation sees a living horse, so a passing negative assertion is not explained by an unreachable event.
-- Daily upkeep crosses the Challenging mountain-route horse from alive to dead before the day plan is generated; the command’s generated day must not apply a horse-required event to that dead horse.
+- Daily upkeep crosses the Brutal mountain-route horse from alive to dead before the day plan is generated; the command’s generated day must not apply a horse-required event to that dead horse.
 - Replay from the exact session event history reproduces the horse/inventory and journey result without rerolling.
 
 ---
@@ -52,10 +52,10 @@
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md`
 
 **Interfaces:**
-- Consumes: `CreateProgressionSession`, canonical `StartJourney` and `AdvanceJourneyDay`, Challenging travel rules, mountain upkeep, `TravelDayPlanGenerator`, `TrailEventApplied`, and exact-stream `GameSession.RehydrateFromEvents`.
+- Consumes: `CreateProgressionSession`, canonical `StartJourney` and `AdvanceJourneyDay`, Brutal travel rules, mountain upkeep, `TravelDayPlanGenerator`, `TrailEventApplied`, and exact-stream `GameSession.RehydrateFromEvents`.
 - Produces: a deterministic aggregate behavior proof that day upkeep can kill a previously mounted horse before generation and that the reachable `BadLuckSpookedHorse` outcome is then excluded; replay restores the same settled state.
 
-- [ ] Construct a Challenging Mountains journey with a living horse at exhaustion 2. Prove the start preview is mounted and daily upkeep crosses the horse's death threshold before generation.
+- [ ] Construct a Brutal Mountains journey with a living horse at exhaustion 1. Prove the start preview is mounted and daily upkeep crosses the horse's death threshold before generation.
 - [ ] Discover one fixed game seed using the existing generator and context builders where the same eligible pre-upkeep context reaches `BadLuckSpookedHorse`; use that seed in the aggregate scenario and demonstrate that the post-upkeep command path excludes it.
 - [ ] Assert the resulting command state removes the dead horse but retains the saddle, the day result contains no `BadLuckSpookedHorse` application, and the command event stream records the actual settled journey state.
 - [ ] Rehydrate from the original ordered `AllEvents` stream and assert the complete relevant journey, horse inventory and clock state matches the command result.
