@@ -98,9 +98,9 @@ Paths below are relative to `src/WildBunch.Web/src`. These rows supplement the e
 | `src/WildBunch.Web/src/tests/TownLayoutDevPanel.test.tsx` | Retired with the unsupported town-layout override and exclusive prep flow for 0.1.0; ordinary generated layout/rendering remains covered at the map owners. |
 | [tests/TrailFlowSurfaceCompleted.test.tsx](../../../src/WildBunch.Web/src/tests/TrailFlowSurfaceCompleted.test.tsx) | Consolidate arrival heading/button/invocation; add routed acknowledgement pending/rejection/retry without false navigation. |
 | [tests/TravelDevPanel.test.tsx](../../../src/WildBunch.Web/src/tests/TravelDevPanel.test.tsx) | Retain force/clear payload; consolidate changed context/readback plus rejected command recovery. |
-| [tests/TravelPanel.test.tsx](../../../src/WildBunch.Web/src/tests/TravelPanel.test.tsx) | Retain request options, changed hydration and journey states; protect shared-reader coherence and authoritative diary outcomes. |
-| [tests/TravelPrepSurface.test.tsx](../../../src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx) | Retire old-list wording absence; protect pointer eligibility, fresh preview, dispatch, rejection and identity changes. |
-| [tests/TravelRoutesPanel.test.tsx](../../../src/WildBunch.Web/src/tests/TravelRoutesPanel.test.tsx) | Conditional obsolete shell: transfer retained preview/dispatch behavior to routed travel; retire with deferred/removed component. |
+| [tests/TravelPanel.test.tsx](../../../src/WildBunch.Web/src/tests/TravelPanel.test.tsx) | Retain request options, changed hydration, journey states, rejected-command state preservation, shared-reader coherence and authoritative diary outcomes. |
+| [tests/TravelPrepSurface.test.tsx](../../../src/WildBunch.Web/src/tests/TravelPrepSurface.test.tsx) | Retire old-list wording absence; protect pointer eligibility, fresh preview, dispatch, domain/transport failure, retry and identity changes. |
+| [tests/TravelRoutesPanel.test.tsx](../../../src/WildBunch.Web/src/tests/TravelRoutesPanel.test.tsx) | Conditional obsolete shell: do not extend its failure matrix; transfer retained behavior to routed travel or retire with the component. |
 | [tests/actionTypePredicates.test.ts](../../../src/WildBunch.Web/src/tests/actionTypePredicates.test.ts) | Retain actual matching/mismatching behavior; consolidate repetitive predicate cases if retained by live consumers. |
 | [tests/beatFormatters.test.ts](../../../src/WildBunch.Web/src/tests/beatFormatters.test.ts) | Retain independent labels/null/fallback/plural branches; retire unused helpers only after consumer triage. |
 | [tests/beatNarrationHook.test.tsx](../../../src/WildBunch.Web/src/tests/beatNarrationHook.test.tsx) | Retain authoritative narration/message fallback; consolidate nonadversarial raw-turn absence with investigation result coverage. |
@@ -115,7 +115,8 @@ Paths below are relative to `src/WildBunch.Web/src`. These rows supplement the e
 | [tests/types.test.ts](../../../src/WildBunch.Web/src/tests/types.test.ts) | Remove coordinate literal tautology; assess enum encoding at actual wire/compatibility consumer. |
 | [tests/useDevSurfaceSync.test.tsx](../../../src/WildBunch.Web/src/tests/useDevSurfaceSync.test.tsx) | Retain meaningful route/phase mapping within playtest; actual shell composition remains separate proof. |
 | [tests/usePhaseRouteSync.test.tsx](../../../src/WildBunch.Web/src/tests/usePhaseRouteSync.test.tsx) | Retain supported redirects/pending deep links; settle reads/effects before no-redirect claims and add explicit error policy. |
-| [tests/wildBunchApi.test.ts](../../../src/WildBunch.Web/src/tests/wildBunchApi.test.ts) | Retain preview path contract under selected base URL; extend real transport/status/JSON/header/cancellation boundaries. |
+| [tests/httpClient.test.ts](../../../src/WildBunch.Web/src/tests/httpClient.test.ts) | Retain exact public HTTP error message/status behavior and distinct transport rejection (dated correction, 2026-10-14). |
+| [tests/wildBunchApi.test.ts](../../../src/WildBunch.Web/src/tests/wildBunchApi.test.ts) | Retain preview path contract and prove structured HTTP failure propagation through exported `previewTravel`. |
 
 ## Dated row 08 disposition, 2026-10-10, WB-20
 
@@ -132,3 +133,7 @@ Added a rendered `CaseFileSurface` behavior test with an unnamed clue, authored 
 ## Dated row 15 disposition, 2026-10-11, WB-14
 
 Map-level keyboard/screen-reader town selection remains absent. The selected 0.1.0 behavior is the existing pointer selection on one shared map, with each context applying its legal town set. No selector code is being removed and no new map-accessibility behavior test is required for this release-scope correction; retain existing tests that prove pointer selection and eligibility. Keyboard behavior for town-building navigation and other supported controls remains with those surface owners.
+
+## Dated transport and W-10 correction, 2026-10-14, N-51
+
+The original W-10 travel-surface failure gaps were later addressed: `TravelPrepSurface.test.tsx` covers preview domain and transport failures, retry, invalid previews, stale identity/origin results, and rejected departure without session mutation; `TravelPanel.test.tsx` covers rejected commands while preserving the session. `TravelRoutesPanel` remains unmounted scaffolding and its tests do not warrant an expanded failure matrix. This slice adds the distinct HTTP client contract at the real fetch boundary: supported error body precedence and fallback messages retain exact HTTP status, malformed error JSON falls back to status, and fetch rejection remains a transport error. The exported `previewTravel` wrapper propagates a structured HTTP failure. The mutation check removed only validation-error extraction and the matching public test failed on the expected fallback message; production was restored byte-for-byte. Successful malformed-JSON and empty-body behavior remain untested and unchanged. ADR-0019 remains accurate because the typed manual client stays the single transport boundary; PG-007/PG-008 promises and dependencies do not change.

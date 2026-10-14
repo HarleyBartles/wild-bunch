@@ -381,9 +381,9 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/TownLayoutDevPanel.test.tsx` | Retired 2026-10-08 with the unsupported town-layout override; no new failure-recovery panel test. |
 | `tests/TrailFlowSurfaceCompleted.test.tsx` | Consolidate heading, affordance and invocation into completed-arrival behavior; add acknowledgment failure at its owner. |
 | `tests/TravelDevPanel.test.tsx` | Retain force/clear behavior; add rejected mutation/recovery and consolidate successful scenario fragments (W-09). |
-| `tests/TravelPanel.test.tsx` | Retain journey-state, pending, hydration and request payload proof; add known command/refresh failure scenarios (W-10). |
-| `tests/TravelPrepSurface.test.tsx` | Retain meaningful preview presentation; retire historic copy absence and cover dispatch/failure recovery (W-10/W-11). |
-| `tests/TravelRoutesPanel.test.tsx` | Retain successful route details and dispatch; add per-route failure and stale response rejection (W-10). |
+| `tests/TravelPanel.test.tsx` | Retain journey-state, pending, hydration, request payload and current rejected-command state-preservation proof; see the dated W-10 correction below. |
+| `tests/TravelPrepSurface.test.tsx` | Retain meaningful preview presentation, dispatch, domain/transport failure, retry and identity guards; see the dated W-10 correction below. |
+| `tests/TravelRoutesPanel.test.tsx` | Conditional obsolete shell: do not extend its failure matrix; transfer retained behavior to routed travel or retire with the component. |
 | `tests/actionTypePredicates.test.ts` | Consolidate matching/mismatching cases for all predicates (W-12). |
 | `tests/beatFormatters.test.ts` | Retain labels, fallback/null handling and pluralization; table-driven cases can reduce repetitive declarations without erasing distinct branches. |
 | `tests/beatNarrationHook.test.tsx` | Retain real hook-to-notice composition and null fallback; consolidate redundant nonadversarial turn-absence proof (W-12). |
@@ -395,9 +395,14 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/types.test.ts` | Remove literal-assignment tautology; separately assess enum wire encoding (W-01). |
 | `tests/useDevSurfaceSync.test.tsx` | Retain real route/phase-to-dev-surface behavior; shared fixtures may reduce setup repetition. |
 | `tests/usePhaseRouteSync.test.tsx` | Retain redirect, matching phase and pending deep-link behavior; negative no-redirect assertions need settled effects before claiming enduring absence. |
-| `tests/wildBunchApi.test.ts` | Retain preview request contract; add actual transport failure proof at httpClient (W-10). |
+| `tests/httpClient.test.ts` | Retain public fetch-boundary message/status behavior for supported HTTP error bodies, malformed/unrecognized fallback and distinct transport rejection (W-10, 2026-10-14). |
+| `tests/wildBunchApi.test.ts` | Retain preview path contract and prove structured HTTP failure propagation through exported `previewTravel` (W-10, 2026-10-14). |
 
 Shared `tests/test-utils/factories.ts`, `renderHelpers.tsx`, `setup.ts`, the tests README and `vite.config.ts` were also read to assess fixtures, routing and discovery. They are support/configuration, not additional test files.
+
+### Dated W-10 correction, 2026-10-14
+
+The original W-10 statements describe gaps observed during the 2026-10-06 audit and are no longer current for the travel surfaces. `TravelPrepSurface.test.tsx` now covers preview domain rejection, transport failure and retry, invalid previews, stale identity/origin results, and departure rejection without changing the session. `TravelPanel.test.tsx` covers a rejected command while preserving the session. `TravelRoutesPanel` remains unmounted scaffolding; its tests do not justify expanding that obsolete path's failure matrix. The separate HTTP transport contract was still missing: `httpClient.test.ts` now asserts exact message and HTTP status for title precedence, `error`, validation errors, `detail`, plain text and generic fallback, while retaining distinct fetch rejection behavior. `wildBunchApi.test.ts` now proves a structured `previewTravel` HTTP failure crosses the exported API wrapper with its message and status. Successful malformed-JSON and empty-body behavior remain untested and unchanged.
 
 ### Python test files
 
