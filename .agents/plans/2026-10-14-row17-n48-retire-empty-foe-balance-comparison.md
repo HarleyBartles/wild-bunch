@@ -24,7 +24,8 @@
 
 - Confirm the all-Quiet generator mutation fails the Foe-versus-Unlucky test at its positive-Foe reachability assertion.
 - Confirm a controlled increase to Unlucky weight fails the Foe-versus-Unlucky balance assertion while retaining Foe outcomes.
-- Confirm the difficulty test's initial apparent failure disappears after a clean rebuild, and record that the earlier result came from stale incremental build outputs.
+- Confirm the difficulty assertion fails when generation normalizes Brutal to Standard, and the entropy assertion fails when Wild adds Foe pressure.
+- Record that the initial 60/65 Brutal result disappeared after a clean rebuild; its cause is unconfirmed.
 - Confirm the current ADRs and PG-007 make no player-facing promise about an exact Foe count or ratio; retained comparisons remain internal guards for the stated generator weighting behavior.
 - Confirm N-47 was complete, its delivery evidence was promoted, and its plan is retired only in this successor PR.
 
@@ -56,10 +57,12 @@
 - Consumes: Task 1 delivery record and the live `GenerateKeepsFoeSelectionAheadOfUnluckySelectionOnComparableHighRiskRoutes` assertion.
 - Produces: a dated evidence-backed disposition that retains the valid distribution behavior owners and corrects the stale test inventory.
 
-- [x] **Step 1: Rebuild before interpreting the baseline.** Ran `dotnet clean tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj`, then reran the Foe, Brutal and Wild focused checks and the complete `TravelDayPlanGeneratorTests` filter. All 14 generator tests passed after the clean rebuild. The first incremental Brutal run had reported Standard 60 and Brutal 65; it was stale build output, not a current-source or platform-specific failure. Production generator SHA-256 was `DE340053E9C3713E2DF51184348BA5143CF55335343D32D90FE41275BB36CBF8`.
+- [x] **Step 1: Rebuild before interpreting the baseline.** Ran `dotnet clean tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj`, then reran the Foe, Brutal and Wild focused checks and the complete `TravelDayPlanGeneratorTests` filter. All 14 generator tests passed after the clean rebuild. The first incremental Brutal run had reported Standard 60 and Brutal 65; that result disappeared after the clean rebuild, and its cause is unconfirmed. Production generator SHA-256 was `DE340053E9C3713E2DF51184348BA5143CF55335343D32D90FE41275BB36CBF8`.
 - [x] **Step 2: Apply the controlled all-Quiet mutation.** Temporarily changed only `SelectCategory` to return `TravelDayEncounterCategory.Quiet` for every context and roll. `GenerateKeepsFoeSelectionAheadOfUnluckySelectionOnComparableHighRiskRoutes` failed at `foeCount > 0`; the production file was restored byte-for-byte with its recorded SHA-256.
 - [x] **Step 3: Apply a balance-sensitive mutation.** Temporarily increased only the high-risk Unlucky weight by 50 while preserving Foe reachability. The same focused test failed at the Foe-versus-Unlucky balance assertion; production was restored byte-for-byte and the hash matched.
-- [x] **Step 4: Record the evidence-backed disposition.** Retain all three distribution tests. The difficulty comparison, entropy comparison and Foe-versus-Unlucky comparison each detect distinct balance changes under fixed seeds; they constrain generator behavior without promising an exact player-facing encounter ratio.
+- [x] **Step 4: Apply controlled mutations to the difficulty and entropy guards.** Setting `GameDifficulty.Standard` at the start of generation made both corpus counts equal (Standard 104, Brutal 104) and failed the 10% Brutal assertion. Adding Foe weight 100 only in the Wild category branch produced Classic 125 versus Wild 192 and failed the Wild Foe-pressure assertion. Both mutations were restored byte-for-byte; the generator source SHA-256 remained `DE340053E9C3713E2DF51184348BA5143CF55335343D32D90FE41275BB36CBF8`.
+- [x] **Step 5: Record the evidence-backed disposition.** Retain all three distribution tests. Each fixed-seed guard now has a controlled mutation that fails its intended reachability or balance assertion; they constrain generator behavior without promising exact player-facing encounter ratios.
+- [x] **Step 6: Verify the corrected inventory.** The complete `TravelDayPlanGeneratorTests` filter passed (14 tests); `git diff --check` passed and the changed dispositions were reviewed.
 - [x] **Step 5: Verify and commit the corrected inventory.** The complete `TravelDayPlanGeneratorTests` filter passed (14 tests); `git diff --check` passed and the changed dispositions were reviewed.
 
 ### Task 3: Verify, review, publish and close the slice
@@ -82,8 +85,8 @@
 
 ## Acceptance Criteria
 
-- The controlled all-Quiet mutation fails the retained Foe-versus-Unlucky test at its explicit reachability assertion; production is restored byte-for-byte.
-- A controlled Unlucky overweight mutation fails the Foe-versus-Unlucky balance assertion while Foe remains reachable; production is restored byte-for-byte.
+- The controlled all-Quiet mutation fails the retained Foe-versus-Unlucky test at its explicit reachability assertion, and an Unlucky overweight mutation fails its balance assertion while Foe remains reachable; production is restored byte-for-byte after each.
+- Normalizing difficulty to Standard makes the Brutal/Standard corpus counts equal and fails that test's 10% assertion; adding Foe pressure to Wild fails the Wild/Classic assertion; production is restored byte-for-byte after each.
 - All three fixed-seed Foe distribution tests remain covered as internal generator behavior guards, without being represented as exact player-facing count promises.
 - The complete generator test class passes 14 tests, and the Domain suite passes with its existing skip.
 - N-47 delivery evidence is promoted before its plan is retired in the first substantive successor commit; this N-48 plan remains through its completing PR.
