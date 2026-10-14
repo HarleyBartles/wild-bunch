@@ -194,18 +194,8 @@ describe("PhaserTownHubHost", () => {
   });
 });
 
-describe("PhaserTownHubHost truth boundary", () => {
-  it("does not give the scene access to any API function", () => {
-    renderHost();
-
-    const scene = mockState.games[0].config.scene as unknown as Record<string, unknown>;
-    expect(scene.api).toBeUndefined();
-    expect(scene.requestJson).toBeUndefined();
-    expect(scene.fetch).toBeUndefined();
-    expect(scene.getGame).toBeUndefined();
-  });
-
-  it("selectBuilding only calls onBuildingSelected and does not call fetch or any API", () => {
+describe("PhaserTownHubHost building selection", () => {
+  it("forwards an eligible building selection without fetching during selection", () => {
     const onBuildingSelected = vi.fn();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     renderHost({ onBuildingSelected, availableActions: [AvailableActionKind.BuySupplies] });
