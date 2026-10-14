@@ -58,10 +58,10 @@
 - Consumes: `MapGeneratorTests.Generate_ClusterCount_AllTownsAssignedToValidClusters` and `ClusterPlacementGeneratorTests.Place_ClusterCount_ProducesExpectedClusterAssignments`.
 - Produces: one current owner for configured cluster-assignment behavior and an evidence-backed disposition of the redundant map-level theory.
 
-- [ ] **Step 1: Reconfirm the behavior boundary.** Run both focused tests on the unchanged baseline. Verify the map-level theory checks only town count and the direct cluster-placement theory asserts the number of distinct assignment values for cluster counts 1 through 4.
-- [ ] **Step 2: Falsify the map-level assertion's claimed sensitivity.** Temporarily change the Boring assignment branch in `ClusterPlacementGenerator.AssignTownsToClusters` so every town is assigned to cluster 0. Run the map-level theory and confirm it still passes; run `Place_ClusterCount_ProducesExpectedClusterAssignments` and confirm its cases for cluster counts above 1 fail. Restore the production file byte-for-byte and verify its recorded hash.
-- [ ] **Step 3: Remove only the unsupported smoke.** Delete `Generate_ClusterCount_AllTownsAssignedToValidClusters` and its four cluster-count theory rows from `MapGeneratorTests`. Add a dated N-49 disposition to the investigation and update the `MapGeneratorTests.cs` inventory entry to point to `Place_ClusterCount_ProducesExpectedClusterAssignments` as the sole assignment-count behavior owner. Do not add a replacement test.
-- [ ] **Step 4: Verify the focused owners.** Run the cluster-assignment owner and the relevant MapGenerator test class; confirm current cluster-count behavior remains covered and all remaining map-generator assertions pass.
+- [x] **Step 1: Reconfirm the behavior boundary.** On the baseline, the map-level theory passed 4/4 and the direct cluster-placement behavior owner passed 4/4. The map-level theory only asserted town count; the direct owner asserts distinct assignment count for cluster counts 1 through 4.
+- [x] **Step 2: Falsify the map-level assertion's claimed sensitivity.** Temporarily assigned every Boring town to cluster 0. The map-level theory remained green 4/4; the direct owner failed for cluster counts 2, 3, and 4. Restored the production file byte-for-byte and verified SHA-256 `D51A3EB9933C661738C2890B94B23BEFB7915C24F08A6AECC032851FC75D516C`.
+- [x] **Step 3: Remove only the unsupported smoke.** Deleted `Generate_ClusterCount_AllTownsAssignedToValidClusters` and its four theory rows. Added the dated N-49 disposition to the investigation and updated both test inventory entries so `Place_ClusterCount_ProducesExpectedClusterAssignments` is the sole assignment-count owner. No replacement test was added.
+- [x] **Step 4: Verify the focused owners.** After cleaning stale mutation-built outputs, the direct assignment owner passed 4/4 and the remaining `MapGeneratorTests` class passed 19/19.
 
 ### Task 3: Review, publish, merge, and retire N-49
 
@@ -74,7 +74,7 @@
 - Produces: N-49 merged to `develop` at `0.1.0-dev.167`, with reviewed evidence and the exact worktree and paired branch refs retired.
 
 - [ ] **Step 1: Validate the final tree.** Run `.\tools\postgres-dev.ps1 ensure`, then `py -3 tools/run.py ci --check` on the committed versioned tree. Confirm the generated build identity consumes `Directory.Build.props` and no second application version was authored.
-- [ ] **Step 2: Reconcile durable truth.** Compare the actual diff with ADR-0021 and ADR-0039 through the decision-record playbook and with `docs/features.md` through its maintenance playbook. State why no durable decision or feature promise changes; do not add ADR or feature-matrix edits for this test-inventory correction.
+- [x] **Step 2: Reconcile durable truth.** ADR-0021 and ADR-0039 govern seed ownership and the settled game-start/map flow; this test-ownership correction changes neither. PG-003's one-map promise and evidence remain accurate. The test inventories own implementation coverage detail, so no ADR or feature-matrix edit is warranted.
 - [ ] **Step 3: Review and publish.** Build the review package from the exact merge base to current `HEAD`; dispatch a fresh-context reviewer on the complete diff, plan, roadmap, and evidence. Resolve findings and re-review corrections. Publish a Draft PR to `develop`, verify the exact head and body, mark it ready, and require exact-head hosted CI to pass before squash merge.
 - [ ] **Step 4: Verify integration and clean up.** Require the develop push gate to pass on the exact merge commit; fast-forward the primary checkout; remove this worktree using the `finishing-a-development-branch` skill script; then delete and verify absence of the matching local and upstream branches.
 
