@@ -10,7 +10,7 @@ async function stylingDiagnostics(source: string) {
 
   return result.messages
     .filter((message) => message.ruleId === "no-restricted-syntax")
-    .map((message) => message.message);
+    .map(({ message, severity }) => ({ message, severity }));
 }
 
 describe("web styling policy", () => {
@@ -19,7 +19,9 @@ describe("web styling policy", () => {
       'export const Example = () => <div className="legacy-panel" />;',
     );
 
-    expect(diagnostics).toEqual(["Use styled-components instead of a className styling hook."]);
+    expect(diagnostics).toEqual([
+      { message: "Use styled-components instead of a className styling hook.", severity: 2 },
+    ]);
   });
 
   it("rejects inline style props through ESLint", async () => {
@@ -27,7 +29,9 @@ describe("web styling policy", () => {
       'export const Example = () => <div style={{ color: "red" }} />;',
     );
 
-    expect(diagnostics).toEqual(["Use styled-components instead of an inline style prop."]);
+    expect(diagnostics).toEqual([
+      { message: "Use styled-components instead of an inline style prop.", severity: 2 },
+    ]);
   });
 
   it("allows styled-components to own component styling", async () => {
