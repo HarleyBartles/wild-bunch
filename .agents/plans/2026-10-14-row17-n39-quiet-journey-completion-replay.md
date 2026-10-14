@@ -54,6 +54,7 @@
 - Modify: `tests/WildBunch.Domain.Tests/TravelResolverTests.cs`
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-06-dotnet-test-dispositions.md`
 - Modify: `.agents/investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md`
+- Modify: `docs/features.md`
 
 **Interfaces:**
 - Consumes: `TravelTestFactory.CreateFourDayQuietJourney()`, `DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet)`, `GameSession.AllEvents`, and `GameSession.RehydrateFromEvents(...)`.
@@ -64,7 +65,7 @@
 - [x] Capture `commandSession.AllEvents.ToArray()` once after acknowledgment and pass that array once to `GameSession.RehydrateFromEvents`. Require replay to have no active journey, the same player destination, clock and version, and the same completed-history record; retain the existing player health, wallet, food, and pursuit comparisons.
 - [x] Remove `TravelResolverTests.AdvanceJourneyDayCompletesTheRouteAfterTheFinalDay`, whose completion-through-replay assertions are now covered by the single full-lifecycle scenario. Do not add another fixture, a helper-removal test, or a synthetic event stream.
 - [x] Prove the replay assertion is behavior-sensitive by temporarily corrupting only the `JourneyArrivalAcknowledged` snapshot destination at the replay boundary, observing the archived-record equality fail while the command path stays intact, restoring production byte-for-byte, and rerunning the focused test successfully.
-- [x] Update the TravelResolver and replay-equality dispositions and add a dated N-39 disposition that closes only this completion/replay consolidation; keep unrelated N-18 travel-effect and generator findings open. Compared the test-only change with ADR-0028, the stable specification, and `docs/features.md`; none changes because the accepted event and feature contracts are unchanged.
+- [x] Update the TravelResolver and replay-equality dispositions and add a dated N-39 disposition that closes only this completion/replay consolidation; keep unrelated N-18 travel-effect and generator findings open. Update PG-007's evidence link to the consolidated test. Compared the test-only change with ADR-0028 and the stable specification; neither decision nor product promise changes.
 - [x] Run the focused test with `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~Replay_FullQuietJourneyCycle_ReconstructsCompletedArrival` and the full Domain project with `py -3 tools/run.py dotnet-test --check -- tests/WildBunch.Domain.Tests/WildBunch.Domain.Tests.csproj`; then commit through the normal check-only hook and require its `py -3 tools/run.py ci --check` staged-candidate gate to pass.
 
 ## Task 3: Review and deliver N-39
