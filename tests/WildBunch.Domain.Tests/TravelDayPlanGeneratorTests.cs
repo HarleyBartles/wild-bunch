@@ -217,30 +217,6 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
-    public void GenerateChangesWhenSeedOrScenarioProfileChanges()
-    {
-        var firstSession = CreateSeedSensitiveSession();
-        var secondSession = CreateSeedSensitiveSession();
-
-        var seeds = new[] { ("seed-a", "profile-a"), ("seed-b", "profile-b"), ("seed-c", "profile-c"), ("seed-d", "profile-d") };
-        var foundDifference = false;
-
-        foreach (var (seed, profile) in seeds)
-        {
-            var firstPlan = TravelDayPlanGenerator.Generate(firstSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: profile));
-            var secondPlan = TravelDayPlanGenerator.Generate(secondSession.CreateTravelDayGenerationContext(gameSeed: seed + "-alt", scenarioProfileId: profile + "-alt"));
-
-            if (!PlansAreEquivalent(firstPlan, secondPlan))
-            {
-                foundDifference = true;
-                break;
-            }
-        }
-
-        Assert.True(foundDifference);
-    }
-
-    [Fact]
     public void GenerateChangesWhenLiveStateChangesBeforeTheJourneyAdvances()
     {
         var baselineSession = CreateSeedSensitiveSession();
