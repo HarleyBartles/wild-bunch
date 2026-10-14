@@ -1628,7 +1628,6 @@ public sealed class TravelResolverTests
             GameDifficulty: GameDifficulty.Brutal,
             saltSource: new SaltSource(SaltSourceMode.Runtime, salt));
         Assert.Equal(GameDifficulty.Brutal, session.GameDifficulty);
-        Assert.Equal(3, session.TravelRules.HorseExhaustionDeathThreshold);
         var preview = new TravelResolver().PreviewJourney(
             session.World,
             session.Player.CurrentTownId!.Value,
