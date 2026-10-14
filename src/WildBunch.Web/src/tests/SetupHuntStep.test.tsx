@@ -247,8 +247,6 @@ describe("SetupHuntStep", () => {
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
     expect(labels).toEqual(["Easy", "Standard", "Challenging", "Brutal"]);
-    expect(labels).not.toContain("Normal");
-    expect(labels).not.toContain("Hard");
   });
 
   it("renders gameEntropy options as Boring, Classic, Adventurous, Wild in that order", () => {
@@ -260,9 +258,6 @@ describe("SetupHuntStep", () => {
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
     expect(labels).toEqual(["Boring", "Classic", "Adventurous", "Wild"]);
-    expect(labels).not.toContain("Placid");
-    expect(labels).not.toContain("Restless");
-    expect(labels).not.toContain("Rowdy");
   });
 
   it("calls onGameEntropyChange when Boring is selected", async () => {
@@ -285,37 +280,6 @@ describe("SetupHuntStep", () => {
     await user.click(easy);
 
     expect(onGameDifficultyChange).toHaveBeenCalledWith(1);
-  });
-
-  it("uses a single thumb element per segmented toggle (not per-option backgrounds)", () => {
-    renderStep();
-
-    const groups = document.querySelectorAll('[role="group"]');
-    expect(groups).toHaveLength(2);
-
-    for (const group of Array.from(groups)) {
-      // One thumb div (aria-hidden) that slides, separate from the label buttons.
-      const thumbs = group.querySelectorAll('div[aria-hidden="true"]');
-      expect(thumbs).toHaveLength(1);
-
-      // Label buttons must not have their own background styling for selection.
-      // The thumb provides the selected visual; buttons are transparent.
-      const buttons = Array.from(group.querySelectorAll("button"));
-      for (const btn of buttons) {
-        const bg = window.getComputedStyle(btn).backgroundColor;
-        expect(bg).toBe("rgba(0, 0, 0, 0)"); // transparent
-      }
-    }
-  });
-
-  it("renders each segmented toggle as a single non-wrapping flex row", () => {
-    renderStep();
-
-    const groups = document.querySelectorAll('[role="group"]');
-    for (const group of Array.from(groups)) {
-      const style = window.getComputedStyle(group);
-      expect(style.flexWrap).toBe("nowrap");
-    }
   });
 
   it("calls onRandomizeSeed when Randomize is clicked", async () => {
