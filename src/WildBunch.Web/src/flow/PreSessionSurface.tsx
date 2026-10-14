@@ -67,7 +67,11 @@ export function PreSessionSurface() {
   }
 
   async function handlePrologueViewed() {
-    await handleMarkPrologueViewed();
+    try {
+      await handleMarkPrologueViewed();
+    } catch {
+      return;
+    }
     flow.advance();
   }
 

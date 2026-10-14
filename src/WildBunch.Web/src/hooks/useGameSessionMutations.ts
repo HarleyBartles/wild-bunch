@@ -72,6 +72,7 @@ export function useGameSessionMutations({
     mutationFn: (activeGameId: string) => markPrologueViewed(activeGameId),
     onSuccess: async (updatedSession) => {
       queryClient.setQueryData(gameSessionQueryKey(updatedSession.id), updatedSession);
+      setError("");
       await invalidateGameQueries(updatedSession.id);
     },
     onError: (exception: unknown) => {
@@ -107,6 +108,7 @@ export function useGameSessionMutations({
     onSuccess: async (updatedSession) => {
       clearPendingFirstArrivalOperation(updatedSession.id);
       queryClient.setQueryData(gameSessionQueryKey(updatedSession.id), updatedSession);
+      setError("");
       await invalidateGameQueries(updatedSession.id);
       setNotice(`New game started for ${updatedSession.player.name}.`);
     },

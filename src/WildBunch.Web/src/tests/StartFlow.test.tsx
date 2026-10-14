@@ -457,6 +457,75 @@ describe("StartFlow", () => {
     expect(mockedSetupGame.mock.calls[1][1]).not.toBe(rejectedOperationId);
   });
 
+  it("keeps the prologue after acknowledgment fails and clears the error on retry", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    mockedGetGame
+      .mockResolvedValueOnce(createSession({ startFlowPhase: 1 }))
+      .mockResolvedValue(createSession({ startFlowPhase: 2 }));
+    mockedMarkPrologueViewed
+      .mockRejectedValueOnce(new Error("The prologue acknowledgment failed."))
+      .mockResolvedValueOnce(createSession({ startFlowPhase: 2 }));
+
+    renderSurface();
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    expect(await screen.findByText("The prologue acknowledgment failed.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /pick a starting town/i }),
+    ).not.toBeInTheDocument();
+    expect(mockedMarkPrologueViewed).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("The prologue acknowledgment failed.")).not.toBeInTheDocument();
+    expect(mockedMarkPrologueViewed).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries an uncertain starting-town response with the same operation and clears its error", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    mockedGetGame.mockResolvedValue(createSession({ startFlowPhase: 2 }));
+    mockedStartGameWithTown
+      .mockRejectedValueOnce(new TypeError("Connection dropped"))
+      .mockResolvedValueOnce(createSession({ startFlowPhase: 4 }));
+
+    renderSurface();
+    expect(
+      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(phaserMockState.games.length).toBeGreaterThan(0));
+
+    const mapScene = phaserMockState.games[0].config.scene;
+    mapScene.selectTown("dust-fork");
+
+    expect(await screen.findByText("Connection dropped")).toBeInTheDocument();
+    const pendingKey = "wild-bunch.pending-first-arrival:game-1";
+    const pending = JSON.parse(window.localStorage.getItem(pendingKey) ?? "null");
+    expect(pending).toMatchObject({
+      sessionId: "game-1",
+      townId: "dust-fork",
+    });
+    expect(pending.operationId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(screen.queryByText(/new game started/i)).not.toBeInTheDocument();
+    expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
+
+    mapScene.selectTown("dust-fork");
+
+    expect(await screen.findByText("New game started for Ruth.")).toBeInTheDocument();
+    expect(screen.queryByText("Connection dropped")).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(pendingKey)).toBeNull();
+    expect(mockedStartGameWithTown).toHaveBeenCalledTimes(2);
+    expect(mockedStartGameWithTown.mock.calls[1]).toEqual(mockedStartGameWithTown.mock.calls[0]);
+  });
+
   it("retries a pending first arrival with its original town and operation ID", async () => {
     primeMocks();
     const pending = {
