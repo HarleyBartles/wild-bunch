@@ -44,10 +44,10 @@
 - Consumes: merged N-53 PR #356, reviewed source `101ac8fdf9d183531327b54e64451123403e790e`, squash merge `aa1e636a02b3a2b03526c2b9167b4d5f6a07b251`, identical tree `d97d775edb04810b732f6a057e76bbcf7c37c560`, successful exact-head run `38594530408`, successful develop-push run `38595186102`, and verified removal of its worktree and paired branch refs.
 - Produces: promoted N-53 delivery evidence, active N-54 at `0.1.0-dev.172`, and retirement of the completed N-53 plan.
 
-- [ ] **Step 1: Revalidate N-53 integration and cleanup.** Confirm PR #356 is merged into `develop`, its recorded source and merge SHAs match, both hosted gates passed on those exact commits, both commits have the same tree, the primary checkout is at the merge, and the N-53 worktree plus local/upstream refs are absent.
-- [ ] **Step 2: Promote N-53, activate N-54, and advance the version.** Add PR #356, the clean independent review, tree, exact-head CI, develop-push CI, and paired cleanup evidence to row 17. Set the active plan/version to N-54 and `0.1.0-dev.172`. Change only the authored version in `Directory.Build.props`.
-- [ ] **Step 3: Retire the completed predecessor.** Remove the N-53 plan only after its delivery evidence has been promoted. Keep the baseline specification and investigation records.
-- [ ] **Step 4: Commit successor planning first.** Run `git diff --check`, review the complete staged diff, and commit the roadmap, version, N-54 plan, and N-53 plan retirement with `docs: plan N-54 starting map recovery` before editing implementation or tests.
+- [x] **Step 1: Revalidate N-53 integration and cleanup.** Confirm PR #356 is merged into `develop`, its recorded source and merge SHAs match, both hosted gates passed on those exact commits, both commits have the same tree, the primary checkout is at the merge, and the N-53 worktree plus local/upstream refs are absent.
+- [x] **Step 2: Promote N-53, activate N-54, and advance the version.** Add PR #356, the clean independent review, tree, exact-head CI, develop-push CI, and paired cleanup evidence to row 17. Set the active plan/version to N-54 and `0.1.0-dev.172`. Change only the authored version in `Directory.Build.props`.
+- [x] **Step 3: Retire the completed predecessor.** Remove the N-53 plan only after its delivery evidence has been promoted. Keep the baseline specification and investigation records.
+- [x] **Step 4: Commit successor planning first.** Run `git diff --check`, review the complete staged diff, and commit the roadmap, version, N-54 plan, and N-53 plan retirement with `docs: plan N-54 starting map recovery` before editing implementation or tests.
 
 ### Task 2: Specify map request states in the owning component
 
@@ -59,9 +59,9 @@
 - Consumes: `getWorldMap(sessionId)`, the current TanStack Query lifecycle, and the existing starting-town step.
 - Produces: explicit pending, unavailable, and populated presentation states with deliberate retry for a session-bound unavailable map.
 
-- [ ] **Step 1: Replace the combined pending predicate.** Use the actual fetching/pending status for the loading presentation. Render a player-facing unavailable message for a rejected request, an unusable settled result, or absent session identity. Keep the existing loaded-map and selection behavior.
-- [ ] **Step 2: Add deliberate recovery.** For failed or empty results with a session ID, offer an accessible `Try again` button that calls this query's `refetch`; prevent duplicate retry while it is fetching. Do not retry automatically or expose retry for a disabled sessionless query.
-- [ ] **Step 3: Preserve component ownership.** Keep the error/retry display local to `StartingTownStep`, using its own styled contracts. Do not add shared state, another route step, or parent reach-through styling.
+- [x] **Step 1: Replace the combined pending predicate.** Use the actual fetching/pending status for the loading presentation. Render a player-facing unavailable message for a rejected request, an unusable settled result, or absent session identity. Keep the existing loaded-map and selection behavior.
+- [x] **Step 2: Add deliberate recovery.** For failed or empty results with a session ID, offer an accessible `Try again` button that calls this query's `refetch`; prevent duplicate retry while it is fetching. Do not retry automatically or expose retry for a disabled sessionless query.
+- [x] **Step 3: Preserve component ownership.** Keep the error/retry display local to `StartingTownStep`, using its own styled contracts. Do not add shared state, another route step, or parent reach-through styling.
 
 ### Task 3: Prove the player-visible state transitions
 
@@ -72,12 +72,12 @@
 - Consumes: `StartingTownStep`, real TanStack Query behavior through a test `QueryClient`, and the mocked API boundary.
 - Produces: independent evidence for true pending, failed and empty results, retry recovery, missing identity, and populated map display.
 
-- [ ] **Step 1: Keep one successful map display scenario.** Retain a single test that waits for the map host after the API resolves with towns; remove the duplicate test that asserts the same role and outcome.
-- [ ] **Step 2: Retain true pending behavior.** Hold the first API promise unresolved and assert the existing loading state while the request is in flight; settle the promise during cleanup so no work leaks across tests.
-- [ ] **Step 3: Prove rejected and empty results settle visibly.** Reject a deferred request and resolve another with an empty town list. Assert each shows the unavailable state rather than the loading message; assert retry is offered only when the session ID exists.
-- [ ] **Step 4: Prove deliberate retry recovery.** Click retry after failure and after empty data in the relevant focused cases. Assert a second API call occurs, the pending presentation is shown while it is unresolved, and a populated response produces the map host. A mutation removing the retry callback must fail because the second attempt and map recovery never occur.
-- [ ] **Step 5: Prove missing identity fails closed.** Render with an empty session ID, assert the API is not called, no loading state persists, and no retry button is offered.
-- [ ] **Step 6: Run the focused web behavior tests.** Use `py -3 tools/run.py web --check` as the focused supported web gate, then run `py -3 tools/run.py ci --check` on the final tree.
+- [x] **Step 1: Keep one successful map display scenario.** Retain a single test that waits for the map host after the API resolves with towns; remove the duplicate test that asserts the same role and outcome.
+- [x] **Step 2: Retain true pending behavior.** Hold the first API promise unresolved and assert the existing loading state while the request is in flight; settle the promise during cleanup so no work leaks across tests.
+- [x] **Step 3: Prove rejected and empty results settle visibly.** Reject a deferred request and resolve another with an empty town list. Assert each shows the unavailable state rather than the loading message; assert retry is offered only when the session ID exists.
+- [x] **Step 4: Prove deliberate retry recovery.** Click retry after failure and after empty data in the relevant focused cases. Assert a second API call occurs, the pending presentation is shown while it is unresolved, and a populated response produces the map host. A mutation removing the retry callback must fail because the second attempt and map recovery never occur.
+- [x] **Step 5: Prove missing identity fails closed.** Render with an empty session ID, assert the API is not called, no loading state persists, and no retry button is offered.
+- [x] **Step 6: Run focused behavior and full web checks.** Run `npm --prefix src/WildBunch.Web test -- src/tests/StartingTownStep.test.tsx`, then `py -3 tools/run.py web --check` for web formatting, lint, typecheck, tests and build. Run `py -3 tools/run.py ci --check` on the final tree.
 
 ### Task 4: Reconcile the finding and verify durable truth
 
@@ -89,9 +89,9 @@
 - Consumes: final pending/unavailable/retry/map behavior and the existing PG-003 and one-map decisions.
 - Produces: a dated N-54 disposition for the empty/error loading assertion and duplicate map-render smoke without changing the product promise or durable decisions.
 
-- [ ] **Step 1: Record the behavioral disposition.** Explain that only an active request is loading; failures, empty maps, and missing session identity are not pending, and session-bound failures have deliberate retry. Record removal of the duplicate renderer smoke while retaining the populated-map proof.
-- [ ] **Step 2: Compare durable truth.** Confirm the component still displays the single settled world map, the first town selection remains the existing first-arrival action, PG-003 remains accurate, and ADR-0039/ADR-0046 do not change. Update no ADR or feature row unless the implementation exposes a real durable decision mismatch.
-- [ ] **Step 3: Validate final changed files.** Run the supported web gate, `git diff --check`, and the full canonical repository gate. Confirm generated/ignored outputs did not alter maintained files.
+- [x] **Step 1: Record the behavioral disposition.** Explain that only an active request is loading; failures, empty maps, and missing session identity are not pending, and session-bound failures have deliberate retry. Record removal of the duplicate renderer smoke while retaining the populated-map proof.
+- [x] **Step 2: Compare durable truth.** Confirm the component still displays the single settled world map, the first town selection remains the existing first-arrival action, PG-003 remains accurate, and ADR-0039/ADR-0046 do not change. Update no ADR or feature row unless the implementation exposes a real durable decision mismatch.
+- [x] **Step 3: Validate final changed files.** Run the supported web gate, `git diff --check`, and the full canonical repository gate. Confirm generated/ignored outputs did not alter maintained files.
 
 ### Task 5: Review, publish, integrate, and retire N-54
 
