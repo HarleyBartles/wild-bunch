@@ -63,8 +63,6 @@
 - [x] **Step 4: Apply controlled mutations to the difficulty and entropy guards.** Setting `GameDifficulty.Standard` at the start of generation made both corpus counts equal (Standard 104, Brutal 104) and failed the 10% Brutal assertion. Adding Foe weight 100 only in the Wild category branch produced Classic 125 versus Wild 192 and failed the Wild Foe-pressure assertion. Both mutations were restored byte-for-byte; the generator source SHA-256 remained `DE340053E9C3713E2DF51184348BA5143CF55335343D32D90FE41275BB36CBF8`.
 - [x] **Step 5: Record the evidence-backed disposition.** Retain all three distribution tests. Each fixed-seed guard now has a controlled mutation that fails its intended reachability or balance assertion; they constrain generator behavior without promising exact player-facing encounter ratios.
 - [x] **Step 6: Verify the corrected inventory.** The complete `TravelDayPlanGeneratorTests` filter passed (14 tests); `git diff --check` passed and the changed dispositions were reviewed.
-- [x] **Step 5: Verify and commit the corrected inventory.** The complete `TravelDayPlanGeneratorTests` filter passed (14 tests); `git diff --check` passed and the changed dispositions were reviewed.
-
 ### Task 3: Verify, review, publish and close the slice
 
 **Files:**
