@@ -12,15 +12,30 @@ function makeAction(kind: AvailableActionKind): AvailableActionDto {
 }
 
 describe("actionTypePredicates", () => {
-  it("identifies wanted posters", () => {
-    expect(actionIsWantedPosters(makeAction(AvailableActionKind.ReadWantedPosters))).toBe(true);
-  });
-
-  it("identifies local gossip", () => {
-    expect(actionIsGatherLocalGossip(makeAction(AvailableActionKind.GatherLocalGossip))).toBe(true);
-  });
-
-  it("identifies saloon observation", () => {
-    expect(actionIsLookAroundSaloon(makeAction(AvailableActionKind.LookAroundSaloon))).toBe(true);
-  });
+  it.each([
+    {
+      label: "wanted posters",
+      predicate: actionIsWantedPosters,
+      matchingKind: AvailableActionKind.ReadWantedPosters,
+      unrelatedKind: AvailableActionKind.BuySupplies,
+    },
+    {
+      label: "local gossip",
+      predicate: actionIsGatherLocalGossip,
+      matchingKind: AvailableActionKind.GatherLocalGossip,
+      unrelatedKind: AvailableActionKind.ReadWantedPosters,
+    },
+    {
+      label: "saloon observation",
+      predicate: actionIsLookAroundSaloon,
+      matchingKind: AvailableActionKind.LookAroundSaloon,
+      unrelatedKind: AvailableActionKind.GatherLocalGossip,
+    },
+  ])(
+    "$label routes only its own available action",
+    ({ predicate, matchingKind, unrelatedKind }) => {
+      expect(predicate(makeAction(matchingKind))).toBe(true);
+      expect(predicate(makeAction(unrelatedKind))).toBe(false);
+    },
+  );
 });
