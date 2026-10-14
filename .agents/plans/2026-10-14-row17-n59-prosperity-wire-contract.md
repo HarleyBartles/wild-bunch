@@ -41,15 +41,15 @@
 - Consumes: merged PR #361, reviewed source `6a8ff013b9a47110e5065d5e63c9d97e31e15013`, squash merge `912d0d67f2b980d8b01f9254325d8d8cbce3b86b`, exact-head gate `38619790098`, develop-push gate `38620559460`, clean independent review, primary fast-forward with the user's investigation edit preserved, and verified removal of N-58's worktree and both branch refs.
 - Produces: promoted N-58 delivery evidence, active N-59 at `0.1.0-dev.177`, and retirement of the completed N-58 plan.
 
-- [ ] **Step 1: Revalidate N-58 integration and cleanup.** Verify PR #361 is merged to `develop`, its recorded head and merge SHAs match, both hosted gates succeeded on those commits, the merge is contained in `origin/develop`, the primary checkout is at that merge with the pre-existing user edit intact, and N-58's worktree and exact local/upstream refs are absent.
-- [ ] **Step 2: Promote N-58, activate N-59, and advance the version.** Add the PR, source and merge SHAs, independent review, exact-head and develop-push gate runs, and paired worktree/ref cleanup evidence to row 17. Set the active plan/version to N-59 and `0.1.0-dev.177`. Change only the authored version in `Directory.Build.props`.
-- [ ] **Step 3: Retire the completed predecessor.** Remove the N-58 plan only after its delivery evidence is promoted; keep the baseline specification and investigation records.
-- [ ] **Step 4: Commit successor planning first.** Check whitespace and inspect the staged planning diff, then commit the roadmap, version, N-59 plan and N-58 plan retirement as `docs: plan N-59 prosperity wire contract` before editing tests.
+- [x] **Step 1: Revalidate N-58 integration and cleanup.** Verify PR #361 is merged to `develop`, its recorded head and merge SHAs match, both hosted gates succeeded on those commits, the merge is contained in `origin/develop`, the primary checkout is at that merge with the pre-existing user edit intact, and N-58's worktree and exact local/upstream refs are absent.
+- [x] **Step 2: Promote N-58, activate N-59, and advance the version.** Add the PR, source and merge SHAs, independent review, exact-head and develop-push gate runs, and paired worktree/ref cleanup evidence to row 17. Set the active plan/version to N-59 and `0.1.0-dev.177`. Change only the authored version in `Directory.Build.props`.
+- [x] **Step 3: Retire the completed predecessor.** Remove the N-58 plan only after its delivery evidence is promoted; keep the baseline specification and investigation records.
+- [x] **Step 4: Commit successor planning first.** Check whitespace and inspect the staged planning diff, then commit the roadmap, version, N-59 plan and N-58 plan retirement as `docs: plan N-59 prosperity wire contract` before editing tests.
 
 ### Task 2: Replace the tautology and prove the serialized contract
 
 **Files:**
-- Modify: `src/WildBunch.Web/src/tests/types.test.ts`
+- Delete: `src/WildBunch.Web/src/tests/types.test.ts`
 - Modify: `src/WildBunch.Web/src/components/town-hub/sprite-loader.test.ts`
 - Modify: `tests/WildBunch.Integration.Tests/GameApiTests.cs`
 - Create: `tests/WildBunch.Integration.Tests/TownProsperitySerializerTests.cs`
@@ -60,12 +60,12 @@
 - Consumes: existing event serializer, game GET response, prosperity-aware asset selection, and the W-01 audit disposition.
 - Produces: exact event JSON numbers, observable HTTP numeric encoding, observable web interpretation of literal numeric values, and a dated disposition explaining why the enum encoding checks are retained as behavior proof.
 
-- [ ] **Step 1: Establish current behavior.** Run the focused existing web tests. Inspect the `WorldGenerated` serializer and existing `GetGameByIdReturnsCreatedSession` HTTP scenario; confirm the setup fixture returns towns with layouts.
-- [ ] **Step 2: Add event serialization behavior proof.** Construct a `WorldGenerated` event containing one town per prosperity tier, serialize through `GameSessionJsonSerializer.SerializeEvent`, and assert each payload field is a JSON number with the established value `0`, `1`, `2`, or `3`. Prove the test fails when an expected serialized value or numeric representation changes.
-- [ ] **Step 3: Assert the real HTTP representation.** Extend `GetGameByIdReturnsCreatedSession` to inspect the actual response JSON, require at least one town layout, and assert each supplied `layout.prosperity` is a number matching its typed DTO value. Do not infer JSON representation from `ReadFromJsonAsync` alone.
-- [ ] **Step 4: Assert web behavior from wire-shaped inputs.** Replace `types.test.ts`'s `PathSegmentDto` assignment echo with no replacement. Remove its direct `TownProsperity` constant self-check. In the existing sprite-loader prosperity table, use literal numeric wire values paired with their intended directories so changing a frontend constant or mapping causes a behavioral failure.
-- [ ] **Step 5: Prove negatives and record disposition.** Confirm event values and web mappings fail under targeted mutations, restore production files, and add dated N-59 dispositions to both audit records. State that coordinate type safety remains compile-time responsibility and the current numeric enum values are a persisted/API/client contract. No production source, ADR or feature promise changes.
-- [ ] **Step 6: Validate the final slice.** Run focused serializer and API tests, the focused sprite-loader/types Vitest files, the full web lane, `git diff --check`, and the complete canonical `ci --check` after ensuring PostgreSQL. Commit implementation and audit changes as `test: prove prosperity wire contract`.
+- [x] **Step 1: Establish current behavior.** Run the focused existing web tests. Inspect the `WorldGenerated` serializer and existing `GetGameByIdReturnsCreatedSession` HTTP scenario; confirm the setup fixture returns towns with layouts.
+- [x] **Step 2: Add event serialization behavior proof.** Construct a `WorldGenerated` event containing one town per prosperity tier, serialize through `GameSessionJsonSerializer.SerializeEvent`, and assert each payload field is a JSON number with the established value `0`, `1`, `2`, or `3`. Prove the test fails when an expected serialized value or numeric representation changes.
+- [x] **Step 3: Assert the real HTTP representation.** Extend `GetGameByIdReturnsCreatedSession` to inspect the actual response JSON, require at least one town layout, and assert each supplied `layout.prosperity` is a number matching its typed DTO value. Do not infer JSON representation from `ReadFromJsonAsync` alone.
+- [x] **Step 4: Assert web behavior from wire-shaped inputs.** Delete `types.test.ts`, whose only two cases are the `PathSegmentDto` assignment echo and direct `TownProsperity` constant self-check. In the existing sprite-loader prosperity table, use literal numeric wire values paired with their intended directories so changing a frontend constant or mapping causes a behavioral failure.
+- [x] **Step 5: Prove negatives and record disposition.** Confirm event values and web mappings fail under targeted mutations, restore production files, and add dated N-59 dispositions to both audit records. State that coordinate type safety remains compile-time responsibility and the current numeric enum values are a persisted/API/client contract. No production source, ADR or feature promise changes.
+- [x] **Step 6: Validate the final slice.** Run focused serializer and API tests, the focused sprite-loader/types Vitest files, the full web lane, `git diff --check`, and the complete canonical `ci --check` after ensuring PostgreSQL. Commit implementation and audit changes as `test: prove prosperity wire contract`.
 
 ### Task 3: Review, publish, integrate, and retire N-59
 

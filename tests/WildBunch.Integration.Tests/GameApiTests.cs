@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using WildBunch.Api.Dev;
 using WildBunch.Api;
 using WildBunch.Api.Games;
@@ -79,6 +80,27 @@ public sealed class GameApiTests
         Assert.Empty(fetchedSession.CaseFile.DiscoveredSuspects);
 
         var payload = await getResponse.Content.ReadAsStringAsync();
+        using var payloadDocument = JsonDocument.Parse(payload);
+        var jsonTowns = payloadDocument.RootElement.GetProperty("world").GetProperty("towns");
+        var townsWithLayouts = jsonTowns
+            .EnumerateArray()
+            .Where(town => town.TryGetProperty("layout", out var layout) && layout.ValueKind == JsonValueKind.Object)
+            .ToArray();
+        Assert.NotEmpty(townsWithLayouts);
+
+        var typedTownsById = fetchedSession.World.Towns.ToDictionary(town => town.Id);
+        foreach (var jsonTown in townsWithLayouts)
+        {
+            var townId = jsonTown.GetProperty("id").GetString();
+            Assert.NotNull(townId);
+            var typedTown = Assert.Contains(townId!, typedTownsById);
+            Assert.NotNull(typedTown.Layout);
+
+            var jsonProsperity = jsonTown.GetProperty("layout").GetProperty("prosperity");
+            Assert.Equal(JsonValueKind.Number, jsonProsperity.ValueKind);
+            Assert.Equal((int)typedTown.Layout!.Prosperity, jsonProsperity.GetInt32());
+        }
+
         Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
