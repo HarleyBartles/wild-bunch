@@ -23,8 +23,7 @@ export function StartingTownStep({
   });
 
   const mapData = mapQuery.data ?? null;
-  const isPending =
-    mapQuery.isLoading || mapQuery.isError || !mapData || mapData.towns.length === 0;
+  const isUnavailable = !sessionId || mapQuery.isError || !mapData || mapData.towns.length === 0;
 
   return (
     <StepCard>
@@ -39,8 +38,21 @@ export function StartingTownStep({
         up with you.
       </StepLead>
 
-      {isPending ? (
+      {mapQuery.isLoading ? (
         <TownLoading>Saddling up the map…</TownLoading>
+      ) : isUnavailable ? (
+        <TownMapUnavailable>
+          <span>The trail map is unavailable.</span>
+          {sessionId ? (
+            <RetryButton
+              type="button"
+              disabled={mapQuery.isFetching}
+              onClick={() => mapQuery.refetch()}
+            >
+              {mapQuery.isFetching ? "Trying again…" : "Try again"}
+            </RetryButton>
+          ) : null}
+        </TownMapUnavailable>
       ) : (
         <>
           <PhaserMapHost
@@ -93,6 +105,34 @@ const TownLoading = styled.p`
   border: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.92rem;
+`;
+
+const TownMapUnavailable = styled.div`
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
+  color: var(--danger-text);
+  font-size: 0.92rem;
+`;
+
+const RetryButton = styled.button`
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  background: transparent;
+  color: var(--danger-text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
 `;
 
 const MapLegend = styled.p`

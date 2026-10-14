@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { StartingTownStep } from "../components/start-flow/StartingTownStep";
 import { getWorldMap } from "../api/wildBunchApi";
 import type { WorldMapDto } from "../api/types";
@@ -45,6 +46,14 @@ function createMapData(overrides: Partial<WorldMapDto> = {}): WorldMapDto {
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 function renderStep(
   overrides: {
     sessionId?: string;
@@ -75,17 +84,7 @@ function renderStep(
 }
 
 describe("StartingTownStep", () => {
-  it("renders towns fetched from the backend", async () => {
-    mockedGetWorldMap.mockResolvedValue(createMapData());
-
-    renderStep();
-
-    expect(
-      await screen.findByRole("img", { name: /trail map of starting towns/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the Phaser map host", async () => {
+  it("renders the populated world map", async () => {
     mockedGetWorldMap.mockResolvedValue(createMapData());
 
     renderStep();
@@ -96,21 +95,65 @@ describe("StartingTownStep", () => {
   });
 
   it("shows the loading state copy while the map is fetching", () => {
-    mockedGetWorldMap.mockReturnValue(new Promise(() => {}));
+    const pending = deferred<WorldMapDto>();
+    mockedGetWorldMap.mockReturnValue(pending.promise);
 
     renderStep();
 
     expect(screen.getByText("Saddling up the map…")).toBeInTheDocument();
+    pending.resolve(createMapData());
   });
 
-  it("shows the loading state copy when the fetch resolves to an empty town list", async () => {
-    mockedGetWorldMap.mockResolvedValue({ towns: [], trails: [] });
+  it("offers recovery when the settled map contains no selectable towns", async () => {
+    mockedGetWorldMap
+      .mockResolvedValueOnce({ towns: [], trails: [] })
+      .mockResolvedValueOnce(createMapData());
 
     renderStep();
 
-    await waitFor(() => {
-      expect(screen.getByText("Saddling up the map…")).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/the trail map is unavailable/i)).toBeInTheDocument();
+    expect(screen.queryByText("Saddling up the map…")).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /try again/i }));
+
+    expect(
+      await screen.findByRole("img", { name: /trail map of starting towns/i }),
+    ).toBeInTheDocument();
+    expect(mockedGetWorldMap).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers recovery when loading the settled map fails", async () => {
+    const retry = deferred<WorldMapDto>();
+    mockedGetWorldMap
+      .mockRejectedValueOnce(new Error("Network down"))
+      .mockReturnValueOnce(retry.promise);
+
+    renderStep();
+
+    expect(await screen.findByText(/the trail map is unavailable/i)).toBeInTheDocument();
+    expect(screen.queryByText("Saddling up the map…")).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /try again/i }));
+
+    expect(screen.getByText("Saddling up the map…")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
+    expect(mockedGetWorldMap).toHaveBeenCalledTimes(2);
+
+    retry.resolve(createMapData());
+    expect(
+      await screen.findByRole("img", { name: /trail map of starting towns/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not fetch or offer retry without a session identity", () => {
+    renderStep({ sessionId: "" });
+
+    expect(screen.getByText(/the trail map is unavailable/i)).toBeInTheDocument();
+    expect(screen.queryByText("Saddling up the map…")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
+    expect(mockedGetWorldMap).not.toHaveBeenCalled();
   });
 
   it("renders the heading copy from the copy doc", async () => {
