@@ -58,6 +58,8 @@ The test named `preserves player name draft through the full start flow` only ch
 
 `StartOverConfirmation.test.tsx`, `GameSettingsOverlay.test.tsx` and `StartOverRegression.test.tsx` exercise success, cancellation and surface reachability, but do not reject archive. The mutation owner explicitly distinguishes already-archived/409 from other errors: the former clears local session state and the latter retains it and reports failure. Cover those distinct outcomes and retry behavior; preserve the cancellation and busy-state guards.
 
+**Dated disposition, 2026-10-15, N-64 W-08 archive retry:** `StartOverConfirmation.test.tsx` now covers a dropped archive response followed by a failed status read, preservation of the selected game and confirmation UI, pending-action lockout on retry, and a retry 409 that is accepted only after a fresh game read reports `Archived`. The UI clears local selection after that authoritative confirmation. The Domain double-archive rejection and PostgreSQL API 409 scenario remain the event-boundary owners; the web test proves client orchestration and does not claim event persistence. A mutation that rejected the archived status read failed this scenario; production source was restored byte-for-byte. This closes the archive retry/reconciliation portion of W-08 only.
+
 ### W-09: Dev panel tests stop before failure and state recovery
 
 `SessionDevPanel.test.tsx`, `TravelDevPanel.test.tsx`, `SaloonDevPanel.test.tsx` and `TownLayoutDevPanel.test.tsx` mostly prove successful request forwarding. Their owners contain catch/finally error and pending-state behavior that the tests do not exercise. For representative distinct operations, prove rejected mutation, displayed error, unchanged authoritative context, restored controls and retry; combine successful dispatch with observing the refreshed context where that is the scenario contract.
@@ -376,7 +378,7 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/SetupHuntStep.test.tsx` | Retain draft/value selection, exact option order and accessible control semantics; retire incidental thumb/markup/style construction and redundant legacy-label exclusions (W-11, N-63). |
 | `tests/SheriffPlace.test.tsx` | Retain wanted-poster/records interaction and public rendering; coordinate shared notice setup with beat-narration tests. |
 | `tests/StartFlow.test.tsx` | Consolidate repeated successful walks; repair overclaimed name-preservation assertion and add failed transition scenarios (W-08). |
-| `tests/StartOverConfirmation.test.tsx` | Consolidate confirmation side effects and cancellation; preserve pending interaction and add distinct archive failures (W-08). |
+| `tests/StartOverConfirmation.test.tsx` | Retain cancellation and archive state behavior; N-64 covers failed reconciliation, pending retry, and 409 recovery only after the server confirms `Archived` (W-08). |
 | `tests/StartOverRegression.test.tsx` | Retain materially distinct route/surface reachability; consolidate shared archive lifecycle proof with its owner. |
 | `tests/StartingTownStep.test.tsx` | Replace duplicate host assertions with loaded data/selection; settle and test terminal empty/error recovery (W-07). |
 | `tests/StorePlaceFeedback.test.tsx` | Retain meaningful purchase feedback and failed-result rendering; distinguish a server-declined result from rejected HTTP transport. |
