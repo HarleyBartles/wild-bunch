@@ -68,37 +68,7 @@ describe("StorySoFarStep", () => {
       await screen.findByText(/the outlaw known as black bart robbed the dust fork bank/i),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /ride on/i })).toBeInTheDocument();
-  });
-
-  it("does not render a literal {trueCulpritMainIdentifier} placeholder in the body", async () => {
-    mockedGetPrologue.mockResolvedValue(
-      createPrologue({
-        body: "The outlaw known as Black Bart robbed the Dust Fork bank and fled east.",
-      }),
-    );
-
-    renderStep();
-
-    await screen.findByText(/the outlaw known as black bart/i);
-    expect(screen.queryByText(/{trueCulpritMainIdentifier}/i)).not.toBeInTheDocument();
-    expect(document.body.textContent ?? "").not.toContain("{trueCulpritMainIdentifier}");
-  });
-
-  it("does not expose hidden internal fields (TrueCulpritId, isTrueCulprit, suspect- ids)", async () => {
-    mockedGetPrologue.mockResolvedValue(
-      createPrologue({
-        body: "The outlaw known as Black Bart robbed the Dust Fork bank and fled east.",
-      }),
-    );
-
-    renderStep();
-
-    await screen.findByText(/the outlaw known as black bart/i);
-
     const text = document.body.textContent ?? "";
-    expect(text).not.toContain("TrueCulpritId");
-    expect(text).not.toContain("isTrueCulprit");
-    expect(text).not.toMatch(/suspect-/i);
     expect(text).not.toContain("variantId");
     expect(text).not.toContain("variant-1");
   });

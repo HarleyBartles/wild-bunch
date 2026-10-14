@@ -4,7 +4,7 @@ import { CaseFileSurface } from "../components/CaseFileSurface";
 import { createJournal } from "./test-utils/factories";
 
 describe("CaseFileSurface", () => {
-  it("keeps learned clues and same-name warrant records distinct after a turn-in", () => {
+  it("shows the case summary with learned clues and same-name warrant records after a turn-in", () => {
     const journal = createJournal({
       caseFile: {
         accusationId: null,
@@ -70,6 +70,7 @@ describe("CaseFileSurface", () => {
 
     render(<CaseFileSurface journal={journal} loading={false} error="" />);
 
+    expect(screen.getByText("Bring the Wild Bunch to justice.")).toBeInTheDocument();
     expect(
       screen.getByText(
         "A man with a distinctive red neckerchief was seen leaving Bulletville headed east.",

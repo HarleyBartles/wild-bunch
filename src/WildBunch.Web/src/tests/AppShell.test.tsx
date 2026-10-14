@@ -453,7 +453,7 @@ describe("AppShell", () => {
     expect(screen.getByText(/opening lead:/i)).toBeInTheDocument();
   });
 
-  it("opens the Journal overlay and renders the journal surface", async () => {
+  it("keeps case-summary content separate from the journal when its overlay opens", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
