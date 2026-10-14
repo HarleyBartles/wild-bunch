@@ -8,6 +8,8 @@ using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Travel;
+using WildBunch.Domain.World;
+using WildBunch.GameContent.NewGame;
 using WildBunch.Integration.Tests.TestInfrastructure;
 
 namespace WildBunch.Integration.Tests;
@@ -59,7 +61,25 @@ public sealed class GameApiTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        var canonicalScenario = BoringScenarioBuilder.MountedTravelReady();
+        var mixedBagSeed = SeedWorldResolver.CreateRepresentativeSeedCode(
+            SeedWorldResolver.CreateCanonicalSeedWorld() with
+            {
+                ProsperityPalette = ProsperityPalette.MixedBag
+            });
+        var scenario = canonicalScenario with
+        {
+            Fixture = canonicalScenario.Fixture with
+            {
+                Name = "MixedBagProsperityWireValues",
+                SeedCode = SeedWorldResolver.FormatSeedCode(mixedBagSeed)
+            }
+        };
+        var expectedSession = scenario.CreateSession("Ranger Vale");
+        var expectedProsperityByTownId = expectedSession.World.Towns
+            .Where(town => town.Layout is not null)
+            .ToDictionary(town => town.Id.Value, town => (int)town.Layout!.Prosperity);
+        Assert.Equal(new[] { 0, 1, 2, 3 }, expectedProsperityByTownId.Values.Distinct().Order());
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -89,17 +109,22 @@ public sealed class GameApiTests
         Assert.NotEmpty(townsWithLayouts);
 
         var typedTownsById = fetchedSession.World.Towns.ToDictionary(town => town.Id);
+        var observedProsperityCodes = new HashSet<int>();
         foreach (var jsonTown in townsWithLayouts)
         {
             var townId = jsonTown.GetProperty("id").GetString();
             Assert.NotNull(townId);
+            Assert.True(expectedProsperityByTownId.TryGetValue(townId!, out var expectedProsperity));
             var typedTown = Assert.Contains(townId!, typedTownsById);
             Assert.NotNull(typedTown.Layout);
 
             var jsonProsperity = jsonTown.GetProperty("layout").GetProperty("prosperity");
             Assert.Equal(JsonValueKind.Number, jsonProsperity.ValueKind);
+            Assert.Equal(expectedProsperity, jsonProsperity.GetInt32());
             Assert.Equal((int)typedTown.Layout!.Prosperity, jsonProsperity.GetInt32());
+            observedProsperityCodes.Add(jsonProsperity.GetInt32());
         }
+        Assert.Equal(new[] { 0, 1, 2, 3 }, observedProsperityCodes.Order());
 
         Assert.DoesNotContain("\"money\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"supplies\"", payload, StringComparison.OrdinalIgnoreCase);
