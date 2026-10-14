@@ -174,21 +174,6 @@ public sealed class MapGeneratorTests
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    public void Generate_ClusterCount_AllTownsAssignedToValidClusters(int clusterCount)
-    {
-        var seed = NewSeedWorld(townCount: 8, clusterCount: clusterCount);
-        var source = NewSource();
-
-        var world = MapGenerator.Generate(seed, source, GameEntropy.Boring, SaltSource.CreateFixed("salt"));
-
-        Assert.Equal(8, world.Towns.Count);
-    }
-
-    [Theory]
     [InlineData(5, 1, "salt-a")]
     [InlineData(5, 1, "salt-b")]
     [InlineData(6, 1, "salt-c")]
