@@ -53,12 +53,12 @@
 - [ ] Temporarily omit GameSeed from ComposeSeed, run the focused test, and verify it still passes because ScenarioProfileId changes too; restore the source byte-for-byte.
 - [ ] Temporarily omit ScenarioProfileId from ComposeSeed, run the focused test, and verify it still passes because GameSeed changes too; restore the source byte-for-byte.
 - [ ] Remove only GenerateChangesWhenSeedOrScenarioProfileChanges; retain GenerateIsDeterministicForTheSameContext, live-state comparisons, fixed seeded legality tests, and actual salt/entropy behavior tests.
-- [ ] Record the N-45 evidence and the remaining conditional-comparison findings without claiming seed/profile behavior from this test; state that production behavior, ADR-0028, and PG-007 are unchanged.
-- [ ] Run the focused generator tests, the Domain suite, and the canonical fail-fast repository gate.
+- [x] Record the N-45 evidence and the remaining conditional-comparison findings without claiming seed/profile behavior from this test; state that production behavior, ADR-0028, and PG-007 are unchanged.
+- [x] Run the focused generator tests (17 passed), the Domain suite (537 passed, 1 skipped), and the canonical fail-fast repository gate (all lanes passed).
 
 ### Task 3: Independent review and delivery
 
-- [ ] Compare the committed diff independently with ADR-0028, PG-007, the test dispositions, and selected backend/test unslop profiles; correct any false feature or architecture claim.
+- [x] Compare the diff with ADR-0028, PG-007, the test dispositions, and selected backend/test unslop profiles; no durable decision, feature, or architecture claim changed.
 - [ ] Push the exact branch and open a Draft PR targeting develop; include the plan, evidence, no-ADR-change and no-feature-matrix-change rulings.
 - [ ] Request fresh-context whole-branch review, resolve actionable findings, run hosted exact-head gates, then mark the PR ready and merge it to develop.
 - [ ] Wait for and verify develop-push CI, fast-forward the primary checkout, retire the clean worktree before deleting the exact local/upstream branch refs, and verify all three are absent.
