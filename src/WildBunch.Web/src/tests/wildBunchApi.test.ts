@@ -34,6 +34,22 @@ describe("wildBunchApi", () => {
     );
   });
 
+  it("preserves a structured HTTP failure from the travel preview endpoint", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ title: "The road is closed." }), {
+          status: 409,
+          headers: { "content-type": "application/problem+json" },
+        }),
+      ),
+    );
+
+    const failure = await previewTravel("game-1", "holloway").catch((error: unknown) => error);
+
+    expect(failure).toMatchObject({ message: "The road is closed.", status: 409 });
+  });
+
   it("sends the setup operation ID and exact request body", async () => {
     const fetchMock = vi.fn().mockResolvedValue(successfulResponse());
     vi.stubGlobal("fetch", fetchMock);
