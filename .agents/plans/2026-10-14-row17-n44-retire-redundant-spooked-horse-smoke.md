@@ -8,7 +8,7 @@
 
 **Tech Stack:** .NET 10, xUnit, Wild Bunch Domain travel tests and test audit documents.
 
-**Spec:** The [Stable 0.1.0 baseline](../specs/2026-10-07-stable-0.1.0-baseline.md), row 17 of the [roadmap](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md), the [test-quality investigation](../investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md), the [test dispositions](../investigations/stable-0.1.0/2026-10-06-dotnet-test-dispositions.md), validation doctrine and ADR-0029.
+**Spec:** The [Stable 0.1.0 baseline](../specs/2026-10-07-stable-0.1.0-baseline.md), row 17 of the [roadmap](../roadmaps/2026-10-07-stable-0.1.0-cleanup.md), the [test-quality investigation](../investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md), the [test dispositions](../investigations/stable-0.1.0/2026-10-06-dotnet-test-dispositions.md), validation doctrine and ADR-0028.
 
 **Execution Strategy:** `executing-plans` (native inline execution; one sequential test-audit correction slice).
 
@@ -53,11 +53,11 @@
 - Consumes: `AdvanceJourneyDayOnFootWithoutAHorseDoesNotProduceSpookedHorse`, its sole-use `CreateNoHorseBadLuckSession` fixture, N-32's `GenerateFallsBackWhenOnlyTheHorseSpecificUnluckyEventRemainsWithoutAHorse`, the horse-required candidate filter and the controlled mutation result showing the command-level scenario passes when that filter is disabled.
 - Produces: removal of a redundant sampled command test and its only-use fixture, with a dated disposition documenting the mutation evidence and retained owner-level behavior proof.
 
-- [ ] Confirm `CreateNoHorseBadLuckSession` has no caller beyond the command-level test; record that both targeted tests pass before mutation.
-- [ ] Disable the `RequiresHorse` candidate filter temporarily and rerun both tests. Preserve the evidence that the command-level test passes while the N-32 generator test fails on the spooked-horse candidate; restore production byte-for-byte and verify the worktree diff is clean before editing.
-- [ ] Remove the command-level test and its sole-use fixture; do not replace it because N-32 proves the exact invariant at its owner and the command test detected no distinct behavior.
-- [ ] Update the test dispositions and investigation with the dated N-44 rationale; compare ADR-0029 and the feature matrix and record why neither changes.
-- [ ] Run the retained focused generator behavior test, the complete Domain test project, then commit through the check-only hook and require the fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
+- [x] Confirm `CreateNoHorseBadLuckSession` has no caller beyond the command-level test; record that both targeted tests pass before mutation.
+- [x] Disable the `RequiresHorse` candidate filter temporarily and rerun both tests. Preserve the evidence that the command-level test passes while the N-32 generator test fails on the spooked-horse candidate; restore production byte-for-byte and verify the worktree diff is clean before editing.
+- [x] Remove the command-level test and its sole-use fixture; do not replace it because N-32 proves the exact invariant at its owner and the command test detected no distinct behavior.
+- [x] Update the test dispositions and investigation with the dated N-44 rationale; compare ADR-0028 and the feature matrix and record why neither changes.
+- [x] Run the retained focused generator behavior test, the complete Domain test project, then commit through the check-only hook and require the fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
 
 ## Task 3: Review and deliver N-44
 

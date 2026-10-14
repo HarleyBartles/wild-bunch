@@ -378,21 +378,6 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayOnFootWithoutAHorseDoesNotProduceSpookedHorse()
-    {
-        var session = CreateNoHorseBadLuckSession();
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
-        session.StartJourney(preview);
-
-        var result = session.AdvanceJourneyDay();
-
-        Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, result.TrailEvent?.Id);
-        Assert.DoesNotContain("spooked the horse", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(session.TravelDiaryDays.Last().Entries, entry => entry.Contains("spooked the horse", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
     public void AdvanceJourneyDayCanTriggerAnAdditionalLuckyFoodCacheEventOnEasyOpenRangeRoutes()
     {
         var session = CreateEasyLuckyFoodSession(new SaltSource(SaltSourceMode.Runtime, "n27-lucky-food-1"));
@@ -1344,30 +1329,6 @@ public sealed class TravelResolverTests
         {
             new DomainInventoryItem(DomainItemKind.Food, 3),
             new DomainInventoryItem(DomainItemKind.Canteen, 1)
-        });
-
-        return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-    }
-
-    private static GameSession CreateNoHorseBadLuckSession()
-    {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
-        var holloway = new Town(new TownId("holloway"), "Holloway");
-        var world = new DomainWorld(
-            new[] { pinecross, holloway },
-            new[]
-            {
-                new Trail(new TrailId("trail-pine-hollow"), pinecross.Id, holloway.Id, TrailRisk.Moderate, TrailTerrain.Hills, WaterFeature.Spring)
-            });
-
-        var caseFile = CreateCaseFile();
-        var inventory = new DomainInventory(new[]
-        {
-            new DomainInventoryItem(DomainItemKind.Food, 3),
-            new DomainInventoryItem(DomainItemKind.Canteen, 1),
-            new DomainInventoryItem(DomainItemKind.Knife, 1),
-            new DomainInventoryItem(DomainItemKind.Revolver, 1),
-            new DomainInventoryItem(DomainItemKind.RevolverAmmo, 2)
         });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
