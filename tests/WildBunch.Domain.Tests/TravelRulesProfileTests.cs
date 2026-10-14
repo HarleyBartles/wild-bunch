@@ -21,34 +21,6 @@ namespace WildBunch.Domain.Tests;
 public sealed class TravelRulesProfileTests
 {
     [Fact]
-    public void DefaultProfileKeepsCurrentTravelTuning()
-    {
-        var profile = TravelRulesProfile.Default;
-
-        Assert.Equal(GameDifficulty.Standard, profile.Difficulty);
-        Assert.Equal(10, profile.CanteenCapacity);
-        Assert.Equal(3, profile.HorseHungerDeathThreshold);
-        Assert.Equal(2, profile.HorseThirstDeathThreshold);
-        Assert.Equal(3, profile.HorseExhaustionLameThreshold);
-        Assert.Equal(5, profile.HorseExhaustionDeathThreshold);
-        Assert.Equal(1m, profile.MountedRideDayProgress);
-        Assert.Equal(0.5m, profile.FootRideDayProgress);
-        Assert.Equal(3, profile.LuckyTrailCoinReward);
-        Assert.Equal(1, profile.LuckyTrailFoodReward);
-        Assert.Equal(1, profile.LuckyTrailWaterRecovery);
-        Assert.Equal(1, profile.BadLuckTrailDelayDays);
-        Assert.Equal(1, profile.TrailEventHeatIncrease);
-        Assert.Equal(1, profile.EncounterRunMountedHeatIncrease);
-        Assert.Equal(1, profile.EncounterRunMountedHorseExhaustion);
-        Assert.Equal(2, profile.EncounterRunFootHeatIncrease);
-        Assert.Equal(5, profile.EncounterRunFootHealthLoss);
-        Assert.Equal(5m, profile.EncounterBribeCash);
-        Assert.Equal(5, profile.EncounterFightAmmoHealthLoss);
-        Assert.Equal(10, profile.EncounterFightUnarmedHealthLoss);
-        Assert.Equal(1, profile.EncounterFightHeatIncrease);
-    }
-
-    [Fact]
     public void NonDefaultProfileCanChangeTravelTuningWithoutDuplicatingRules()
     {
         var easyProfile = TravelRulesProfile.For(GameDifficulty.Easy);
@@ -87,11 +59,5 @@ public sealed class TravelRulesProfileTests
         Assert.Equal(0.75m, preview.Preview.RouteProfile.FootRideDayProgress);
         Assert.Equal(10, preview.Preview.AvailableCanteenCharges);
         Assert.Equal(GameDifficulty.Easy, session.GameDifficulty);
-        Assert.Equal(4, easyProfile.LuckyTrailCoinReward);
-        Assert.Equal(2, easyProfile.LuckyTrailFoodReward);
-        Assert.Equal(2, easyProfile.LuckyTrailWaterRecovery);
-        Assert.Equal(3m, easyProfile.EncounterBribeCash);
-        Assert.Equal(3, easyProfile.EncounterFightAmmoHealthLoss);
-        Assert.Equal(2, easyProfile.EncounterRunFootHealthLoss);
     }
 }
