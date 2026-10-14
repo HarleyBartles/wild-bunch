@@ -273,12 +273,12 @@ public sealed class TravelResolverTests
     }
 
     [Fact]
-    public void AdvanceJourneyDayCanApplyABadLuckTrailEventOnLowRiskRoutes()
+    public void AdvanceJourneyDayAppliesBadLuckWashoutDelayAndReplays()
     {
         var session = CreateLuckyFootSession();
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("silvercreek"), session.Player.Inventory).Preview!;
-        session.StartJourney(preview);
+        Assert.True(session.StartJourney(preview).Success);
 
         var result = session.AdvanceJourneyDay();
 
@@ -287,10 +287,42 @@ public sealed class TravelResolverTests
         Assert.NotNull(result.Journey);
         Assert.NotNull(result.TrailEvent);
         Assert.Equal(JourneyTrailEventKind.BadLuck, result.TrailEvent!.Kind);
+        Assert.Equal(JourneyTrailEventId.BadLuckWashout, result.TrailEvent.Id);
         Assert.True(result.TrailEvent!.DelayDays > 0);
-        Assert.Equal(1 + result.TrailEvent!.DelayDays, session.Journey!.RemainingDays);
+        Assert.Equal(1 + result.TrailEvent.DelayDays, result.Journey!.RemainingDays);
+        Assert.Equal(result.Journey.RemainingDays, session.Journey!.RemainingDays);
+        Assert.Equal(result.TrailEvent.DelayDays, result.Journey.DelayDays);
+
+        var applied = Assert.Single(
+            session.AllEvents.OfType<TrailEventApplied>(),
+            appliedEvent => appliedEvent.TrailEventId == JourneyTrailEventId.BadLuckWashout);
+        Assert.Equal(result.TrailEvent.DelayDays, applied.DelayDays);
+        Assert.Equal(result.Journey.DelayDays, applied.JourneySnapshot.DelayDays);
+        Assert.Equal(result.Journey.RemainingDays, applied.JourneySnapshot.RemainingDays);
+
+        var dayAdvanced = Assert.Single(session.AllEvents.OfType<TravelDayAdvanced>());
+        Assert.Equal(result.Journey.DelayDays, dayAdvanced.JourneySnapshot.DelayDays);
+        Assert.Equal(result.Journey.RemainingDays, dayAdvanced.JourneySnapshot.RemainingDays);
         Assert.Equal(2, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents.ToList());
+        var commandJourney = session.Journey.ToSnapshot(session.TravelRules);
+        var replayedJourney = replayed.Journey!.ToSnapshot(replayed.TravelRules);
+
+        Assert.Equal(commandJourney.DelayDays, replayedJourney.DelayDays);
+        Assert.Equal(commandJourney.RemainingRideDayDistance, replayedJourney.RemainingRideDayDistance);
+        Assert.Equal(commandJourney.RemainingDays, replayedJourney.RemainingDays);
+        Assert.Equal(commandJourney.Status, replayedJourney.Status);
+        Assert.Equal(commandJourney.DaysTravelled, replayedJourney.DaysTravelled);
+        Assert.Equal(session.Clock.Day, replayed.Clock.Day);
+        Assert.Equal(session.Clock.Turn, replayed.Clock.Turn);
+        Assert.Equal(
+            session.Player.Inventory.GetQuantity(DomainItemKind.Food),
+            replayed.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        Assert.Equal(
+            session.Player.Inventory.GetCanteenState(),
+            replayed.Player.Inventory.GetCanteenState());
     }
 
     [Fact]

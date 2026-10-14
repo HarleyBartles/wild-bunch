@@ -57,12 +57,12 @@
 - Consumes: `CreateLuckyFootSession`, canonical `StartJourney` and `AdvanceJourneyDay`, fixed Classic entropy and salt source, `BadLuckWashout`, `TrailEventApplied`, `TravelDayAdvanced`, and exact-stream `GameSession.RehydrateFromEvents`.
 - Produces: a deterministic aggregate behavior test proving the selected washout is recorded and its delay survives command state and event replay; an accurately narrowed test-audit disposition.
 
-- [ ] Replace the low-risk smoke assertions with a specific `BadLuckWashout` assertion while retaining the actual journey start and day-advance commands.
-- [ ] Require the matching `TrailEventApplied` fact and positive delay; require its journey snapshot, the `TravelDayAdvanced` snapshot and live journey to reflect the delay and remaining progress after one day advances.
-- [ ] Rehydrate from the original ordered `AllEvents` stream and compare delay, remaining route distance/days, status, days travelled, clock and relevant inventory with command state.
-- [ ] Prove the added oracle's bite by temporarily removing the washout delay from the established command outcome; the focused test must fail on the delayed journey state. Restore production byte-for-byte.
-- [ ] Update the test dispositions and investigation to close only the low-risk washout event-fact/replay gap. Compare ADR-0028 and the feature matrix; record why neither changes.
-- [ ] Run the focused test and complete Domain test project, then commit through the check-only hook and require its fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
+- [x] Replace the low-risk smoke assertions with a specific `BadLuckWashout` assertion while retaining the actual journey start and day-advance commands.
+- [x] Require the matching `TrailEventApplied` fact and positive delay; require its journey snapshot, the `TravelDayAdvanced` snapshot and live journey to reflect the delay and remaining progress after one day advances.
+- [x] Rehydrate from the original ordered `AllEvents` stream and compare delay, remaining route distance/days, status, days travelled, clock and relevant inventory with command state.
+- [x] Prove the added oracle's bite by temporarily removing the washout delay from the established command outcome; the focused test must fail on the delayed journey state. Restore production byte-for-byte.
+- [x] Update the test dispositions and investigation to close only the low-risk washout event-fact/replay gap. Compare ADR-0028 and the feature matrix; record why neither changes.
+- [x] Run the focused test and complete Domain test project, then commit through the check-only hook and require its fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
 
 ## Task 3: Review and deliver N-42
 
