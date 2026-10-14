@@ -56,12 +56,12 @@
 - Consumes: `PreSessionSurface`, setup/prologue/start commands, and the Phaser map-host selection callback.
 - Produces: one rendered success scenario asserting exact setup values, authoritative phase transitions, selected town, and an explicitly pending first-arrival state.
 
-- [ ] Strengthen the existing exact-payload success scenario to hold `startGameWithTown` pending after selecting a town through `scene.selectTown`, then assert the creating heading and pending copy before resolving the server response.
-- [ ] Assert the exact setup name, normalized seed, difficulty, entropy, operation identity, and selected-town request at their command boundaries; preserve assertions only where they prove those behaviors.
-- [ ] Remove duplicate successful-only tests for setup-to-story, story-to-town, name-draft labeling, immediate creating display, and separate map-host town forwarding once the canonical scenario proves those same behaviors.
-- [ ] Keep materially distinct refresh, definitive failure and correction, uncertain retry, invalid seed, no-selection, and no-Back scenarios. Do not add a test solely for generated/source shape.
-- [ ] Temporarily move the creating transition after the awaited start request; confirm the strengthened pending-state assertion fails, restore `PreSessionSurface.tsx` byte-for-byte, and rerun the focused test.
-- [ ] Run `npm exec -- vitest run src/tests/StartFlow.test.tsx` from `src/WildBunch.Web`; the focused suite must pass.
+- [x] Strengthen the existing exact-payload success scenario to hold `startGameWithTown` pending after selecting a town through `scene.selectTown`, then assert the creating heading and pending copy before resolving the server response.
+- [x] Assert the exact setup name, normalized seed, difficulty, entropy, operation identity, and selected-town request at their command boundaries; preserve assertions only where they prove those behaviors.
+- [x] Remove duplicate successful-only tests for setup-to-story, story-to-town, name-draft labeling, immediate creating display, and separate map-host town forwarding once the canonical scenario proves those same behaviors.
+- [x] Keep materially distinct refresh, definitive failure and correction, uncertain retry, invalid seed, no-selection, and no-Back scenarios. Do not add a test solely for generated/source shape.
+- [x] Temporarily move the creating transition after the awaited start request; confirm the strengthened pending-state assertion fails, restore `PreSessionSurface.tsx` byte-for-byte, and rerun the focused test.
+- [x] Run `npm exec -- vitest run src/tests/StartFlow.test.tsx` from `src/WildBunch.Web`; the focused suite must pass.
 
 ### Task 3: Reconcile the W-08 and web-test audit
 
@@ -73,20 +73,20 @@
 - Consumes: live StartFlow test behavior, existing N-60 startup recovery disposition, and N-64 archive retry disposition.
 - Produces: an accurate dated W-08 reconciliation and a current test-owner recommendation that does not continue to describe already-covered failure paths as missing.
 
-- [ ] Update the StartFlow inventory row to state that the successful path is consolidated and that failure/retry/refresh behavior remains with its distinct owners.
-- [ ] Add a dated N-65 disposition describing only the removed redundant success walks and the mutation-proven pending first-arrival assertion; preserve the prior N-60 and N-64 evidence unchanged.
-- [ ] Reconcile W-08's current wording against the actual setup, prologue, first-arrival, and archive tests; retain any genuinely unproven behavior as an open finding rather than closing it by assertion.
-- [ ] Confirm PG-002, the feature matrix, and applicable ADRs remain accurate; do not update them absent a durable decision or player-promise change.
+- [x] Update the StartFlow inventory row to state that the successful path is consolidated and that failure/retry/refresh behavior remains with its distinct owners.
+- [x] Add a dated N-65 disposition describing only the removed redundant success walks and the mutation-proven pending first-arrival assertion; preserve the prior N-60 and N-64 evidence unchanged.
+- [x] Reconcile W-08's current wording against the actual setup, prologue, first-arrival, and archive tests; retain any genuinely unproven behavior as an open finding rather than closing it by assertion.
+- [x] Confirm PG-002, the feature matrix, and applicable ADRs remain accurate; do not update them absent a durable decision or player-promise change.
 
 ### Task 4: Validate and commit the test correction
 
 **Files:**
 - Review: the complete candidate from Tasks 1-3.
 
-- [ ] Run repository command-bus format and lint checks on the changed TSX file; use `git diff --check` for Markdown and whitespace.
-- [ ] Run the canonical fail-fast `py -3 tools/run.py ci --check` from the repository root; stop at the first failed lane and repair it before proceeding.
-- [ ] Inspect the full candidate diff and confirm it contains only N-64 promotion, one version increment, StartFlow test consolidation, and accurate dated audit updates.
-- [ ] Commit the behavior and disposition through the normal check-only staged-candidate hook.
+- [x] Run repository command-bus format and lint checks on the changed TSX file; use `git diff --check` for Markdown and whitespace.
+- [x] Run the canonical fail-fast `py -3 tools/run.py ci --check` from the repository root; stop at the first failed lane and repair it before proceeding.
+- [x] Inspect the full candidate diff and confirm it contains only N-64 promotion, one version increment, StartFlow test consolidation, and accurate dated audit updates.
+- [x] Commit the behavior and disposition through the normal check-only staged-candidate hook.
 
 ### Task 5: Review and deliver N-65
 
