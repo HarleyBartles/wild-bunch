@@ -66,6 +66,8 @@ The session RNG-lock assertion uses `objectContaining({})`, which proves no salt
 
 **Dated disposition, 2026-10-08:** The Town Layout dev panel and its unsupported prep/set flow were retired for 0.1.0, so the panel's call-only and failure-recovery recommendations no longer apply. Session RNG lock/clear was also removed; deterministic gameplay tests use the fixed-salt genesis seam. Remaining dev controls still need observed backend readback and rejection recovery where those behaviors are part of their live contract.
 
+**Dated disposition, 2026-10-14:** `SessionDevPanel.test.tsx` now proves difficulty and entropy rejection messages, unchanged backend-selected values after rejection, retry dispatch, and updated values only after context refresh. `TravelDevPanel.test.tsx` and `SaloonDevPanel.test.tsx` now prove force/clear rejection preserves the last backend-read override, errors remain visible, the existing controls disable while mutations are pending and recover after rejection, and successful retries update the displayed override only after context refresh. Targeted Session difficulty and entropy, Travel force, and Saloon clear tests failed under behavior-breaking mutations of their owning handlers, and the production files were restored byte-for-byte. The current Session, Travel, and Saloon mutation handlers needed no production fix; Town Layout and Session RNG lock/clear remain retired for 0.1.0. This resolves the remaining live-panel failure/readback scope of W-09 without changing developer commands, events, deployment boundaries, or product promises.
+
 ### W-10: Transport and travel failures are unexercised
 
 `wildBunchApi.test.ts` tests successful preview URLs but provides no HTTP failure proof. `api/httpClient.ts` has known error extraction for title, error, validation errors, detail, plain text and fallback status, including unreadable-body handling. Add a focused transport scenario table for meaningful error propagation and fetch rejection. Decide the desired successful malformed-body behavior separately; the current cast is not runtime schema validation.
@@ -364,9 +366,9 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/JournalSurface.test.tsx` | Retain grouping and actual public rendering; retire unsupported hidden-marker absence claims (W-06). |
 | `tests/PhaserMapHost.test.tsx` | Consolidate mount lifecycle and selection adapter scenarios; preserve invalid selection; remove property-absence boundary detectors (W-04). |
 | `tests/PhaserTownHubHost.test.tsx` | Retain host lifecycle/data/callback behavior; remove property-absence networking proof (W-04). |
-| `tests/SaloonDevPanel.test.tsx` | Retain force/clear semantics; consolidate context/dispatch scenarios and cover failure recovery (W-09). |
+| `tests/SaloonDevPanel.test.tsx` | Retain force/clear semantics; rejected force/clear recovery, server readback, and pending-control restoration now have behavior proof (W-09). |
 | `tests/SessionAuditDevPanel.test.tsx` | Retain actual diagnostic rendering, loading and failure behavior; dev audit visibility is intentionally distinct from player secrecy. |
-| `tests/SessionDevPanel.test.tsx` | Replace empty payload matcher with salt semantics; consolidate caption/call fragments and cover failures (W-09). |
+| `tests/SessionDevPanel.test.tsx` | Difficulty/entropy rejection, retry, and authoritative refreshed readback now have behavior proof (W-09). |
 | `tests/SetupHuntStep.test.tsx` | Retain draft/value selection and accessible control semantics; retire incidental thumb/markup/style construction assertions (W-11). |
 | `tests/SheriffPlace.test.tsx` | Retain wanted-poster/records interaction and public rendering; coordinate shared notice setup with beat-narration tests. |
 | `tests/StartFlow.test.tsx` | Consolidate repeated successful walks; repair overclaimed name-preservation assertion and add failed transition scenarios (W-08). |
@@ -380,7 +382,7 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/TownHubSurface.test.tsx` | Retain accessible alternate navigation and action dispatch; retire historic copy-absence checks and narrow visual-focus claims (W-11). |
 | `tests/TownLayoutDevPanel.test.tsx` | Retired 2026-10-08 with the unsupported town-layout override; no new failure-recovery panel test. |
 | `tests/TrailFlowSurfaceCompleted.test.tsx` | Consolidate heading, affordance and invocation into completed-arrival behavior; add acknowledgment failure at its owner. |
-| `tests/TravelDevPanel.test.tsx` | Retain force/clear behavior; add rejected mutation/recovery and consolidate successful scenario fragments (W-09). |
+| `tests/TravelDevPanel.test.tsx` | Retain force/clear behavior; rejected mutation recovery, server readback, and pending-control restoration now have behavior proof (W-09). |
 | `tests/TravelPanel.test.tsx` | Retain journey-state, pending, hydration, request payload and current rejected-command state-preservation proof; see the dated W-10 correction below. |
 | `tests/TravelPrepSurface.test.tsx` | Retain meaningful preview presentation, dispatch, domain/transport failure, retry and identity guards; see the dated W-10 correction below. |
 | `tests/TravelRoutesPanel.test.tsx` | Conditional obsolete shell: do not extend its failure matrix; transfer retained behavior to routed travel or retire with the component. |
