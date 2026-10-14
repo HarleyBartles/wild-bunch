@@ -57,11 +57,11 @@
 - Consumes: `AdvanceJourneyDayDoesNotApplyHardRouteOnlyBadLuckOnModerateRoutes`, its `CreateBadLuckSession` fixture, `TravelDayPlanGenerator` risk weighting and Unlucky candidate filtering, N-42's reached low-risk BadLuckWashout proof, and existing generator behavior coverage.
 - Produces: removal of the unsupported test and its sole-use fixture, with an audit disposition explaining the absent invariant and retained behavior coverage.
 
-- [ ] Confirm `CreateBadLuckSession` is used only by the misleading moderate-route test and that the remaining tests already cover event reachability, risk weighting, event-ID suppression and lawful candidate fallback.
-- [ ] Remove `AdvanceJourneyDayDoesNotApplyHardRouteOnlyBadLuckOnModerateRoutes` and its now-unused fixture. Do not add a replacement for a route/event restriction absent from the spec, ADRs and implementation.
-- [ ] Update the dispositions and investigation with a dated correction: route risk affects category weights rather than forbidding BadLuck event IDs; N-42 reaches BadLuckWashout on a low-risk route; this scenario's exact sampled absences and broad completion loop did not establish a durable rule.
-- [ ] Compare ADR-0029 and the feature matrix; record why neither changes and preserve all distinct remaining travel/generator findings.
-- [ ] Run the focused remaining generator and N-42 behavior tests, then the complete Domain test project. Commit through the check-only hook and require its fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
+- [x] Confirm `CreateBadLuckSession` is used only by the misleading moderate-route test and that the remaining tests already cover event reachability, risk weighting, event-ID suppression and lawful candidate fallback.
+- [x] Remove `AdvanceJourneyDayDoesNotApplyHardRouteOnlyBadLuckOnModerateRoutes` and its now-unused fixture. Do not add a replacement for a route/event restriction absent from the spec, ADRs and implementation.
+- [x] Update the dispositions and investigation with a dated correction: route risk affects category weights rather than forbidding BadLuck event IDs; N-42 reaches BadLuckWashout on a low-risk route; this scenario's exact sampled absences and broad completion loop did not establish a durable rule.
+- [x] Compare ADR-0029 and the feature matrix; record why neither changes and preserve all distinct remaining travel/generator findings.
+- [x] Run the focused remaining generator and N-42 behavior tests, then the complete Domain test project. Commit through the check-only hook and require its fail-fast `py -3 tools/run.py ci --check` staged-candidate gate to pass.
 
 ## Task 3: Review and deliver N-43
 
