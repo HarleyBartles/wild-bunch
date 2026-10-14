@@ -80,7 +80,9 @@ The session RNG-lock assertion uses `objectContaining({})`, which proves no salt
 
 ### W-12: Several action predicates have only positive examples
 
-`actionTypePredicates.test.ts` supplies a mismatching action for the first two predicates, but only matching actions for local records, telegraph leads, gossip and saloon. A predicate changed to always return true would satisfy those four tests. Consolidate a small table of matching and mismatching kinds for all six predicates, tied to their routing responsibility. Do not expand this into speculative malformed-object validation. `beatNarrationHook.test.tsx` also repeats notice setup for a raw-turn-absence assertion whose fixture contains no raw turn; combine the useful composed-notice checks and retain the null-narration fallback.
+`actionTypePredicates.test.ts` must prove that every retained action predicate accepts its matching kind and rejects a different currently available kind. Do not expand this into speculative malformed-object validation.
+
+**Dated disposition, 2026-10-14, N-62 action predicate negatives:** `actionTypePredicates.test.ts` now proves matching and mismatching `AvailableActionKind` values for the three retained predicates: wanted posters, local gossip, and saloon observation. Changing each predicate to always return true caused its own negative assertion to fail; production source was restored byte-for-byte. The earlier local-record and telegraph predicate references are retired scope, not live predicates. The investigation also referenced `beatNarrationHook.test.tsx`, which is absent from the current repository; `beatFormatters.test.ts` already owns the retained formatter and null-narration fallback behavior, so the nonexistent inventory row and unsupported W-12 notice-composition recommendation were removed without changing behavior.
 
 ## Frontend consolidation candidates
 
@@ -386,9 +388,8 @@ Paths are relative to `src/WildBunch.Web/src/`.
 | `tests/TravelPanel.test.tsx` | Retain journey-state, pending, hydration, request payload and current rejected-command state-preservation proof; see the dated W-10 correction below. |
 | `tests/TravelPrepSurface.test.tsx` | Retain meaningful preview presentation, dispatch, domain/transport failure, retry and identity guards; see the dated W-10 correction below. |
 | `tests/TravelRoutesPanel.test.tsx` | Conditional obsolete shell: do not extend its failure matrix; transfer retained behavior to routed travel or retire with the component. |
-| `tests/actionTypePredicates.test.ts` | Consolidate matching/mismatching cases for all predicates (W-12). |
+| `tests/actionTypePredicates.test.ts` | Retain matching and mismatching kinds for the three live action predicates; each always-true mutation fails (W-12, N-62). |
 | `tests/beatFormatters.test.ts` | Retain labels, fallback/null handling and pluralization; table-driven cases can reduce repetitive declarations without erasing distinct branches. |
-| `tests/beatNarrationHook.test.tsx` | Retain real hook-to-notice composition and null fallback; consolidate redundant nonadversarial turn-absence proof (W-12). |
 | `tests/formatting.test.ts` | Retain actual money formatting and storage read behavior; table-driven formatting is optional, not a required cleanup. |
 | `tests/gameSetupSeedCodec.test.ts` | Retain canonical normalization, random-source forwarding and malformed/legacy rejection. Round-trip proof is useful alongside independent examples. |
 | `tests/routingConventions.test.ts` | Replace spelling/topology searches with actual navigation/search/reachability contracts (W-02). |
