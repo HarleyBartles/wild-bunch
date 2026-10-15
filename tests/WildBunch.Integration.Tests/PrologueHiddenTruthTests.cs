@@ -44,10 +44,17 @@ public sealed class PrologueHiddenTruthTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        const string seedCode = "a1234567-b123-c123-d123-e123456789ab";
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString("D");
+        var replacementSeed = SeedWorldResolver.CreateRepresentativeSeedCode(
+            seedWorld with { DefaultCulpritIndex = 0 }).ToString("D");
         var setupResponse = await client.PostAsJsonWithStartupOperationAsync(
             "/api/games/setup",
-            new SetupGameRequest("Ranger Vale", SeedCode: seedCode));
+            new SetupGameRequest(
+                "Ranger Vale",
+                GameDifficulty.Challenging,
+                seedCode,
+                GameEntropy.Wild));
         Assert.Equal(HttpStatusCode.Created, setupResponse.StatusCode);
         var sessionDto = await setupResponse.Content.ReadFromJsonAsync<GameSessionDto>();
         Assert.NotNull(sessionDto);
@@ -61,12 +68,14 @@ public sealed class PrologueHiddenTruthTests
 
         var culprit = session.CaseFile.Suspects.Single(suspect => suspect.Id == session.CaseFile.TrueCulpritId);
         var establishedDescriptor = SaloonPersonOfInterestDescriptor.Describe(culprit, session.CaseFile);
-        var replacementSeed = Enumerable.Range(0, 100)
-            .Select(index => Guid.Parse($"{index + 1:D8}-1111-4111-8111-111111111111").ToString("D"))
-            .First(candidate => !string.Equals(
-                PrologueDescriptorResolver.ResolveTrueCulpritDescriptor(session.GameDifficulty, candidate, session.GameEntropy),
-                establishedDescriptor,
-                StringComparison.Ordinal));
+        var replacementDescriptor = PrologueDescriptorResolver.ResolveTrueCulpritDescriptor(
+            GameDifficulty.Standard,
+            replacementSeed,
+            GameEntropy.Classic);
+
+        Assert.Equal(GameDifficulty.Challenging, session.GameDifficulty);
+        Assert.Equal(GameEntropy.Wild, session.GameEntropy);
+        Assert.NotEqual(establishedDescriptor, replacementDescriptor);
 
         var response = await client.GetAsync(
             $"/api/games/{sessionDto!.Id}/prologue?seedCode={replacementSeed}&gameDifficulty=0&gameEntropy=1");

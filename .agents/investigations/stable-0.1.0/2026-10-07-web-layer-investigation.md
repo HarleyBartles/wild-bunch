@@ -42,7 +42,11 @@ The original 2026-10-07 observation was accurate at the time: the setup draft wa
 
 ### WB-06: Resuming the prologue loses its authoritative generation inputs
 
+**Historical assessment, 2026-10-07:**
+
 `useStartGameSeed.ts:44-53` restores only player name. Difficulty/entropy always initialize to Standard/Classic, and seedState to canonical, regardless of an existing session. `PreSessionSurface` passes these local values into `StorySoFarStep`, whose query regenerates the descriptor using them. The server's GetPrologueHandler derives the culprit descriptor from seed/difficulty/entropy. A refreshed random/custom setup can therefore display a story for different inputs from the saved hunt. Public GameSessionDto exposes difficulty/entropy but no seed, so merely hydrating two fields is insufficient. Supply a session-bound prologue/read contract or retained authoritative start metadata under an agreed API change; do not infer hidden truth or generate replacement seed state. Prove nondefault setup, refresh/resume and the same story/next phase.
+
+**Current disposition, 2026-10-15, N-74:** The session-bound prologue read introduced on 2026-10-10 makes the old local-input mismatch claim stale. `GetPrologueHandler` loads the saved session by ID and derives the public clue from its persisted `CaseFile`; `StorySoFarStep` queries by that session ID. N-74 strengthens the PostgreSQL HTTP evidence with nondefault persisted options and a different seed whose public descriptor would disagree, while the existing mocked StartFlow refresh test proves the saved ID reaches the prologue query. These tests do not establish a browser-backed end-to-end or deployed resume journey. Broader saved-phase recovery, legal-phase and command retry concerns remain in their separate findings.
 
 ### WB-07: Pending lifecycle commands and dual step state permit duplicate intent
 
