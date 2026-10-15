@@ -42,11 +42,11 @@ PG-005 retains saloon gossip as a player knowledge source. Domain, Application a
 
 **Produces:** One deterministic public-browser scenario that enters Saloon, gathers gossip exactly once, proves the returned journal contains the disclosed clue, closes and reopens the browser, then proves a fresh server read restores the clue in the player-facing journal without another gossip command.
 
-- [ ] **Step 1: Add the browser scenario**
+- [x] **Step 1: Add the browser scenario**
 
 Add a named-game scenario to `player-startup.spec.ts`. Start using a unique player name and the existing canonical seed helper, acknowledge the prologue, select an API-returned town on the shared world map, and enter Saloon via the town building interaction. Observe the gossip POST and resulting session/journal GET. Assert the POST succeeds for the active game, the response journal includes a non-empty fact/clue beyond the opening lead, and the visible player journal displays the same text. Close and reopen the page in the same browser context; assert a fresh session read includes the fact, open Journal and assert the same text is visible, and confirm no second gossip POST occurred. Avoid hard-coded generated clue prose; use the real command response as the fact identity and assert its corresponding learned clue/source semantics.
 
-- [ ] **Step 2: Run the focused route and inspect its failure modes**
+- [x] **Step 2: Run the focused route and inspect its failure modes**
 
 Run: `npm --prefix src/WildBunch.Web run build`
 
@@ -54,7 +54,7 @@ Run: `npm --prefix src/WildBunch.Web run test:browser -- --grep "saloon gossip"`
 
 Expected: the production bundle reaches Saloon through the normal player flow, the real gossip action returns and displays one recorded learned fact, and reopening restores the same fact from the server. The browser harness must create and remove only its uniquely named disposable database.
 
-- [ ] **Step 3: Prove the test detects a non-committing gossip action**
+- [x] **Step 3: Prove the test detects a non-committing gossip action**
 
 Temporarily intercept the gossip POST with a success-shaped response that contains a plausible updated journal/clue but does not forward the request to the API. Confirm the immediate response-based assertion can observe that supplied fact, while the fresh session read after reopen omits it and the browser test fails. Restore the test file byte-for-byte, verify its before/after SHA-256, rerun the focused test against the real API and confirm it passes. Do not commit the interception.
 
