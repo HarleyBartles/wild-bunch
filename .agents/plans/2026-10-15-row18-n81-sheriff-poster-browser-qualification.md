@@ -75,8 +75,8 @@
 - Consumes: the passing production-browser test and existing wanted-poster acceptance test.
 - Produces: a dated PG-005 assessment stating the exact Sheriff Office route, one-poster result, browser page-reopen restoration, and limits on other knowledge sources and deployed behavior.
 
-- [ ] Update PG-005's assessment from “browser evidence ... is not recorded” to the observed N-81 browser path; link the actual Playwright journey and existing API acceptance test, preserving “partial” and the remaining saloon gossip/observation and deployment limits.
-- [ ] Run the feature-matrix maintenance review and compare the final browser and evidence diff against PG-005, the baseline spec, ADR-0028, ADR-0046, and ADR-0048; record no current promise or durable decision change if the live behavior matches this plan.
+- [x] Update PG-005's assessment from “browser evidence ... is not recorded” to the observed N-81 browser path; link the actual Playwright journey and existing API acceptance test, preserving “partial” and the remaining saloon gossip/observation and deployment limits.
+- [x] Run the feature-matrix maintenance review and compare the final browser and evidence diff against PG-005, the baseline spec, ADR-0028, ADR-0046, and ADR-0048; record no current promise or durable decision change if the live behavior matches this plan.
 
 ### Task 4: Verify, review, publish and close N-81
 
