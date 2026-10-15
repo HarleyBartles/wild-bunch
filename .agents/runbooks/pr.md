@@ -13,6 +13,10 @@ Opening, updating, or publishing a Wild Bunch pull request.
 
 Follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection for the actual diff. Consult the [decision-record playbook](../playbooks/decision-records.md) when the diff makes, changes, corrects, or materially removes a durable decision.
 
+For a release or hotfix PR, also follow the [release lifecycle runbook](release.md)
+and verify the applicable branch route and merge method against current hosting
+facts.
+
 ## Decision-record check
 
 Before requesting review, compare the actual proposed diff with applicable

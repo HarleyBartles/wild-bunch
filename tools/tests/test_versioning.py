@@ -38,11 +38,47 @@ def _write_valid_repo(root: Path, version: str = "0.1.0-dev.2") -> None:
     (web / "dist" / "version.json").write_text(json.dumps({"version": version}), encoding="utf-8")
 
 
-def test_version_identity_accepts_one_authored_version_and_matching_production_artifact(tmp_path):
-    _write_valid_repo(tmp_path)
+@pytest.mark.parametrize(
+    "version",
+    ["0.1.0-dev.196", "0.1.0-rc.1", "0.1.0", "1.2.3-alpha.1+build.7"],
+)
+def test_version_identity_accepts_supported_release_lifecycle_versions(tmp_path, version):
+    _write_valid_repo(tmp_path, version)
 
-    assert read_authored_version(tmp_path / "Directory.Build.props") == "0.1.0-dev.2"
+    assert read_authored_version(tmp_path / "Directory.Build.props") == version
     check_version_identity(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "00.1.0",
+        "0.01.0",
+        "0.1.00",
+        "0.1.0-dev.01",
+        "0.1.0-alpha.01",
+        "0.1",
+        "0.1.0-",
+        "0.1.0+build..metadata",
+        "0.1.0-unsupported_identifier",
+    ],
+    ids=[
+        "leading-zero-major",
+        "leading-zero-minor",
+        "leading-zero-patch",
+        "leading-zero-dev-number",
+        "leading-zero-prerelease-number",
+        "missing-component",
+        "empty-prerelease",
+        "empty-build-identifier",
+        "unsupported-character",
+    ],
+)
+def test_version_identity_rejects_invalid_semver(tmp_path, version):
+    _write_valid_repo(tmp_path, version)
+
+    with pytest.raises(VersionIdentityError, match="SemVer"):
+        check_version_identity(tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -51,11 +87,10 @@ def test_version_identity_accepts_one_authored_version_and_matching_production_a
         "<Project><PropertyGroup /></Project>",
         "<Project><PropertyGroup><Version>0.1.0-dev.2</Version></PropertyGroup>"
         "<PropertyGroup><Version>0.1.0-dev.3</Version></PropertyGroup></Project>",
-        "<Project><PropertyGroup><Version>0.1.0</Version></PropertyGroup></Project>",
         "<Project><PropertyGroup><Version>0.1.0-dev.0</Version></PropertyGroup></Project>",
         "<Project><PropertyGroup><Version>not-semver</Version></PropertyGroup></Project>",
     ],
-    ids=["missing", "duplicate", "release-version", "zero-dev-number", "malformed"],
+    ids=["missing", "duplicate", "zero-dev-number", "malformed"],
 )
 def test_version_identity_rejects_missing_duplicate_or_unsupported_authored_versions(
     tmp_path, props

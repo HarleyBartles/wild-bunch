@@ -21,6 +21,7 @@ The root budget remains 40 lines and each scoped router's ceiling remains 15 lin
 | Implementation | [implementing](../runbooks/implementing.md) |
 | Code review | [code review](../runbooks/code-review.md) |
 | Pull request | [pull request](../runbooks/pr.md) |
+| Release and hotfix | [release lifecycle](../runbooks/release.md) |
 
 ## Cross-stage concerns
 

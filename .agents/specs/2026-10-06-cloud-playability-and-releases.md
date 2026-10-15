@@ -96,13 +96,29 @@ Release deployment runs the appropriate schema migrations in a controlled step b
 
 ## Gitflow and release identity
 
-The release foundation plans to adopt the AOM `gitflow` and `semver` standards. Row 18 owns the JIT implementation plan, subscription, repository-owned certification, and durable lifecycle routing; no standard pin or runbook change is made by this specification update. Marketplace PR #349 merged at `7a20ef191bb6be3b67fbbb9e86bd7b0050f96fc5` and was the assessed proposal; SemVer was subsequently clarified by merged PR #350 at `12c86626f`. Row 18 will pin the accepted immutable definitions current when that plan is written, and pre-1.0 adoption does not require a promise about the future stable API.
+The repository adopts the immutable AOM `gitflow` and `semver` definitions recorded in
+[operating standards](../contracts/operating-standards.json) and maintains its conformance
+assessment in [standards certification](../contracts/standards-certification.md). The pinned
+Gitflow definition is from Marketplace commit
+`7a20ef191bb6be3b67fbbb9e86bd7b0050f96fc5`; the pinned SemVer definition is from commit
+`12c86626f80cad1a2ac05b2f6690c882a3d5959a`. The standards define the operating and version
+contracts below; the repository owns their implementation and evidence. Pre-1.0 adoption does
+not require a promise about the future stable API.
 
 Preserve the settled flow: `develop` is the feature-integration and default branch; ordinary feature branches start from current `develop` and merge by PR into `develop`, with squash merges permitted. Cut `release/*` from `develop` for stabilization, versioning, and migration validation. Promote a reviewed release to `main` with a merge commit and reconcile it to `develop` with a merge commit. Hotfixes start from the released `main` state, promote to `main`, then reconcile to `develop` and every affected active release line. Verify current remote refs, PR targets, merge methods, and hosting policy at publication; the written branch names do not prove remote enforcement.
 
 The intended SemVer subject is the Wild Bunch browser-game product, not internal implementation details or independently versioned event/schema formats. The `0.y.z` line is pre-1.0 development and makes no public API or gameplay-compatibility promise; `0.1.0` identifies the qualified initial baseline, not a guarantee that every pre-release playthrough remains usable. The existing event/schema migration strategy remains mandatory for data the repository declares supported. This epic does not decide a `1.0.0` compatibility contract or require a stable 1.0 release; determine future compatibility expectations only when that release is genuinely in scope.
 
-`Directory.Build.props` is the single authored application version. The web build derives its runtime `version.json` identity from evaluated MSBuild properties, and the repository command bus validates the generated identity while rejecting duplicate application-version fields in npm metadata. Each ordinary merge into `develop`, including documentation and tooling changes, receives one unique `0.1.0-dev.N` checkpoint per merged PR, never per commit. The planned release procedure uses `0.1.0-rc.N` for changed and requalified release candidates, beginning at `rc.1`; rerunning validation on identical source does not consume another candidate number. Promote the verified candidate to stable `0.1.0` only from the exact qualified source. A published version and its artifact identity are immutable. Event schemas and payload versions remain independent compatibility authorities.
+`Directory.Build.props` is the single authored application version. The web build derives its
+runtime `version.json` identity from evaluated MSBuild properties, and the repository command
+bus validates the generated identity while rejecting duplicate application-version fields in
+npm metadata. Each ordinary merge into `develop`, including documentation and tooling changes,
+receives one unique `0.1.0-dev.N` checkpoint per merged PR, never per commit. The release
+procedure uses `0.1.0-rc.N` for changed and requalified release candidates, beginning at `rc.1`;
+rerunning validation on identical source does not consume another candidate number. Promote
+the verified candidate to stable `0.1.0` only from the exact qualified source. A published
+version and its artifact identity are immutable. Event schemas and payload versions remain
+independent compatibility authorities.
 
 Release and hotfix reconciliation follows the pinned joint cadence: if integration is left at the released baseline, keep the stable version until a later development merge diverges; if next-release development is already underway, preserve that core and advance its next unique checkpoint for the reconciliation PR. Reconcile stale or duplicate development checkpoint proposals against the latest `develop` before merge. Development checkpoints do not create tags or GitHub Releases; the GitHub Release remains the authorized public-deployment trigger described by this specification.
 

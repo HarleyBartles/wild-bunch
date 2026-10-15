@@ -10,6 +10,7 @@ This file is the repo's contributor entry point.
   [their certification](./.agents/contracts/standards-certification.md) when
   changing an adopted surface; maintain the affected assessment in that change.
 - Read [`.agents/doctrine/repo-runbook-policy.md`](./.agents/doctrine/repo-runbook-policy.md) for this repo's mapping to the cross-repo runbook standard.
+- Read the [release lifecycle runbook](./.agents/runbooks/release.md) when preparing or reconciling a release or hotfix.
 - Read the [decision-record playbook](./.agents/playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision; the lifecycle runbooks carry the author and reviewer obligations.
 - For work that changes a product promise, disposition, capability boundary or dependency, follow the [feature-matrix playbook](./.agents/playbooks/feature-matrix.md) and update the [authoritative matrix](./docs/features.md) with the same change.
 - Use the [repository command bus guide](./tools/README.md) to discover supported build, test, and validation targets.

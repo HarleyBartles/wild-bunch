@@ -227,6 +227,7 @@ def _build_web(ctx: Ctx) -> None:
     _run(_npm_cmd("run", "test"), ctx)
     _run(_npm_cmd("run", "test:browser"), ctx)
     _run(_npm_cmd("run", "build"), ctx)
+    _version_identity_check(ctx)
 
 
 def _web_typecheck(ctx: Ctx) -> None:

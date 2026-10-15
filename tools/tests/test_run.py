@@ -59,6 +59,37 @@ def test_ci_rejects_apply_mode_before_running_work(monkeypatch) -> None:
     assert invoked == []
 
 
+def test_web_build_rejects_stale_generated_identity_after_build(tmp_path, monkeypatch) -> None:
+    web = tmp_path / "src" / "WildBunch.Web"
+    dist = web / "dist"
+    dist.mkdir(parents=True)
+    (tmp_path / "Directory.Build.props").write_text(
+        "<Project><PropertyGroup><Version>0.1.0-dev.196</Version></PropertyGroup></Project>",
+        encoding="utf-8",
+    )
+    (web / "package.json").write_text('{"name":"wildbunch-web"}', encoding="utf-8")
+    (web / "package-lock.json").write_text(
+        '{"packages":{"":{"name":"wildbunch-web"}}}', encoding="utf-8"
+    )
+    (dist / "version.json").write_text('{"version":"0.1.0-dev.195"}', encoding="utf-8")
+    commands: list[list[str]] = []
+
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "WEB_DIR", web)
+    monkeypatch.setattr(run, "_check_web_style", lambda _ctx: None)
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: commands.append(command))
+
+    with pytest.raises(run.VersionIdentityError, match="contains '0.1.0-dev.195'"):
+        run._build_web(run.Ctx("check", False))
+
+    assert [command[-1] for command in commands] == [
+        "typecheck",
+        "test",
+        "test:browser",
+        "build",
+    ]
+
+
 def test_selected_target_without_mode_fails_before_target_work(monkeypatch, capsys) -> None:
     invoked: list[str] = []
     monkeypatch.setitem(
