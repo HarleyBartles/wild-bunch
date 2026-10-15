@@ -43,10 +43,10 @@
 - Consumes: PR #368 merged to `develop` from reviewed head `035e52c2fffad0346c773f9e47736ecc09fe0784`, merge `9759025618a6649c391d47c8f4ab09493f0f985d`, exact-head gate `38657638856`, develop-push gate `38658212475`, independent review with no actionable findings, and verified N-65 worktree plus paired ref retirement.
 - Produces: promoted N-65 delivery evidence, active N-66 at `0.1.0-dev.184`, and retirement of the completed N-65 plan.
 
-- [ ] Verify PR #368 is merged to `develop`; its head and merge identities match the values above; both hosted gates passed; the merge is contained in refreshed `origin/develop`; the primary checkout remains current with the user edit preserved; and the N-65 worktree plus exact local/upstream refs are absent.
-- [ ] Add PR #368 to row 17's delivery references, make N-66 the active plan, and record N-65's disposition and paired cleanup in a dated roadmap delivery note.
-- [ ] Advance only `Directory.Build.props` from `0.1.0-dev.183` to `0.1.0-dev.184`; retire N-65 and commit this plan, roadmap, and version update together before changing tests.
-- [ ] Review the staged planning diff, confirm no generated version copies are tracked or edited, run `git diff --check`, and commit through the normal staged-candidate hook.
+- [x] Verify PR #368 is merged to `develop`; its head and merge identities match the values above; both hosted gates passed; the merge is contained in refreshed `origin/develop`; the primary checkout remains current with the user edit preserved; and the N-65 worktree plus exact local/upstream refs are absent.
+- [x] Add PR #368 to row 17's delivery references, make N-66 the active plan, and record N-65's disposition and paired cleanup in a dated roadmap delivery note.
+- [x] Advance only `Directory.Build.props` from `0.1.0-dev.183` to `0.1.0-dev.184`; retire N-65 and commit this plan, roadmap, and version update together before changing tests.
+- [x] Review the staged planning diff, confirm no generated version copies are tracked or edited, run `git diff --check`, and commit through the normal staged-candidate hook.
 
 ### Task 2: Prove the session map reaches the starting-town renderer
 
@@ -57,10 +57,10 @@
 - Consumes: the `StartingTownStep` session identity, the `getWorldMap` query result, and `PhaserMapHost`'s supplied map DTO.
 - Produces: one behavior test proving a pending session map request resolves into the map host with its actual returned towns.
 
-- [ ] Run the current `StartingTownStep.test.tsx` and `PhaserMapHost.test.tsx` suites before editing; confirm the baseline is green.
-- [ ] Replace the weak successful map-shell assertion with a deferred query scenario: verify pending copy, exact session-scoped query invocation, then distinct returned town names at the map-host composition boundary after resolution.
-- [ ] Remove the standalone loading-only test if the new pending-to-loaded scenario proves the same state transition; preserve independent settled-empty, rejected-read/retry, no-session, forward-flow, and player-copy contracts.
-- [ ] Temporarily change the production `StartingTownStep` map handoff so the returned map is not supplied to the host; verify the new behavior test fails, restore production source byte-for-byte, and rerun both focused suites.
+- [x] Run the current `StartingTownStep.test.tsx` and `PhaserMapHost.test.tsx` suites before editing; confirm the baseline is green.
+- [x] Replace the weak successful map-shell assertion with a deferred query scenario: verify pending copy, exact session-scoped query invocation, then distinct returned town names at the map-host composition boundary after resolution.
+- [x] Remove the standalone loading-only test because the new pending-to-loaded scenario proves the same state transition; preserve independent settled-empty, rejected-read/retry, no-session, forward-flow, and player-copy contracts.
+- [x] Temporarily change the production `StartingTownStep` map handoff so the returned map is not supplied to the host; verify the new behavior test fails, restore production source byte-for-byte, and rerun both focused suites.
 
 ### Task 3: Reconcile W-07 ownership and evidence
 
@@ -72,20 +72,20 @@
 - Consumes: N-54 map-read recovery, N-65 map selection in the successful start flow, and N-66 session-query-to-host composition.
 - Produces: a current W-07 disposition and test inventory that no longer describes covered map loading, selection, or recovery behavior as absent.
 
-- [ ] Update the `StartingTownStep.test.tsx` inventory to name the distinct query-to-render, loading, empty, failed-read/retry, and no-session behaviors it owns.
-- [ ] Add a dated W-07 disposition that cites N-54, N-65, and N-66 as separate owners; state the mutation proof and the scope it closes.
-- [ ] Keep renderer drawing/eligibility under `PhaserMapHost` tests and command/persistence guarantees under their existing owners; do not add redundant assertions to those files.
-- [ ] Confirm PG-003 and ADR-0035, ADR-0039, and ADR-0046 remain accurate; leave the feature matrix unchanged because no player promise or dependency changes.
+- [x] Update the `StartingTownStep.test.tsx` inventory to name the distinct query-to-render, loading, empty, failed-read/retry, and no-session behaviors it owns.
+- [x] Add a dated W-07 disposition that cites N-54, N-65, and N-66 as separate owners; state the mutation proof and the scope it closes.
+- [x] Keep renderer drawing/eligibility under `PhaserMapHost` tests and command/persistence guarantees under their existing owners; do not add redundant assertions to those files.
+- [x] Confirm PG-003 and ADR-0035, ADR-0039, and ADR-0046 remain accurate; leave the feature matrix unchanged because no player promise or dependency changes.
 
 ### Task 4: Validate and commit N-66
 
 **Files:**
 - Review: the complete candidate from Tasks 1-3.
 
-- [ ] Run the focused `StartingTownStep.test.tsx` and `PhaserMapHost.test.tsx` suites, formatter/linter checks for the changed test, and `git diff --check` for prose.
-- [ ] Run the canonical fail-fast `py -3 tools/run.py ci --check` from the repository root; resolve its first failure before continuing.
-- [ ] Inspect the full candidate diff and confirm it contains only N-65 promotion, one version increment, query-to-render test proof, and accurate W-07 reconciliation.
-- [ ] Commit the test correction and audit disposition through the normal check-only staged-candidate hook.
+- [x] Run the focused `StartingTownStep.test.tsx` and `PhaserMapHost.test.tsx` suites, formatter/linter checks for the changed test, and `git diff --check` for prose.
+- [x] Run the canonical fail-fast `py -3 tools/run.py ci --check` from the repository root; resolve its first failure before continuing.
+- [x] Inspect the full candidate diff and confirm it contains only N-65 promotion, one version increment, query-to-render test proof, and accurate W-07 reconciliation.
+- [x] Commit the test correction and audit disposition through the normal check-only staged-candidate hook.
 
 ### Task 5: Review and deliver N-66
 

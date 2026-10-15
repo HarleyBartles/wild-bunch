@@ -1,31 +1,23 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StartingTownStep } from "../components/start-flow/StartingTownStep";
 import { getWorldMap } from "../api/wildBunchApi";
 import type { WorldMapDto } from "../api/types";
 
-vi.mock("phaser", () => {
-  class Game {
-    public config: unknown;
-    public destroyed = false;
-    constructor(config: unknown) {
-      this.config = config;
-    }
-    destroy() {
-      this.destroyed = true;
-    }
-  }
-  class Scene {
-    constructor(_key?: string) {}
-  }
-  const Scale = { FIT: 0, CENTER_BOTH: 0 };
-  return { default: { Game, Scene, Scale }, Game, Scene, Scale };
-});
-
 vi.mock("../api/wildBunchApi", () => ({
   getWorldMap: vi.fn(),
+}));
+
+vi.mock("../components/start-flow/PhaserMapHost", () => ({
+  PhaserMapHost: ({ mapData }: { mapData: WorldMapDto }) => (
+    <div role="img" aria-label="Trail map of starting towns" data-testid="map-host-input">
+      {mapData.towns.map((town) => (
+        <span key={town.id}>{town.name}</span>
+      ))}
+    </div>
+  ),
 }));
 
 const mockedGetWorldMap = vi.mocked(getWorldMap);
@@ -84,24 +76,32 @@ function renderStep(
 }
 
 describe("StartingTownStep", () => {
-  it("renders the populated world map", async () => {
-    mockedGetWorldMap.mockResolvedValue(createMapData());
-
-    renderStep();
-
-    expect(
-      await screen.findByRole("img", { name: /trail map of starting towns/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("shows the loading state copy while the map is fetching", () => {
+  it("passes the current session's loaded world map to its renderer", async () => {
     const pending = deferred<WorldMapDto>();
+    const sessionMap = createMapData({
+      towns: [
+        { id: "coyote-flats", name: "Coyote Flats", x: 120, y: 360 },
+        { id: "dry-gulch", name: "Dry Gulch", x: 520, y: 240 },
+      ],
+    });
     mockedGetWorldMap.mockReturnValue(pending.promise);
+    const sessionId = "session-with-coyote-flats";
 
-    renderStep();
+    renderStep({ sessionId });
 
-    expect(screen.getByText("Saddling up the map…")).toBeInTheDocument();
-    pending.resolve(createMapData());
+    expect(await screen.findByText("Saddling up the map…")).toBeInTheDocument();
+    expect(mockedGetWorldMap).toHaveBeenCalledWith(sessionId);
+    expect(screen.queryByTestId("map-host-input")).not.toBeInTheDocument();
+
+    await act(async () => {
+      pending.resolve(sessionMap);
+      await pending.promise;
+    });
+
+    const mapHost = await screen.findByTestId("map-host-input");
+    expect(within(mapHost).getByText("Coyote Flats")).toBeInTheDocument();
+    expect(within(mapHost).getByText("Dry Gulch")).toBeInTheDocument();
+    expect(within(mapHost).queryByText("Tumbleweed")).not.toBeInTheDocument();
   });
 
   it("offers recovery when the settled map contains no selectable towns", async () => {
