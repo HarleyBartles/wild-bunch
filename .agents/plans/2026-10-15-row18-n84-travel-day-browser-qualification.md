@@ -51,7 +51,7 @@ Confirm PR #386 is merged to `develop` with recorded source `72fc50f0053742abb7d
 
 Add a dated N-83 delivery record stating its one-route travel departure/resume evidence, PR/source/merge identities, both passing hosted gates, clean review, and paired worktree/branch cleanup. Set row 18's active plan to N-84, state that N-83 proves active journey restoration only, and retain full travel-day, encounter, arrival, other retained-path, release-candidate and hosted-release qualification as open. Remove N-83's plan after classifying its complete scope as shipped. Set `Directory.Build.props` to `0.1.0-dev.202`.
 
-- [ ] **Step 3: Commit the plan checkpoint**
+- [x] **Step 3: Commit the plan checkpoint**
 
 Run `git diff --check`, stage only the N-84 plan, roadmap, version file, and N-83 plan retirement, then commit through the check-only hook. Do not run the full canonical gate before this commit; the hook validates the exact staged candidate.
 
@@ -68,19 +68,19 @@ Run `git diff --check`, stage only the N-84 plan, roadmap, version file, and N-8
 - Consumes: the production web preview at `http://127.0.0.1:4174`, disposable API at `http://127.0.0.1:5275`, `seedWorldSeedCode()`, the existing `clickTownOnWorldMap(page, map, town)` helper, the real world map and travel-preview queries, `POST /api/games/{id}/travel`, and `POST /api/games/{id}/travel/advance`.
 - Produces: one browser scenario that starts a route with `expectedDays > 1`, advances one day from the restored active journey, and verifies persisted day/progress/diary state plus the legal post-day action after reopening the same browser context.
 
-- [ ] **Step 1: Reuse the existing public-browser journey setup without changing its behavior**
+- [x] **Step 1: Reuse the existing public-browser journey setup without changing its behavior**
 
 Extract the startup, map choice, real travel preview, and travel departure sequence in the current N-83 test into a named helper in `player-startup.spec.ts`, returning the game ID, selected origin and destination, departure clock day, and initial remaining distance. Choose an endpoint and the other endpoint of the longest connected trail returned by the real map so the route has sufficient distance; start the game at that endpoint and assert the real preview reports more than one expected travel day. Run the existing N-83 test and confirm direct departure/resume behavior remains intact before adding the new day scenario.
 
-- [ ] **Step 2: Add the browser behavior for one real travel-day advance and restore**
+- [x] **Step 2: Add the browser behavior for one real travel-day advance and restore**
 
-Use the helper to start a multi-day route. Close the page and reopen it in the same context, wait for the real session GET, and verify the active journey is present before acting. Click the visible `Advance travel day` control, wait for the real advance POST, and assert success, one additional game day, `daysTravelled === 1`, decreased positive remaining distance, and one recorded travel-diary day with the authoritative day number. Assert the journey is not completed and `Step into town` is absent. Close and reopen the page again; verify the GET restores those independent facts and the diary's visible `Day 1` entry. If the authoritative result has a pending encounter, verify the encounter message and at least one legal choice are visible and `Advance travel day` is unavailable; otherwise verify the active journey exposes `Advance travel day`. Assert page restoration caused no second advance POST.
+Use the helper to start a multi-day route. Close the page and reopen it in the same context, wait for the real session GET, and verify the active journey is present before acting. Click the visible `Advance travel day` control, wait for the real advance POST, and assert success, one additional absolute game-clock day, `daysTravelled === 1`, decreased positive remaining distance, and one recorded travel-diary day numbered `1` relative to this journey. Assert the journey is not completed and `Step into town` is absent. Close and reopen the page again; verify the GET restores those independent facts and the diary's visible `Day 1` entry. If the authoritative result has a pending encounter, verify the encounter message and at least one legal choice are visible and `Advance travel day` is unavailable; otherwise verify the active journey exposes `Advance travel day`. Assert page restoration caused no second advance POST.
 
-- [ ] **Step 3: Prove the new browser assertion detects a broken travel-day application**
+- [x] **Step 3: Prove the new browser assertion detects a broken travel-day application**
 
-After the test passes, temporarily omit `_journeyLoop.Apply(e)` from `GameSession.Apply(TravelDayAdvanced)` and run only the new browser test. Confirm it fails because the server session does not report one day's journey progress. Restore the application branch, rebuild the required API/web outputs, and rerun the new and existing travel-resume browser tests. Do not commit the mutation.
+After the test passes, temporarily omit the `_journey.AdvanceOneDay()` call in `JourneyLoop.PrepareTravelDayAdvance` and run only the new browser test. Confirm it fails because the returned server session still has `daysTravelled === 0`. Restore the call, rebuild the required API/web outputs, and rerun the new and existing travel-resume browser tests. Do not commit the mutation.
 
-- [ ] **Step 4: Reconcile feature evidence and run the canonical gate**
+- [x] **Step 4: Reconcile feature evidence and run the canonical gate**
 
 Add dated PG-007 evidence for one production-browser travel-day advance and page-reopen restoration, including the observed journal day and legal next action; explicitly leave encounter resolution, arrival, full PG-007 and release qualification open. Run `npm run build` and `npm run test:browser` in `src/WildBunch.Web`, then run `py -3 tools/run.py ci --check` after the source and evidence are complete. Commit the test and feature evidence through the normal check-only hook. Keep all disposable API, database and browser artifacts outside the repository.
 
@@ -111,3 +111,7 @@ Squash-merge the reviewed PR into `develop`, verify the merge commit contains th
 Fast-forward the main checkout to the verified `develop` merge without disturbing its unrelated investigation edit. Use `finishing-a-development-branch` and its remove-worktree script with `--check` then `--apply`; remove only the N-84 worktree, then remove the matching local and upstream branch refs together. Verify the PR source/merge identities, both hosted gates, main `HEAD`, preserved user edit, and all three cleanup absences. Leave the N-84 plan and roadmap delivery record for N-85's successor-artifact retirement.
 
 N-84 proves one normal travel-day advance and restored post-day state. It does not prove any encounter resolution, journey completion or arrival acknowledgement, the remaining retained browser paths, deployed behavior, overall `0.1.0` qualification, cloud deployment, or user ownership.
+
+### Execution rulings
+
+- **Ruling, 2026-10-15:** The absolute game clock and journey diary use different day coordinates. `TravelDayAdvanced.Day` advances the world clock; `TravelDiaryDayFactory.Create` copies `TravelJourneySnapshot.DaysTravelled` into the journey-relative diary `DayNumber`. The first day therefore advances game clock day 1 to day 2 while appearing as diary `Day 1`; assert these facts independently. Evidence: `src/WildBunch.Domain/Travel/TravelDiaryDayFactory.cs` and `tests/WildBunch.Domain.Tests/Characterization/TravelDiaryCharacterizationTests.cs`; the first real browser run observed clock day 2 and diary day 1.
