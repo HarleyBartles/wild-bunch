@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { viteStaticCopy } from "vite-plugin-static-copy";
@@ -70,7 +70,7 @@ export default defineConfig({
   ],
   test: {
     environment: "jsdom",
-    exclude: ["browser-tests/**", "node_modules/**", "dist/**"],
+    exclude: [...configDefaults.exclude, "browser-tests/**"],
     setupFiles: ["./src/tests/test-utils/setup.ts"],
     css: true,
     globals: false,

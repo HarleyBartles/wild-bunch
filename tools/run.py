@@ -225,6 +225,7 @@ def _build_web(ctx: Ctx) -> None:
     _check_web_style(ctx)
     _run(_npm_cmd("run", "typecheck"), ctx)
     _run(_npm_cmd("run", "test"), ctx)
+    _run(_npm_cmd("run", "test:browser"), ctx)
     _run(_npm_cmd("run", "build"), ctx)
 
 
@@ -234,6 +235,10 @@ def _web_typecheck(ctx: Ctx) -> None:
 
 def _web_test(ctx: Ctx) -> None:
     _run(_npm_cmd("run", "test"), ctx)
+
+
+def _web_browser_test(ctx: Ctx) -> None:
+    _run(_npm_cmd("run", "test:browser"), ctx)
 
 
 def _web_build(ctx: Ctx) -> None:
@@ -347,6 +352,12 @@ CI_CHECKS = (
         _web_test,
         "correct the failing web behavior test",
         "npm --prefix src/WildBunch.Web run test",
+    ),
+    (
+        "web-browser-tests",
+        _web_browser_test,
+        "correct the failing Chromium browser behavior test or install its browser prerequisite",
+        "npm --prefix src/WildBunch.Web run test:browser",
     ),
     (
         "web-build",
@@ -465,9 +476,11 @@ TARGET_DESCRIPTIONS = {
         "Arguments after -- are forwarded to `dotnet test`."
     ),
     "web": (
-        "Install locked dependencies, format-check, lint, typecheck, test, and build the web app. "
+        "Install locked dependencies, format-check, lint, typecheck, run Vitest and Chromium "
+        "browser behavior tests, and build the web app. "
         "Mode: --check. "
-        "Prerequisites: Node.js/npm. `npm ci` may create ignored node_modules and build outputs. "
+        "Prerequisites: Node.js/npm and Chromium installed with `npx playwright install chromium`. "
+        "`npm ci` may create ignored node_modules and build outputs. "
         "Target-specific arguments: none."
     ),
     "python-tests": (

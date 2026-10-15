@@ -14,7 +14,7 @@
 
 ## Related ADRs
 
-- `supersedes`: ADR-0017
+- `partially supersedes`: ADR-0017
 - `related to`: ADR-0022, ADR-0043
 
 ## Context

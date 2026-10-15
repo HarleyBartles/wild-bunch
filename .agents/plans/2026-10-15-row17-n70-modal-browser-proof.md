@@ -57,19 +57,20 @@
 
 ### Task 3: Put the browser lane in the canonical command bus and hosted gate
 
-**Files:** `tools/run.py`, `tools/README.md`, `.github/workflows/ci.yml`, `.agents/doctrine/validation-policy.md`, `.agents/playbooks/testing.md`.
+**Files:** `tools/run.py`, `tools/tests/test_run.py`, `tools/README.md`, `.github/workflows/ci.yml`, `.agents/doctrine/validation-policy.md`, `.agents/playbooks/testing.md`.
 
-- [ ] Add `web-browser-tests` as a check-only command-bus lane invoking `npm run test:browser` in the web project; call it from both the complete `web --check` target and canonical `ci --check` immediately after `web-tests` and before `web-build`.
-- [ ] Update command-bus help, validation doctrine, and the testing playbook with the browser lane's owner, local command, Chromium prerequisite `npx playwright install chromium`, and the hosted browser-install step.
-- [ ] Add `npm ci --prefix src/WildBunch.Web` followed by `npx playwright install --with-deps chromium` to the hosted workflow's dependency setup before the tracked-gate hook, leaving fail-fast ordering of checks within the hook unchanged.
-- [ ] Run the focused browser tests after all required behavior and gate wiring is present, then run `py -3 tools/run.py web --check` and read its complete results.
-- [ ] Stage the intended tree, inspect the staged diff and `Directory.Build.props`, and let the normal check-only pre-commit hook run `py -3 tools/run.py ci --check` on the exact staged candidate.
+- [x] Add `web-browser-tests` as a check-only command-bus lane invoking `npm run test:browser` in the web project; call it from both the complete `web --check` target and canonical `ci --check` immediately after `web-tests` and before `web-build`.
+- [x] Add a command-bus behavior test proving a Chromium lane failure stops the canonical gate before the web build; its deliberate wrong-command mutation failed as expected and was restored.
+- [x] Update command-bus help, validation doctrine, and the testing playbook with the browser lane's owner, local command, Chromium prerequisite `npx playwright install chromium`, and the hosted browser-install step.
+- [x] Add `npm ci --prefix src/WildBunch.Web` followed by `npx playwright install --with-deps chromium` to the hosted workflow's dependency setup before the tracked-gate hook, leaving fail-fast ordering of checks within the hook unchanged.
+- [x] Run the focused browser tests after all required behavior and gate wiring is present, then run `py -3 tools/run.py web --check` and read its complete results.
+- [x] Stage the intended tree, inspect the staged diff and `Directory.Build.props`, and let the normal check-only pre-commit hook run `py -3 tools/run.py ci --check` on the exact staged candidate.
 
 ### Task 4: Reconcile evidence and deliver N-70
 
 **Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, PR description, and all N-70 changes.
 
-- [ ] Update the overlay coverage inventory with the exact real-browser outcomes proven by the new tests and retain explicit limits: Chromium coverage is not cross-browser certification or a complete WCAG conformance audit.
+- [x] Update the overlay coverage inventory with the exact real-browser outcomes proven by the new tests and retain explicit limits: Chromium coverage is not cross-browser certification or a complete WCAG conformance audit.
 - [ ] Confirm ADR-0047 and the partial supersession of ADR-0017 truthfully describe the new test boundary, ADR-0022 remains accurate because manual browser evidence remains a separate lane, ADR-0030/0041 remain accurate, and `docs/features.md` remains unchanged; record the author comparison and rationale in the PR body.
 - [ ] Complete the author ADR and feature-matrix checks before review, then dispatch a fresh whole-branch reviewer and require the reviewer to repeat both comparisons against the committed diff.
 - [ ] Publish a Draft PR to `develop` at `0.1.0-dev.188`, verify its head equals the reviewed commit, make it ready only after self-review and the check-only commit gate pass, and require the exact-head hosted gate to pass before merge.

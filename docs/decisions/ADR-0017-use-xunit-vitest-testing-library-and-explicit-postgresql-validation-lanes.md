@@ -18,7 +18,7 @@
 
 - `depends on`: ADR-0004, ADR-0014, ADR-0016
 - `related to`: ADR-0022
-- `superseded by`: ADR-0047
+- `partially superseded by`: ADR-0047
 
 ## Context
 
