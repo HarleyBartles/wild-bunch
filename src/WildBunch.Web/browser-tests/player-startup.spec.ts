@@ -196,122 +196,156 @@ test("a player can start, choose a town, and resume the server state after reope
   }
 });
 
+interface StartedMultiDayJourney {
+  gameId: string;
+  origin: WorldMapResponse["towns"][number];
+  destination: WorldMapResponse["towns"][number];
+  departureDay: number;
+  initialRemainingDistance: number;
+}
+
+async function startMultiDayJourney(page: Page): Promise<StartedMultiDayJourney> {
+  await page.goto(productionWebUrl);
+  await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
+  await page.getByRole("button", { name: "Boring" }).click();
+  await page.getByLabel("World seed").fill(seedWorldSeedCode());
+
+  const setupResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === `${apiBaseUrl}/api/games/setup` && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Ride on" }).click();
+  const setupResponse = await setupResponsePromise;
+  expect(setupResponse.ok(), await setupResponse.text()).toBe(true);
+  const setup = (await setupResponse.json()) as { id: string };
+
+  await page.getByRole("button", { name: "Ride on" }).click();
+  await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+  const mapResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === `${apiBaseUrl}/api/games/${setup.id}/world-map` &&
+      response.request().method() === "GET",
+  );
+  await page.getByRole("button", { name: "Ride on" }).click();
+  const mapResponse = await mapResponsePromise;
+  expect(mapResponse.ok()).toBe(true);
+  const map = (await mapResponse.json()) as WorldMapResponse;
+  const longestTrail = map.trails.reduce<WorldMapResponse["trails"][number] | null>(
+    (longest, candidate) =>
+      !longest || candidate.rideDayDistance > longest.rideDayDistance ? candidate : longest,
+    null,
+  );
+  expect(longestTrail, "The world map should have a connected trail.").not.toBeNull();
+  if (!longestTrail) throw new Error("Expected the world map to contain a connected trail.");
+
+  const origin = map.towns.find((town) => town.id === longestTrail.fromTownId);
+  const destination = map.towns.find((town) => town.id === longestTrail.toTownId);
+  expect(origin, "The longest trail should have a mapped origin town.").toBeDefined();
+  expect(destination, "The longest trail should have a mapped destination town.").toBeDefined();
+  if (!origin || !destination)
+    throw new Error("Expected both towns of the longest trail on the map.");
+
+  const startResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
+      response.request().method() === "POST",
+  );
+  await clickTownOnWorldMap(page, map, origin);
+  const startResponse = await startResponsePromise;
+  expect(startResponse.ok(), await startResponse.text()).toBe(true);
+  const startResult = (await startResponse.json()) as { player: { currentTownId: string } };
+  expect(startResult.player.currentTownId).toBe(origin.id);
+  await expect(page.getByRole("heading", { level: 1, name: origin.name })).toBeVisible();
+
+  await page.getByRole("button", { name: "Hit the trail" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Hit the trail" })).toBeVisible();
+  const previewResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === `${apiBaseUrl}/api/games/${setup.id}/travel/preview/${destination.id}` &&
+      response.request().method() === "GET",
+  );
+  await clickTownOnWorldMap(page, map, destination);
+  const previewResponse = await previewResponsePromise;
+  expect(previewResponse.ok()).toBe(true);
+  const previewResult = (await previewResponse.json()) as {
+    success: boolean;
+    preview: {
+      originTownId: string;
+      destinationTownId: string;
+      expectedDays: number;
+      remainingRideDayDistance: number;
+    } | null;
+  };
+  expect(previewResult.success).toBe(true);
+  expect(previewResult.preview?.originTownId).toBe(origin.id);
+  expect(previewResult.preview?.destinationTownId).toBe(destination.id);
+  expect(previewResult.preview?.expectedDays).toBeGreaterThan(1);
+  await expect(page.getByRole("heading", { level: 1, name: "Prepare to ride" })).toBeVisible();
+
+  const travelResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url() === `${apiBaseUrl}/api/games/${setup.id}/travel` &&
+      response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Start the ride" }).click();
+  const travelResponse = await travelResponsePromise;
+  expect(travelResponse.ok(), await travelResponse.text()).toBe(true);
+  const travelResult = (await travelResponse.json()) as {
+    success: boolean;
+    currentSession: {
+      clock: { day: number };
+      journey: {
+        originTownId: string;
+        destinationTownId: string;
+        status: number;
+        remainingRideDayDistance: number;
+      } | null;
+    };
+  };
+  expect(travelResult.success).toBe(true);
+  expect(travelResult.currentSession.journey?.originTownId).toBe(origin.id);
+  expect(travelResult.currentSession.journey?.destinationTownId).toBe(destination.id);
+  expect(travelResult.currentSession.journey?.status).toBe(JourneyStatus.Active);
+  expect(travelResult.currentSession.journey?.remainingRideDayDistance).toBeGreaterThan(0);
+
+  return {
+    gameId: setup.id,
+    origin,
+    destination,
+    departureDay: travelResult.currentSession.clock.day,
+    initialRemainingDistance: travelResult.currentSession.journey!.remainingRideDayDistance,
+  };
+}
+
 test("a player can start travel and restore the active journey after reopening", async ({
   browser,
 }) => {
   test.setTimeout(120_000);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-  let expectedTravelUrl: string | null = null;
-  let travelPostCount = 0;
+  const travelPosts: string[] = [];
   context.on("page", (openedPage) => {
     openedPage.on("request", (request) => {
-      if (expectedTravelUrl && request.url() === expectedTravelUrl && request.method() === "POST") {
-        travelPostCount += 1;
+      if (
+        request.method() === "POST" &&
+        /\/api\/games\/[^/]+\/travel(?:\/advance)?$/.test(request.url())
+      ) {
+        travelPosts.push(request.url());
       }
     });
   });
   let page = await context.newPage();
 
   try {
-    await page.goto(productionWebUrl);
-    await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
-    await page.getByRole("button", { name: "Boring" }).click();
-    await page.getByLabel("World seed").fill(seedWorldSeedCode());
-
-    const setupResponsePromise = page.waitForResponse(
-      (response) =>
-        response.url() === `${apiBaseUrl}/api/games/setup` &&
-        response.request().method() === "POST",
-    );
-    await page.getByRole("button", { name: "Ride on" }).click();
-    const setupResponse = await setupResponsePromise;
-    expect(setupResponse.ok(), await setupResponse.text()).toBe(true);
-    const setup = (await setupResponse.json()) as { id: string };
-
-    await page.getByRole("button", { name: "Ride on" }).click();
-    await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
-    await page.getByRole("button", { name: "Ride on" }).click();
-
-    const mapResponse = await page.waitForResponse(
-      (response) =>
-        response.url() === `${apiBaseUrl}/api/games/${setup.id}/world-map` &&
-        response.request().method() === "GET",
-    );
-    expect(mapResponse.ok()).toBe(true);
-    const map = (await mapResponse.json()) as WorldMapResponse;
-    const origin = map.towns[0];
-    expect(origin).toBeDefined();
-    const startResponsePromise = page.waitForResponse(
-      (response) =>
-        response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
-        response.request().method() === "POST",
-    );
-    await clickTownOnWorldMap(page, map, origin);
-    const startResponse = await startResponsePromise;
-    expect(startResponse.ok(), await startResponse.text()).toBe(true);
+    const trip = await startMultiDayJourney(page);
     expect(
-      ((await startResponse.json()) as { player: { currentTownId: string } }).player.currentTownId,
-    ).toBe(origin.id);
-    await expect(page.getByRole("heading", { level: 1, name: origin.name })).toBeVisible();
-
-    const trail = map.trails.find(
-      (candidate) => candidate.fromTownId === origin.id || candidate.toTownId === origin.id,
-    );
-    expect(trail, `${origin.name} should have a connected trail`).toBeDefined();
-    if (!trail) throw new Error(`Expected ${origin.name} to have a connected trail.`);
-    const destinationId = trail.fromTownId === origin.id ? trail.toTownId : trail.fromTownId;
-    const destination = map.towns.find((town) => town.id === destinationId);
-    expect(destination).toBeDefined();
-    if (!destination) throw new Error(`Expected the connected destination ${destinationId}.`);
-
-    await page.getByRole("button", { name: "Hit the trail" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Hit the trail" })).toBeVisible();
-    const previewResponsePromise = page.waitForResponse(
-      (response) =>
-        response.url() === `${apiBaseUrl}/api/games/${setup.id}/travel/preview/${destination.id}` &&
-        response.request().method() === "GET",
-    );
-    await clickTownOnWorldMap(page, map, destination);
-    const previewResponse = await previewResponsePromise;
-    expect(previewResponse.ok()).toBe(true);
-    const preview = (await previewResponse.json()) as {
-      success: boolean;
-      preview: { originTownId: string; destinationTownId: string } | null;
-    };
-    expect(preview.success).toBe(true);
-    expect(preview.preview?.originTownId).toBe(origin.id);
-    expect(preview.preview?.destinationTownId).toBe(destination.id);
-    await expect(page.getByRole("heading", { level: 1, name: "Prepare to ride" })).toBeVisible();
-
-    expectedTravelUrl = `${apiBaseUrl}/api/games/${setup.id}/travel`;
-    const travelResponsePromise = page.waitForResponse(
-      (response) => response.url() === expectedTravelUrl && response.request().method() === "POST",
-    );
-    await page.getByRole("button", { name: "Start the ride" }).click();
-    const travelResponse = await travelResponsePromise;
-    expect(travelResponse.ok(), await travelResponse.text()).toBe(true);
-    const travelResult = (await travelResponse.json()) as {
-      success: boolean;
-      currentSession: {
-        journey: {
-          originTownId: string;
-          destinationTownId: string;
-          status: number;
-        } | null;
-      };
-    };
-    expect(travelResult.success).toBe(true);
-    expect(travelResult.currentSession.journey).not.toBeNull();
-    expect(travelResult.currentSession.journey?.originTownId).toBe(origin.id);
-    expect(travelResult.currentSession.journey?.destinationTownId).toBe(destination.id);
-    expect(travelResult.currentSession.journey?.status).toBe(JourneyStatus.Active);
-    expect(travelPostCount).toBe(1);
+      travelPosts.filter((url) => url.endsWith(`/api/games/${trip.gameId}/travel`)),
+    ).toHaveLength(1);
 
     await page.close();
     page = await context.newPage();
     const restoredResponsePromise = page.waitForResponse(
       (response) =>
-        response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
         response.request().method() === "GET",
     );
     await page.goto(productionWebUrl);
@@ -324,11 +358,165 @@ test("a player can start travel and restore the active journey after reopening",
         status: number;
       } | null;
     };
-    expect(restored.journey?.originTownId).toBe(origin.id);
-    expect(restored.journey?.destinationTownId).toBe(destination.id);
+    expect(restored.journey?.originTownId).toBe(trip.origin.id);
+    expect(restored.journey?.destinationTownId).toBe(trip.destination.id);
     expect(restored.journey?.status).toBe(JourneyStatus.Active);
     await expect(page.getByRole("button", { name: "Advance travel day" })).toBeVisible();
-    expect(travelPostCount).toBe(1);
+    expect(
+      travelPosts.filter((url) => url.endsWith(`/api/games/${trip.gameId}/travel`)),
+    ).toHaveLength(1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("a player can advance one travel day and restore the updated trail state", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const advancePosts: string[] = [];
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (
+        request.method() === "POST" &&
+        /\/api\/games\/[^/]+\/travel\/advance$/.test(request.url())
+      ) {
+        advancePosts.push(request.url());
+      }
+    });
+  });
+  let page = await context.newPage();
+
+  try {
+    const trip = await startMultiDayJourney(page);
+    await page.close();
+    page = await context.newPage();
+
+    const preAdvanceResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const preAdvanceResponse = await preAdvanceResponsePromise;
+    expect(preAdvanceResponse.ok()).toBe(true);
+    const preAdvance = (await preAdvanceResponse.json()) as {
+      journey: {
+        status: number;
+        daysTravelled: number;
+        remainingRideDayDistance: number;
+      } | null;
+    };
+    expect(preAdvance.journey?.status).toBe(JourneyStatus.Active);
+    expect(preAdvance.journey?.daysTravelled).toBe(0);
+    expect(preAdvance.journey?.remainingRideDayDistance).toBe(trip.initialRemainingDistance);
+    await expect(page.getByRole("button", { name: "Advance travel day" })).toBeVisible();
+
+    const advanceResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}/travel/advance` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Advance travel day" }).click();
+    const advanceResponse = await advanceResponsePromise;
+    expect(advanceResponse.ok(), await advanceResponse.text()).toBe(true);
+    const advanced = (await advanceResponse.json()) as {
+      success: boolean;
+      currentSession: {
+        clock: { day: number };
+        journey: {
+          originTownId: string;
+          destinationTownId: string;
+          status: number;
+          daysTravelled: number;
+          remainingRideDayDistance: number;
+          pendingEncounter: {
+            message: string;
+            choices: Array<{ id: string; label: string }>;
+          } | null;
+        } | null;
+        travelDiary: { days: Array<{ dayNumber: number }> } | null;
+      };
+    };
+    expect(advanced.success).toBe(true);
+    expect(advanced.currentSession.clock.day).toBe(trip.departureDay + 1);
+    expect(advanced.currentSession.journey?.originTownId).toBe(trip.origin.id);
+    expect(advanced.currentSession.journey?.destinationTownId).toBe(trip.destination.id);
+    expect(advanced.currentSession.journey?.daysTravelled).toBe(1);
+    expect(advanced.currentSession.journey?.remainingRideDayDistance).toBeGreaterThan(0);
+    expect(advanced.currentSession.journey?.remainingRideDayDistance).toBeLessThan(
+      trip.initialRemainingDistance,
+    );
+    expect(advanced.currentSession.travelDiary?.days).toHaveLength(1);
+    expect(advanced.currentSession.travelDiary?.days[0]?.dayNumber).toBe(1);
+    expect(advanced.currentSession.journey?.status).not.toBe(JourneyStatus.Completed);
+    await expect(page.getByRole("button", { name: "Step into town" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Day 1", exact: true })).toBeVisible();
+
+    const pendingEncounter = advanced.currentSession.journey?.pendingEncounter;
+    if (pendingEncounter) {
+      expect(advanced.currentSession.journey?.status).toBe(JourneyStatus.Interrupted);
+      await expect(page.getByText(pendingEncounter.message)).toBeVisible();
+      const firstChoice = pendingEncounter.choices[0];
+      expect(firstChoice).toBeDefined();
+      if (!firstChoice) throw new Error("Expected the pending encounter to offer a legal choice.");
+      await expect(page.getByRole("button", { name: firstChoice.label })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Advance travel day" })).toHaveCount(0);
+    } else {
+      expect(advanced.currentSession.journey?.status).toBe(JourneyStatus.Active);
+      await expect(page.getByRole("button", { name: "Advance travel day" })).toBeVisible();
+    }
+
+    expect(advancePosts).toEqual([`${apiBaseUrl}/api/games/${trip.gameId}/travel/advance`]);
+    await page.close();
+    page = await context.newPage();
+    const restoredResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const restoredResponse = await restoredResponsePromise;
+    expect(restoredResponse.ok()).toBe(true);
+    const restored = (await restoredResponse.json()) as {
+      clock: { day: number };
+      journey: {
+        originTownId: string;
+        destinationTownId: string;
+        status: number;
+        daysTravelled: number;
+        remainingRideDayDistance: number;
+        pendingEncounter: {
+          message: string;
+          choices: Array<{ id: string; label: string }>;
+        } | null;
+      } | null;
+      travelDiary: { days: Array<{ dayNumber: number }> } | null;
+    };
+    expect(restored.clock.day).toBe(trip.departureDay + 1);
+    expect(restored.journey?.originTownId).toBe(trip.origin.id);
+    expect(restored.journey?.destinationTownId).toBe(trip.destination.id);
+    expect(restored.journey?.daysTravelled).toBe(1);
+    expect(restored.journey?.remainingRideDayDistance).toBe(
+      advanced.currentSession.journey?.remainingRideDayDistance,
+    );
+    expect(restored.travelDiary?.days.map((day) => day.dayNumber)).toContain(1);
+    await expect(page.getByRole("heading", { name: "Day 1", exact: true })).toBeVisible();
+
+    if (restored.journey?.pendingEncounter) {
+      await expect(page.getByText(restored.journey.pendingEncounter.message)).toBeVisible();
+      const firstChoice = restored.journey.pendingEncounter.choices[0];
+      expect(firstChoice).toBeDefined();
+      if (!firstChoice) throw new Error("Expected the restored encounter to offer a legal choice.");
+      await expect(page.getByRole("button", { name: firstChoice.label })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Advance travel day" })).toHaveCount(0);
+    } else {
+      expect(restored.journey?.status).toBe(JourneyStatus.Active);
+      await expect(page.getByRole("button", { name: "Advance travel day" })).toBeVisible();
+    }
+
+    expect(advancePosts).toHaveLength(1);
   } finally {
     await context.close();
   }
