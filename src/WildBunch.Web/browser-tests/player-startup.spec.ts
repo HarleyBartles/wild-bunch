@@ -1122,3 +1122,174 @@ test("confirmed Start Over archive is durable, while cancellation leaves the gam
     await context.close();
   }
 });
+
+test("a player can make a Store purchase and restore it after reopening", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const setupPosts: string[] = [];
+  const purchases: Array<{
+    url: string;
+    body: { itemKind: number; quantity: number };
+  }> = [];
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (request.method() !== "POST") return;
+      if (request.url() === `${apiBaseUrl}/api/games/setup`) setupPosts.push(request.url());
+      if (/\/api\/games\/[^/]+\/towns\/[^/]+\/store\/buy$/.test(request.url())) {
+        purchases.push({
+          url: request.url(),
+          body: request.postDataJSON() as { itemKind: number; quantity: number },
+        });
+      }
+    });
+  });
+  let page = await context.newPage();
+
+  try {
+    await page.goto(productionWebUrl);
+    await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
+    await page.getByLabel("World seed").fill(seedWorldSeedCode());
+
+    const setupResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/setup` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const setupResponse = await setupResponsePromise;
+    expect(setupResponse.ok(), await setupResponse.text()).toBe(true);
+    const setup = (await setupResponse.json()) as { id: string };
+
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const mapResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/world-map` &&
+        response.request().method() === "GET",
+    );
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const mapResponse = await mapResponsePromise;
+    expect(mapResponse.ok()).toBe(true);
+    const map = (await mapResponse.json()) as WorldMapResponse;
+    const town = map.towns[0];
+    const startResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
+        response.request().method() === "POST",
+    );
+    await clickTownOnWorldMap(page, map, town);
+    const startResponse = await startResponsePromise;
+    expect(startResponse.ok(), await startResponse.text()).toBe(true);
+    const started = (await startResponse.json()) as {
+      player: { currentTownId: string };
+      inventory: {
+        wallet: { cash: number };
+        items: Array<{ kind: number; quantity: number }>;
+      } | null;
+    };
+    expect(started.player.currentTownId).toBe(town.id);
+    expect(started.inventory).not.toBeNull();
+    if (!started.inventory) throw new Error("Expected the started game to include inventory.");
+    const startingCash = started.inventory.wallet.cash;
+    await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
+
+    const offersResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/towns/${town.id}/store-offers` &&
+        response.request().method() === "GET",
+    );
+    await page.getByRole("button", { name: "Store", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Store" })).toBeVisible();
+    const offersResponse = await offersResponsePromise;
+    expect(offersResponse.ok(), await offersResponse.text()).toBe(true);
+    const offers = (await offersResponse.json()) as {
+      offers: Array<{ itemKind: number; displayName: string; price: number }>;
+    };
+    const foodOffer = offers.offers.find((offer) => offer.displayName === "Food");
+    expect(foodOffer).toBeDefined();
+    if (!foodOffer) throw new Error("Expected the current town store to offer Food.");
+    const startingFood =
+      started.inventory.items.find((item) => item.kind === foodOffer.itemKind)?.quantity ?? 0;
+    expect(startingCash).toBeGreaterThanOrEqual(foodOffer.price * 2);
+    const quantityInput = page.getByLabel(`Quantity for ${foodOffer.displayName}`);
+    await quantityInput.fill("2");
+    const offerForm = quantityInput.locator("xpath=..");
+    const purchaseResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/towns/${town.id}/store/buy` &&
+        response.request().method() === "POST",
+    );
+    await offerForm.getByRole("button", { name: "Buy", exact: true }).click();
+    const purchaseResponse = await purchaseResponsePromise;
+    expect(purchaseResponse.ok(), await purchaseResponse.text()).toBe(true);
+    const purchase = (await purchaseResponse.json()) as {
+      success: boolean;
+      message: string;
+      currentSession: {
+        inventory: {
+          wallet: { cash: number };
+          items: Array<{ kind: number; quantity: number }>;
+        } | null;
+      };
+    };
+    expect(purchase.success, purchase.message).toBe(true);
+    expect(purchases).toHaveLength(1);
+    expect(purchases[0]).toEqual({
+      url: `${apiBaseUrl}/api/games/${setup.id}/towns/${town.id}/store/buy`,
+      body: { itemKind: foodOffer.itemKind, quantity: 2 },
+    });
+    expect(purchase.currentSession.inventory).not.toBeNull();
+    if (!purchase.currentSession.inventory) {
+      throw new Error("Expected the purchase result to include updated inventory.");
+    }
+    const purchasedCash = purchase.currentSession.inventory.wallet.cash;
+    const purchasedFood =
+      purchase.currentSession.inventory.items.find((item) => item.kind === foodOffer.itemKind)
+        ?.quantity ?? 0;
+    expect(purchasedCash).toBeCloseTo(startingCash - foodOffer.price * 2, 2);
+    expect(purchasedFood).toBe(startingFood + 2);
+    await expect(page.getByRole("main").getByText(purchase.message, { exact: true })).toBeVisible();
+    expect(setupPosts).toHaveLength(1);
+
+    await page.close();
+    page = await context.newPage();
+    const restoredResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const restoredResponse = await restoredResponsePromise;
+    expect(restoredResponse.ok()).toBe(true);
+    const restored = (await restoredResponse.json()) as {
+      player: { currentTownId: string };
+      inventory: {
+        wallet: { cash: number };
+        items: Array<{ kind: number; quantity: number }>;
+      } | null;
+    };
+    expect(restored.player.currentTownId).toBe(town.id);
+    expect(restored.inventory).not.toBeNull();
+    if (!restored.inventory) throw new Error("Expected the restored game to include inventory.");
+    const restoredCash = restored.inventory.wallet.cash;
+    const restoredFood =
+      restored.inventory.items.find((item) => item.kind === foodOffer.itemKind)?.quantity ?? 0;
+    expect(restoredCash).toBeCloseTo(purchasedCash, 2);
+    expect(restoredFood).toBe(purchasedFood);
+    await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
+
+    await page.getByRole("button", { name: "Store", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Store" })).toBeVisible();
+    await expect(
+      page.getByRole("main").getByText(purchase.message, { exact: true }),
+    ).not.toBeVisible();
+    const inventoryPanel = page
+      .getByRole("heading", { name: "Inventory", exact: true })
+      .locator("..");
+    await expect(inventoryPanel).toContainText(`$${restoredCash.toFixed(2)}`);
+    await expect(inventoryPanel).toContainText(`Food x ${restoredFood}`);
+    expect(purchases).toHaveLength(1);
+    expect(setupPosts).toHaveLength(1);
+  } finally {
+    await context.close();
+  }
+});

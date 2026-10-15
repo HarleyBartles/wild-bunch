@@ -40,13 +40,13 @@ PG-004 already has API/PostgreSQL acceptance coverage for a successful two-Food 
 
 **Consumes:** The public setup/prologue/map/arrival route, `startIsolatedApi`, the production-web Playwright server, the public Store building route, `GET /api/games/{gameSessionId}/towns/{townId}/store-offers`, `POST /api/games/{gameSessionId}/towns/{townId}/store/buy`, the session read, purchase journal projection and `StorePurchaseAcceptanceTests`.
 
-**Produces:** One deterministic public-browser scenario that buys two Food at the live offer price, verifies the server response's cash and Food changes, closes and reopens the same browser context, reads the session from the API, and proves the same wallet, inventory and single purchase journal result without another purchase.
+**Produces:** One deterministic public-browser scenario that buys two Food at the live offer price, verifies the server response's cash and Food changes, closes and reopens the same browser context, reads the session from the API, and proves the same wallet and inventory without replaying the purchase receipt or issuing another purchase.
 
-- [ ] **Step 1: Add the browser scenario first**
+- [x] **Step 1: Add the browser scenario first**
 
 Add a named-game test to `player-startup.spec.ts` that starts via public setup, acknowledges the prologue, selects an API-returned starting town on the shared map, and waits for town arrival. Track `POST /api/games/setup` and `POST /api/games/{gameSessionId}/towns/{townId}/store/buy`. Read the starting `GameSessionDto` and Store offers through the public browser requests; select the Food offer from the server-returned catalog and set quantity to two using its accessible quantity label. Enter Store through the town's Store building control and press Buy. Assert exactly one setup POST and one purchase POST, the purchase request contains the actual session ID, arrived town ID, Food item kind and quantity 2, the API response succeeds, wallet cash decreases by exactly twice the response offer price, Food increases by exactly two, and the Store displays the server-returned purchase confirmation. Close the page, reopen the public app in the same browser context, observe the fresh `GET /api/games/{id}`, enter Store again, and assert the visible wallet and Food quantity match the server result, the purchase confirmation is not replayed, and the purchase POST count is still one. Keep the production API endpoint real and all mutations in the unique disposable database created by `startIsolatedApi`.
 
-- [ ] **Step 2: Run the focused browser test and inspect the first result**
+- [x] **Step 2: Run the focused browser test and inspect the first result**
 
 Run: `npm --prefix src/WildBunch.Web run build`
 
@@ -54,11 +54,11 @@ Run: `npm --prefix src/WildBunch.Web run test:browser -- --grep "Store purchase"
 
 Expected: the built public app reaches Store through the town interaction, submits one purchase using the API-returned Food offer, updates the event-backed wallet/inventory, then restores the same values after reopening. The test setup must create and remove its uniquely named database; it must not require a playthrough reset in the shared development database or the user's currently open browser tab.
 
-- [ ] **Step 3: Prove the browser test detects a non-committing purchase**
+- [x] **Step 3: Prove the browser test detects a non-committing purchase**
 
-Temporarily route the browser's Store purchase POST to a success-shaped response containing the pre-purchase `currentSession`, without forwarding the request to the API. Run only the new browser test and confirm it fails because a fresh server read and reopened Store still show the original wallet and Food quantity. Restore the test file byte-for-byte, verify its before/after SHA-256, rerun the focused test against the real API, and confirm it passes. Do not commit the interception.
+Temporarily route the browser's Store purchase POST to a success-shaped response containing a `currentSession` with the expected cash debit and Food increase, without forwarding the request to the API. Run only the new browser test and confirm its mutation-response assertions pass but the fresh server read after reopening fails against the unchanged wallet and Food quantity. Restore the test file byte-for-byte, verify its before/after SHA-256, rerun the focused test against the real API, and confirm it passes. Do not commit the interception.
 
-- [ ] **Step 4: Reconcile feature and successor artifacts, then validate**
+- [x] **Step 4: Reconcile feature and successor artifacts, then validate**
 
 Update PG-004's dated evidence to state only the observed local production-browser purchase route, live Food offer price, wallet and inventory deltas, restored server values and visible purchase confirmation; retain explicit limits for other catalog tiers, rejection cases, the remaining resource lifecycle and deployed behavior. In the row-18 roadmap, record N-87's merged PR #390, exact source/merge identities, both hosted gates and paired worktree/ref retirement; point the active plan to N-88. Delete the completed N-87 plan in this first substantive implementation commit and change the sole authored application version to `0.1.0-dev.206`. Run `npm --prefix src/WildBunch.Web run build` and the full `npm --prefix src/WildBunch.Web run test:browser`; the lane creates its own disposable database on the local PostgreSQL service. Stage the intended tree and commit through the normal check-only hook; its `py -3 tools/run.py ci --check` result is the canonical local gate. Do not rerun the full canonical gate immediately before or after a successful hooked commit.
 
@@ -88,4 +88,4 @@ Fast-forward the primary checkout to the verified merge while preserving `.agent
 
 ## Execution rulings
 
-Record only consequential browser or behavior findings discovered during execution. Keep test output, screenshots and command receipts in branch-scoped off-repository scratch; retain durable product truth in `docs/features.md` and delivery facts in the roadmap.
+The real focused production-browser test passed before and after the witness. The witness returned a synthetic success and client-side cash of $21 for the current run, without sending the buy POST to the API; after close and reopen the server still reported $25 and the test failed at the restored-versus-reported cash assertion. Food inventory remained unchanged as a consequence of the intercepted command. The temporary route interception was removed by restoring the saved file; source SHA-256 before and after restoration was `1389623AF9AC4AE9221C9F706DA29C02C9946FEE9A82BD2A42184D622D9BA5B8`. Format and lint checks passed, the production web build passed, and the full browser suite passed all 12 tests. Keep test output, screenshots and command receipts in branch-scoped off-repository scratch; retain durable product truth in `docs/features.md` and delivery facts in the roadmap.
