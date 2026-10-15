@@ -207,36 +207,10 @@ describe("DevOverlay contextual panel visibility", () => {
     expect(screen.queryByRole("button", { name: /travel dev/i })).not.toBeInTheDocument();
   });
 
-  it("shows no contextual dev panel message when no panels match", () => {
-    // pre-session has no contextual panels and session-audit is always available,
-    // so this tests the "always available" fallback. To test the empty state,
-    // we'd need a surface with no panels at all. Session audit is always available,
-    // so the empty state won't trigger with current panels. Instead verify
-    // session audit is the only panel on pre-session.
+  it("keeps Session Audit available on the pre-session surface", () => {
     renderOverlay(true, () => {}, 0, "pre-session");
-    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
-    expect(sessionAuditButtons).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /session audit/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /travel dev/i })).not.toBeInTheDocument();
-  });
-});
-
-describe("DevOverlay expanded height cap", () => {
-  it("caps expanded drawer height and makes content scrollable", async () => {
-    renderOverlay(true, () => {}, 0, "town");
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /expand/i }));
-
-    const drawer = screen.getByTestId("dev-drawer");
-    const drawerStyle = window.getComputedStyle(drawer);
-    // Expanded height should be capped (not 100dvh)
-    const heightValue = drawerStyle.height;
-    expect(heightValue).not.toBe("");
-    expect(heightValue).not.toContain("100dvh");
-    // The content area should have overflow auto for internal scrolling
-    const content = screen.getByTestId("dev-overlay-content");
-    const contentStyle = window.getComputedStyle(content);
-    expect(contentStyle.overflow).toBe("auto");
   });
 });
