@@ -57,14 +57,14 @@
 - [x] Remove the resolved client seed-decoder scaffold from WB-23's remaining findings and update the `gameSetupSeed.ts` file disposition to describe the single live normalization responsibility, without disturbing unrelated WB-23 findings.
 - [x] Reconcile the test-follow-up rows that call for retaining isolated codec negatives and adding routed proof; record that the decoder/factory-only unit suite is retired, the routed edited/invalid/fresh seed cases remain, and the new Randomize case proves a changed seed reaches the command. Correct the current test inventory to 45 Vitest files, one Playwright spec, and four support/guidance files.
 - [x] Update PG-001's evidence assessment to include the routed Randomize interaction; preserve all existing feature promises and dependencies, and compare the actual diff with ADR-0021 and ADR-0039, leaving them unchanged because UUID input, server resolution, and event replay decisions do not change.
-- [ ] State the author ADR and feature-matrix comparisons in the PR body; the independent reviewer must repeat both checks against the final diff.
+- [x] State the author ADR and feature-matrix comparisons in the PR body; the independent reviewer repeated both checks against the committed diff at `c3514de8d2c140a9f7c4c29ea94d39a434e20cfc` and found no actionable issues.
 
 ### Task 4: Validate, review, publish, and retire N-73
 
 **Files:** all N-73 changes and the prepared PR review package.
 
-- [ ] Run the focused `StartFlow.test.tsx` behavior suite and the canonical `py -3 tools/run.py ci --check` gate on the intended committed tree; capture the exact committed HEAD and local gate result through the normal check-only pre-commit hook.
-- [ ] Inspect the staged diff, verify only the planned files changed, search for removed helper names across the repository, and confirm `StartFlow.test.tsx` remains the behavior owner for all retained setup contracts.
-- [ ] Prepare and dispatch a fresh-context whole-branch reviewer with exact base/head and actual diff; require independent ADR and feature-matrix comparison, resolve findings, and obtain a new review after any correction.
+- [x] Run the focused `StartFlow.test.tsx` behavior suite and the canonical `py -3 tools/run.py ci --check` gate on the intended committed tree; capture the exact committed HEAD and local gate result through the normal check-only pre-commit hook.
+- [x] Inspect the committed diff, verify only the planned files changed, search for removed helper names across the repository, and confirm `StartFlow.test.tsx` remains the behavior owner for all retained setup contracts.
+- [x] Prepare and dispatch a fresh-context whole-branch reviewer with exact base/head and actual diff; require independent ADR and feature-matrix comparison, resolve findings, and obtain a new review after any correction. The corrected full review approved `c3514de8d2c140a9f7c4c29ea94d39a434e20cfc` with no actionable findings; review evidence is in the off-repo package.
 - [ ] Publish a Draft PR to `develop` with scope, author comparisons, exact local evidence, and reviewer outcome; mark it ready after these gates are resolved and wait for the exact-head hosted gate to pass before merging.
 - [ ] Verify the develop-push gate on the squash merge, fast-forward the primary checkout without disturbing its existing investigation edit, and use `remove_worktree.py --check` then `--apply` for this merged worktree before deleting and verifying the exact local/upstream branch refs.
