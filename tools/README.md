@@ -9,6 +9,7 @@ Run `py -3 tools/run.py` to list available targets, or `py -3 tools/run.py <targ
 | Target | Modes | Purpose |
 | --- | --- | --- |
 | `ci` | `--check` | Run the complete fail-fast check gate used by pre-commit and hosted CI. |
+| `release-verify` | `--check` | Build or verify the immutable local API, public web, and playtest web bundle for one clean source commit. |
 | `format` | `--check`, `--apply` | Check formatting or format explicit supported files; whole-repository apply requires `--all`. |
 | `lint` | `--check` | Run check-only language diagnostics; lint checks never apply fixes. |
 | `dotnet-build` | `--check` | Build the .NET solution; arguments after `--` go to `dotnet build`. |
@@ -16,6 +17,8 @@ Run `py -3 tools/run.py` to list available targets, or `py -3 tools/run.py <targ
 | `web` | `--check` | Check web formatting and lint, typecheck, run Vitest and Chromium browser tests, and build the app. |
 | `python-tests` | `--check` | Run repository script and tooling behavior tests; arguments after `--` go to both pytest suites. |
 | `setup-hooks` | `--check`, `--apply` | Verify or set this checkout's local `core.hooksPath` to `githooks`. |
+
+`release-verify --check` requires a clean tracked and untracked source tree, .NET SDK, Node.js/npm, and locked web dependencies. It builds into ignored `artifacts/release/<full-source-commit>/` and writes `release-manifest.json` with the authored product version and a SHA-256 digest for each artifact tree. If that source-commit bundle already exists, the command verifies it without rebuilding or overwriting it; tampered or incomplete output fails. The digest identifies these exact built bytes and does not claim independent builds are reproducible. This local check does not publish, tag, create images, or deploy.
 
 The canonical gate stops at the first failure and orders checks from cheapest to most expensive: whitespace and repository contracts, Python format/lint, web format/lint, .NET format/analyzers, .NET build and web typecheck, then behavioral tests (including Vitest and Chromium browser tests) and the web build. All format, lint, and static checks finish before behavioral suites begin, so an agent does not wait for an expensive test after a cheaper diagnostic has already failed. `ci --check --diagnostics` is a separate manual troubleshooting mode that reports independent failures; it is never used by the commit hook or hosted CI.
 

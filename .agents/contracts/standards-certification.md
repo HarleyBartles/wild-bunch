@@ -94,6 +94,8 @@ evidence on Codex CLI 0.159.0. Fresh-clone users still need Codex, repository
 trust, and access to the declared Git sources; use `codex plugin marketplace
 upgrade wild-bunch` to refresh the catalog and payloads.
 
+`release-verify --check` is a focused local release operation that requires clean source, builds the API and both web variants, binds their file-tree digests to source/version in an ignored immutable bundle, and verifies existing output without rebuilding or overwrite. It does not publish or deploy.
+
 ## gitflow
 
 **Assessment:** Partially certified against the immutable definition at
@@ -126,5 +128,10 @@ generated identity equality after the web build. Development checkpoints,
 release candidates, and stable versions follow ADR-0048 and the joint
 Gitflow/SemVer rules. Focused tests reject malformed and stale identities;
 local production builds emitted matching RC, stable, and restored development
-identities. Artifact digest binding and an end-to-end hosted release flow have
-not yet been exercised, so full release qualification remains open in row 18.
+identities. N-79's `release-verify --check` binds the exact API, public-web, and
+playtest-web artifact trees produced from one clean full source commit and
+authored version, and re-verifies an existing immutable bundle without
+rebuilding. This records the bytes produced by that invocation; it does not
+claim independent builds are reproducible. Retained-route qualification,
+hosted release behavior, and full candidate qualification remain open in row
+18.

@@ -9,12 +9,14 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 import shared_checkout
 import style
-from versioning import VersionIdentityError, check_version_identity
+from release_artifacts import MANIFEST_NAME, create_manifest, verify_manifest
+from versioning import VersionIdentityError, check_version_identity, read_authored_version
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_NAME = "tools/run"
@@ -254,6 +256,72 @@ def _version_identity_check(_ctx: Ctx) -> None:
         raise
 
 
+def _release_verify(ctx: Ctx) -> None:
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    if status.strip():
+        raise BusTargetError(
+            "release verification requires a clean tracked and untracked source tree; "
+            "commit or remove source changes before building"
+        )
+    source_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.strip()
+    if len(source_commit) != 40 or any(char not in "0123456789abcdef" for char in source_commit):
+        raise BusTargetError("git rev-parse HEAD did not return a full commit ID")
+    version_path = ROOT / "Directory.Build.props"
+    version = read_authored_version(version_path)
+
+    release_root = ROOT / "artifacts" / "release"
+    bundle = release_root / source_commit
+    if bundle.exists():
+        verify_manifest(bundle, source_commit, version)
+        print(f"[tools/run] verified existing immutable bundle: {bundle}")
+        return
+
+    release_root.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{source_commit}.staging-", dir=release_root))
+    try:
+        api_output = staging / "api"
+        public_output = staging / "web-public"
+        playtest_output = staging / "web-playtest"
+        _run(
+            [
+                "dotnet",
+                "publish",
+                str(ROOT / "src" / "WildBunch.Api" / "WildBunch.Api.csproj"),
+                "--configuration",
+                "Release",
+                "-o",
+                str(api_output),
+            ],
+            ctx,
+        )
+        _run(_npm_cmd("run", "build", "--", "--outDir", str(public_output)), ctx)
+        _run(_npm_cmd("run", "build:playtest", "--", "--outDir", str(playtest_output)), ctx)
+        check_version_identity(ROOT, public_output / "version.json")
+        check_version_identity(ROOT, playtest_output / "version.json")
+        manifest = create_manifest(staging, source_commit, version)
+        (staging / MANIFEST_NAME).write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        if bundle.exists():
+            raise BusTargetError(
+                f"release bundle appeared during build; refusing overwrite: {bundle}"
+            )
+        staging.replace(bundle)
+        verify_manifest(bundle, source_commit, version)
+        print(f"[tools/run] created immutable local release bundle: {bundle}")
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
+
+
 def _diff_check(ctx: Ctx) -> None:
     hosted_commit = os.environ.get("REPO_STANDARDS_HOSTED_COMMIT")
     if hosted_commit:
@@ -421,6 +489,7 @@ def _ci_check(ctx: Ctx) -> None:
 
 TARGETS = {
     "ci": {"check": _ci_check},
+    "release-verify": {"check": _release_verify},
     "format": {"check": _format, "apply": _format},
     "lint": {"check": _lint},
     "dotnet-build": {"check": _build_dotnet},
@@ -431,6 +500,14 @@ TARGETS = {
 }
 
 TARGET_DESCRIPTIONS = {
+    "release-verify": (
+        "Build or verify an immutable local release bundle for the clean current source commit: "
+        "a Release API publish plus public and playtest web builds. The ignored output is "
+        "artifacts/release/<full-source-commit>; its manifest records the authored version and "
+        "SHA-256 tree identities. Existing bundles are verified without rebuilding or overwrite. "
+        "Requires Python 3, .NET SDK, Node.js/npm and locked web dependencies. This target does "
+        "not publish artifacts, create images, tag, or deploy. Mode: --check; no target arguments."
+    ),
     "ci": (
         "Run the complete repository check gate in cheapest-first order: whitespace and repository "
         "contracts; Python, web, and .NET format/lint; .NET build and web typecheck; then behavior "
@@ -616,6 +693,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[tools/run] target '{target}' failed: {exc}", file=sys.stderr)
         return exc.returncode or 1
     except (BusTargetError, CiDiagnosticsError, VersionIdentityError) as exc:
+        print(f"[tools/run] target '{target}' failed: {exc}", file=sys.stderr)
+        return 1
+    except ValueError as exc:
         print(f"[tools/run] target '{target}' failed: {exc}", file=sys.stderr)
         return 1
 

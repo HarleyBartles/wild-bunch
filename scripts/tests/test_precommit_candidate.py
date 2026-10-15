@@ -247,7 +247,13 @@ def test_hook_rejects_unformatted_staged_source_without_mutating_candidate(tmp_p
     (tmp_path / "githooks").mkdir()
     (tmp_path / "tools").mkdir()
     (tmp_path / "githooks/pre-commit").write_bytes(HOOK.read_bytes())
-    for name in ("run.py", "style.py", "shared_checkout.py", "versioning.py"):
+    for name in (
+        "run.py",
+        "style.py",
+        "shared_checkout.py",
+        "versioning.py",
+        "release_artifacts.py",
+    ):
         shutil.copy2(REPO_ROOT / "tools" / name, tmp_path / "tools" / name)
     shutil.copy2(REPO_ROOT / ".gitignore", tmp_path / ".gitignore")
     (tmp_path / ".agents/contracts").mkdir(parents=True)
