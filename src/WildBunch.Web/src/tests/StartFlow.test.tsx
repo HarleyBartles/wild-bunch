@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { HttpRequestError } from "../api/httpClient";
@@ -199,23 +199,6 @@ function primeMocks() {
 }
 
 describe("StartFlow", () => {
-  it("starts on the setup step and advances to the story step", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    expect(await screen.findByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
-
-    const nameInput = screen.getByLabelText(/your name/i);
-    await user.type(nameInput, "Ranger Vale");
-
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-  });
-
   it("loads the settled prologue for the saved session after a refresh", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "settled-session-42");
@@ -228,60 +211,6 @@ describe("StartFlow", () => {
       expect(mockedGetPrologue).toHaveBeenCalledWith("settled-session-42");
     });
     expect(mockedSetupGame).not.toHaveBeenCalled();
-  });
-
-  it("preserves the player name draft through the full flow", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    const nameInput = await screen.findByLabelText(/your name/i);
-    await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    expect(
-      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
-    ).toBeInTheDocument();
-
-    // Select a town through the Phaser map
-    await waitFor(() => {
-      expect(phaserMockState.games.length).toBeGreaterThan(0);
-    });
-    const game = phaserMockState.games[0];
-    const scene = (game.config as any).scene;
-    scene.onTownSelected("t-town");
-
-    await waitFor(() => {
-      expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
-    });
-
-    expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "t-town" });
-  });
-
-  it("advances from story to town step", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    const nameInput = await screen.findByLabelText(/your name/i);
-    await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    expect(
-      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
-    ).toBeInTheDocument();
   });
 
   it("shows entropy description for selected entropy", async () => {
@@ -305,8 +234,15 @@ describe("StartFlow", () => {
     });
   });
 
-  it("calls setupGame with playerName, difficulty, gameEntropy at the setup step and startGameWithTown at the final step", async () => {
+  it("starts the configured hunt in the selected town and shows pending arrival", async () => {
     primeMocks();
+    let resolveStart!: (session: GameSessionDto) => void;
+    mockedStartGameWithTown.mockImplementationOnce(
+      () =>
+        new Promise<GameSessionDto>((resolve) => {
+          resolveStart = resolve;
+        }),
+    );
     const user = userEvent.setup();
     renderSurface();
 
@@ -345,20 +281,23 @@ describe("StartFlow", () => {
       await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
     ).toBeInTheDocument();
 
-    // Select a town through the Phaser map
     await waitFor(() => {
       expect(phaserMockState.games.length).toBeGreaterThan(0);
     });
-    const game = phaserMockState.games[0];
-    const scene = (game.config as any).scene;
-    scene.onTownSelected("t-town");
+    const scene = phaserMockState.games[0].config.scene;
+    scene.selectTown("dust-fork");
 
     await waitFor(() => {
       expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
     });
 
-    expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "t-town" });
+    expect(screen.getByRole("heading", { name: /starting your hunt/i })).toBeInTheDocument();
+    expect(screen.getByText(/the backend is building your world/i)).toBeInTheDocument();
+    expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "dust-fork" });
     expect(mockedStartGameWithTown.mock.calls[0][2]).toMatch(/^[0-9a-f-]{36}$/i);
+
+    await act(async () => resolveStart(createSession({ startFlowPhase: 4 })));
+    expect(await screen.findByText("New game started for Ruth.")).toBeInTheDocument();
     expect(window.localStorage.getItem("wild-bunch.pending-first-arrival:game-1")).toBeNull();
   });
 
@@ -621,38 +560,6 @@ describe("StartFlow", () => {
     expect(screen.getByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
   });
 
-  it("shows the creating step after selecting a town", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    const nameInput = await screen.findByLabelText(/your name/i);
-    await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    expect(
-      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
-    ).toBeInTheDocument();
-
-    // Select a town through the Phaser map
-    await waitFor(() => {
-      expect(phaserMockState.games.length).toBeGreaterThan(0);
-    });
-    const game = phaserMockState.games[0];
-    const scene = (game.config as any).scene;
-    scene.onTownSelected("t-town");
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /starting your hunt/i })).toBeInTheDocument();
-    });
-  });
-
   it("does not render a Back button on the town step", async () => {
     primeMocks();
     const user = userEvent.setup();
@@ -673,39 +580,6 @@ describe("StartFlow", () => {
     ).toBeInTheDocument();
 
     expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
-  });
-
-  it("calls startGameWithTown with the correct startingTownId when a town is selected via the map host", async () => {
-    primeMocks();
-    const user = userEvent.setup();
-    renderSurface();
-
-    const nameInput = await screen.findByLabelText(/your name/i);
-    await user.type(nameInput, "Ranger Vale");
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /the story so far/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole("button", { name: /ride on/i }));
-
-    expect(
-      await screen.findByRole("heading", { name: /pick a starting town/i }, { timeout: 5000 }),
-    ).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(phaserMockState.games.length).toBeGreaterThan(0);
-    });
-
-    const scene = phaserMockState.games[0].config.scene;
-    scene.selectTown("dust-fork");
-
-    await waitFor(() => {
-      expect(mockedStartGameWithTown).toHaveBeenCalledTimes(1);
-    });
-
-    expect(mockedStartGameWithTown.mock.calls[0][1]).toEqual({ startingTownId: "dust-fork" });
   });
 
   it("mounts the Phaser map but does not call startGameWithTown until a town is selected", async () => {
