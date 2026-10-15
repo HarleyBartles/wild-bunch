@@ -90,7 +90,8 @@
 - [x] Document direct browser-test build and local PostgreSQL prerequisites in the command-bus README and testing guidance. Keep artifact identity distinct from gameplay qualification in the release runbook; local route evidence does not establish complete candidate, hosted release or deployed resume.
 - [x] Update PG-001, PG-002 and PLAT-004 evidence to record only the production-mode browser path with local API/PostgreSQL and page-reopen restoration. Preserve broader retained-path and full candidate qualification work in row 18.
 - [x] Run `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, `npm --prefix src/WildBunch.Web ci`, `py -3 tools/run.py web --check`, `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --no-restore`, and `py -3 -m pytest tools/tests -q`. The web target passed formatting, typecheck, 377 Vitest tests, production build and version identity, and all 5 Chromium tests; GameContent passed 159 tests and tools passed 95. The restored browser route passed after the storage mutation proof. A read-only database query confirmed teardown left no `wildbunch_browser_%` databases. `git diff --check` passed.
-- [ ] Run the repository gate `py -3 tools/run.py ci --check` from a clean committed candidate as required by the handoff path. Stage only source, tests and durable guidance listed in this task; commit through the normal hook.
+- [x] Run the repository gate `py -3 tools/run.py ci --check`; all checks passed, including 332 PostgreSQL integration tests, 377 Vitest tests, the production build and identity check, and all 5 Chromium tests.
+- [x] Close the independent review's setup-failure gap by moving `spawn()` inside the cleanup guard, so a synchronous process-creation failure drops the generated disposable database. The fail-fast gate passed after this fix; commit through the normal hook.
 
 ### Task 3: Review, publish and close N-80
 
@@ -102,7 +103,7 @@
 - Produces: a reviewed PR to `develop` at `0.1.0-dev.198`, passing exact-head hosted CI, merged output and paired worktree/branch-ref cleanup.
 
 - [ ] Independently compare the complete diff with ADR-0046 and ADR-0048 and the feature matrix. Record in the PR why no successor ADR is needed and verify PG-001/PLAT-004 make no broader claim than the evidence.
-- [ ] Dispatch one fresh-context whole-branch reviewer with the exact base/head and the repo's code-review and decision-record routes. Resolve Critical or Important findings with a witnessed behavior proof and rerun the required checks after any correction.
+- [ ] Dispatch one fresh-context reviewer for the exact corrected head with the repo's code-review and decision-record routes. Resolve Critical or Important findings with a witnessed behavior proof and rerun the required checks after any correction.
 - [ ] Push the dedicated branch and create a Draft PR targeting `develop`. Verify title, body, exact base/head and Draft state; make it ready only after local validation and independent review pass.
 - [ ] Require the hosted canonical gate to pass on the exact PR head before merge. Merge to `develop`, then require the develop-push gate to pass on the exact merge result.
 - [ ] Fast-forward the main checkout to the verified merge while preserving its pre-existing user edit. Run the finishing helper `--check` then `--apply`; remove the clean N-80 worktree, delete its exact local and upstream branch refs, prune registrations where appropriate, and verify all three are absent.

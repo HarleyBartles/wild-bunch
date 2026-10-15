@@ -111,37 +111,38 @@ export async function startIsolatedApi(): Promise<() => Promise<void>> {
   const databaseName = `wildbunch_browser_${process.pid}_${crypto.randomUUID().replace(/-/g, "")}`;
   await withAdminClient((client) => client.query(`CREATE DATABASE "${databaseName}"`));
 
-  const api = spawn(
-    "dotnet",
-    [
-      "run",
-      "--project",
-      "../WildBunch.Api/WildBunch.Api.csproj",
-      "--no-launch-profile",
-      "--",
-      // Command-line configuration outranks the shared database environment set by the task runner.
-      `--ConnectionStrings:WildBunchPostgresDb=${apiConnectionStringPrefix}${databaseName};Username=postgres`,
-    ],
-    {
-      cwd: process.cwd(),
-      detached: process.platform !== "win32",
-      env: {
-        ...process.env,
-        ASPNETCORE_ENVIRONMENT: "Development",
-        ASPNETCORE_URLS: "http://127.0.0.1:5275",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-    },
-  );
-
+  let api: ChildProcess | undefined;
   let logs = "";
   const appendLog = (chunk: Buffer) => {
     logs = `${logs}${chunk.toString()}`.slice(-16_000);
   };
-  api.stdout?.on("data", appendLog);
-  api.stderr?.on("data", appendLog);
 
   try {
+    api = spawn(
+      "dotnet",
+      [
+        "run",
+        "--project",
+        "../WildBunch.Api/WildBunch.Api.csproj",
+        "--no-launch-profile",
+        "--",
+        // Command-line configuration outranks the shared database environment set by the task runner.
+        `--ConnectionStrings:WildBunchPostgresDb=${apiConnectionStringPrefix}${databaseName};Username=postgres`,
+      ],
+      {
+        cwd: process.cwd(),
+        detached: process.platform !== "win32",
+        env: {
+          ...process.env,
+          ASPNETCORE_ENVIRONMENT: "Development",
+          ASPNETCORE_URLS: "http://127.0.0.1:5275",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+    api.stdout?.on("data", appendLog);
+    api.stderr?.on("data", appendLog);
+
     await waitForApi(api, () => logs);
     const activeSessions = await withAdminClient(
       (client) => client.query('SELECT 1 FROM "GameSessions" WHERE "Status" = \'Active\' LIMIT 1'),
@@ -151,7 +152,7 @@ export async function startIsolatedApi(): Promise<() => Promise<void>> {
       throw new Error(`The browser-test disposable database ${databaseName} was not empty.`);
     }
   } catch (error) {
-    await stopApi(api);
+    if (api) await stopApi(api);
     await dropDatabase(databaseName);
     throw error;
   }
