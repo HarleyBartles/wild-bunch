@@ -310,7 +310,7 @@ export function PhaserMapHost({
     );
   }, [mapData, selectedTownId, currentTownId, selectableTownIds]);
 
-  return <MapCanvas ref={containerRef} role="img" aria-label="Trail map of starting towns" />;
+  return <MapCanvas ref={containerRef} role="img" aria-label="World map" />;
 }
 
 const MapCanvas = styled.div`

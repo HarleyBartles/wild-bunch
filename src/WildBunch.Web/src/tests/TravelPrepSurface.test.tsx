@@ -464,7 +464,7 @@ describe("TravelPrepSurface preview identity", () => {
       { updatedAt: updatedAt + 1000 },
     );
 
-    expect(await screen.findByRole("img", { name: /trail map/i })).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: /world map/i })).toBeInTheDocument();
     loadingPreview.resolve(createPreview());
 
     expect(screen.queryByText("Prepare to ride")).not.toBeInTheDocument();
@@ -580,7 +580,6 @@ describe("TravelPrepSurface map integration", () => {
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     renderPrep();
 
-    // The map should render (PhaserMapHost renders an img element).
-    expect(await screen.findByRole("img", { name: /trail map/i })).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: /world map/i })).toBeInTheDocument();
   });
 });
