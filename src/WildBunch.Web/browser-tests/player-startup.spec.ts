@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { JourneyStatus } from "../src/api/types";
 import { startIsolatedApi } from "./support/postgresApi";
 import { seedWorldSeedCode } from "./support/seedWorldSeedCode";
 
@@ -7,6 +8,42 @@ const apiBaseUrl = "http://127.0.0.1:5275";
 
 interface WorldMapResponse {
   towns: Array<{ id: string; name: string; x: number; y: number }>;
+  trails: Array<{ id: string; fromTownId: string; toTownId: string; rideDayDistance: number }>;
+}
+
+async function clickTownOnWorldMap(
+  page: Page,
+  map: WorldMapResponse,
+  town: WorldMapResponse["towns"][number],
+) {
+  const canvas = page.getByRole("img", { name: "World map" }).locator("canvas");
+  await expect(canvas).toBeVisible();
+  const bounds = await canvas.boundingBox();
+  expect(bounds).not.toBeNull();
+  if (!bounds) throw new Error("Expected the world map canvas to have browser bounds.");
+
+  const canvasSize = await canvas.evaluate((element) => ({
+    width: (element as HTMLCanvasElement).width,
+    height: (element as HTMLCanvasElement).height,
+  }));
+  const minX = Math.min(...map.towns.map((candidate) => candidate.x));
+  const maxX = Math.max(...map.towns.map((candidate) => candidate.x));
+  const minY = Math.min(...map.towns.map((candidate) => candidate.y));
+  const maxY = Math.max(...map.towns.map((candidate) => candidate.y));
+  const padding = Math.min(70, canvasSize.width * 0.15, canvasSize.height * 0.15);
+  const scale = Math.min(
+    (canvasSize.width - padding * 2) / (maxX - minX || 1),
+    (canvasSize.height - padding * 2) / (maxY - minY || 1),
+  );
+  const offsetX = (canvasSize.width - (maxX - minX) * scale) / 2;
+  const offsetY = (canvasSize.height - (maxY - minY) * scale) / 2;
+  const markerX = offsetX + (town.x - minX) * scale;
+  const markerY = offsetY + (town.y - minY) * scale;
+
+  await page.mouse.click(
+    bounds.x + (markerX / canvasSize.width) * bounds.width,
+    bounds.y + (markerY / canvasSize.height) * bounds.height,
+  );
 }
 
 let stopIsolatedApi: (() => Promise<void>) | undefined;
@@ -83,40 +120,12 @@ test("a player can start, choose a town, and resume the server state after reope
     expect(map.towns.length).toBeGreaterThan(0);
 
     const town = map.towns[0];
-    const canvas = page.getByRole("img", { name: "Trail map of starting towns" }).locator("canvas");
-    await expect(canvas).toBeVisible();
-    const bounds = await canvas.boundingBox();
-    expect(bounds).not.toBeNull();
-    if (!bounds) {
-      throw new Error("Expected the world map canvas to have browser bounds.");
-    }
-
-    const canvasSize = await canvas.evaluate((element) => ({
-      width: (element as HTMLCanvasElement).width,
-      height: (element as HTMLCanvasElement).height,
-    }));
-    const minX = Math.min(...map.towns.map((candidate) => candidate.x));
-    const maxX = Math.max(...map.towns.map((candidate) => candidate.x));
-    const minY = Math.min(...map.towns.map((candidate) => candidate.y));
-    const maxY = Math.max(...map.towns.map((candidate) => candidate.y));
-    const padding = Math.min(70, canvasSize.width * 0.15, canvasSize.height * 0.15);
-    const scale = Math.min(
-      (canvasSize.width - padding * 2) / (maxX - minX || 1),
-      (canvasSize.height - padding * 2) / (maxY - minY || 1),
-    );
-    const offsetX = (canvasSize.width - (maxX - minX) * scale) / 2;
-    const offsetY = (canvasSize.height - (maxY - minY) * scale) / 2;
-    const markerX = offsetX + (town.x - minX) * scale;
-    const markerY = offsetY + (town.y - minY) * scale;
     const startResponsePromise = page.waitForResponse(
       (response) =>
         response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
         response.request().method() === "POST",
     );
-    await page.mouse.click(
-      bounds.x + (markerX / canvasSize.width) * bounds.width,
-      bounds.y + (markerY / canvasSize.height) * bounds.height,
-    );
+    await clickTownOnWorldMap(page, map, town);
     const startResponse = await startResponsePromise;
     expect(startResponse.ok()).toBe(true);
     const started = (await startResponse.json()) as {
@@ -187,6 +196,144 @@ test("a player can start, choose a town, and resume the server state after reope
   }
 });
 
+test("a player can start travel and restore the active journey after reopening", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  let expectedTravelUrl: string | null = null;
+  let travelPostCount = 0;
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (expectedTravelUrl && request.url() === expectedTravelUrl && request.method() === "POST") {
+        travelPostCount += 1;
+      }
+    });
+  });
+  let page = await context.newPage();
+
+  try {
+    await page.goto(productionWebUrl);
+    await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
+    await page.getByRole("button", { name: "Boring" }).click();
+    await page.getByLabel("World seed").fill(seedWorldSeedCode());
+
+    const setupResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/setup` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const setupResponse = await setupResponsePromise;
+    expect(setupResponse.ok(), await setupResponse.text()).toBe(true);
+    const setup = (await setupResponse.json()) as { id: string };
+
+    await page.getByRole("button", { name: "Ride on" }).click();
+    await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+    await page.getByRole("button", { name: "Ride on" }).click();
+
+    const mapResponse = await page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/world-map` &&
+        response.request().method() === "GET",
+    );
+    expect(mapResponse.ok()).toBe(true);
+    const map = (await mapResponse.json()) as WorldMapResponse;
+    const origin = map.towns[0];
+    expect(origin).toBeDefined();
+    const startResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
+        response.request().method() === "POST",
+    );
+    await clickTownOnWorldMap(page, map, origin);
+    const startResponse = await startResponsePromise;
+    expect(startResponse.ok(), await startResponse.text()).toBe(true);
+    expect(
+      ((await startResponse.json()) as { player: { currentTownId: string } }).player.currentTownId,
+    ).toBe(origin.id);
+    await expect(page.getByRole("heading", { level: 1, name: origin.name })).toBeVisible();
+
+    const trail = map.trails.find(
+      (candidate) => candidate.fromTownId === origin.id || candidate.toTownId === origin.id,
+    );
+    expect(trail, `${origin.name} should have a connected trail`).toBeDefined();
+    if (!trail) throw new Error(`Expected ${origin.name} to have a connected trail.`);
+    const destinationId = trail.fromTownId === origin.id ? trail.toTownId : trail.fromTownId;
+    const destination = map.towns.find((town) => town.id === destinationId);
+    expect(destination).toBeDefined();
+    if (!destination) throw new Error(`Expected the connected destination ${destinationId}.`);
+
+    await page.getByRole("button", { name: "Hit the trail" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Hit the trail" })).toBeVisible();
+    const previewResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/travel/preview/${destination.id}` &&
+        response.request().method() === "GET",
+    );
+    await clickTownOnWorldMap(page, map, destination);
+    const previewResponse = await previewResponsePromise;
+    expect(previewResponse.ok()).toBe(true);
+    const preview = (await previewResponse.json()) as {
+      success: boolean;
+      preview: { originTownId: string; destinationTownId: string } | null;
+    };
+    expect(preview.success).toBe(true);
+    expect(preview.preview?.originTownId).toBe(origin.id);
+    expect(preview.preview?.destinationTownId).toBe(destination.id);
+    await expect(page.getByRole("heading", { level: 1, name: "Prepare to ride" })).toBeVisible();
+
+    expectedTravelUrl = `${apiBaseUrl}/api/games/${setup.id}/travel`;
+    const travelResponsePromise = page.waitForResponse(
+      (response) => response.url() === expectedTravelUrl && response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Start the ride" }).click();
+    const travelResponse = await travelResponsePromise;
+    expect(travelResponse.ok(), await travelResponse.text()).toBe(true);
+    const travelResult = (await travelResponse.json()) as {
+      success: boolean;
+      currentSession: {
+        journey: {
+          originTownId: string;
+          destinationTownId: string;
+          status: number;
+        } | null;
+      };
+    };
+    expect(travelResult.success).toBe(true);
+    expect(travelResult.currentSession.journey).not.toBeNull();
+    expect(travelResult.currentSession.journey?.originTownId).toBe(origin.id);
+    expect(travelResult.currentSession.journey?.destinationTownId).toBe(destination.id);
+    expect(travelResult.currentSession.journey?.status).toBe(JourneyStatus.Active);
+    expect(travelPostCount).toBe(1);
+
+    await page.close();
+    page = await context.newPage();
+    const restoredResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const restoredResponse = await restoredResponsePromise;
+    expect(restoredResponse.ok()).toBe(true);
+    const restored = (await restoredResponse.json()) as {
+      journey: {
+        originTownId: string;
+        destinationTownId: string;
+        status: number;
+      } | null;
+    };
+    expect(restored.journey?.originTownId).toBe(origin.id);
+    expect(restored.journey?.destinationTownId).toBe(destination.id);
+    expect(restored.journey?.status).toBe(JourneyStatus.Active);
+    await expect(page.getByRole("button", { name: "Advance travel day" })).toBeVisible();
+    expect(travelPostCount).toBe(1);
+  } finally {
+    await context.close();
+  }
+});
+
 test("a player can start, restore a public poster, and take in the named person through the saloon", async ({
   browser,
 }) => {
@@ -221,35 +368,12 @@ test("a player can start, restore a public poster, and take in the named person 
   expect(mapResponse.ok()).toBe(true);
   const map = (await mapResponse.json()) as WorldMapResponse;
   const town = map.towns[0];
-  const canvas = page.getByRole("img", { name: "Trail map of starting towns" }).locator("canvas");
-  await expect(canvas).toBeVisible();
-  const bounds = await canvas.boundingBox();
-  expect(bounds).not.toBeNull();
-  if (!bounds) throw new Error("Expected the world map canvas to have browser bounds.");
-  const canvasSize = await canvas.evaluate((element) => ({
-    width: (element as HTMLCanvasElement).width,
-    height: (element as HTMLCanvasElement).height,
-  }));
-  const minX = Math.min(...map.towns.map((candidate) => candidate.x));
-  const maxX = Math.max(...map.towns.map((candidate) => candidate.x));
-  const minY = Math.min(...map.towns.map((candidate) => candidate.y));
-  const maxY = Math.max(...map.towns.map((candidate) => candidate.y));
-  const padding = Math.min(70, canvasSize.width * 0.15, canvasSize.height * 0.15);
-  const scale = Math.min(
-    (canvasSize.width - padding * 2) / (maxX - minX || 1),
-    (canvasSize.height - padding * 2) / (maxY - minY || 1),
-  );
-  const offsetX = (canvasSize.width - (maxX - minX) * scale) / 2;
-  const offsetY = (canvasSize.height - (maxY - minY) * scale) / 2;
   const startResponsePromise = page.waitForResponse(
     (response) =>
       response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
       response.request().method() === "POST",
   );
-  await page.mouse.click(
-    bounds.x + ((offsetX + (town.x - minX) * scale) / canvasSize.width) * bounds.width,
-    bounds.y + ((offsetY + (town.y - minY) * scale) / canvasSize.height) * bounds.height,
-  );
+  await clickTownOnWorldMap(page, map, town);
   const startResponse = await startResponsePromise;
   expect(startResponse.ok()).toBe(true);
   await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
