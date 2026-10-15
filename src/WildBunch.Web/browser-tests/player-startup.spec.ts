@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { JourneyStatus } from "../src/api/types";
+import { GameStatus, JourneyStatus } from "../src/api/types";
 import { startIsolatedApi } from "./support/postgresApi";
 import { seedWorldSeedCode } from "./support/seedWorldSeedCode";
 
@@ -1011,5 +1011,114 @@ test("a player can start, restore a public poster, and take in the named person 
     await expect(reopenedPage.getByText(confrontation.message, { exact: true })).toBeVisible();
   } finally {
     await context.close().catch(() => undefined);
+  }
+});
+
+test("confirmed Start Over archive is durable, while cancellation leaves the game active", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const setupPosts: string[] = [];
+  const archivePosts: string[] = [];
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (request.method() !== "POST") return;
+      if (request.url() === `${apiBaseUrl}/api/games/setup`) setupPosts.push(request.url());
+      if (/\/api\/games\/[^/]+\/archive$/.test(request.url())) archivePosts.push(request.url());
+    });
+  });
+  let page = await context.newPage();
+
+  try {
+    await page.goto(productionWebUrl);
+    await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
+    await page.getByLabel("World seed").fill(seedWorldSeedCode());
+
+    const setupResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/setup` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const setupResponse = await setupResponsePromise;
+    expect(setupResponse.ok(), await setupResponse.text()).toBe(true);
+    const setup = (await setupResponse.json()) as { id: string };
+
+    await page.getByRole("button", { name: "Ride on" }).click();
+    await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+    const mapResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/world-map` &&
+        response.request().method() === "GET",
+    );
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const mapResponse = await mapResponsePromise;
+    expect(mapResponse.ok()).toBe(true);
+    const map = (await mapResponse.json()) as WorldMapResponse;
+    const town = map.towns[0];
+    const startResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
+        response.request().method() === "POST",
+    );
+    await clickTownOnWorldMap(page, map, town);
+    const startResponse = await startResponsePromise;
+    expect(startResponse.ok()).toBe(true);
+    await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
+
+    await page.getByRole("button", { name: "Game Settings" }).click();
+    await page
+      .getByRole("dialog", { name: "Game Settings" })
+      .getByRole("button", { name: "Start Over" })
+      .click();
+    await page
+      .getByRole("dialog", { name: "Start over?" })
+      .getByRole("button", { name: "Keep riding" })
+      .click();
+    await expect(page.getByRole("dialog", { name: "Start over?" })).toBeHidden();
+    await expect(page.getByRole("dialog", { name: "Game Settings" })).toBeVisible();
+
+    const activeResponse = await context.request.get(`${apiBaseUrl}/api/games/${setup.id}`);
+    expect(activeResponse.ok()).toBe(true);
+    const activeGame = (await activeResponse.json()) as { status: number };
+    expect(activeGame.status).toBe(GameStatus.Active);
+    expect(archivePosts).toHaveLength(0);
+    await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
+
+    const archiveResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/archive` &&
+        response.request().method() === "POST",
+    );
+    await page
+      .getByRole("dialog", { name: "Game Settings" })
+      .getByRole("button", { name: "Start Over" })
+      .click();
+    await page
+      .getByRole("dialog", { name: "Start over?" })
+      .getByRole("button", { name: "Archive and start over" })
+      .click();
+    const archiveResponse = await archiveResponsePromise;
+    expect(archiveResponse.ok(), await archiveResponse.text()).toBe(true);
+    const archivedResult = (await archiveResponse.json()) as { status: number };
+    expect(archivedResult.status).toBe(GameStatus.Archived);
+    await expect(page.getByLabel("Your name")).toBeVisible();
+    expect(archivePosts).toHaveLength(1);
+    expect(setupPosts).toHaveLength(1);
+
+    await page.close();
+    page = await context.newPage();
+    await page.goto(productionWebUrl);
+    await expect(page.getByLabel("Your name")).toBeVisible();
+
+    const persistedResponse = await context.request.get(`${apiBaseUrl}/api/games/${setup.id}`);
+    expect(persistedResponse.ok()).toBe(true);
+    const persistedGame = (await persistedResponse.json()) as { status: number };
+    expect(persistedGame.status).toBe(GameStatus.Archived);
+    expect(archivePosts).toHaveLength(1);
+    expect(setupPosts).toHaveLength(1);
+  } finally {
+    await context.close();
   }
 });
