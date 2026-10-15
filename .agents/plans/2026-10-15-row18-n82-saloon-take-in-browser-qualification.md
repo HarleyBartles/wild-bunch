@@ -4,7 +4,7 @@
 
 **Goal:** Qualify one complete public player route from a learned wanted poster through observing, naming, and successfully taking in the corresponding saloon person using the production-mode browser, real API, and PostgreSQL event store.
 
-**Architecture:** Extend the existing connected production-browser route without adding a test-only endpoint, dev override, or new game rule. Use one explicit UUID seed with the player-selected Boring entropy mode to make the ordinary saloon encounter repeatable; choose the fixture from player-visible poster and encounter output, then hardcode that one input so the test never samples at runtime. Existing Domain and PostgreSQL acceptance tests remain the owners of fine/gun/wrong-name/replay rule coverage.
+**Architecture:** Extend the existing connected production-browser route without adding a test-only endpoint, dev override, or new game rule. Store one explicit `SeedWorld` fixture and derive its setup UUID at test runtime through `SeedWorldResolver.CreateRepresentativeSeedCode`; use the player-selected Boring entropy mode so the ordinary saloon encounter repeats without storing an opaque UUID or sampling at runtime. Existing Domain and PostgreSQL acceptance tests remain the owners of fine/gun/wrong-name/replay rule coverage.
 
 **Tech Stack:** Playwright Chromium, production-mode Vite build, ASP.NET API, PostgreSQL 16, Python command bus, and pytest.
 
@@ -19,7 +19,7 @@
 - Advance the sole authored product version in `Directory.Build.props` exactly once, from `0.1.0-dev.199` to `0.1.0-dev.200`.
 - Preserve the established flow of setup, prologue, one shared-map town choice, free arrival, public knowledge, and named saloon take-in.
 - Use the existing public web production build, actual player API endpoints, and uniquely named disposable PostgreSQL database established by browser support; never use `wildbunch_dev`, a dev endpoint/override, hidden game truth, or a test-only application route.
-- Use one explicit fixed UUID and the player-visible Boring entropy option for the browser fixture; do not retry or sample seeds at runtime to obtain a desired outcome.
+- Store the browser fixture as one explicit `SeedWorld` record, derive its UUID through `SeedWorldResolver.CreateRepresentativeSeedCode`, and choose Boring through the player-facing setup control; do not store an encoded UUID or retry/sample seeds at runtime.
 - The saloon person must be named from a poster the player actually read, and the rendered distinguishing feature must match a feature on that public poster. Do not identify the target through suspect IDs, culprit flags, internal DTO fields, or server-only test setup.
 - Keep PG-006 behavior and event semantics unchanged unless the test exposes a concrete defect against the settled contract; fix only a reproduced defect in its owning production seam and preserve CQRS, event authority, and replay.
 - Preserve the existing negatives and PostgreSQL replay coverage for citizens, no-gun refusal, wrong identity, duplicate settlement and the four-to-five culprit-release gate; do not duplicate these contracts in the browser route.
@@ -56,13 +56,16 @@
 
 **Files:**
 - Modify: `src/WildBunch.Web/browser-tests/player-startup.spec.ts`
+- Create: `src/WildBunch.Web/browser-tests/support/seed-code/SeedWorldSeedCode.csproj`
+- Create: `src/WildBunch.Web/browser-tests/support/seed-code/Program.cs`
+- Create: `src/WildBunch.Web/browser-tests/support/seedWorldSeedCode.ts`
 - Modify only if the browser proof reproduces a contract defect: the owning player surface or API/application seam identified from the failing behavior.
 
 **Interfaces:**
 - Consumes: the production public web build, `startIsolatedApi()` disposable PostgreSQL path, the ordinary setup/prologue/map/arrival route, `POST /api/games/{id}/wanted-posters/read`, `POST /api/games/{id}/investigations/saloon/look-around`, `POST /api/games/{id}/investigations/saloon/confront`, the public wanted-poster DTO, and the public saloon descriptor in the current session DTO.
-- Produces: one deterministic real-browser proof that the player reads a wanted poster, sees the matching public feature on a saloon person, selects that poster identity in the player surface, receives a successful secured-alive outcome for the same public target, and sees the returned outcome in the rendered game.
+- Produces: a test-support function that derives its UUID from the stored `SeedWorld` record through the production resolver, plus one deterministic real-browser proof that the player reads a wanted poster, sees the matching public feature on a saloon person, selects that poster identity in the player surface, receives a successful secured-alive outcome for the same public target, and sees the returned outcome in the rendered game.
 
-- [ ] Identify one explicit UUID and Boring-mode setup whose normal first-town route exposes the same publicly posted target in the saloon; use only returned poster facts and rendered descriptor to qualify the match, then hardcode the selected UUID so the browser test does not sample or retry seeds.
+- [ ] Create a `SeedWorld` fixture in the C# seed-code provider and derive its UUID with `SeedWorldResolver.CreateRepresentativeSeedCode`; use the helper output as the visible seed-form input and Boring as the player-selected entropy option. Choose the record by observing the normal route's public poster and rendered saloon descriptor, then keep that `SeedWorld` record fixed so the browser test never samples or retries seeds.
 - [ ] Extend the existing connected production-browser route to enter the Sheriff Office through the visible town-building control, read exactly one poster through the real player command, then return to town and enter the Saloon through its visible building control.
 - [ ] Click `Look around`, wait for the actual saloon observation response, and assert that the rendered person descriptor contains a feature from the public poster read in this game; the fixture must make the interaction correct through player-known evidence rather than a hidden target lookup.
 - [ ] Select the returned poster by its visible target name in `Declare wanted identity`, click the exact `Take <descriptor> to sheriff as <name>` action, and wait for the real `/investigations/saloon/confront` POST.
