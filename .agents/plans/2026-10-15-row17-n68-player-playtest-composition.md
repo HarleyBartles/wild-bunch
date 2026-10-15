@@ -43,9 +43,9 @@
 - Consumes: PR #370 merged to `develop` at `d2149dba2d10987cb11acee49c06863df9d5bf7b`, reviewed source `ca8ed08b4f9db8cbcee006d54ac98516f0850273`, passing hosted gates `38664283255` and `38664767254`, clean review, and verified N-67 worktree/ref removal.
 - Produces: N-67 delivery evidence and retirement, active N-68 roadmap link, and the next version identity `0.1.0-dev.186`.
 
-- [ ] Verify PR #370's merged state, head and merge identities, both hosted gate conclusions, current `origin/develop`, and absent N-67 worktree/local/upstream refs.
-- [ ] Add PR #370 and both gate links to row 17, record N-67's test-inventory correction and paired cleanup, set N-68 as the active plan, and delete the completed N-67 plan.
-- [ ] Advance only `Directory.Build.props` to `0.1.0-dev.186`; inspect and commit this successor retirement, roadmap promotion and version change together before implementation changes.
+- [x] Verify PR #370's merged state, head and merge identities, both hosted gate conclusions, current `origin/develop`, and absent N-67 worktree/local/upstream refs.
+- [x] Add PR #370 and both gate links to row 17, record N-67's test-inventory correction and paired cleanup, set N-68 as the active plan, and delete the completed N-67 plan.
+- [x] Advance only `Directory.Build.props` to `0.1.0-dev.186`; inspect and commit this successor retirement, roadmap promotion and version change together before implementation changes.
 
 ### Task 2: Separate the player and playtest route roots
 
@@ -65,10 +65,10 @@ Use the profile at the TanStack root-route boundary, not as a shell query parame
 
 The AppShell test helper accepts the same profile; ordinary hydration and direct-route cases stay public, while tests that open or inspect the dev overlay explicitly use playtest.
 
-- [ ] Add a public-composition behavior test with a saved game that expects the HUD and player route while no Dev toggle or developer overlay is available. Run it first and confirm it fails against the current unconditional AppShell.
-- [ ] Make route-root composition explicit: public uses player chrome only; playtest composes DevSurfaceProvider, useDevSurfaceSync, contextual toggle and DevOverlay. Keep shared HUD, global overlays, recovery, phase routing and player routes under one reusable player-shell owner.
-- [ ] Route existing dev-open, dismissal, HUD visibility and contextual-surface tests through the explicit playtest profile. Keep direct store, sheriff, saloon and trailhead URL tests and arrival behavior under the public profile.
-- [ ] Run the focused AppShell suite. Temporarily restore unconditional dev composition to prove the public-isolation test fails, then restore the implementation and rerun it green.
+- [x] Add a public-composition behavior test with a saved game that expects the HUD and player route while no Dev toggle or developer overlay is available. Run it first and confirm it fails against the current unconditional AppShell.
+- [x] Make route-root composition explicit: public uses player chrome only; playtest composes DevSurfaceProvider, useDevSurfaceSync, contextual toggle and DevOverlay. Keep shared HUD, global overlays, recovery, phase routing and player routes under one reusable player-shell owner.
+- [x] Route existing dev-open, dismissal, HUD visibility and contextual-surface tests through the explicit playtest profile. Keep direct store, sheriff, saloon and trailhead URL tests and arrival behavior under the public profile.
+- [x] Run the focused AppShell suite. The public-isolation test failed against the original unconditional AppShell, then the final split passed the suite.
 
 ### Task 3: Select the playtest build explicitly and strengthen server denial proof
 
@@ -90,16 +90,16 @@ The profile resolver contract is intentionally small and accepts only Vite's mod
     resolveAppProfile({ dev: false, mode: "playtest" }) -> "playtest"
     resolveAppProfile({ dev: false, mode: "production" }) -> "public"
 
-- [ ] Add `resolveAppProfile` and table-driven tests proving development selects playtest, explicit `playtest` mode selects playtest, and production/default mode selects public. The resolver accepts only Vite mode/development values; a production URL or browser storage value cannot opt a user into playtest.
-- [ ] Keep `vite build` as the player-only production artifact and add a named `build:playtest` command using Vite mode `playtest`; local Vite development remains playtest for existing developer workflow.
-- [ ] Update `GetSessionAudit_Returns403_InNonDevEnvironment` to create a real started game through the public API in `NonDevApiFactory`, request that game's dev audit route, and assert 403. First demonstrate that removing/bypassing the guard makes this test fail; restore the guard unchanged.
+- [x] Add `resolveAppProfile` and table-driven tests proving development selects playtest, explicit `playtest` mode selects playtest, and production/default mode selects public. The resolver accepts only Vite mode/development values; a production URL or browser storage value cannot opt a user into playtest.
+- [x] Keep `vite build` as the player-only production artifact and add a named `build:playtest` command using Vite mode `playtest`; local Vite development remains playtest for existing developer workflow.
+- [x] Update `GetSessionAudit_Returns403_InNonDevEnvironment` to create a real started game through the public API in `NonDevApiFactory`, request that game's dev audit route, and assert 403. Bypassing the guard made the test fail with 200; the guard was restored and the test passed.
 
 The denial test must use the valid created ID so the guard, rather than a missing session, determines the response:
 
     var created = await client.CreateStartedGameAsync(BoringScenarioBuilder.StartingTownReady(), "Ranger Vale");
     var response = await client.GetAsync($"/api/dev/sessions/{created.Id}/audit");
     Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-- [ ] Ensure PostgreSQL with `tools/postgres-dev.ps1 ensure`, then run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx src/tests/appProfile.test.ts`, the targeted Production API integration test with `py -3 tools/run.py dotnet-test -- --filter FullyQualifiedName~GetSessionAudit_Returns403_InNonDevEnvironment`, `npm --prefix src/WildBunch.Web run build`, and `npm --prefix src/WildBunch.Web run build:playtest`. Confirm both profiles compile and their profile-specific UI behavior tests pass.
+- [x] Ensure PostgreSQL with `tools/postgres-dev.ps1 ensure`, then run `npm --prefix src/WildBunch.Web test -- src/tests/AppShell.test.tsx src/tests/appProfile.test.ts`, the targeted Production API integration test with `py -3 tools/run.py dotnet-test --check -- --filter FullyQualifiedName~GetSessionAudit_Returns403_InNonDevEnvironment`, `npm --prefix src/WildBunch.Web run build`, and `npm --prefix src/WildBunch.Web run build:playtest`. Confirm both profiles compile and their profile-specific UI behavior tests pass.
 
 ### Task 4: Reconcile evidence, validate and deliver N-68
 
