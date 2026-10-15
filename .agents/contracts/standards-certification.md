@@ -94,7 +94,7 @@ evidence on Codex CLI 0.159.0. Fresh-clone users still need Codex, repository
 trust, and access to the declared Git sources; use `codex plugin marketplace
 upgrade wild-bunch` to refresh the catalog and payloads.
 
-`release-verify --check` is a focused local release operation that requires clean source, builds the API and both web variants, binds their file-tree digests to source/version in an ignored immutable bundle, and verifies existing output without rebuilding or overwrite. It does not publish or deploy.
+`release-verify --check` is a focused local release operation that requires clean source, runs `npm ci` from the committed lockfile before bundle construction, builds the API and both web variants, binds their file-tree digests to source/version in an ignored immutable bundle, and verifies existing output without reinstalling or rebuilding. It does not publish or deploy.
 
 ## gitflow
 

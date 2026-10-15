@@ -284,6 +284,7 @@ def _release_verify(ctx: Ctx) -> None:
         print(f"[tools/run] verified existing immutable bundle: {bundle}")
         return
 
+    _run(_npm_cmd("ci"), ctx)
     release_root.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{source_commit}.staging-", dir=release_root))
     try:
@@ -505,7 +506,8 @@ TARGET_DESCRIPTIONS = {
         "a Release API publish plus public and playtest web builds. The ignored output is "
         "artifacts/release/<full-source-commit>; its manifest records the authored version and "
         "SHA-256 tree identities. Existing bundles are verified without rebuilding or overwrite. "
-        "Requires Python 3, .NET SDK, Node.js/npm and locked web dependencies. This target does "
+        "Requires Python 3, .NET SDK and Node.js/npm; runs npm ci from the lockfile before "
+        "building. It may replace ignored node_modules. This target does "
         "not publish artifacts, create images, tag, or deploy. Mode: --check; no target arguments."
     ),
     "ci": (

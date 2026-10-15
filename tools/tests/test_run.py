@@ -356,6 +356,8 @@ def _release_repo(root: Path) -> str:
 
 
 def _fake_release_build(command: list[str], _ctx) -> None:
+    if command[0] != "dotnet" and "ci" in command:
+        return
     if command[0] == "dotnet":
         output = Path(command[command.index("-o") + 1])
     else:
@@ -384,13 +386,31 @@ def test_release_verify_builds_and_rechecks_immutable_source_bundle(tmp_path, mo
     assert manifest["sourceCommit"] == source_commit
     assert manifest["version"] == "0.1.0-dev.197"
     assert set(manifest["artifacts"]) == {"api", "web-public", "web-playtest"}
-    assert len(commands) == 3
-    assert commands[0][0] == "dotnet" and commands[0][1] == "publish"
-    assert "run" in commands[1] and "build" in commands[1]
-    assert "run" in commands[2] and "build:playtest" in commands[2]
+    assert len(commands) == 4
+    assert commands[0][-1] == "ci"
+    assert commands[1][0] == "dotnet" and commands[1][1] == "publish"
+    assert "run" in commands[2] and "build" in commands[2]
+    assert "run" in commands[3] and "build:playtest" in commands[3]
 
     assert run.main(["release-verify", "--check"]) == 0
-    assert len(commands) == 3
+    assert len(commands) == 4
+
+
+def test_release_verify_stops_before_staging_when_locked_install_fails(tmp_path, monkeypatch):
+    _release_repo(tmp_path)
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "WEB_DIR", tmp_path / "src" / "WildBunch.Web")
+    calls: list[list[str]] = []
+
+    def fail_install(command, _ctx):
+        calls.append(command)
+        raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(run, "_run", fail_install)
+
+    assert run.main(["release-verify", "--check"]) == 1
+    assert len(calls) == 1 and calls[0][-1] == "ci"
+    assert not (tmp_path / "artifacts" / "release").exists()
 
 
 def test_release_verify_rejects_dirty_source_before_any_build(tmp_path, monkeypatch):
