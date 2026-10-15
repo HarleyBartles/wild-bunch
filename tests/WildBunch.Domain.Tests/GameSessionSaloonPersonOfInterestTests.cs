@@ -207,6 +207,35 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     }
 
     [Fact]
+    public void ConfrontSaloonPersonOfInterestRejectsAfterLeavingTheSaloonWithoutSettlingTheObservedPerson()
+    {
+        var session = CreateArmedWantedSession();
+        var suspectId = new SuspectId("suspect-1");
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+        session.MarkEventsCommitted();
+
+        Assert.True(session.LookAroundSaloon().Success);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Equal(WantedSuspectPresenceState.Unavailable, session.GetWantedSuspectPresenceState(suspectId));
+        Assert.True(session.EnterActionContext(TownActionContext.SheriffOffice));
+        session.MarkEventsCommitted();
+        var eventsBeforeConfrontation = session.AllEvents.Count;
+
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-public-1");
+
+        Assert.False(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.Rejected, result.Outcome);
+        Assert.Contains("saloon", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(eventsBeforeConfrontation, session.AllEvents.Count);
+        Assert.Empty(session.UncommittedEvents);
+        Assert.Equal(suspectId, session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Empty(session.CaseFile.WantedSuspectConfrontations);
+        Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0, session.CaseFile.KillerReleaseState.Progress);
+        Assert.Equal(25m, session.Player.Wallet.Cash);
+    }
+
+    [Fact]
     public void ConfrontSaloonPersonOfInterestRefusesTakeInWithoutAFirearmAndDoesNotMarkTheSuspectAsFled()
     {
         var session = CreateUnarmedWantedSession();

@@ -66,6 +66,18 @@ internal sealed class BountyLoop
                 null);
         }
 
+        if (!context.CanConfrontInCurrentContext)
+        {
+            return new SaloonConfrontationOutcome(
+                SaloonPersonOfInterestConfrontationResult.Rejected(
+                    "You can only confront that person while in the saloon.",
+                    context.DeclaredWantedIdentityHandle,
+                    activeSaloonPersonOfInterestDescriptor,
+                    personOfInterestKind: activeSaloonPersonOfInterestKind),
+                [],
+                null);
+        }
+
         if (string.IsNullOrWhiteSpace(context.DeclaredWantedIdentityHandle))
         {
             return new SaloonConfrontationOutcome(

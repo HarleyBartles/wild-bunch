@@ -68,12 +68,7 @@ internal sealed class ActionContextTracker
     /// </summary>
     internal bool CanConfrontWantedSuspectInCurrentContext(CanConfrontInContextInputs inputs)
     {
-        if (CurrentActionContext != TownActionContext.Saloon)
-        {
-            return false;
-        }
-
-        if (CurrentActionContextTownId is null || !CurrentActionContextTownId.Equals(inputs.CurrentTownId))
+        if (!IsInCurrentTownContext(TownActionContext.Saloon, inputs.CurrentTownId))
         {
             return false;
         }
@@ -81,6 +76,11 @@ internal sealed class ActionContextTracker
         return inputs.ActiveSaloonPersonOfInterestId is not null
             && inputs.ActiveSaloonPersonOfInterestId.Equals(inputs.TargetSuspectId);
     }
+
+    internal bool IsInCurrentTownContext(TownActionContext context, TownId currentTownId)
+        => CurrentActionContext == context
+            && CurrentActionContextTownId is not null
+            && CurrentActionContextTownId.Equals(currentTownId);
 
     /// <summary>
     /// Resets CurrentActionContext and CurrentActionContextTownId to None/null.
