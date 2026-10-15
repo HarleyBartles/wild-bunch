@@ -27,6 +27,10 @@ actual diff with relevant records through the [decision-record playbook](../play
    repaired diff rather than trusting the response.
 6. Use evidence-based result verification to bind the final verdict to the
    current local head and, when a PR exists, its remote head and checks.
+7. For release or hotfix work, independently verify the branch route,
+   promotion/reconciliation method, version checkpoint, and source/artifact
+   binding against the [release lifecycle runbook](release.md) and actual
+   evidence.
 
 ## Doctrine and contracts
 

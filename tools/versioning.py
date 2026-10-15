@@ -7,7 +7,26 @@ import re
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
-_DEVELOPMENT_VERSION = re.compile(r"0\.1\.0-dev\.([1-9][0-9]*)\Z")
+_SEMVER = re.compile(
+    r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+    r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+    r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?\Z"
+)
+_DEVELOPMENT_SEQUENCE = re.compile(r"0\.1\.0-dev\.(0|[1-9][0-9]*)\Z")
+
+
+def _is_semver(version: str) -> bool:
+    match = _SEMVER.fullmatch(version)
+    if match is None:
+        return False
+
+    prerelease = match.group(4)
+    if prerelease is None:
+        return True
+    return all(
+        not (identifier.isdigit() and len(identifier) > 1 and identifier.startswith("0"))
+        for identifier in prerelease.split(".")
+    )
 
 
 class VersionIdentityError(ValueError):
@@ -34,9 +53,14 @@ def read_authored_version(path: Path) -> str:
         )
 
     version = (versions[0].text or "").strip()
-    if _DEVELOPMENT_VERSION.fullmatch(version) is None:
+    if not _is_semver(version):
         raise VersionIdentityError(
-            f"{path}: expected a positive 0.1.0-dev.N version, found {version!r}"
+            f"{path}: expected a valid SemVer 2.0.0 version, found {version!r}"
+        )
+    development = _DEVELOPMENT_SEQUENCE.fullmatch(version)
+    if development is not None and development.group(1) == "0":
+        raise VersionIdentityError(
+            f"{path}: development sequence must be positive, found {version!r}"
         )
     return version
 

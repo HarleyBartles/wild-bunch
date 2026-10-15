@@ -72,6 +72,24 @@
         "definition": "skills/repo-agent-assets/references/standard.md"
       },
       "certification": ".agents/contracts/standards-certification.md#repo-plugin-subscriptions"
+    },
+    {
+      "id": "gitflow",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "7a20ef191bb6be3b67fbbb9e86bd7b0050f96fc5",
+        "definition": "skills/gitflow/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#gitflow"
+    },
+    {
+      "id": "semver",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "12c86626f80cad1a2ac05b2f6690c882a3d5959a",
+        "definition": "skills/semver/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#semver"
     }
   ]
 }

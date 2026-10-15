@@ -10,6 +10,17 @@ const webRoot = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(webRoot, "../..");
 const apiProject = resolve(repositoryRoot, "src/WildBunch.Api/WildBunch.Api.csproj");
 
+function isSemVer(version: string): boolean {
+  const match =
+    /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(
+      version,
+    );
+  if (!match) return false;
+  const prerelease = match[4];
+  if (!prerelease) return true;
+  return prerelease.split(".").every((identifier) => !/^0[0-9]+$/.test(identifier));
+}
+
 function buildIdentityPlugin(): Plugin {
   return {
     name: "wild-bunch-build-identity",
@@ -28,9 +39,9 @@ function buildIdentityPlugin(): Plugin {
         );
       }
 
-      if (!/^0\.1\.0-dev\.[1-9][0-9]*$/.test(version)) {
+      if (!isSemVer(version)) {
         throw new Error(
-          `MSBuild returned an unsupported development version: ${JSON.stringify(version)}`,
+          `MSBuild returned an invalid SemVer 2.0.0 version: ${JSON.stringify(version)}`,
         );
       }
 

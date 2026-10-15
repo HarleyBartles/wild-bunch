@@ -93,3 +93,38 @@ field-test report under `.agents/docs/` records installed and invocable plugin
 evidence on Codex CLI 0.159.0. Fresh-clone users still need Codex, repository
 trust, and access to the declared Git sources; use `codex plugin marketplace
 upgrade wild-bunch` to refresh the catalog and payloads.
+
+## gitflow
+
+**Assessment:** Partially certified against the immutable definition at
+`7a20ef191bb6be3b67fbbb9e86bd7b0050f96fc5`. The repository declares `develop`
+as its integration/default branch and `main` as its stable release line.
+Ordinary branches start from current `develop` and return by PR; release and
+hotfix promotion and reconciliation use merge commits. The [release lifecycle
+runbook](../runbooks/release.md) defines those routes, affected release-line
+reconciliation, and publication-time verification. GitHub state observed on
+2026-10-15 reports `develop` as the default, allows merge, squash, and rebase
+methods, and returns no branch-protection configuration for `develop`. These
+are dated hosting facts, not guarantees; the runbook requires checking them
+again before publication. The branch model and routing are documented, but
+release and hotfix promotion/reconciliation have not yet been exercised as
+completed release flows. Do not claim hosted enforcement or end-to-end
+conformance from documentation alone.
+
+## semver
+
+**Assessment:** Partially certified against the immutable definition at
+`12c86626f80cad1a2ac05b2f6690c882a3d5959a`. The version subject is the Wild
+Bunch browser-game product. During `0.y.z`, breaking changes are allowed and
+there is no public API or gameplay-compatibility promise; `0.1.0` names the
+qualified initial baseline, not historical-playthrough preservation. The
+future `1.0.0` compatibility contract is intentionally undecided. The
+repository authors one application version in `Directory.Build.props`; the
+Vite build reads effective MSBuild `Version` and emits `dist/version.json`,
+while the command bus checks SemVer syntax, duplicate npm root versions, and
+generated identity equality after the web build. Development checkpoints,
+release candidates, and stable versions follow ADR-0048 and the joint
+Gitflow/SemVer rules. Focused tests reject malformed and stale identities;
+local production builds emitted matching RC, stable, and restored development
+identities. Artifact digest binding and an end-to-end hosted release flow have
+not yet been exercised, so full release qualification remains open in row 18.
