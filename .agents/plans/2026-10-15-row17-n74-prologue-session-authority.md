@@ -21,7 +21,7 @@
 - Use nondefault `Challenging` and `Wild` setup options. Derive the setup and conflicting replacement UUIDs from explicit `SeedWorld` values through `CreateRepresentativeSeedCode`; the replacement world has a different default culprit index and must yield a different descriptor. The clue difference comes from the changed seed, not the difficulty or entropy values, which ADR-0040 says do not change settled mystery facts.
 - Mutation-prove the test by temporarily making `GetPrologueHandler` resolve a descriptor from a different seed and default options; the focused integration test must fail on the expected public descriptor assertion. Restore production code exactly and rerun green.
 - Correct current WB-06 and follow-up recommendations while preserving dated historical observations. Update PG-001 evidence, but do not change its promise or add a browser-backed/deployed resume claim.
-- Compare the actual diff with ADR-0021 and ADR-0039 and state why their decisions remain true; do not amend ADRs unless source evidence shows a decision changed.
+- Compare the actual diff with ADR-0021, ADR-0039, and ADR-0040 and state why their decisions remain true; do not amend ADRs unless source evidence shows a decision changed.
 - Keep authored Markdown paragraphs and list items on one physical source line, use regular hyphens, and add no empty sections.
 
 ## Files and Responsibilities
@@ -40,7 +40,7 @@
 - The test fixture proves its deliberately conflicting replacement seed resolves to a different public descriptor, so an implementation that regenerates from request values cannot pass accidentally; the UUIDs are derived from explicit seed-world fixtures without brute-force search or raw UUID literals.
 - The endpoint response still contains the persisted case descriptor and does not reveal hidden culprit internals.
 - WB-06 no longer claims local seed/difficulty/entropy reach prologue generation, and no documentation overstates mocked refresh coverage as browser-backed persistence proof.
-- ADR-0021 and ADR-0039 remain accurate because the UUID seed still establishes world truth, setup still settles mystery facts before prologue, and event replay still restores those facts.
+- ADR-0021, ADR-0039, and ADR-0040 remain accurate because the UUID seed still establishes world truth, difficulty and entropy remain separate from settled culprit identity, setup settles mystery facts before prologue, and event replay restores those facts.
 
 ---
 
@@ -48,8 +48,8 @@
 
 **Files:** `.agents/plans/2026-10-15-row17-n74-prologue-session-authority.md`.
 
-- [ ] Verify this worktree is clean, based on `c1634a446a7786b325f9d327e82691c2e8108321`, and has the dedicated `codex/row17-n74-next-web-test-slice` branch.
-- [ ] Commit this plan before changing implementation, evidence inventories, version, or prior planning artifacts; let the normal staged-candidate hook run.
+- [x] Verify this worktree is clean, based on `c1634a446a7786b325f9d327e82691c2e8108321`, and has the dedicated `codex/row17-n74-next-web-test-slice` branch.
+- [x] Commit this plan before changing implementation, evidence inventories, version, or prior planning artifacts; let the normal staged-candidate hook run.
 
 ### Task 2: Strengthen saved-session prologue behavior proof
 
@@ -57,24 +57,24 @@
 
 **Files:** `tests/WildBunch.Integration.Tests/PrologueHiddenTruthTests.cs`.
 
-- [ ] Start the shared PostgreSQL service with `./tools/postgres-dev.ps1 ensure` and run the existing `PrologueEndpoint_UsesSettledSessionCaseAndDoesNotLeakHiddenCulpritInternals` test to establish its current baseline.
-- [ ] Derive the setup UUID from `SeedWorldResolver.CreateCanonicalSeedWorld()` and derive the replacement UUID from that seed world with a distinct valid `DefaultCulpritIndex`; call `SeedWorldResolver.CreateRepresentativeSeedCode` for both rather than hard-coding UUIDs or searching across seeds.
-- [ ] Update setup to use `GameDifficulty.Challenging` and `GameEntropy.Wild`; assert the stored session retains those nondefault options without asserting that they change the settled mystery facts.
-- [ ] Assert that the replacement seed's Standard/Classic descriptor differs from the persisted case descriptor, then issue the existing session-scoped prologue request with the conflicting legacy query values.
-- [ ] Keep the public response assertions for the established descriptor and hidden-truth secrecy; do not expose the culprit identifier or test only the presence of a descriptor-shaped string.
-- [ ] Temporarily change `GetPrologueHandler` to resolve from a different setup seed with Standard/Classic defaults, run the focused integration test, and confirm it fails because the returned clue does not match the persisted case; restore production source exactly and rerun the focused test green.
+- [x] Start the shared PostgreSQL service with `./tools/postgres-dev.ps1 ensure` and run the existing `PrologueEndpoint_UsesSettledSessionCaseAndDoesNotLeakHiddenCulpritInternals` test to establish its current baseline.
+- [x] Derive the setup UUID from `SeedWorldResolver.CreateCanonicalSeedWorld()` and derive the replacement UUID from that seed world with a distinct valid `DefaultCulpritIndex`; call `SeedWorldResolver.CreateRepresentativeSeedCode` for both rather than hard-coding UUIDs or searching across seeds.
+- [x] Update setup to use `GameDifficulty.Challenging` and `GameEntropy.Wild`; assert the stored session retains those nondefault options without asserting that they change the settled mystery facts.
+- [x] Assert that the replacement seed's Standard/Classic descriptor differs from the persisted case descriptor, then issue the existing session-scoped prologue request with the conflicting legacy query values.
+- [x] Keep the public response assertions for the established descriptor and hidden-truth secrecy; do not expose the culprit identifier or test only the presence of a descriptor-shaped string.
+- [x] Temporarily change `GetPrologueHandler` to resolve from a different setup seed with Standard/Classic defaults, run the focused integration test, and confirm it fails because the returned clue does not match the persisted case; restore production source exactly and rerun the focused test green.
 
 ### Task 3: Reconcile WB-06, test follow-up, and PG-001 evidence
 
 **Consumes:** Task 2's passing focused test and the verified existing saved-session flow.
 
-**Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, `docs/features.md`, `docs/decisions/ADR-0021-uuid-shaped-setup-seeds-resolve-to-legal-starting-world-descriptors.md`, `docs/decisions/ADR-0039-seeded-game-setup-and-free-first-arrival.md`.
+**Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, `docs/features.md`, `docs/decisions/ADR-0021-uuid-shaped-setup-seeds-resolve-to-legal-starting-world-descriptors.md`, `docs/decisions/ADR-0039-seeded-game-setup-and-free-first-arrival.md`, `docs/decisions/ADR-0040-difficulty-and-randomness-vocabulary.md`.
 
-- [ ] Replace WB-06's stale current assertion that `StorySoFarStep` regenerates a descriptor from local setup inputs with a dated historical observation and the current session-bound implementation/evidence; retain broader unresolved resume and legal-phase findings.
-- [ ] Update the StorySoFar test disposition and resume scenario wording to distinguish the mocked StartFlow proof (saved session ID is used for the prologue request) from the PostgreSQL API proof (returned clue matches the persisted case under nondefault options and conflicting values); preserve GET error/retry and pending negatives.
-- [ ] Update PG-001's prologue evidence sentence with nondefault persisted options and deliberately conflicting values, retaining its explicit limit that these tests do not establish browser-backed end-to-end or deployed resume.
-- [ ] Read the relevant catalogue entries and both full ADRs against the diff; leave ADR files unchanged and state the decision comparisons in the PR body if neither durable decision changed.
-- [ ] Add dated N-74 evidence to the web investigation and web test follow-up so the original observation remains historically legible while the proposed stale test work is marked resolved.
+- [x] Replace WB-06's stale current assertion that `StorySoFarStep` regenerates a descriptor from local setup inputs with a dated historical observation and the current session-bound implementation/evidence; retain broader unresolved resume and legal-phase findings.
+- [x] Update the StorySoFar test disposition and resume scenario wording to distinguish the mocked StartFlow proof (saved session ID is used for the prologue request) from the PostgreSQL API proof (returned clue matches the persisted case under nondefault options and conflicting values); preserve GET error/retry and pending negatives.
+- [x] Update PG-001's prologue evidence sentence with nondefault persisted options and deliberately conflicting values, retaining its explicit limit that these tests do not establish browser-backed end-to-end or deployed resume.
+- [x] Read the relevant catalogue entries and all three ADRs against the diff; leave ADR files unchanged and state the decision comparisons in the PR body if neither durable decision changed.
+- [x] Add dated N-74 evidence to the web investigation and web test follow-up so the original observation remains historically legible while the proposed stale test work is marked resolved.
 
 ### Task 4: Promote N-73 and establish N-74 version identity
 
@@ -82,10 +82,10 @@
 
 **Files:** `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`, `.agents/plans/2026-10-15-row17-n73-retire-seed-codec-scaffolding.md`, `Directory.Build.props`.
 
-- [ ] Verify PR #376 merged to `develop` from source `515db382b8e53fbd95c0bc5ad111ec314d222b9e` as squash merge `c1634a446a7786b325f9d327e82691c2e8108321`, the fresh final review found no actionable findings, exact-head gate `38691636873` and develop-push gate `38692278098` passed, and N-73's clean worktree plus exact local/upstream refs are absent.
-- [ ] Update row 17 to name N-74 as active at `0.1.0-dev.192`; append dated N-73 delivery evidence with the PR, source and merge SHAs, review outcome, both hosted gates, primary fast-forward, and paired worktree/local/upstream branch cleanup.
-- [ ] Retire the completed N-73 plan in this first substantive successor commit while retaining the roadmap, baseline specification, and live investigation inventories.
-- [ ] Change only `Directory.Build.props` for product version advancement from `0.1.0-dev.191` to `0.1.0-dev.192`; include Task 2 and Task 3 changes in this same first substantive implementation commit.
+- [x] Verify PR #376 merged to `develop` from source `515db382b8e53fbd95c0bc5ad111ec314d222b9e` as squash merge `c1634a446a7786b325f9d327e82691c2e8108321`, the fresh final review found no actionable findings, exact-head gate `38691636873` and develop-push gate `38692278098` passed, and N-73's clean worktree plus exact local/upstream refs are absent.
+- [x] Update row 17 to name N-74 as active at `0.1.0-dev.192`; append dated N-73 delivery evidence with the PR, source and merge SHAs, review outcome, both hosted gates, primary fast-forward, and paired worktree/local/upstream branch cleanup.
+- [x] Retire the completed N-73 plan in this first substantive successor commit while retaining the roadmap, baseline specification, and live investigation inventories.
+- [x] Change only `Directory.Build.props` for product version advancement from `0.1.0-dev.191` to `0.1.0-dev.192`; include Task 2 and Task 3 changes in this same first substantive implementation commit.
 
 ### Task 5: Validate, review, publish, and close out N-74
 
@@ -93,9 +93,9 @@
 
 **Files:** The N-74 implementation diff and its prepared review package.
 
-- [ ] Run the focused PostgreSQL integration test after the mutation is restored; run relevant prologue application and web behavior suites only if source/test changes make them applicable.
+- [x] Run the focused PostgreSQL integration test after the mutation is restored; run relevant prologue application and web behavior suites only if source/test changes make them applicable.
 - [ ] Run `py -3 tools/run.py ci --check` on the intended committed tree; use the check-only pre-commit hook for commits and never bypass it.
-- [ ] Inspect the committed diff, confirm only planned files changed, check references to the stale WB-06 wording, and compare the actual diff with ADR-0021, ADR-0039 and PG-001.
+- [ ] Inspect the committed diff, confirm only planned files changed, check references to the stale WB-06 wording, and compare the actual diff with ADR-0021, ADR-0039, ADR-0040 and PG-001.
 - [ ] Prepare and dispatch a fresh-context whole-branch reviewer with exact base/head and diff; require independent ADR and feature-matrix comparison, resolve Critical/Important findings with a new review, and record deferred Minor findings in the handoff.
 - [ ] Publish a Draft PR to `develop` with the behavior contract, author ADR/feature comparisons, exact local evidence, and reviewer outcome; mark ready after review and local gates are resolved, then wait for exact-head hosted CI to pass before merging.
 - [ ] Verify the develop-push gate on the squash merge, fast-forward the primary checkout without disturbing its existing investigation edit, and use `remove_worktree.py --check` then `--apply` for this merged worktree before deleting and verifying the exact local/upstream branch refs.
