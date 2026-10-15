@@ -90,6 +90,8 @@
 - Produces: an ordinary reviewed PR to `develop` at `0.1.0-dev.197`, passing exact-head hosted CI, merged output and paired worktree/branch cleanup.
 
 - [x] Independently compare the final diff with ADR-0048 and the decision catalogue; record why no decision changes or include the required successor. Compare PLAT-004 with the exact local artifact proof and preserve its incomplete hosted-release/retained-route status.
+
+ADR-0048 remains true: N-79 adds local source and artifact verification inside the existing release lifecycle, without changing branch routing, version authority or increments, promotion, tagging, publication, or deployment. This implementation detail is governed by the existing release decision, so it needs no successor ADR. PLAT-004 records the local bundle evidence while leaving hosted release, retained-route and complete-candidate gaps open.
 - [ ] Dispatch a fresh-context whole-branch reviewer with the exact base/head package; resolve Critical or Important findings with a witnessed RED/GREEN proof and rerun the complete local gate after any correction.
 - [ ] Push the dedicated branch and create a Draft PR targeting `develop`. Read back the exact title/body/base/head, matrix/ADR author checks, Draft state and initial hosted status; mark ready only after local validation and independent review pass.
 - [ ] Wait for the hosted canonical commit gate on the exact PR head. Merge to `develop` only after it passes; then wait for the develop-push gate on the exact merge result.
