@@ -67,6 +67,15 @@ describe("JournalSurface", () => {
     expect(screen.queryByText("t-town")).not.toBeInTheDocument();
   });
 
+  it("renders before the player has chosen a starting town", () => {
+    const journal = createJournal({ currentTown: null, logEntries: [] });
+
+    render(<JournalSurface journal={journal} loading={false} error="" />);
+
+    expect(screen.getByRole("heading", { name: "Day 5, Evening" })).toBeInTheDocument();
+    expect(screen.getByText("No notes yet. The trail is still being written.")).toBeInTheDocument();
+  });
+
   it("keeps the last journal visible when a refresh fails and offers retry", async () => {
     const journal = createJournal({
       currentTown: { id: "t-town", name: "Tumbleweed" },

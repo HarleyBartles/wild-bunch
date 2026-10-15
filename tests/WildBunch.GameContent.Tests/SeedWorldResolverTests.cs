@@ -125,6 +125,28 @@ public sealed class SeedWorldResolverTests
     }
 
     [Fact]
+    public void AnyEncodedCashTownCountAndOutlierCombinationResolvesToALegalWorld()
+    {
+        for (var cashBonus = 0; cashBonus < 16; cashBonus++)
+            for (var townCount = 0; townCount < 16; townCount++)
+                for (var outlierSlotType = 0; outlierSlotType < 4; outlierSlotType++)
+                {
+                    var bytes = Guid.Empty.ToByteArray();
+                    var low = ((ulong)cashBonus << 10) | ((ulong)townCount << 14) | ((ulong)outlierSlotType << 27);
+                    BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
+
+                    var seedWorld = SeedWorldResolver.Resolve(new Guid(bytes));
+
+                    Assert.True(SeedWorldResolver.Validate(seedWorld).Success);
+                    Assert.Equal(Math.Min(cashBonus, 8), seedWorld.CashBonus);
+                    var expectedOutlierSlotType = seedWorld.TownCount == SeedWorldResolver.MaxTownCount
+                        ? 0
+                        : Math.Min(outlierSlotType, 1);
+                    Assert.Equal(expectedOutlierSlotType, seedWorld.OutlierSlotType);
+                }
+    }
+
+    [Fact]
     public void DifferentUuidBitPositionsChangeDifferentSeedWorldFields()
     {
         var baseSeed = SeedWorldResolver.CreateCanonicalSeedCode();

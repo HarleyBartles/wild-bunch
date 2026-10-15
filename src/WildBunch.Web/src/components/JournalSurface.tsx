@@ -69,7 +69,8 @@ function getEntries(journal: JournalDto | null, sessionLogEntries: GameLogEntryD
 }
 
 function formatJournalClock(journal: JournalDto) {
-  return `${formatClockBeat(journal.clock)} in ${journal.currentTown.name}`;
+  const beat = formatClockBeat(journal.clock);
+  return journal.currentTown ? `${beat} in ${journal.currentTown.name}` : beat;
 }
 
 export function JournalSurface({

@@ -18,12 +18,15 @@ sequence and environment setup live in the [testing playbook](../playbooks/testi
   native browser behavior, TypeScript checking, and production build.
 
 The Playwright lane owns native browser contracts that JSDOM cannot observe,
-including modal focus behavior and rendered viewport geometry. Run it locally
-with `npm --prefix src/WildBunch.Web run test:browser` after installing
-Chromium with `npx --prefix src/WildBunch.Web playwright install chromium`.
-Hosted CI runs `npm ci --prefix src/WildBunch.Web`, then installs Chromium and
-its system dependencies with `npx playwright install --with-deps chromium`
-from the web project before the tracked commit gate.
+including modal focus behavior and rendered viewport geometry. Build locally
+with `npm --prefix src/WildBunch.Web run build`, ensure PostgreSQL with
+`pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, then run `npm --prefix
+src/WildBunch.Web run test:browser`; install Chromium with `npx --prefix
+src/WildBunch.Web playwright install chromium`. Hosted CI installs locked web
+dependencies, builds the public web artifact and validates its version
+identity before the Chromium lane, then installs Chromium and its system
+dependencies with `npx playwright install --with-deps chromium` from the web
+project before the tracked commit gate.
 
 Tests follow the source-layer namespace and folder. Repository fixtures and
 builders live under `TestInfrastructure/`; fakes and stubs live under

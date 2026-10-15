@@ -4,6 +4,15 @@ import { CaseFileSurface } from "../components/CaseFileSurface";
 import { createJournal } from "./test-utils/factories";
 
 describe("CaseFileSurface", () => {
+  it("shows the case file before the player has chosen a starting town", () => {
+    const journal = createJournal({ currentTown: null });
+
+    render(<CaseFileSurface journal={journal} loading={false} error="" />);
+
+    expect(screen.getByText("Find the culprit before the law closes in.")).toBeInTheDocument();
+    expect(screen.queryByText(/Tumbleweed, day/)).not.toBeInTheDocument();
+  });
+
   it("shows the case summary with learned clues and same-name warrant records after a turn-in", () => {
     const journal = createJournal({
       caseFile: {

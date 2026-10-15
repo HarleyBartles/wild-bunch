@@ -146,6 +146,7 @@ public static class SeedWorldResolver
         // The codec has bandwidth for up to 16 suspects without refactoring.
         if (accusationIndex > 6) accusationIndex = 6;
         if (defaultCulpritIndex > 6) defaultCulpritIndex = 6;
+        if (cashBonus > 8) cashBonus = 8;
 
         // 2-bit OutlierSlotType produces 0-3, but only 0-1 are currently implemented.
         // Clamp to the current legal range. Values 2-3 are reserved for future expansion.
@@ -165,6 +166,14 @@ public static class SeedWorldResolver
         // Decode town count with offset: 4-bit value 0-15 → town count 5-20.
         // Wrap to 5-10 via modulo for v11.
         var townCount = MinTownCount + ((townCountEncoded + TownCountOffset - MinTownCount) % (MaxTownCount - MinTownCount + 1));
+
+        // The outlier occupies an additional town slot. At the maximum base
+        // count there is no legal slot for it, so normalize this encoded
+        // combination to a valid world without an outlier.
+        if (townCount == MaxTownCount && outlierSlotType > 0)
+        {
+            outlierSlotType = 0;
+        }
 
         return new SeedWorld(
             seedCode,

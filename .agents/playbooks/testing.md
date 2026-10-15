@@ -20,11 +20,13 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
    PostgreSQL or browser evidence only when the boundary requires it.
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
-4. For native browser behavior, run `npm --prefix src/WildBunch.Web run
+4. For native browser behavior, build first with `npm --prefix
+   src/WildBunch.Web run build`, then run `npm --prefix src/WildBunch.Web run
    test:browser`; install Chromium locally once with `npx --prefix
-   src/WildBunch.Web playwright install chromium`. Hosted CI installs locked
-   web dependencies and Chromium with system dependencies before the tracked
-   gate.
+   src/WildBunch.Web playwright install chromium`. The browser lane serves the
+   production build and needs local PostgreSQL for its isolated API database.
+   Hosted CI installs locked web dependencies and Chromium with system
+   dependencies before the tracked gate.
 5. When a maintained artifact needs updating, run its named owning maintenance
    command and review the changes it produces. `setup-hooks --apply` configures
    this checkout's Git hook; it is separate from validation. Stage the intended
@@ -51,8 +53,8 @@ For hook setup, run `py -3 tools/run.py setup-hooks --apply` explicitly. Use
 
 The canonical gate is fail-fast and ordered from cheaper checks to more
 expensive work: repository contracts and whitespace, format and lint for each
-language, builds and typechecking, then behavioral test suites (Vitest and
-Chromium browser tests) and the web build. Resolve the first failure before starting downstream checks; do not
+language, typechecking and builds with build identity validation, then
+behavioral test suites (Vitest and Chromium browser tests). Resolve the first failure before starting downstream checks; do not
 make an agent wait for tests when an earlier formatter or linter has failed.
 Use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence

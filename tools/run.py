@@ -227,9 +227,9 @@ def _build_web(ctx: Ctx) -> None:
     _check_web_style(ctx)
     _run(_npm_cmd("run", "typecheck"), ctx)
     _run(_npm_cmd("run", "test"), ctx)
-    _run(_npm_cmd("run", "test:browser"), ctx)
     _run(_npm_cmd("run", "build"), ctx)
     _version_identity_check(ctx)
+    _run(_npm_cmd("run", "test:browser"), ctx)
 
 
 def _web_typecheck(ctx: Ctx) -> None:
@@ -424,12 +424,6 @@ CI_CHECKS = (
         "npm --prefix src/WildBunch.Web run test",
     ),
     (
-        "web-browser-tests",
-        _web_browser_test,
-        "correct the failing Chromium browser behavior test or install its browser prerequisite",
-        "npm --prefix src/WildBunch.Web run test:browser",
-    ),
-    (
         "web-build",
         _web_build,
         "correct the reported web build error",
@@ -440,6 +434,12 @@ CI_CHECKS = (
         _version_identity_check,
         "remove duplicate authored version metadata or rebuild the web artifact",
         "py -3 tools/run.py web --check",
+    ),
+    (
+        "web-browser-tests",
+        _web_browser_test,
+        "correct the failing Chromium browser behavior test or install its browser prerequisite",
+        "npm --prefix src/WildBunch.Web run test:browser",
     ),
 )
 
@@ -513,7 +513,9 @@ TARGET_DESCRIPTIONS = {
     "ci": (
         "Run the complete repository check gate in cheapest-first order: whitespace and repository "
         "contracts; Python, web, and .NET format/lint; .NET build and web typecheck; then behavior "
-        "tests and web build. A normal gate stops at the first failure. Prerequisites: Python 3 "
+        "tests, web build and identity validation, then Chromium browser tests. "
+        "A normal gate stops "
+        "at the first failure. Prerequisites: Python 3 "
         "with "
         "repo requirements, .NET SDK 10.0.301, Node.js 20.19+ with npm, and PostgreSQL at "
         "localhost:5435 for .NET integration tests. Checks may create ignored dependency/build "
@@ -556,10 +558,13 @@ TARGET_DESCRIPTIONS = {
         "Arguments after -- are forwarded to `dotnet test`."
     ),
     "web": (
-        "Install locked dependencies, format-check, lint, typecheck, run Vitest and Chromium "
-        "browser behavior tests, and build the web app. "
+        "Install locked dependencies, format-check, lint, typecheck, run Vitest, "
+        "build and validate "
+        "web artifact identity, then run Chromium browser behavior tests. "
         "Mode: --check. "
-        "Prerequisites: Node.js/npm and Chromium installed with `npx playwright install chromium`. "
+        "Prerequisites: Node.js/npm, PostgreSQL at localhost:5435, and Chromium "
+        "installed with "
+        "`npx playwright install chromium`. "
         "`npm ci` may create ignored node_modules and build outputs. "
         "Target-specific arguments: none."
     ),

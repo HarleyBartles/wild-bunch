@@ -17,8 +17,10 @@
 ## Global Constraints
 
 - This PR advances the authored product version exactly once, from `0.1.0-dev.197` to `0.1.0-dev.198`; `Directory.Build.props` remains the sole authored product version.
+- Seed identity owns the decoded world shape. Any bit combination that cannot produce a legal world must be normalized at seed decode so every editable UUID can start a game deterministically.
 - Qualify only the name-only quick-start, prologue, one world-map town selection, town arrival and page-reopen restoration path. Do not claim complete gameplay, all retained paths, cross-tab synchronization, deployed resume, hosted release, public cloud deployment or OIDC.
 - Use the built public web output and the repository's real API/PostgreSQL path. Do not substitute fixture HTML, mock API responses, browser memory, or a test-only server for this path.
+- Give each Playwright invocation a uniquely named disposable PostgreSQL database and remove only that database after the API stops. Never use or reset the shared `wildbunch_dev` database for this browser test.
 - Preserve the existing pointer-only map input decision under ADR-0046. Do not add keyboard or screen-reader town selection, DOM markers, test hooks, SignalR or new product behavior for the test.
 - The test must prove the persisted game locator drives page restoration: first establish a passing test, temporarily break the real `localStorage` write, observe the test fail because the reopened page cannot recover the game, restore the code and observe it pass. Do not make the assertion itself the mutation.
 - Keep the pre-existing user edit in the main checkout untouched. This plan, its implementation and its paired local/upstream refs stay in the fresh N-80 worktree until the reviewed PR and exact develop-push gate pass.
@@ -47,15 +49,27 @@
 - Consumes: merged PR #382 source `92a61e1d43670c437207328267198e9e7da44867`, merge `be07b02de4bc4313b831ff57d8eb7c7408b175a7`, passing exact-head and develop-push gates, N-79 release bundle evidence and current row-18 status.
 - Produces: this active N-80 plan at `0.1.0-dev.198`; a dated N-79 delivery record; N-79 plan retirement only after its actual merge, gates, bundle verification and paired worktree/ref cleanup are recorded.
 
-- [ ] Verify the worktree starts at current `origin/develop` `be07b02de4bc4313b831ff57d8eb7c7408b175a7`; confirm N-79 PR, merge result, both hosted gates and cleanup. Recheck ADR-0048, ADR-0046, PG-001, PLAT-004 and release guidance against current source.
-- [ ] Delete the completed N-79 plan, retain its delivery evidence in the roadmap, set row 18's active plan and bounded outcome to N-80, advance `Directory.Build.props` once to `0.1.0-dev.198`, and create this plan. Do not mark row 18 complete.
-- [ ] Run `git diff --check`; stage only the four named paths; commit through the normal check-only hook without bypassing it.
+- [x] Verify the worktree starts at current `origin/develop` `be07b02de4bc4313b831ff57d8eb7c7408b175a7`; confirm N-79 PR, merge result, both hosted gates and cleanup. Recheck ADR-0048, ADR-0046, PG-001, PLAT-004 and release guidance against current source.
+- [x] Delete the completed N-79 plan, retain its delivery evidence in the roadmap, set row 18's active plan and bounded outcome to N-80, advance `Directory.Build.props` once to `0.1.0-dev.198`, and create this plan. Do not mark row 18 complete.
+- [x] Run `git diff --check`; stage only the four named paths; commit through the normal check-only hook without bypassing it.
 
 ### Task 2: Prove a retained player path through production web and persisted API state
 
 **Files:**
+- Modify: `src/WildBunch.GameContent/NewGame/SeedWorldResolver.cs`
+- Modify: `tests/WildBunch.GameContent.Tests/SeedWorldResolverTests.cs`
+- Modify: `src/WildBunch.Web/src/api/types.ts`
+- Modify: `src/WildBunch.Web/src/api/httpClient.ts`
+- Modify: `src/WildBunch.Web/src/components/CaseFileSurface.tsx`
+- Modify: `src/WildBunch.Web/src/components/JournalSurface.tsx`
+- Modify: `src/WildBunch.Web/src/tests/CaseFileSurface.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/JournalSurface.test.tsx`
+- Modify: `src/WildBunch.Web/src/tests/wildBunchApi.test.ts`
 - Modify: `src/WildBunch.Web/playwright.config.ts`
+- Modify: `src/WildBunch.Web/package.json`
+- Modify: `src/WildBunch.Web/package-lock.json`
 - Create: `src/WildBunch.Web/browser-tests/player-startup.spec.ts`
+- Create: `src/WildBunch.Web/browser-tests/support/postgresApi.ts`
 - Modify: `tools/run.py`
 - Modify: `tools/tests/test_run.py`
 - Modify: `tools/README.md`
@@ -65,16 +79,17 @@
 - Modify: `docs/features.md`
 
 **Interfaces:**
-- Consumes: the public web build and generated version identity; API launch profile on `localhost:5275`; local PostgreSQL on `localhost:5435`; Playwright Chromium; quick-start, prologue, world-map and town-hub APIs and existing Phaser pointer interaction.
+- Consumes: the public web build and generated version identity; local PostgreSQL on `localhost:5435`; Playwright Chromium; quick-start, prologue, world-map and town-hub APIs and existing Phaser pointer interaction.
 - Produces: a browser qualification test proving setup and town state restore after page close/reopen against real persisted server state; a fail-fast browser lane that runs only after web build and identity validation; updated feature/release evidence with explicit scope limits.
 
-- [ ] Inspect the current browser surface, setup API contract, persisted game pointer, prologue flow, world-map DTO/render coordinate transform, town-hub contract, API launch profile, PostgreSQL ensure script and command-bus orchestration. Resolve town marker screen coordinates from the actual returned DTO and rendered canvas dimensions; do not add an alternate interaction path.
-- [ ] Add the browser test and production web preview plus API server configuration. Ensure the Playwright server lifecycle is bounded, non-reusing and uses explicit ports; keep the existing fixture tests working in the same suite.
-- [ ] Run the browser test with PostgreSQL ensured against current behavior. If it fails, diagnose whether the failure is in the harness or a real retained contract, and correct only the proven cause. Then temporarily remove/break the actual persisted current-game ID write in `useGameSessionMutations.ts`; observe the page-reopen assertion fail; restore the production code and rerun green.
-- [ ] Reorder `_build_web()` and `ci` steps so style, typecheck, unit tests, web build, build identity and then browser tests run fail-fast in that order. Add focused command-bus behavior coverage proving browser tests cannot run before the build/identity steps and that the normal web target follows the same order.
-- [ ] Document the direct browser-test build and local PostgreSQL prerequisites in the command-bus README and testing guidance. Keep the release runbook's local bundle steps distinct from this retained-path qualification and state that local proof does not establish complete candidate, hosted release or deployed resume.
-- [ ] Update PG-001 and PLAT-004 evidence to record only the production-mode public browser path with local API/PostgreSQL and reopen restoration. Preserve the remaining broader retained-path and full candidate qualification work in row 18.
-- [ ] Run `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, `npm --prefix src/WildBunch.Web ci`, `npm --prefix src/WildBunch.Web run build`, `npm --prefix src/WildBunch.Web run test:browser -- browser-tests/player-startup.spec.ts`, and `py -3 -m pytest tools/tests/test_run.py -q`. Run the focused lane again after the deliberate failing mutation has been restored; inspect `git diff --check` and test diagnostics.
+- [x] Inspect the current browser surface, setup API contract, persisted game pointer, prologue flow, world-map DTO/render coordinate transform, town-hub contract, PostgreSQL ensure script and command-bus orchestration. Resolve town marker screen coordinates from the actual returned DTO and rendered canvas dimensions; do not add an alternate interaction path. The API returns a null current town before first arrival; the journal and case-file surfaces now honor that contract instead of fabricating a location.
+- [x] Add the browser test and production web preview plus API setup/teardown. Create a unique database per Playwright invocation, pass its connection string as API command-line configuration so the shared database environment inherited from the .NET task runner cannot override isolation, and drop only that database after the API stops. Use the explicit IPv4 loopback endpoint used by the web client; refuse an already-occupied port there and wait for the child API's own Kestrel listening log before accepting health. Verify the disposable database has no active playthrough before the journey. Give the whole browser journey 120 seconds because the real API and fresh database run under the canonical gate. Keep the existing fixture tests on the dev server and in the same suite.
+- [x] Run the browser test with PostgreSQL ensured against current behavior. The first run exposed the null-town rendering failure; behavior tests failed on the actual dereferences before the UI correction. Temporarily removing the persisted current-game ID write made the reopened-page request assertion fail in 5 seconds; restoring the write made the complete browser route pass again.
+- [x] The randomized quick-start exposed invalid seed encodings. One behavior test exhausts 1,024 encoded cash/town-count/outlier combinations, validates every resolved world and asserts the two normalization rules; removing either production rule independently makes it fail. `Resolve` clamps cash bonus to its legal envelope and removes an outlier slot when maximum town count leaves no legal slot. The complete GameContent suite passed before the browser path was rerun.
+- [x] Reorder `_build_web()` and `ci` steps so style, typecheck, unit tests, web build, build identity and then browser tests run fail-fast in that order. Focused command-bus behavior tests cover both orderings; temporary early-browser mutations made each ordering test fail before restoration.
+- [x] Document direct browser-test build and local PostgreSQL prerequisites in the command-bus README and testing guidance. Keep artifact identity distinct from gameplay qualification in the release runbook; local route evidence does not establish complete candidate, hosted release or deployed resume.
+- [x] Update PG-001, PG-002 and PLAT-004 evidence to record only the production-mode browser path with local API/PostgreSQL and page-reopen restoration. Preserve broader retained-path and full candidate qualification work in row 18.
+- [x] Run `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, `npm --prefix src/WildBunch.Web ci`, `py -3 tools/run.py web --check`, `dotnet test tests/WildBunch.GameContent.Tests/WildBunch.GameContent.Tests.csproj --no-restore`, and `py -3 -m pytest tools/tests -q`. The web target passed formatting, typecheck, 377 Vitest tests, production build and version identity, and all 5 Chromium tests; GameContent passed 159 tests and tools passed 95. The restored browser route passed after the storage mutation proof. A read-only database query confirmed teardown left no `wildbunch_browser_%` databases. `git diff --check` passed.
 - [ ] Run the repository gate `py -3 tools/run.py ci --check` from a clean committed candidate as required by the handoff path. Stage only source, tests and durable guidance listed in this task; commit through the normal hook.
 
 ### Task 3: Review, publish and close N-80
