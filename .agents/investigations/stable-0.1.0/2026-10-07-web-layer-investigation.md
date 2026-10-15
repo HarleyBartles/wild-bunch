@@ -90,7 +90,11 @@ The user's one-map ownership decision is already reflected in current code: the 
 
 ### WB-15: Phaser hover replaces the configured building scale
 
+**Historical assessment, 2026-10-07:**
+
 `TownHubScene.ts:406-417` sets sprite display size from the layout, then pointerover sets absolute scale to 1.05 and pointerout to 1. Phaser's version-matched [Size source](https://raw.githubusercontent.com/phaserjs/phaser/v3.90.0/src/gameobjects/components/Size.js) establishes display dimensions through scale; [Transform source](https://raw.githubusercontent.com/phaserjs/phaser/v3.90.0/src/gameobjects/components/Transform.js) sets absolute scale. A source sprite whose intrinsic dimensions differ from the configured layout therefore changes size/aspect and fails to restore its fitted dimensions after hover. Preserve both baseline scales and multiply/restore them, or use an equivalent supported display contract. Rectangle fallback's initial scale is one, so do not misclassify that branch. Current scene doubles store displayWidth independently from scale and often discard event listeners; they cannot detect the real behavior. Strengthen the renderer contract and perform a real browser hover check when repaired.
+
+**Current disposition, 2026-10-15, N-76 Phaser browser proof:** `TownHubScene` now captures both fitted scale axes after `setDisplaySize`, applies a proportional hover scale and restores the fitted axes on pointerout. The Chromium test loads the 60x50 production Store sprite in the real Phaser 3.90 scene, proves the canvas changes on hover and returns pixel-for-pixel to baseline after pointerout. Temporarily restoring the old absolute `1.05`/`1` scales failed the browser assertion. The test-double scenario remains callback-level coverage. This closes the implementation finding; evidence is local Chromium rendering and does not claim deployed or cross-browser proof. Map-level keyboard town selection remains excluded from 0.1.0 under ADR-0046; no durable decision or product promise changed.
 
 ### WB-16: Phaser lifetime and shared geometry need a clearer boundary
 
@@ -173,7 +177,7 @@ The table below gives each assessed application/configuration/guidance file an o
 | [src/components/start-flow/StartingTownStep.tsx](../../../src/WildBunch.Web/src/components/start-flow/StartingTownStep.tsx) | Setup interaction: consume canonical world map; own start eligibility and explicit error/retry display (WB-08/WB-14). |
 | [src/components/start-flow/StorySoFarStep.tsx](../../../src/WildBunch.Web/src/components/start-flow/StorySoFarStep.tsx) | Prologue interaction: consume session-authoritative story and command pending/result (WB-06/WB-07). |
 | [src/components/town-hub/PhaserTownHubHost.tsx](../../../src/WildBunch.Web/src/components/town-hub/PhaserTownHubHost.tsx) | Town-rendering capability: retain cleanup/latest callbacks; make rebuild policy explicit (WB-16). |
-| [src/components/town-hub/TownHubScene.ts](../../../src/WildBunch.Web/src/components/town-hub/TownHubScene.ts) | Town-rendering capability: fix sprite hover scaling; preserve visible keyboard navigation companion (WB-15). |
+| [src/components/town-hub/TownHubScene.ts](../../../src/WildBunch.Web/src/components/town-hub/TownHubScene.ts) | Town-rendering capability: retain fitted-scale hover and restoration with unit and real-browser evidence; preserve existing Town Hub keyboard controls (N-76, WB-15). |
 | [src/components/town-hub/background-building-planner.ts](../../../src/WildBunch.Web/src/components/town-hub/background-building-planner.ts) | Town-rendering capability: retain deterministic planning; agree supported geometry/payload boundary (WB-16). |
 | [src/components/town-hub/ground-loader.ts](../../../src/WildBunch.Web/src/components/town-hub/ground-loader.ts) | Town-rendering capability: retain loader ownership; reconcile repeated grid/asset rules (WB-16). |
 | [src/components/town-hub/sprite-loader.ts](../../../src/WildBunch.Web/src/components/town-hub/sprite-loader.ts) | Town-rendering capability: retain sprite resolution ownership; reconcile repeated grid/asset rules (WB-16). |
@@ -236,7 +240,7 @@ The table below gives each assessed application/configuration/guidance file an o
 
 ## Dated row 08 disposition, 2026-10-10
 
-**WB-20:** The casebook renders supplied warrant and clue records directly, including clue provenance/anchors and recorded turn-in outcomes. It no longer ranks fallback clues, derives discovery provenance from text, joins settlement by display name, or emits resolved/possible-match identity copy. Captured wanted posters are filtered by the warrant/poster ID shared by the source contracts. A rendered behavior test covers two same-name warrant records, one settled record, and a separate unnamed feature clue. No browser-backed journey is claimed because the repository has no browser/e2e harness.
+**WB-20:** The casebook renders supplied warrant and clue records directly, including clue provenance/anchors and recorded turn-in outcomes. It no longer ranks fallback clues, derives discovery provenance from text, joins settlement by display name, or emits resolved/possible-match identity copy. Captured wanted posters are filtered by the warrant/poster ID shared by the source contracts. A rendered behavior test covers two same-name warrant records, one settled record, and a separate unnamed feature clue. No browser-backed casebook journey is claimed; the Chromium harness covers modal behavior and town-sprite rendering, not a real API-backed casebook flow.
 
 ## Dated row 09 disposition, 2026-10-10
 
