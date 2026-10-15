@@ -41,22 +41,22 @@
 
 ### Task 2: Replace helper-level seed tests with routed setup behavior proof
 
-**Files:** `src/WildBunch.Web/src/tests/StartFlow.test.tsx`, `src/WildBunch.Web/src/ui/gameSetupSeedCodec.ts`, `src/WildBunch.Web/src/hooks/useStartGameSeed.ts`, `src/WildBunch.Web/src/tests/gameSetupSeedCodec.test.ts`.
+**Files:** `src/WildBunch.Web/src/tests/StartFlow.test.tsx`, `src/WildBunch.Web/src/ui/gameSetupSeedCodec.ts` (rename to `src/WildBunch.Web/src/ui/gameSetupSeed.ts`), `src/WildBunch.Web/src/hooks/useStartGameSeed.ts`, `src/WildBunch.Web/src/tests/gameSetupSeedCodec.test.ts`.
 
-- [ ] Add a routed `StartFlow.test.tsx` case that makes `crypto.randomUUID()` return distinct valid UUIDs for initial setup and the Randomize action, clicks Randomize, observes the second UUID in the seed input, continues with a player name, and asserts `setupGame` receives that exact second UUID.
-- [ ] Run `npm --prefix src/WildBunch.Web run test -- src/tests/StartFlow.test.tsx`; confirm the new case passes on the current implementation, then temporarily remove the live randomization state update, rerun the focused case and confirm it fails because the displayed/submitted UUID stays stale, restore the source exactly, and rerun the focused suite green.
-- [ ] Rename `encodeGameSetupSeed` to `normalizeGameSetupSeed` and make its actual string input/output contract explicit; update `useStartGameSeed.validateSeedDraft` to call the normalization helper without changing error handling or setup payload behavior.
-- [ ] Remove the unused `GameSetupSeedState`, `DecodedGameSetupSeed`, `decodeGameSetupSeed`, `createCanonicalSeedState`, and `withRandomSeed` exports after repository-wide consumer search confirms no production callers remain.
-- [ ] Delete `src/tests/gameSetupSeedCodec.test.ts` rather than replacing it with tests for absence or direct normalization echoes; its setup-visible normalization and malformed-input behavior remain exercised through `StartFlow.test.tsx`.
+- [x] Add a routed `StartFlow.test.tsx` case that makes `crypto.randomUUID()` return distinct valid UUIDs for initial setup and the Randomize action, clicks Randomize, observes the second UUID in the seed input, continues with a player name, and asserts `setupGame` receives that exact second UUID.
+- [x] Run `npm --prefix src/WildBunch.Web run test -- src/tests/StartFlow.test.tsx`; confirm the new case passes on the current implementation, then temporarily remove the live randomization state update, rerun the focused case and confirm it fails because the displayed/submitted UUID stays stale, restore the source exactly, and rerun the focused suite green.
+- [x] Rename `gameSetupSeedCodec.ts` to `gameSetupSeed.ts` because the remaining module does not encode or decode; rename `encodeGameSetupSeed` to `normalizeGameSetupSeed` and make its string input/output contract explicit; update `useStartGameSeed.validateSeedDraft` without changing error handling or setup payload behavior.
+- [x] Remove the unused `GameSetupSeedState`, `DecodedGameSetupSeed`, `decodeGameSetupSeed`, `createCanonicalSeedState`, and `withRandomSeed` exports after repository-wide consumer search confirms no production callers remain.
+- [x] Delete `src/tests/gameSetupSeedCodec.test.ts` rather than replacing it with tests for absence or direct normalization echoes; its setup-visible normalization and malformed-input behavior remain exercised through `StartFlow.test.tsx`.
 
 ### Task 3: Reconcile current web and feature evidence
 
 **Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, `docs/features.md`, `PR description`.
 
-- [ ] Correct WB-05's current assessment to state that the 2026-10-07 issue was real when observed but routed setup now validates and submits the edited normalized draft; retain the dated historical observation and add a dated N-73 disposition citing the live behavior tests.
-- [ ] Remove the resolved client seed-decoder scaffold from WB-23's remaining findings and update the `gameSetupSeedCodec.ts` file disposition to describe the single live normalization responsibility, without disturbing unrelated WB-23 findings.
-- [ ] Reconcile the test-follow-up rows that call for retaining isolated codec negatives and adding routed proof; record that the decoder/factory-only unit suite is retired, the routed edited/invalid/fresh seed cases remain, and the new Randomize case proves a changed seed reaches the command.
-- [ ] Update PG-001's evidence assessment to include the routed Randomize interaction if the new behavior test passes; preserve all existing feature promises and dependencies, and compare the actual diff with ADR-0021 and ADR-0039, leaving them unchanged because UUID input, server resolution, and event replay decisions do not change.
+- [x] Correct WB-05's current assessment to state that the 2026-10-07 issue was real when observed but routed setup now validates and submits the edited normalized draft; retain the dated historical observation and add a dated N-73 disposition citing the live behavior tests.
+- [x] Remove the resolved client seed-decoder scaffold from WB-23's remaining findings and update the `gameSetupSeed.ts` file disposition to describe the single live normalization responsibility, without disturbing unrelated WB-23 findings.
+- [x] Reconcile the test-follow-up rows that call for retaining isolated codec negatives and adding routed proof; record that the decoder/factory-only unit suite is retired, the routed edited/invalid/fresh seed cases remain, and the new Randomize case proves a changed seed reaches the command. Correct the current test inventory to 45 Vitest files, one Playwright spec, and four support/guidance files.
+- [x] Update PG-001's evidence assessment to include the routed Randomize interaction; preserve all existing feature promises and dependencies, and compare the actual diff with ADR-0021 and ADR-0039, leaving them unchanged because UUID input, server resolution, and event replay decisions do not change.
 - [ ] State the author ADR and feature-matrix comparisons in the PR body; the independent reviewer must repeat both checks against the final diff.
 
 ### Task 4: Validate, review, publish, and retire N-73

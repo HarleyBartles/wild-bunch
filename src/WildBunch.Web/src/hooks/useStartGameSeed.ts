@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { GameDifficulty, GameEntropy, GameSessionDto } from "../api/types";
-import { normalizeGameSetupSeed } from "../ui/gameSetupSeedCodec";
+import { normalizeGameSetupSeed } from "../ui/gameSetupSeed";
 import { readPendingSetupOperation } from "../utils/startupOperationStorage";
 
 interface UseStartGameSeedArgs {
