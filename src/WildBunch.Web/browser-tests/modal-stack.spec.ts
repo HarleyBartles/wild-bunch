@@ -65,6 +65,30 @@ test("keeps nested confirmation modal and restores focus through both dialogs", 
   await expect(settingsTrigger).toBeFocused();
 });
 
+test("keeps outside actions inactive while the nested confirmation is modal", async ({ page }) => {
+  await page.goto("/browser-tests/modal-stack.html");
+  const outsideAction = page.getByRole("button", { name: "Outside action", exact: true });
+  const outsideActionStatus = page.getByRole("status");
+  await outsideAction.click();
+  await expect(outsideActionStatus).toHaveText("Outside action count: 1");
+
+  await openConfirmation(page);
+  const bounds = await outsideAction.boundingBox();
+  expect(bounds).not.toBeNull();
+  if (!bounds) {
+    throw new Error("Expected the outside action to have a browser bounding box.");
+  }
+
+  // Remove the full-screen overlay from hit testing so only native modal inertness can block this click.
+  await page.locator("dialog[open]").evaluateAll((dialogs) => {
+    dialogs.forEach((dialog) => {
+      dialog.style.pointerEvents = "none";
+    });
+  });
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await expect(outsideActionStatus).toHaveText("Outside action count: 1");
+});
+
 test("keeps the confirmation actions inside a narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 600 });
   await page.goto("/browser-tests/modal-stack.html");

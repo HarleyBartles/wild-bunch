@@ -19,6 +19,7 @@ const gameSessionValue = {
 
 function ModalStackFixture() {
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
+  const [outsideActionCount, setOutsideActionCount] = useState(0);
 
   return (
     <GameSessionContext.Provider value={gameSessionValue}>
@@ -27,7 +28,10 @@ function ModalStackFixture() {
         <button type="button" onClick={() => setOpenOverlay("game-settings")}>
           Game Settings
         </button>
-        <button type="button">Outside action</button>
+        <button type="button" onClick={() => setOutsideActionCount((count) => count + 1)}>
+          Outside action
+        </button>
+        <p role="status">Outside action count: {outsideActionCount}</p>
       </main>
       <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
     </GameSessionContext.Provider>

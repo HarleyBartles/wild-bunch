@@ -26,7 +26,7 @@
 
 ## Review Focus
 
-- A modal opened with `showModal()` must make background controls unfocusable while it is active, including when a confirmation is stacked over Settings.
+- A modal opened with `showModal()` must make background controls unfocusable and prevent outside actions from activating while it is active, including when a confirmation is stacked over Settings.
 - Escape must dismiss only the top confirmation, return focus to its Start Over opener, then dismiss Settings and return focus to its HUD trigger.
 - The confirmation's named controls must remain within a 320-pixel viewport without horizontal document overflow.
 
@@ -49,10 +49,10 @@
 - [x] Keep Vitest's existing broad test discovery from loading the Playwright spec by excluding the browser-only fixture directory.
 - [x] Create ADR-0047 defining Chromium/Playwright as the automated lane for native modal focus and rendered-geometry behavior, then partially supersede ADR-0017 while retaining Vitest/Testing Library for component and route behavior; keep ADR-0022's separate manual evidence lane unchanged.
 - [x] Create a test-only Vite page that imports the production global stylesheet and mounts `GlobalOverlays` inside `GameSessionContext.Provider`; expose one external Game Settings trigger and use a deterministic context value with no API or PostgreSQL dependency.
-- [x] Add a Playwright scenario using `getByRole` locators that opens Settings and Start Over, proves initial focus enters each dialog, proves programmatic focus cannot escape the top modal, proves Tab and Shift+Tab remain in the confirmation, and proves Escape closes only the top dialog before restoring focus through both levels.
+- [x] Add Playwright scenarios using `getByRole` locators that open Settings and Start Over, prove initial focus enters each dialog, prove programmatic focus cannot escape the top modal, prove Tab and Shift+Tab remain in the confirmation, prove Escape closes only the top dialog before restoring focus through both levels, and prove a coordinate-based outside click cannot activate a background action.
 - [x] Add a narrow-viewport scenario at 320 by 600 pixels that opens the confirmation, checks the heading and both named actions have browser-measured rectangles fully inside the viewport, and verifies the document has no horizontal overflow.
 - [x] Run `npm run test:browser -- --list` to verify discovery, then `npm run test:browser` and inspect the browser output; do not replace real browser observations with JSDOM or CSS string assertions.
-- [x] Prove the test oracle with two temporary production mutations, restoring each source file byte-for-byte after its RED result: replace `showModal()` with non-modal `open`-attribute behavior and verify background-focus containment fails; remove the explicit confirmation focus assignment and verify initial-focus behavior fails.
+- [x] Prove the test oracle with two temporary production mutations, restoring each source file byte-for-byte after its RED result: replace `showModal()` with non-modal `open`-attribute behavior and verify focus containment and background-action inactivity fail; remove the explicit confirmation focus assignment and verify initial-focus behavior fails.
 - [x] If a current behavior assertion fails before mutation, use that witnessed failure as the RED case, repair only the owned dialog behavior, and rerun the focused browser test before continuing.
 
 ### Task 3: Put the browser lane in the canonical command bus and hosted gate
