@@ -20,7 +20,7 @@
 - Keep this slice to one Chromium browser project and the modal contract; do not add map keyboard selection, a general browser matrix, accessibility conformance claims, snapshots, or screenshot baselines.
 - Prefer accessible role and name locators; use browser-computed element rectangles only for actual visible geometry assertions, not serialized CSS values.
 - Preserve the current product behavior and wording unless a focused browser test witnesses a failure in the accepted modal contract.
-- Compare the actual diff with applicable ADRs and `docs/features.md`; record why neither changes unless the implementation evidence shows otherwise.
+- Compare the actual diff with applicable ADRs and `docs/features.md`; keep the matrix's evidence current when this slice adds scoped runtime proof without changing a product promise or dependency.
 - Keep the canonical gate fail-fast and cheapest-first, and place browser tests after ordinary web behavior tests.
 - Keep Markdown paragraphs and list items on one physical line, with regular hyphens only.
 
@@ -68,10 +68,10 @@
 
 ### Task 4: Reconcile evidence and deliver N-70
 
-**Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, PR description, and all N-70 changes.
+**Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, `docs/features.md`, PR description, and all N-70 changes.
 
 - [x] Update the overlay coverage inventory with the exact real-browser outcomes proven by the new tests and retain explicit limits: Chromium coverage is not cross-browser certification or a complete WCAG conformance audit.
-- [ ] Confirm ADR-0047 and the partial supersession of ADR-0017 truthfully describe the new test boundary, ADR-0022 remains accurate because manual browser evidence remains a separate lane, ADR-0030/0041 remain accurate, and `docs/features.md` remains unchanged; record the author comparison and rationale in the PR body.
+- [ ] Confirm ADR-0047 and the partial supersession of ADR-0017 truthfully describe the new test boundary, ADR-0022 remains accurate because manual browser evidence remains a separate lane, and ADR-0030/0041 remain accurate; update PG-002's evidence in `docs/features.md` to record the modal proof without claiming archive submission, full browser journey or a product-promise change, then record the author comparison in the PR body.
 - [ ] Complete the author ADR and feature-matrix checks before review, then dispatch a fresh whole-branch reviewer and require the reviewer to repeat both comparisons against the committed diff.
 - [ ] Publish a Draft PR to `develop` at `0.1.0-dev.188`, verify its head equals the reviewed commit, make it ready only after self-review and the check-only commit gate pass, and require the exact-head hosted gate to pass before merge.
 - [ ] Merge the PR to `develop`, verify the develop-push gate passes on the merge commit, fast-forward the primary checkout while preserving its user-owned inventory edit, remove this clean worktree, then delete and verify absence of this exact local/upstream branch pair.
