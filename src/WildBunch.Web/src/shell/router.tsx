@@ -1,6 +1,8 @@
 import { lazy } from "react";
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { AppShell } from "./AppShell";
+import { PlaytestAppShell } from "./PlaytestAppShell";
+import type { AppProfile } from "./appProfile";
 
 const PreSessionSurface = lazy(() =>
   import("../flow/PreSessionSurface").then((m) => ({ default: m.PreSessionSurface })),
@@ -24,73 +26,73 @@ const TrailFlowSurface = lazy(() =>
   import("../flow/TrailFlowSurface").then((m) => ({ default: m.TrailFlowSurface })),
 );
 
-const rootRoute = createRootRoute({
-  component: AppShell,
-});
+export function createAppRouter(profile: AppProfile = "public") {
+  const rootRoute = createRootRoute({
+    component: profile === "playtest" ? PlaytestAppShell : AppShell,
+  });
 
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/",
-  component: PreSessionSurface,
-});
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    component: PreSessionSurface,
+  });
 
-const townRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/town",
-  validateSearch: (search: Record<string, unknown>): { arrived?: "1" } => {
-    if (search.arrived === "1") {
-      return { arrived: "1" };
-    }
-    return {};
-  },
-  component: TownHubSurface,
-});
+  const townRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town",
+    validateSearch: (search: Record<string, unknown>): { arrived?: "1" } => {
+      if (search.arrived === "1") {
+        return { arrived: "1" };
+      }
+      return {};
+    },
+    component: TownHubSurface,
+  });
 
-// Town place routes are siblings under rootRoute, NOT children of townRoute.
-// townRoute's component is TownHubSurface which renders the hub directly
-// (no <Outlet />), so child routes would not render. Flat paths under root
-// keep each place as an independently-rendered route.
-const storeRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/town/store",
-  component: StorePlace,
-});
+  // Town place routes are siblings under rootRoute, NOT children of townRoute.
+  // townRoute's component is TownHubSurface which renders the hub directly
+  // (no <Outlet />), so child routes would not render. Flat paths under root
+  // keep each place as an independently-rendered route.
+  const storeRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town/store",
+    component: StorePlace,
+  });
 
-const sheriffRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/town/sheriff",
-  component: SheriffPlace,
-});
+  const sheriffRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town/sheriff",
+    component: SheriffPlace,
+  });
 
-const saloonRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/town/saloon",
-  component: SaloonPlace,
-});
+  const saloonRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town/saloon",
+    component: SaloonPlace,
+  });
 
-const trailheadRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/town/trailhead",
-  component: TravelPrepSurface,
-});
+  const trailheadRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/town/trailhead",
+    component: TravelPrepSurface,
+  });
 
-const trailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/trail",
-  component: TrailFlowSurface,
-});
+  const trailRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/trail",
+    component: TrailFlowSurface,
+  });
 
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  townRoute,
-  storeRoute,
-  sheriffRoute,
-  saloonRoute,
-  trailheadRoute,
-  trailRoute,
-]);
+  const routeTree = rootRoute.addChildren([
+    indexRoute,
+    townRoute,
+    storeRoute,
+    sheriffRoute,
+    saloonRoute,
+    trailheadRoute,
+    trailRoute,
+  ]);
 
-export function createAppRouter() {
   return createRouter({
     routeTree,
     defaultPreload: "intent",

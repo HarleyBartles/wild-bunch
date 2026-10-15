@@ -90,8 +90,10 @@ public sealed class DevEndpointTests
         using var factory = new NonDevApiFactory();
         using var client = factory.CreateClient();
 
-        // Even a valid session ID should be denied — the guard runs before the handler.
-        var auditResponse = await client.GetAsync($"/api/dev/sessions/{Guid.NewGuid()}/audit");
+        var scenario = BoringScenarioBuilder.StartingTownReady();
+        var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+
+        var auditResponse = await client.GetAsync($"/api/dev/sessions/{created.Id}/audit");
         Assert.Equal(HttpStatusCode.Forbidden, auditResponse.StatusCode);
     }
 

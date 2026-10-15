@@ -4,6 +4,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
+import type { AppProfile } from "../shell/appProfile";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { HttpRequestError } from "../api/httpClient";
 import {
@@ -77,7 +78,7 @@ afterEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-function renderShell(initialPath?: string) {
+function renderShell(initialPath?: string, profile: AppProfile = "public") {
   if (initialPath) {
     window.history.replaceState({}, "", initialPath);
   }
@@ -87,7 +88,7 @@ function renderShell(initialPath?: string) {
       mutations: { retry: false },
     },
   });
-  const router = createAppRouter();
+  const router = createAppRouter(profile);
 
   render(
     <QueryClientProvider client={queryClient}>
@@ -385,6 +386,17 @@ describe("AppShell", () => {
     expect(within(hud).getByText("Day 5, Morning")).toBeInTheDocument();
   });
 
+  it("keeps developer controls out of the public player shell", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    expect(await screen.findByRole("banner", { name: /game status/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^dev$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
+  });
+
   it("recovers town services after the available-actions read fails", async () => {
     primeMocks();
     mockedGetAvailableActions
@@ -522,7 +534,7 @@ describe("AppShell", () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
@@ -539,7 +551,7 @@ describe("AppShell", () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
@@ -559,7 +571,7 @@ describe("AppShell", () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
@@ -580,7 +592,7 @@ describe("AppShell", () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
@@ -607,7 +619,7 @@ describe("AppShell", () => {
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/trail");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
@@ -637,7 +649,7 @@ describe("AppShell", () => {
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/town/store");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
