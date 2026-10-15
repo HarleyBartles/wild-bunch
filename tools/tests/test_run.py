@@ -259,6 +259,36 @@ def test_ci_lint_failure_stops_before_behavioral_tests(monkeypatch, capfd) -> No
     assert "target 'ci' failed" in captured.err
 
 
+def test_ci_chromium_failure_stops_before_web_build(monkeypatch, capsys) -> None:
+    visited: list[str] = []
+    checks = []
+
+    for name, check, repair, recheck in run.CI_CHECKS:
+        if name in {"web-tests", "web-browser-tests", "web-build"}:
+
+            def record(ctx, *, lane=name, callback=check):
+                visited.append(lane)
+                callback(ctx)
+
+            checks.append((name, record, repair, recheck))
+        else:
+            checks.append((name, lambda _ctx: None, repair, recheck))
+
+    def fail_browser_command(command: list[str], _ctx) -> None:
+        if "test:browser" in command:
+            raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(run, "CI_CHECKS", tuple(checks))
+    monkeypatch.setattr(run, "_run", fail_browser_command)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        run._ci_check(run.Ctx("check", False))
+
+    assert visited == ["web-tests", "web-browser-tests"]
+    assert "web-build" not in visited
+    assert "check 'web-browser-tests' failed" in capsys.readouterr().err
+
+
 def _git(root: Path, *args: str) -> str:
     result = subprocess.run(["git", *args], cwd=root, check=True, capture_output=True, text=True)
     return result.stdout.strip()

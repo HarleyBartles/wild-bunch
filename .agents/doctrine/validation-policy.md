@@ -14,8 +14,16 @@ sequence and environment setup live in the [testing playbook](../playbooks/testi
   distribution guardrails.
 - `WildBunch.Integration.Tests`: full HTTP and persistence flows against real
   PostgreSQL; user-facing flows live under `Acceptance/`.
-- `src/WildBunch.Web`: Vitest component/route behavior, TypeScript checking,
-  and production build.
+- `src/WildBunch.Web`: Vitest component/route behavior, Chromium/Playwright
+  native browser behavior, TypeScript checking, and production build.
+
+The Playwright lane owns native browser contracts that JSDOM cannot observe,
+including modal focus behavior and rendered viewport geometry. Run it locally
+with `npm --prefix src/WildBunch.Web run test:browser` after installing
+Chromium with `npx --prefix src/WildBunch.Web playwright install chromium`.
+Hosted CI runs `npm ci --prefix src/WildBunch.Web`, then installs Chromium and
+its system dependencies with `npx playwright install --with-deps chromium`
+from the web project before the tracked commit gate.
 
 Tests follow the source-layer namespace and folder. Repository fixtures and
 builders live under `TestInfrastructure/`; fakes and stubs live under

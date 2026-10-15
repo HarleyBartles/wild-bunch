@@ -70,6 +70,13 @@ jobs:
       - name: Install Python script requirements
         run: python -m pip install -r tools/requirements.txt
 
+      - name: Install locked web dependencies
+        run: npm ci --prefix src/WildBunch.Web
+
+      - name: Install Chromium for browser tests
+        working-directory: src/WildBunch.Web
+        run: npx playwright install --with-deps chromium
+
       - name: Validate tracked commit gate
         env:
           REPO_STANDARDS_HOSTED_COMMIT: HEAD

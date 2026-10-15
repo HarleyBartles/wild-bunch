@@ -20,11 +20,16 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
    PostgreSQL or browser evidence only when the boundary requires it.
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
-4. When a maintained artifact needs updating, run its named owning maintenance
+4. For native browser behavior, run `npm --prefix src/WildBunch.Web run
+   test:browser`; install Chromium locally once with `npx --prefix
+   src/WildBunch.Web playwright install chromium`. Hosted CI installs locked
+   web dependencies and Chromium with system dependencies before the tracked
+   gate.
+5. When a maintained artifact needs updating, run its named owning maintenance
    command and review the changes it produces. `setup-hooks --apply` configures
    this checkout's Git hook; it is separate from validation. Stage the intended
    tree, then let the normal check-only hook validate it.
-5. Use evidence-based result verification to report focused and canonical proof
+6. Use evidence-based result verification to report focused and canonical proof
    for the same tested state.
 
 ## Doctrine and contracts
@@ -46,8 +51,8 @@ For hook setup, run `py -3 tools/run.py setup-hooks --apply` explicitly. Use
 
 The canonical gate is fail-fast and ordered from cheaper checks to more
 expensive work: repository contracts and whitespace, format and lint for each
-language, builds and typechecking, then behavioral test suites and the web
-build. Resolve the first failure before starting downstream checks; do not
+language, builds and typechecking, then behavioral test suites (Vitest and
+Chromium browser tests) and the web build. Resolve the first failure before starting downstream checks; do not
 make an agent wait for tests when an earlier formatter or linter has failed.
 Use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence
