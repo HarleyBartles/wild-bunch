@@ -7,6 +7,7 @@
 ## Dated History
 
 - `2026-10-15` - Added Playwright Test with Chromium for automated native browser proof of nested modal focus, background inactivity, dismissal and restoration, and visible narrow-viewport geometry.
+- `2026-10-15` - Clarified that the Playwright lane also covers selected retained player flows when browser interaction, real API state, and page-reopen recovery need repeatable end-to-end proof.
 
 ## Decision Type
 
@@ -23,7 +24,7 @@ Vitest with JSDOM establishes component and route behavior but does not implemen
 
 ## Decision
 
-Use Playwright Test with one Chromium project for automated browser behavior that depends on native dialog, focus, inertness, or layout semantics. Keep Vitest with Testing Library for component and route behavior and keep the manual browser evidence lane in ADR-0022 separate. A passing Chromium suite proves only the browser cases it actually asserts; it is not cross-browser certification or a complete accessibility conformance claim.
+Use Playwright Test with one Chromium project for automated browser behavior that depends on native dialog, focus, inertness, or layout semantics, and for selected retained player flows whose browser interaction, real API state, and page-reopen recovery need repeatable end-to-end proof. Keep Vitest with Testing Library as the component and route behavior lane, and keep the manual browser evidence lane in ADR-0022 separate. A passing Chromium suite proves only the browser cases it actually asserts; it is not cross-browser certification or a complete accessibility conformance claim.
 
 ## Rationale and Alternatives
 
@@ -31,4 +32,4 @@ Chromium supplies the platform dialog, focus, inertness, and layout behavior tha
 
 ## Consequences
 
-The native browser suite requires a Playwright-matched Chromium installation locally and in hosted CI, and its tests run through the repository command bus. Tests remain scoped to user-visible modal and geometry outcomes; changes to the broader browser matrix require a later evidence-backed decision.
+The browser suite requires a Playwright-matched Chromium installation locally and in hosted CI, and its tests run through the repository command bus. Use it selectively for native browser contracts and retained player flows that need the real browser-to-API recovery boundary; it does not replace focused component, domain, application, or persistence tests. Changes to the browser-engine matrix require a later evidence-backed decision.

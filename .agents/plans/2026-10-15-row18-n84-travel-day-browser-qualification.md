@@ -87,6 +87,7 @@ Add dated PG-007 evidence for one production-browser travel-day advance and page
 ### Task 3: Review, publish, merge, and retire N-84
 
 **Files:**
+- Update: `docs/decisions/ADR-0047-add-playwright-for-native-browser-contracts.md` with the dated scope clarification justified by this retained player-flow browser proof.
 - Review: the committed N-84 branch diff, this plan, the stable baseline spec, applicable ADRs, `docs/features.md`, and the row-18 roadmap.
 - Update: `.agents/plans/2026-10-15-row18-n84-travel-day-browser-qualification.md` with completed execution evidence.
 
@@ -110,7 +111,7 @@ Squash-merge the reviewed PR into `develop`, verify the merge commit contains th
 
 Fast-forward the main checkout to the verified `develop` merge without disturbing its unrelated investigation edit. Use `finishing-a-development-branch` and its remove-worktree script with `--check` then `--apply`; remove only the N-84 worktree, then remove the matching local and upstream branch refs together. Verify the PR source/merge identities, both hosted gates, main `HEAD`, preserved user edit, and all three cleanup absences. Leave the N-84 plan and roadmap delivery record for N-85's successor-artifact retirement.
 
-N-84 proves one normal travel-day advance and restored post-day state. It does not prove any encounter resolution, journey completion or arrival acknowledgement, the remaining retained browser paths, deployed behavior, overall `0.1.0` qualification, cloud deployment, or user ownership.
+N-84 proves one normal travel-day advance and restored post-day state. It also clarifies that Playwright covers selected retained player flows requiring the real browser-to-API recovery boundary, in addition to native browser contracts; manual browser observations remain a separate evidence lane. It does not prove any encounter resolution, journey completion or arrival acknowledgement, the remaining retained browser paths, deployed behavior, overall `0.1.0` qualification, cloud deployment, or user ownership.
 
 ### Execution rulings
 
