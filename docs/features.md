@@ -1,6 +1,6 @@
 # Wild Bunch Feature Matrix
 
-**Status:** Current product-scope authority, reconciled on 2026-10-08. This matrix records what Wild Bunch promises, what the 0.1.0 baseline includes, and how capabilities depend on one another. It does not certify that an implementation works merely because a route, component, event, type or test exists.
+**Status:** Current product-scope authority, reconciled on 2026-10-15. This matrix records what Wild Bunch promises, what the 0.1.0 baseline includes, and how capabilities depend on one another. It does not certify that an implementation works merely because a route, component, event, type or test exists.
 
 Use the [feature-matrix playbook](../.agents/playbooks/feature-matrix.md) when a design, plan, implementation, review or release changes a product promise, capability boundary, dependency or evidence assessment. The [stable 0.1.0 baseline](../.agents/specs/2026-10-07-stable-0.1.0-baseline.md) owns the detailed settled rules; this matrix owns the current capability grouping, disposition and dependency map. Source investigations preserve audit evidence and are not a second feature authority.
 
@@ -244,9 +244,9 @@ These linked records keep an agreed 0.1.0 retirement or repair distinct from a l
 
 **Purpose and scope:** Gitflow uses `develop` for ordinary integration PRs and `main` for qualified releases/hotfixes. One authored application version lives in `Directory.Build.props`; every merge to `develop` advances one `0.1.0-dev.N` checkpoint, and release candidates/stable releases bind to verified source and derived artifacts.
 
-**Assessment and dependency:** In progress in this epic. It supports delivery of every included capability but does not change player gameplay. Pre-1.0 development makes no public API or gameplay-compatibility promise; this product's current `0.y.z` policy is recorded in the [release specification](../.agents/specs/2026-10-06-cloud-playability-and-releases.md).
+**Assessment and dependency:** In progress in this epic. N-78 adopts the pinned Gitflow and SemVer standards, records the pre-1.0 policy and lifecycle, and verifies generated `dev.N`, `rc.N`, and stable version identities in local builds. Tooling tests reject malformed, duplicate, and stale identities. End-to-end candidate qualification, hosted release behavior, and binding release artifact digests to verified source remain open in row 18. This release-support capability supports delivery of every included feature but does not change player gameplay. Pre-1.0 development makes no public API or gameplay-compatibility promise; this product's current `0.y.z` policy is recorded in the [release specification](../.agents/specs/2026-10-06-cloud-playability-and-releases.md).
 
-**Disposition:** Required release support. Roadmap row 18 adopts and certifies the then-current accepted immutable Gitflow/SemVer definitions and qualifies the 0.1.0 source. This epic does not define a future `1.0.0` contract.
+**Disposition:** Required release support. Roadmap row 18 adopts and certifies the accepted immutable Gitflow/SemVer definitions and qualifies the 0.1.0 source. This epic does not define a future `1.0.0` contract.
 
 ## Cross-cutting boundaries
 

@@ -94,14 +94,14 @@
 ### Task 4: Verify and publish N-78
 
 **Files:**
-- Review the complete diff across all files above and the active row-18 plan.
+- Review the complete diff across all files above, `docs/features.md`, and the active row-18 plan.
 
 **Interfaces:**
 - Consumes: completed N-78 implementation, its current certification and ADR, and the row-18 spec/roadmap.
 - Produces: reviewed PR to `develop` at `0.1.0-dev.196`, with exact-head hosted CI evidence and no false completion claim for row 18.
 
-- [ ] Independently compare the actual diff with the decision catalogue and `docs/features.md`; update the ADR catalogue when required and record why product feature truth is unchanged.
-- [ ] Run `py -3 tools/run.py ci --check`; stage the reviewed tree and commit through the normal check-only hook.
+- [x] Independently compare the actual diff with the decision catalogue and `docs/features.md`; update the ADR catalogue when required and record the PLAT-004 evidence reassessment. Player gameplay truth is unchanged.
+- [x] Run `py -3 tools/run.py ci --check`; stage the reviewed tree and commit through the normal check-only hook.
 - [ ] Request a fresh whole-branch review against the exact `develop` base and head, resolve Critical/Important findings with proof, and re-run the canonical gate after any correction.
 - [ ] Open and read back the Draft PR body, target, head SHA, and hosted checks; mark ready only after the independent review and local gate are green. Merge the PR into `develop` only after the hosted gate passes.
 - [ ] Verify the develop-push gate, fast-forward the main checkout while preserving the user's existing web-test follow-up edit, and use the worktree-skill cleanup script to remove only this clean worktree and its exact local/upstream refs.
