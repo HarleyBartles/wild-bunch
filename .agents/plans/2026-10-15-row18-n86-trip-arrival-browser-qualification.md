@@ -52,7 +52,7 @@ After the scenario passes, temporarily break the arrival acknowledgement handler
 
 - [x] **Step 4: Reconcile PG-007 evidence and run the canonical gate**
 
-Add dated PG-007 evidence for this one completed trip and acknowledged arrival, with the exact verified route and restored result. State that other travel routes, encounter variants, deployed behavior, all PG-007 behavior and overall 0.1.0 qualification remain unproven. Run `npm run build` and `npm run test:browser` in `src/WildBunch.Web`. Commit through the normal check-only hook, which runs `py -3 tools/run.py ci --check` on the staged candidate; use that hook result as the canonical gate instead of duplicating the full gate immediately before commit. Keep disposable API, database, and browser artifacts outside the repository. **Completed:** production build passed, focused route passed before and after the handler mutation, and the full canonical hook passed with 10 browser tests and PostgreSQL-backed integration tests.
+Add dated PG-007 evidence for this one completed trip and acknowledged arrival, with the exact verified route and restored result. State that other travel routes, encounter variants, deployed behavior, all PG-007 behavior and overall 0.1.0 qualification remain unproven. Run `npm run build` and `npm run test:browser` in `src/WildBunch.Web`. Commit through the normal check-only hook, which runs `py -3 tools/run.py ci --check` on the staged candidate; use that hook result as the canonical gate instead of duplicating the full gate immediately before commit. Keep disposable API, database, and browser artifacts outside the repository.
 
 ## Task 2: Review, publish, merge and retire N-86
 
