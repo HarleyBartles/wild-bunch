@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { GameDifficulty, GameEntropy, GameSessionDto } from "../api/types";
-import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
+import { normalizeGameSetupSeed } from "../ui/gameSetupSeed";
 import { readPendingSetupOperation } from "../utils/startupOperationStorage";
 
 interface UseStartGameSeedArgs {
@@ -82,7 +82,7 @@ export function useStartGameSeed({
 
   async function validateSeedDraft() {
     try {
-      const seedCode = await encodeGameSetupSeed({ seedCode: seedDraft });
+      const seedCode = normalizeGameSetupSeed(seedDraft);
       setDecodeError(null);
       return seedCode;
     } catch (error) {
