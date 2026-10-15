@@ -100,9 +100,10 @@
 - Consumes: a committed plan checkpoint, a passing ordinary player browser route, truthful matrix evidence, local canonical validation, and independent review of the exact candidate.
 - Produces: a reviewed PR to `develop` at `0.1.0-dev.200`, passing exact-head hosted CI, verified merge and develop-push gate, and paired worktree/branch cleanup.
 
-- [ ] Rerun the focused production browser route and complete fail-fast `py -3 tools/run.py ci --check` after the independent-review correction. The prior candidate passed formatter/style, build, Python 8, Domain 533 (one existing skip), API 1, Application 163, GameContent 159, Integration 332, Vitest 377 and Chromium 6; the corrected candidate still needs the full gate.
+- [x] Rerun the focused production browser route and complete fail-fast `py -3 tools/run.py ci --check` after the independent-review correction. The corrected candidate passed through the check-only hook: formatter/style, build, Python 8, Domain 534 (one existing skip), API 1, Application 163, GameContent 159, Integration 332, Vitest 377 and Chromium 6.
 - [x] Compare the implementation and evidence diff against the selected code-review and play-surface profiles, feature-matrix playbook, relevant ADRs and PR/review runbooks. The author check found no ADR decision change.
-- [ ] Use the normal check-only commit hook for every commit. Re-dispatch a fresh-context whole-branch reviewer on the corrected committed exact range, resolve any Critical and Important findings with witnessed behavior proof, and rerun required checks after corrections.
+- [x] Use the normal check-only commit hook for every commit; it passed on corrected head `c3da0aee`.
+- [ ] Re-dispatch a fresh-context whole-branch reviewer on the corrected committed exact range, resolve any Critical and Important findings with witnessed behavior proof, and rerun required checks after corrections.
 - [x] Push the dedicated branch and open Draft PR #385 targeting `develop`; verify base `develop`, head `3b00ee0d`, and version `0.1.0-dev.200`. The draft-only hosted job is skipped as configured.
 - [ ] After correction and independent review, mark PR #385 Ready; require exact-head hosted CI to pass before squash merge, then verify the develop-push gate on the exact merge commit.
 - [ ] Fast-forward the main checkout to the verified merge without disturbing the pre-existing user edit; use `finishing-a-development-branch` and the skill's remove-worktree check/apply script; remove only N-82's exact local and upstream refs, then verify the worktree and both refs are absent.
