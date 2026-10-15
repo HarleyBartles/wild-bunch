@@ -302,6 +302,7 @@ def test_ci_lint_failure_stops_before_behavioral_tests(monkeypatch, capfd) -> No
 
 def test_ci_builds_and_checks_identity_before_chromium(monkeypatch, capsys) -> None:
     visited: list[str] = []
+    identity_checks: list[Path] = []
     checks = []
 
     for name, check, repair, recheck in run.CI_CHECKS:
@@ -319,6 +320,7 @@ def test_ci_builds_and_checks_identity_before_chromium(monkeypatch, capsys) -> N
         if "test:browser" in command:
             raise subprocess.CalledProcessError(1, command)
 
+    monkeypatch.setattr(run, "check_version_identity", identity_checks.append)
     monkeypatch.setattr(run, "CI_CHECKS", tuple(checks))
     monkeypatch.setattr(run, "_run", fail_browser_command)
 
@@ -326,6 +328,7 @@ def test_ci_builds_and_checks_identity_before_chromium(monkeypatch, capsys) -> N
         run._ci_check(run.Ctx("check", False))
 
     assert visited == ["web-tests", "web-build", "build-identity", "web-browser-tests"]
+    assert identity_checks == [run.ROOT]
     assert "check 'web-browser-tests' failed" in capsys.readouterr().err
 
 
