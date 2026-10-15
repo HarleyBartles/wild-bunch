@@ -83,9 +83,9 @@ Start the deterministic route in the public UI and advance through real visible 
 
 After the scenario passes, temporarily prevent the real resolution handler from applying its result or suppress the relevant browser command path, one mutation at a time. Run only the new browser scenario and confirm it fails on the expected user-visible or persisted resolution assertion. Restore source byte-for-byte before final validation. Do not commit mutations or introduce a test-only production route.
 
-- [ ] **Step 4: Reconcile PG-007 evidence and run the canonical gate**
+- [x] **Step 4: Reconcile PG-007 evidence and run the canonical gate**
 
-Add dated PG-007 evidence for this one hostile encounter's browser resolution and page-reopen recovery, naming only the verified action and observed result. State that trip completion/arrival, other encounter outcomes, deployed behavior, and overall PG-007 remain unqualified. Run `npm run build` and `npm run test:browser` in `src/WildBunch.Web`. Commit through the normal check-only hook, which runs `py -3 tools/run.py ci --check` on the staged candidate; use that hook result as the canonical gate instead of duplicating the full gate immediately before commit. Keep disposable API, database, and browser artifacts outside the repository.
+Add dated PG-007 evidence for this one hostile encounter's browser resolution and page-reopen recovery, naming only the verified action and observed result. State that trip completion/arrival, other encounter outcomes, deployed behavior, and overall PG-007 remain unqualified. Run `npm run build` and `npm run test:browser` in `src/WildBunch.Web`. Commit through the normal check-only hook, which runs `py -3 tools/run.py ci --check` on the staged candidate; use that hook result as the canonical gate instead of duplicating the full gate immediately before commit. Keep disposable API, database, and browser artifacts outside the repository. **Completed:** build passed; all 9 browser tests passed; the full canonical commit hook passed including PostgreSQL-backed tests.
 
 ### Task 3: Review, publish, merge, and retire N-85
 
