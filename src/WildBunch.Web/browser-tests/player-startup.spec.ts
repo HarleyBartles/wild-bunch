@@ -700,6 +700,157 @@ test("a player can resolve a hostile trail encounter and restore its journal res
   }
 });
 
+test("a player can complete a trip and restore the acknowledged town after reopening", async ({
+  browser,
+}) => {
+  test.setTimeout(240_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const advancePosts: string[] = [];
+  const arrivalPosts: string[] = [];
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (request.method() !== "POST") return;
+      if (/\/api\/games\/[^/]+\/travel\/advance$/.test(request.url())) {
+        advancePosts.push(request.url());
+      }
+      if (/\/api\/games\/[^/]+\/travel\/arrival\/acknowledge$/.test(request.url())) {
+        arrivalPosts.push(request.url());
+      }
+    });
+  });
+  let page = await context.newPage();
+
+  try {
+    const trip = await startMultiDayJourney(page);
+    type CompletedJourney = {
+      originTownId: string;
+      destinationTownId: string;
+      destinationTownName: string;
+      status: number;
+      daysTravelled: number;
+    };
+    let completedJourney: CompletedJourney | null = null;
+    let completedSession: {
+      player: { currentTownId: string };
+      journey: CompletedJourney | null;
+    } | null = null;
+
+    for (let day = 0; day < trip.expectedDays + 2 && !completedJourney; day += 1) {
+      const advanceResponsePromise = page.waitForResponse(
+        (response) =>
+          response.url() === `${apiBaseUrl}/api/games/${trip.gameId}/travel/advance` &&
+          response.request().method() === "POST",
+      );
+      await page.getByRole("button", { name: "Advance travel day" }).click();
+      const advanceResponse = await advanceResponsePromise;
+      expect(advanceResponse.ok(), await advanceResponse.text()).toBe(true);
+      const advanced = (await advanceResponse.json()) as {
+        success: boolean;
+        message: string;
+        currentSession: {
+          player: { currentTownId: string };
+          journey: (CompletedJourney & { pendingEncounter: { kind: string } | null }) | null;
+        };
+      };
+      expect(advanced.success, advanced.message).toBe(true);
+      const journey = advanced.currentSession.journey;
+      expect(journey, JSON.stringify(advanced.currentSession)).not.toBeNull();
+      if (!journey) throw new Error("Expected the server to return the active journey.");
+      expect(journey.originTownId).toBe(trip.origin.id);
+      expect(journey.destinationTownId).toBe(trip.destination.id);
+      expect(journey.pendingEncounter).toBeNull();
+      expect(journey.status).not.toBe(JourneyStatus.Interrupted);
+      if (journey.status === JourneyStatus.Completed) {
+        completedJourney = journey;
+        completedSession = advanced.currentSession;
+      } else {
+        expect(journey.status).toBe(JourneyStatus.Active);
+      }
+    }
+
+    expect(
+      completedJourney,
+      "The deterministic route should reach its destination.",
+    ).not.toBeNull();
+    if (!completedJourney || !completedSession) {
+      throw new Error("The deterministic route did not complete within its expected travel days.");
+    }
+    expect(completedJourney.destinationTownName).toBe(trip.destination.name);
+    expect(completedSession.player.currentTownId).toBe(trip.destination.id);
+    expect(completedJourney.daysTravelled).toBe(advancePosts.length);
+
+    await page.close();
+    page = await context.newPage();
+    const completedResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const completedResponse = await completedResponsePromise;
+    expect(completedResponse.ok()).toBe(true);
+    const restoredArrival = (await completedResponse.json()) as {
+      player: { currentTownId: string };
+      journey: CompletedJourney | null;
+    };
+    expect(restoredArrival.journey).toMatchObject(completedJourney);
+    expect(restoredArrival.journey?.status).toBe(JourneyStatus.Completed);
+    expect(restoredArrival.player.currentTownId).toBe(trip.destination.id);
+    await expect(
+      page.getByRole("heading", { level: 1, name: `You've arrived in ${trip.destination.name}` }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Step into town" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sheriff Office" })).toHaveCount(0);
+    expect(arrivalPosts).toHaveLength(0);
+
+    const arrivalResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}/travel/arrival/acknowledge` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Step into town" }).click();
+    const arrivalResponse = await arrivalResponsePromise;
+    expect(arrivalResponse.ok(), await arrivalResponse.text()).toBe(true);
+    const acknowledged = (await arrivalResponse.json()) as {
+      success: boolean;
+      currentSession: { player: { currentTownId: string }; journey: CompletedJourney | null };
+    };
+    expect(acknowledged.success).toBe(true);
+    expect(acknowledged.currentSession.player.currentTownId).toBe(trip.destination.id);
+    expect(acknowledged.currentSession.journey).toBeNull();
+    expect(arrivalPosts).toEqual([
+      `${apiBaseUrl}/api/games/${trip.gameId}/travel/arrival/acknowledge`,
+    ]);
+    await expect(
+      page.getByRole("heading", { level: 1, name: trip.destination.name }),
+    ).toBeVisible();
+
+    await page.close();
+    page = await context.newPage();
+    const arrivedResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const arrivedResponse = await arrivedResponsePromise;
+    expect(arrivedResponse.ok()).toBe(true);
+    const arrived = (await arrivedResponse.json()) as {
+      player: { currentTownId: string };
+      journey: CompletedJourney | null;
+    };
+    expect(arrived.player.currentTownId).toBe(trip.destination.id);
+    expect(arrived.journey).toBeNull();
+    await expect(
+      page.getByRole("heading", { level: 1, name: trip.destination.name }),
+    ).toBeVisible();
+    expect(advancePosts).toHaveLength(completedJourney.daysTravelled);
+    expect(arrivalPosts).toHaveLength(1);
+  } finally {
+    await context.close();
+  }
+});
+
 test("a player can start, restore a public poster, and take in the named person through the saloon", async ({
   browser,
 }) => {
