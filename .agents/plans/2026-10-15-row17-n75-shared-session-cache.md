@@ -40,25 +40,26 @@
 - [x] Record N-74 PR #377, reviewed source `1ee6e5d6a9e5a12c49e63bf9c253943d20de3503`, squash merge `46b577b6ea3875f714bddc901efc4db0fe10aeef`, fresh review approval, exact-head hosted gate `38698402348`, develop-push gate `38699028842`, and verified primary/worktree/branch cleanup in the roadmap.
 - [x] Point row 17 to this active N-75 plan at `0.1.0-dev.193`; retain prior deliveries and append the dated N-74 delivery note.
 - [x] Delete the completed N-74 plan in this substantive successor commit and set `Directory.Build.props` to `0.1.0-dev.193`.
-- [ ] Run the staged-candidate check-only hook and commit the plan, successor retirement, roadmap, and version before implementation.
+- [x] Run the staged-candidate check-only hook and commit the plan, successor retirement, roadmap, and version before implementation.
 
 ### Task 2: Add a mutation-proven shell/trail coherence scenario
 
 **Files:** `src/WildBunch.Web/src/tests/AppShell.test.tsx`.
 
-- [ ] Run the focused `AppShell.test.tsx` baseline and inspect the current on-trail shell, travel mutation result, and session resource refresh behavior.
-- [ ] Add a real `AppShell` scenario that hydrates an active journey, clicks “Advance travel day,” receives a session with visibly changed clock and remaining distance, and keeps the subsequent `getGame` refresh deferred.
-- [ ] While that refresh is pending, assert the HUD shows the changed day and the trail summary shows the changed remaining distance; then resolve the refresh with the same authoritative session and assert the mounted route remains coherent.
-- [ ] Run the scenario red by temporarily removing the mutation result's session-cache update from `useTravelPanelState`; confirm at least one visible assertion fails before the deferred refresh is released. Restore production code exactly and rerun the test green.
-- [ ] Avoid sleeps and count-based assertions. Ensure the deferred promise is always resolved in test cleanup to prevent a stranded query.
+- [x] Run the focused `AppShell.test.tsx` baseline and inspect the current on-trail shell, travel mutation result, and session resource refresh behavior.
+- [x] Add a real `AppShell` scenario that hydrates an active journey, clicks “Advance travel day,” receives a session with visibly changed clock and remaining distance, and keeps the subsequent `getGame` refresh deferred.
+- [x] While that refresh is pending, assert the HUD shows the changed day and the trail summary shows the changed remaining distance; then resolve the refresh with the same authoritative session and assert the mounted route remains coherent.
+- [x] Run the scenario red by temporarily removing the mutation result's session-cache update from `useTravelPanelState`; confirm at least one visible assertion fails before the deferred refresh is released. Restore production code exactly and rerun the test green.
+- [x] Avoid sleeps and count-based assertions. Ensure the deferred promise is always resolved in test cleanup to prevent a stranded query.
 
 ### Task 3: Reconcile the finding inventory and decision boundaries
 
-**Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`.
+**Files:** `src/WildBunch.Web/src/tests/AppShell.test.tsx`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `docs/features.md`.
 
-- [ ] Add a dated N-75 disposition that the shared shell/trail reader coherence gap is now behavior-tested across the real mounted shell and travel panel, with the command-result state visible before the session refetch completes.
-- [ ] Explicitly limit the evidence to the same tab and QueryClient; do not claim cross-tab synchronization, SignalR, or deployed behavior.
-- [ ] Read the relevant ADRs and PG-003 matrix entry against the actual change. Keep those documents unchanged if no architectural decision, product promise, dependency, release disposition, or evidence assessment changes; record that comparison in the PR body.
+- [x] Add a dated N-75 disposition that the shared shell/trail reader coherence gap is now behavior-tested across the real mounted shell and travel panel, with the command-result state visible before the session refetch completes.
+- [x] Explicitly limit the evidence to the same tab and QueryClient; do not claim cross-tab synchronization, SignalR, or deployed behavior.
+- [x] Reconcile WB-02 as a dated historical finding plus current shared-query implementation and N-75 evidence. Update the PG-007 evidence sentence with this bounded same-tab proof and its limits.
+- [x] Read the relevant ADRs and PG-007 matrix entry against the actual change. Keep ADRs unchanged if no architectural decision changes; record the comparisons in the PR body.
 
 ### Task 4: Validate, review, publish, and close out N-75
 

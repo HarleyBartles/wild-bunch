@@ -21,6 +21,7 @@ import {
   getJournal,
   getTownStoreOffers,
   buyStoreItem,
+  advanceTravelDay,
   setupGame,
   gatherLocalGossip,
   confrontSaloonPersonOfInterest,
@@ -69,6 +70,7 @@ const mockedReadWantedPosters = vi.mocked(readWantedPosters);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 const mockedAcknowledgeTravelArrival = vi.mocked(acknowledgeTravelArrival);
+const mockedAdvanceTravelDay = vi.mocked(advanceTravelDay);
 const mockedGetSessionAudit = vi.mocked(getSessionAudit);
 
 afterEach(() => {
@@ -384,6 +386,59 @@ describe("AppShell", () => {
     const hud = await screen.findByRole("banner", { name: /game status/i });
     expect(within(hud).getByText("Ruth")).toBeInTheDocument();
     expect(within(hud).getByText("Day 5, Morning")).toBeInTheDocument();
+  });
+
+  it("shows a travel mutation in both the HUD and trail summary while the session refresh is pending", async () => {
+    const initialSession = createOnTrailSession();
+    const updatedSession = createOnTrailSession();
+    updatedSession.clock.day = 6;
+    updatedSession.journey!.remainingRideDayDistance = 0.75;
+
+    let resolveSessionRefresh!: (session: GameSessionDto) => void;
+    const sessionRefresh = new Promise<GameSessionDto>((resolve) => {
+      resolveSessionRefresh = resolve;
+    });
+    let signalSessionRefreshStarted!: () => void;
+    const sessionRefreshStarted = new Promise<void>((resolve) => {
+      signalSessionRefreshStarted = resolve;
+    });
+
+    mockedGetGame.mockResolvedValue(initialSession);
+    mockedGetAvailableActions.mockResolvedValue([]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedAdvanceTravelDay.mockResolvedValue({
+      success: true,
+      message: "The road carries on.",
+      currentSession: updatedSession,
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+    });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/trail");
+
+    renderShell();
+    const user = userEvent.setup();
+
+    try {
+      const hud = await screen.findByRole("banner", { name: /game status/i });
+      expect(within(hud).getByText("Day 5, Morning")).toBeInTheDocument();
+      expect(await screen.findByText("Trail ledger")).toBeInTheDocument();
+      mockedGetGame.mockImplementationOnce(() => {
+        signalSessionRefreshStarted();
+        return sessionRefresh;
+      });
+
+      await user.click(await screen.findByRole("button", { name: /advance travel day/i }));
+      await sessionRefreshStarted;
+
+      expect(await within(hud).findByText("Day 6, Morning")).toBeInTheDocument();
+      expect(screen.getByText("0.75")).toBeInTheDocument();
+    } finally {
+      resolveSessionRefresh(updatedSession);
+    }
+
+    expect(await screen.findByText("0.75")).toBeInTheDocument();
   });
 
   it("keeps developer controls out of the public player shell", async () => {
