@@ -70,6 +70,7 @@ export default defineConfig({
   ],
   test: {
     environment: "jsdom",
+    exclude: ["browser-tests/**", "node_modules/**", "dist/**"],
     setupFiles: ["./src/tests/test-utils/setup.ts"],
     css: true,
     globals: false,

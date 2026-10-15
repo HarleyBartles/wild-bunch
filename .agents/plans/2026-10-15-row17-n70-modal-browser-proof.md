@@ -36,23 +36,24 @@
 
 **Files:** `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`, `.agents/plans/2026-10-15-row17-n69-overlay-behavior.md`, `Directory.Build.props`.
 
-- [ ] Verify PR #372 merged to `develop` from reviewed source `b01f7b43fc3599f9eafbdbae20fd9dfb33d9a6b7` as `cacdca1bc8776e2a4e291768569b154a268cfe4f`, and confirm exact-head gate `38671884485` plus develop-push gate `38672399394` passed.
-- [ ] Update row 17 to name N-70 as active at `0.1.0-dev.188`; append dated N-69 delivery evidence with PR, source SHA, merge SHA, review result, both hosted gate runs, primary fast-forward, and paired worktree/local/upstream branch cleanup.
-- [ ] Retire `.agents/plans/2026-10-15-row17-n69-overlay-behavior.md` in the successor commit while retaining the row-17 roadmap and web-test inventory.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.188` for the application version advancement, then verify the first substantive commit contains only the promotion, retirement, roadmap, and version files.
+- [x] Verify PR #372 merged to `develop` from reviewed source `b01f7b43fc3599f9eafbdbae20fd9dfb33d9a6b7` as `cacdca1bc8776e2a4e291768569b154a268cfe4f`, and confirm exact-head gate `38671884485` plus develop-push gate `38672399394` passed.
+- [x] Update row 17 to name N-70 as active at `0.1.0-dev.188`; append dated N-69 delivery evidence with PR, source SHA, merge SHA, review result, both hosted gate runs, primary fast-forward, and paired worktree/local/upstream branch cleanup.
+- [x] Retire `.agents/plans/2026-10-15-row17-n69-overlay-behavior.md` in the successor commit while retaining the row-17 roadmap and web-test inventory.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.188` for the application version advancement, then verify the first substantive commit contains only the promotion, retirement, roadmap, and version files.
 
 ### Task 2: Add the Chromium modal composition behavior proof
 
-**Files:** `src/WildBunch.Web/package.json`, `src/WildBunch.Web/package-lock.json`, `src/WildBunch.Web/tsconfig.json`, `src/WildBunch.Web/playwright.config.ts`, `src/WildBunch.Web/browser-tests/modal-stack.html`, `src/WildBunch.Web/browser-tests/modal-stack.tsx`, `src/WildBunch.Web/browser-tests/modal-stack.spec.ts`, `docs/decisions/ADR-0017-use-xunit-vitest-testing-library-and-explicit-postgresql-validation-lanes.md`, `docs/decisions/ADR-0047-add-playwright-for-native-browser-contracts.md`, `docs/decisions/README.md`.
+**Files:** `src/WildBunch.Web/package.json`, `src/WildBunch.Web/package-lock.json`, `src/WildBunch.Web/tsconfig.json`, `src/WildBunch.Web/vite.config.ts`, `src/WildBunch.Web/playwright.config.ts`, `src/WildBunch.Web/browser-tests/modal-stack.html`, `src/WildBunch.Web/browser-tests/modal-stack.tsx`, `src/WildBunch.Web/browser-tests/modal-stack.spec.ts`, `docs/decisions/ADR-0017-use-xunit-vitest-testing-library-and-explicit-postgresql-validation-lanes.md`, `docs/decisions/ADR-0047-add-playwright-for-native-browser-contracts.md`, `docs/decisions/README.md`.
 
-- [ ] Add exact dev dependency `@playwright/test` version `1.64.1`, an npm script named `test:browser`, a Chromium-only Playwright config with one worker in CI and a Vite `webServer` on strict port `4173`, and TypeScript coverage for the config and browser tests.
-- [ ] Create ADR-0047 defining Chromium/Playwright as the automated lane for native modal focus and rendered-geometry behavior, then partially supersede ADR-0017 while retaining Vitest/Testing Library for component and route behavior; keep ADR-0022's separate manual evidence lane unchanged.
-- [ ] Create a test-only Vite page that imports the production global stylesheet and mounts `GlobalOverlays` inside `GameSessionContext.Provider`; expose one external Game Settings trigger and use a deterministic context value with no API or PostgreSQL dependency.
-- [ ] Add a Playwright scenario using `getByRole` locators that opens Settings and Start Over, proves initial focus enters each dialog, proves programmatic focus cannot escape the top modal, proves Tab and Shift+Tab remain in the confirmation, and proves Escape closes only the top dialog before restoring focus through both levels.
-- [ ] Add a narrow-viewport scenario at 320 by 600 pixels that opens the confirmation, checks the heading and both named actions have browser-measured rectangles fully inside the viewport, and verifies the document has no horizontal overflow.
-- [ ] Run `npm run test:browser -- --list` to verify discovery, then `npm run test:browser` and inspect the browser output; do not replace real browser observations with JSDOM or CSS string assertions.
-- [ ] Prove the test oracle with two temporary production mutations, restoring each source file byte-for-byte after its RED result: replace `showModal()` with non-modal `open`-attribute behavior and verify background-focus containment fails; remove the explicit confirmation focus assignment and verify initial-focus behavior fails.
-- [ ] If a current behavior assertion fails before mutation, use that witnessed failure as the RED case, repair only the owned dialog behavior, and rerun the focused browser test before continuing.
+- [x] Add exact dev dependency `@playwright/test` version `1.64.1`, an npm script named `test:browser`, a Chromium-only Playwright config with one worker in CI and a Vite `webServer` on strict port `4173`, and TypeScript coverage for the config and browser tests.
+- [x] Keep Vitest's existing broad test discovery from loading the Playwright spec by excluding the browser-only fixture directory.
+- [x] Create ADR-0047 defining Chromium/Playwright as the automated lane for native modal focus and rendered-geometry behavior, then partially supersede ADR-0017 while retaining Vitest/Testing Library for component and route behavior; keep ADR-0022's separate manual evidence lane unchanged.
+- [x] Create a test-only Vite page that imports the production global stylesheet and mounts `GlobalOverlays` inside `GameSessionContext.Provider`; expose one external Game Settings trigger and use a deterministic context value with no API or PostgreSQL dependency.
+- [x] Add a Playwright scenario using `getByRole` locators that opens Settings and Start Over, proves initial focus enters each dialog, proves programmatic focus cannot escape the top modal, proves Tab and Shift+Tab remain in the confirmation, and proves Escape closes only the top dialog before restoring focus through both levels.
+- [x] Add a narrow-viewport scenario at 320 by 600 pixels that opens the confirmation, checks the heading and both named actions have browser-measured rectangles fully inside the viewport, and verifies the document has no horizontal overflow.
+- [x] Run `npm run test:browser -- --list` to verify discovery, then `npm run test:browser` and inspect the browser output; do not replace real browser observations with JSDOM or CSS string assertions.
+- [x] Prove the test oracle with two temporary production mutations, restoring each source file byte-for-byte after its RED result: replace `showModal()` with non-modal `open`-attribute behavior and verify background-focus containment fails; remove the explicit confirmation focus assignment and verify initial-focus behavior fails.
+- [x] If a current behavior assertion fails before mutation, use that witnessed failure as the RED case, repair only the owned dialog behavior, and rerun the focused browser test before continuing.
 
 ### Task 3: Put the browser lane in the canonical command bus and hosted gate
 
