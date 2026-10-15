@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from tools.versioning import VersionIdentityError, check_version_identity, read_authored_version
+from tools.versioning import (
+    VersionIdentityError,
+    check_generated_version,
+    check_version_identity,
+    read_authored_version,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -147,3 +152,20 @@ def test_version_identity_rejects_missing_malformed_or_stale_build_identity(
 
     with pytest.raises(VersionIdentityError, match="version.json"):
         check_version_identity(tmp_path)
+
+
+def test_generated_version_accepts_identity_at_explicit_build_output(tmp_path):
+    output = tmp_path / "staging" / "playtest" / "version.json"
+    output.parent.mkdir(parents=True)
+    output.write_text('{"version":"0.1.0-dev.197"}', encoding="utf-8")
+
+    check_generated_version(output, "0.1.0-dev.197")
+
+
+def test_generated_version_rejects_stale_identity_at_explicit_build_output(tmp_path):
+    output = tmp_path / "staging" / "playtest" / "version.json"
+    output.parent.mkdir(parents=True)
+    output.write_text('{"version":"0.1.0-dev.196"}', encoding="utf-8")
+
+    with pytest.raises(VersionIdentityError, match="0.1.0-dev.196.*0.1.0-dev.197"):
+        check_generated_version(output, "0.1.0-dev.197")

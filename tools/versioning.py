@@ -81,7 +81,19 @@ def _object(value: object, path: Path) -> dict[str, object]:
     return value
 
 
-def check_version_identity(root: Path) -> None:
+def check_generated_version(path: Path, expected_version: str) -> None:
+    """Require one generated frontend output to carry the authored version."""
+    artifact = _object(_read_json(path), path)
+    generated_version = artifact.get("version")
+    if not isinstance(generated_version, str):
+        raise VersionIdentityError(f'{path}: expected a string "version" property')
+    if generated_version != expected_version:
+        raise VersionIdentityError(
+            f"{path}: contains {generated_version!r}, expected {expected_version!r}"
+        )
+
+
+def check_version_identity(root: Path, generated_artifact_path: Path | None = None) -> None:
     """Require npm metadata to defer to MSBuild and the build artifact to match it."""
     authored_version = read_authored_version(root / "Directory.Build.props")
     web = root / "src" / "WildBunch.Web"
@@ -113,13 +125,6 @@ def check_version_identity(root: Path) -> None:
             "the sole application version"
         )
 
-    artifact_path = web / "dist" / "version.json"
-    artifact = _object(_read_json(artifact_path), artifact_path)
-    generated_version = artifact.get("version")
-    if not isinstance(generated_version, str):
-        raise VersionIdentityError(f'{artifact_path}: expected a string "version" property')
-    if generated_version != authored_version:
-        raise VersionIdentityError(
-            f"{artifact_path}: contains {generated_version!r}, expected {authored_version!r}; "
-            "rebuild with npm --prefix src/WildBunch.Web run build"
-        )
+    check_generated_version(
+        generated_artifact_path or web / "dist" / "version.json", authored_version
+    )

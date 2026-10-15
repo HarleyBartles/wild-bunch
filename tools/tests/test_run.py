@@ -335,6 +335,127 @@ def _git_repo(root: Path) -> None:
     _git(root, "commit", "-m", "baseline")
 
 
+def _release_repo(root: Path) -> str:
+    _git_repo(root)
+    (root / ".gitignore").write_text("artifacts/release/\n", encoding="utf-8")
+    (root / "Directory.Build.props").write_text(
+        "<Project><PropertyGroup><Version>0.1.0-dev.197</Version></PropertyGroup></Project>",
+        encoding="utf-8",
+    )
+    web = root / "src" / "WildBunch.Web"
+    web.mkdir(parents=True)
+    (web / "package.json").write_text('{"name":"web"}', encoding="utf-8")
+    (web / "package-lock.json").write_text('{"packages":{"":{"name":"web"}}}', encoding="utf-8")
+    (root / "src" / "WildBunch.Api").mkdir(parents=True)
+    (root / "src" / "WildBunch.Api" / "WildBunch.Api.csproj").write_text(
+        "<Project />", encoding="utf-8"
+    )
+    _git(root, "add", ".")
+    _git(root, "commit", "-m", "release source")
+    return _git(root, "rev-parse", "HEAD")
+
+
+def _fake_release_build(command: list[str], _ctx) -> None:
+    if command[0] != "dotnet" and "ci" in command:
+        return
+    if command[0] == "dotnet":
+        output = Path(command[command.index("-o") + 1])
+    else:
+        output = Path(command[command.index("--outDir") + 1])
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "artifact.txt").write_text("built bytes\n", encoding="utf-8")
+    if command[0] != "dotnet":
+        (output / "version.json").write_text('{"version":"0.1.0-dev.197"}', encoding="utf-8")
+
+
+def test_release_verify_builds_and_rechecks_immutable_source_bundle(tmp_path, monkeypatch):
+    source_commit = _release_repo(tmp_path)
+    commands: list[list[str]] = []
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "WEB_DIR", tmp_path / "src" / "WildBunch.Web")
+
+    def fake_build(command, ctx):
+        commands.append(command)
+        _fake_release_build(command, ctx)
+
+    monkeypatch.setattr(run, "_run", fake_build)
+
+    assert run.main(["release-verify", "--check"]) == 0
+    bundle = tmp_path / "artifacts" / "release" / source_commit
+    manifest = __import__("json").loads((bundle / "release-manifest.json").read_text())
+    assert manifest["sourceCommit"] == source_commit
+    assert manifest["version"] == "0.1.0-dev.197"
+    assert set(manifest["artifacts"]) == {"api", "web-public", "web-playtest"}
+    assert len(commands) == 4
+    assert commands[0][-1] == "ci"
+    assert commands[1][0] == "dotnet" and commands[1][1] == "publish"
+    assert "run" in commands[2] and "build" in commands[2]
+    assert "run" in commands[3] and "build:playtest" in commands[3]
+
+    assert run.main(["release-verify", "--check"]) == 0
+    assert len(commands) == 4
+
+
+def test_release_verify_stops_before_staging_when_locked_install_fails(tmp_path, monkeypatch):
+    _release_repo(tmp_path)
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "WEB_DIR", tmp_path / "src" / "WildBunch.Web")
+    calls: list[list[str]] = []
+
+    def fail_install(command, _ctx):
+        calls.append(command)
+        raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(run, "_run", fail_install)
+
+    assert run.main(["release-verify", "--check"]) == 1
+    assert len(calls) == 1 and calls[0][-1] == "ci"
+    assert not (tmp_path / "artifacts" / "release").exists()
+
+
+def test_release_verify_rejects_dirty_source_before_any_build(tmp_path, monkeypatch):
+    _release_repo(tmp_path)
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "WEB_DIR", tmp_path / "src" / "WildBunch.Web")
+    commands: list[list[str]] = []
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: commands.append(command))
+    (tmp_path / "untracked.txt").write_text("dirty\n", encoding="utf-8")
+
+    assert run.main(["release-verify", "--check"]) != 0
+    assert commands == []
+
+
+@pytest.mark.parametrize(
+    "arguments", [["release-verify", "--apply"], ["release-verify", "--check", "--unknown"]]
+)
+def test_release_verify_rejects_unsupported_modes_before_build(tmp_path, monkeypatch, arguments):
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    calls: list[list[str]] = []
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: calls.append(command))
+
+    with pytest.raises(SystemExit):
+        run.main(arguments)
+
+    assert calls == []
+
+
+def test_release_verify_rejects_tampered_bundle_without_rebuilding(tmp_path, monkeypatch):
+    source_commit = _release_repo(tmp_path)
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "WEB_DIR", tmp_path / "src" / "WildBunch.Web")
+    monkeypatch.setattr(run, "_run", _fake_release_build)
+    assert run.main(["release-verify", "--check"]) == 0
+    bundle = tmp_path / "artifacts" / "release" / source_commit
+    (bundle / "api" / "artifact.txt").write_text("tampered\n", encoding="utf-8")
+    original = (bundle / "api" / "artifact.txt").read_text(encoding="utf-8")
+    calls: list[list[str]] = []
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: calls.append(command))
+
+    assert run.main(["release-verify", "--check"]) != 0
+    assert calls == []
+    assert (bundle / "api" / "artifact.txt").read_text(encoding="utf-8") == original
+
+
 def _assert_diff_check(root: Path, monkeypatch, *, hosted: bool, fails: bool) -> None:
     monkeypatch.setattr(run, "ROOT", root)
     if hosted:

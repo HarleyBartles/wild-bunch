@@ -17,6 +17,16 @@ changed, consult ADR-0048 and decide whether a successor decision is needed.
 
 ## Release procedure
 
+For a local source-bound bundle, first require the canonical CI gate to pass on
+the exact clean source commit, then run `py -3 tools/run.py release-verify
+--check`. The command builds the API publish output and both public and
+playtest web variants under the ignored `artifacts/release/<full-source-commit>`
+directory. Its manifest records `Directory.Build.props` version, full source
+commit, and per-tree file counts and SHA-256 digests. Re-running verifies the
+existing immutable bytes and does not rebuild or overwrite them. This is local
+artifact identity evidence only; it is not hosted publication, candidate
+qualification, or deployment proof.
+
 1. Start ordinary feature branches from current `develop` and return them by
    PR to `develop`. Reconcile the proposed development checkpoint against the
    latest integration head before merge; one merged PR establishes one unique
