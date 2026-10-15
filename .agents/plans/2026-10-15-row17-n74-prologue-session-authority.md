@@ -94,8 +94,8 @@
 **Files:** The N-74 implementation diff and its prepared review package.
 
 - [x] Run the focused PostgreSQL integration test after the mutation is restored; run relevant prologue application and web behavior suites only if source/test changes make them applicable.
-- [ ] Run `py -3 tools/run.py ci --check` on the intended committed tree; use the check-only pre-commit hook for commits and never bypass it.
-- [ ] Inspect the committed diff, confirm only planned files changed, check references to the stale WB-06 wording, and compare the actual diff with ADR-0021, ADR-0039, ADR-0040 and PG-001.
+- [x] Run `py -3 tools/run.py ci --check` on the intended committed tree; use the check-only pre-commit hook for commits and never bypass it.
+- [x] Inspect the committed diff, confirm only planned files changed, check references to the stale WB-06 wording, and compare the actual diff with ADR-0021, ADR-0039, ADR-0040 and PG-001.
 - [ ] Prepare and dispatch a fresh-context whole-branch reviewer with exact base/head and diff; require independent ADR and feature-matrix comparison, resolve Critical/Important findings with a new review, and record deferred Minor findings in the handoff.
 - [ ] Publish a Draft PR to `develop` with the behavior contract, author ADR/feature comparisons, exact local evidence, and reviewer outcome; mark ready after review and local gates are resolved, then wait for exact-head hosted CI to pass before merging.
 - [ ] Verify the develop-push gate on the squash merge, fast-forward the primary checkout without disturbing its existing investigation edit, and use `remove_worktree.py --check` then `--apply` for this merged worktree before deleting and verifying the exact local/upstream branch refs.
