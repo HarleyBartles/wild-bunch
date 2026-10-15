@@ -42,11 +42,11 @@ N-64 and related PG-002 behavior tests already cover retry and response-reconcil
 
 **Produces:** One deterministic browser scenario that observes a cancelled archive as a no-op, then confirms Start Over, verifies the returned and freshly read server session is archived, closes and reopens the browser to the setup surface, and proves no duplicate archive or replacement setup was sent.
 
-- [ ] **Step 1: Add the browser scenario first**
+- [x] **Step 1: Add the browser scenario first**
 
 Add a Playwright test to `player-startup.spec.ts` that starts a named game through the public setup, acknowledges the prologue, selects an API-returned town, and waits for the real town surface. Track `POST /api/games/setup` and `POST /api/games/{id}/archive` requests. Open `Game Settings`, choose `Start Over`, then choose `Keep riding`; assert the dialog closes, the settings/town remain usable, the archive POST count is zero, and a server GET still reports the playthrough `Active`. Reopen the confirmation, choose `Archive and start over`, and assert exactly one archive POST returns `Archived`. Close the page and reopen the public app in the same browser context; assert the player sees the setup form, a direct read of the original game still reports `Archived`, and neither another archive POST nor a new setup POST occurred. Keep all API operations on the real public endpoints and all writes in the isolated disposable database.
 
-- [ ] **Step 2: Run the focused browser test and inspect the first result**
+- [x] **Step 2: Run the focused browser test and inspect the first result**
 
 Run: `npm --prefix src/WildBunch.Web run build`
 
@@ -54,11 +54,11 @@ Run: `npm --prefix src/WildBunch.Web run test:browser -- --grep "confirmed Start
 
 Expected: the new test reaches the player confirmation through the built public app, verifies cancellation as a no-op, then verifies one durable archive and setup-page restoration after reopening. If the browser test cannot start the isolated PostgreSQL-backed API, report that prerequisite failure and repair only the named environment prerequisite.
 
-- [ ] **Step 3: Prove the browser test detects a broken archive path**
+- [x] **Step 3: Prove the browser test detects a broken archive path**
 
 Temporarily change the archive mutation so it returns success without calling `archiveGame`, run only the new browser scenario, and confirm it fails because the real persisted game remains active or the expected archive request is absent. Restore the mutation byte-for-byte, rerun the focused test, and confirm it passes. Do not commit the deliberate mutation.
 
-- [ ] **Step 4: Reconcile feature and successor artifacts, then validate**
+- [x] **Step 4: Reconcile feature and successor artifacts, then validate**
 
 Update PG-002 dated evidence to state only the observed local production-browser behavior, persisted archive status after a fresh server read, and no-duplicate/no-replacement result; retain explicit limits for accounts, archived-game restoration, deployed behavior and complete player lifecycle. In the row-18 roadmap, record N-86's merged PR and exact hosted gates, point the active plan to N-87, and delete the completed N-86 plan in this first substantive implementation commit. Change the sole authored application version in `Directory.Build.props` to `0.1.0-dev.205`. Run `npm --prefix src/WildBunch.Web run build` and the full `npm --prefix src/WildBunch.Web run test:browser`; start PostgreSQL with `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure` before the browser lane. Stage the intended tree and commit through the normal check-only hook; its `py -3 tools/run.py ci --check` result is the canonical local gate. Do not rerun the full canonical gate immediately before or after a successful hooked commit.
 
@@ -89,3 +89,5 @@ Fast-forward the primary checkout to the verified merge while preserving `.agent
 ## Execution rulings
 
 Record only consequential browser or behavior findings discovered during execution. Keep test output, screenshots and command receipts in branch-scoped off-repository scratch; retain durable product truth in `docs/features.md` and delivery facts in the roadmap.
+
+- **Ruling, 2026-10-15:** The failure witness intercepted the real archive request and returned HTTP 200 with `Active` without committing an archive. The new browser test failed at the persisted-state result assertion; restoring the route made the focused test pass. This confirms the test checks durable archive outcome rather than only click or request occurrence.
