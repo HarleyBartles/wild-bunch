@@ -38,15 +38,15 @@ Use the approved autonomous roadmap mode with this JIT plan executed inline, `ex
 
 **Produces:** the verified Standard/Boring route and the observable server/UI states needed to test completion followed by arrival acknowledgement.
 
-- [ ] **Step 1: Confirm the real route and completion contract**
+- [x] **Step 1: Confirm the real route and completion contract**
 
 Inspect the current helper and public route. Use the longest connected trail selected from the real returned map, confirm its public preview is multi-day, start it through the visible controls, and advance using only legal visible actions until the server returns `JourneyStatus.Completed`. The test must fail if the fixture unexpectedly interrupts, lacks a route, or cannot complete within the route's expected days plus a small documented margin. Record the actual completion response fields relevant to origin, destination, status, days travelled, and player current town.
 
-- [ ] **Step 2: Implement browser restoration and arrival acknowledgement proof**
+- [x] **Step 2: Implement browser restoration and arrival acknowledgement proof**
 
 Add a browser scenario that closes and reopens after completion but before acknowledgement; assert the real session GET restores the same completed journey and destination, the player's current town is already the destination, the completed-arrival narrative is visible, and `Step into town` is the legal action while ordinary town actions remain unavailable. Click it once and assert the real arrival acknowledgement POST succeeds, the returned session archives and clears the active journey, and the destination town surface becomes available. Reopen once more; assert the destination and archived arrival state are restored from the server and the command was not posted again. Observe endpoint POSTs to prove the advance count matches the actual completed route and arrival acknowledgement occurs exactly once.
 
-- [ ] **Step 3: Prove the new browser scenario detects a broken arrival path**
+- [x] **Step 3: Prove the new browser scenario detects a broken arrival path**
 
 After the scenario passes, temporarily break the arrival acknowledgement handler so it rejects or fails to apply the arrival result. Run only the new browser scenario and confirm it fails at the expected persisted destination or restored player-state assertion. Restore production code byte-for-byte, rerun the focused browser scenario, and do not commit the mutation.
 
@@ -83,3 +83,5 @@ Fast-forward the primary checkout to the verified `develop` merge without distur
 Record only consequential fixture or behavior findings from implementation here; promote durable truth to the feature matrix or ADR when appropriate. Keep test-run receipts in Git history and the off-repository execution ledger rather than duplicating them in tracked docs.
 
 - **Ruling, 2026-10-15:** Source and `TravelEventApplyTests` confirm `JourneyCompleted` already moves `Player.CurrentTownId` to the destination and applies arrival side effects. `JourneyArrivalAcknowledged` archives and clears the completed active journey; it does not move the player. N-86 must assert this event-owned transition accurately and prove that the arrival screen gates access to the town surface until acknowledgement.
+- **Ruling, 2026-10-15:** The fixed canonical seed, Standard difficulty and Boring entropy complete the longest connected public route without an encounter. The browser test verifies the preview is multi-day, advances only through visible legal actions, and observes a completed journey within `expectedDays + 2` actions.
+- **Ruling, 2026-10-15:** Replacing the arrival handler result with a lawful rejection made the new browser scenario fail at `acknowledged.success`; restoring the handler byte-for-byte made the focused scenario pass again. The mutation was not committed.
