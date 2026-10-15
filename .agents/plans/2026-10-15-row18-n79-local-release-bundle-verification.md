@@ -78,7 +78,7 @@
 - [x] Register `release-verify` in `tools/run.py` and `tools/README.md`; its `--help` must state purpose, prerequisites, ignored output path, immutability behavior and that it does not publish. The target accepts only `--check`; unknown arguments or `--apply` fail before any build command runs.
 - [x] Update the tracked-hook miniature-repository fixture to copy the new command-bus sibling module, preserving the fixture's real check that the staged-candidate hook reaches formatting behavior.
 - [x] Update the release runbook to require canonical CI on the exact clean source before running `release-verify --check`, explain how the manifest binds the API/public/playtest artifacts, and state that local bundle evidence is not hosted release or deployment proof. Update command-bus and SemVer certification plus PLAT-004's evidence assessment to describe the new local proof and retain the hosted-release and complete-candidate gaps.
-- [ ] Run `py -3 -m pytest tools/tests/test_release_artifacts.py tools/tests/test_versioning.py tools/tests/test_run.py -q` and inspect the behavior output. Run `py -3 tools/run.py release-verify --check` from the clean committed source; independently check its manifest's source SHA, authored version and all artifact digests. Run `py -3 tools/check_operating_standards.py --check`, `py -3 tools/check_agent_routers.py --check`, and `git diff --check`. Stage only the named source/docs/plan changes and commit through the normal hook.
+- [x] Run `py -3 -m pytest tools/tests/test_release_artifacts.py tools/tests/test_versioning.py tools/tests/test_run.py -q` and inspect the behavior output. Run `py -3 tools/run.py release-verify --check` from the clean committed source; independently check its manifest's source SHA, authored version and all artifact digests. Run `py -3 tools/check_operating_standards.py --check`, `py -3 tools/check_agent_routers.py --check`, and `git diff --check`. Stage only the named source/docs/plan changes and commit through the normal hook.
 
 ### Task 3: Review, publish and close N-79
 
@@ -89,7 +89,7 @@
 - Consumes: committed N-79 bundle-verification behavior, its exact local manifest, passing canonical hook, active roadmap and clean independent review.
 - Produces: an ordinary reviewed PR to `develop` at `0.1.0-dev.197`, passing exact-head hosted CI, merged output and paired worktree/branch cleanup.
 
-- [ ] Independently compare the final diff with ADR-0048 and the decision catalogue; record why no decision changes or include the required successor. Compare PLAT-004 with the exact local artifact proof and preserve its incomplete hosted-release/retained-route status.
+- [x] Independently compare the final diff with ADR-0048 and the decision catalogue; record why no decision changes or include the required successor. Compare PLAT-004 with the exact local artifact proof and preserve its incomplete hosted-release/retained-route status.
 - [ ] Dispatch a fresh-context whole-branch reviewer with the exact base/head package; resolve Critical or Important findings with a witnessed RED/GREEN proof and rerun the complete local gate after any correction.
 - [ ] Push the dedicated branch and create a Draft PR targeting `develop`. Read back the exact title/body/base/head, matrix/ADR author checks, Draft state and initial hosted status; mark ready only after local validation and independent review pass.
 - [ ] Wait for the hosted canonical commit gate on the exact PR head. Merge to `develop` only after it passes; then wait for the develop-push gate on the exact merge result.
