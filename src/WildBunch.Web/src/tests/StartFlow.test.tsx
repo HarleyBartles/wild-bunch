@@ -81,6 +81,7 @@ beforeAll(async () => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   window.localStorage.clear();
   phaserMockState.games.length = 0;
@@ -541,6 +542,31 @@ describe("StartFlow", () => {
       gameDifficulty: 0,
       gameEntropy: 1,
       seedCode: visitSeed.toLowerCase(),
+    });
+  });
+
+  it("submits the UUID selected by Randomize", async () => {
+    primeMocks();
+    const initialSeed = "11111111-1111-4111-8111-111111111111";
+    const randomizedSeed = "22222222-2222-4222-8222-222222222222";
+    vi.spyOn(globalThis.crypto, "randomUUID")
+      .mockReturnValueOnce(initialSeed)
+      .mockReturnValueOnce(randomizedSeed);
+    const user = userEvent.setup();
+    renderSurface();
+
+    const seedInput = await screen.findByLabelText(/world seed/i);
+    expect(seedInput).toHaveValue(initialSeed);
+    await user.click(screen.getByRole("button", { name: /randomize/i }));
+    expect(seedInput).toHaveValue(randomizedSeed);
+
+    await user.type(screen.getByLabelText(/your name/i), "Ranger Vale");
+    await user.click(screen.getByRole("button", { name: /ride on/i }));
+
+    await waitFor(() => expect(mockedSetupGame).toHaveBeenCalledTimes(1));
+    expect(mockedSetupGame.mock.calls[0][0]).toMatchObject({
+      playerName: "Ranger Vale",
+      seedCode: randomizedSeed,
     });
   });
 
