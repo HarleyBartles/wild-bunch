@@ -45,31 +45,31 @@
 
 ### Task 2: Add real-browser hover and restoration proof
 
-**Files:** `src/WildBunch.Web/browser-tests/town-hub-hover.html`, `src/WildBunch.Web/browser-tests/town-hub-hover.tsx`, `src/WildBunch.Web/browser-tests/town-hub-hover.spec.ts`, and `src/WildBunch.Web/src/components/town-hub/TownHubScene.ts` only if the real behavior is defective.
+**Files:** `src/WildBunch.Web/browser-tests/town-hub-hover.html`, `src/WildBunch.Web/browser-tests/town-hub-hover.ts`, `src/WildBunch.Web/browser-tests/town-hub-hover.spec.ts`, and `src/WildBunch.Web/src/components/town-hub/TownHubScene.ts` only if the real behavior is defective.
 
-- [ ] Run the existing focused `TownHubScene.test.ts` baseline and inspect the production sprite asset dimensions and current browser test harness.
-- [ ] Add the smallest deterministic harness that instantiates the real `TownHubScene` in Phaser 3.90 with an available Store and a production non-square Store texture.
-- [ ] Serve the production asset through a test-local Playwright route; provide harmless local responses for unrelated scene textures so the browser test has no external service dependency.
-- [ ] In Chromium, wait for the actual Store texture and canvas to be ready, capture the baseline canvas, move over the Store sprite and prove the rendered canvas changes, then move away and prove the rendered canvas returns to the exact baseline.
-- [ ] Ensure missing texture or rectangle fallback cannot pass the sprite-specific scenario. Do not add fixed sleeps or committed golden images.
-- [ ] Temporarily restore the old absolute sprite hover scales (`1.05` and `1`) and require the browser test to fail because the post-hover canvas differs from baseline; restore production source and rerun the focused browser scenario green.
-- [ ] Inspect the resulting screenshots locally to verify the test is observing the intended Store sprite and not unrelated scene movement. Retain only the behavior assertions, not screenshot receipts.
+- [x] Run the existing focused `TownHubScene.test.ts` baseline and inspect the production sprite asset dimensions and current browser test harness.
+- [x] Add the smallest deterministic harness that instantiates the real `TownHubScene` in Phaser 3.90 with an available Store and a production non-square Store texture.
+- [x] Serve the production asset through a test-local Playwright route; provide harmless local responses for unrelated scene textures so the browser test has no external service dependency.
+- [x] In Chromium, wait for the actual Store texture and canvas to be ready, capture the baseline canvas, move over the Store sprite and prove the rendered canvas changes, then move away and prove the rendered canvas returns to the exact baseline.
+- [x] Ensure missing texture or rectangle fallback cannot pass the sprite-specific scenario. Do not add fixed sleeps or committed golden images.
+- [x] Temporarily restore the old absolute sprite hover scales (`1.05` and `1`) and require the browser test to fail because the post-hover canvas differs from baseline; restore production source and rerun the focused browser scenario green.
+- [x] Inspect the resulting screenshots locally to verify the test is observing the intended Store sprite and not unrelated scene movement. Retain only the behavior assertions, not screenshot receipts.
 
 ### Task 3: Reconcile the WB-15 investigation and test inventory
 
 **Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`.
 
-- [ ] Preserve WB-15's original dated observation as historical truth and add a dated N-76 disposition describing current fitted-scale restoration and the real browser evidence.
-- [ ] Correct the test follow-up so the current scene double is not described as wholly unable to detect hover scale behavior; distinguish callback-level unit coverage from real renderer/browser evidence.
-- [ ] Update the file disposition for `TownHubScene.ts` to state its current hover behavior and retained test owner, without carrying a stale active fix recommendation.
-- [ ] Keep the conclusion bounded to a production asset exercised by the local real Phaser browser harness; do not claim deployed or cross-browser proof.
-- [ ] Read ADR-0046 and PG-003 against the actual diff; leave them unchanged because this is evidence reconciliation with no product promise change.
+- [x] Preserve WB-15's original dated observation as historical truth and add a dated N-76 disposition describing current fitted-scale restoration and the real browser evidence.
+- [x] Correct the test follow-up so the current scene double is not described as wholly unable to detect hover scale behavior; distinguish callback-level unit coverage from real renderer/browser evidence.
+- [x] Update the file disposition for `TownHubScene.ts` to state its current hover behavior and retained test owner, without carrying a stale active fix recommendation.
+- [x] Keep the conclusion bounded to a production asset exercised by the local real Phaser browser harness; do not claim deployed or cross-browser proof.
+- [x] Read ADR-0046 and PG-003 against the actual diff; leave them unchanged because this is evidence reconciliation with no product promise change.
 
 ### Task 4: Validate, review, publish, and close out N-76
 
 **Files:** The N-76 committed diff and review package.
 
-- [ ] Run the focused Vitest suite and browser scenario, including the deliberate mutation proof; run `py -3 tools/run.py web --check` and then `py -3 tools/run.py ci --check` on the intended committed tree.
+- [x] Run the focused Vitest suite and browser scenario, including the deliberate mutation proof; run `py -3 tools/run.py web --check` and then `py -3 tools/run.py ci --check` on the intended committed tree.
 - [ ] Inspect the exact committed diff, confirm roadmap and `Directory.Build.props` agree on `0.1.0-dev.194`, and verify the dated disposition matches the browser evidence.
 - [ ] Dispatch a fresh-context whole-branch reviewer at GPT-6 Luna with exact base/head and diff. Require independent ADR and feature-matrix comparison; resolve Critical/Important findings and obtain a fresh review after any correction.
 - [ ] Publish the Draft PR to `develop`, include focused and canonical local proof plus reviewer outcome, then mark ready and require exact-head hosted CI to pass before merge.
