@@ -95,7 +95,7 @@ Add dated PG-007 evidence for one production-browser travel-day advance and page
 - Consumes: a committed browser qualification and passing canonical local gate.
 - Produces: a fresh whole-branch review, reviewable PR to `develop`, passing exact-head hosted CI, merge commit and passing develop-push CI, fast-forwarded main checkout, and verified paired cleanup for the N-84 worktree and branch.
 
-- [ ] **Step 1: Complete readiness and independent review**
+- [x] **Step 1: Complete readiness and independent review**
 
 Use completion-readiness, prepare the whole-branch review package from `origin/develop` to `HEAD`, and request a fresh-context reviewer. Supply this plan, the spec, the review focus, and any execution rulings. Resolve Critical and Important findings with witnessed RED/GREEN and rerun the canonical gate; defer only Minor findings with explicit rationale.
 
