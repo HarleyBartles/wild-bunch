@@ -71,21 +71,21 @@ Run `git diff --check`, stage only this plan, roadmap, version file, and N-84 pl
 - Consumes: `startMultiDayJourney(page)`, real world-map and travel-preview queries, `POST /api/games/{id}/travel/advance`, `POST /api/games/{id}/travel/encounter/resolve`, and the real server session returned by `GET /api/games/{id}`.
 - Produces: a deterministic public-browser scenario that advances a real trip until the selected fixed setup produces one hostile encounter, chooses an offered successful resolution through the visible UI, and verifies the persisted journal/result and legal post-resolution action after page reopen.
 
-- [ ] **Step 1: Establish a deterministic public-path hostile encounter fixture**
+- [x] **Step 1: Establish a deterministic public-path hostile encounter fixture**
 
-Use the existing canonical seed helper and Boring entropy with the existing real map-connected multi-day route. Inspect the returned production API state while advancing through legal travel-day actions to identify a stable route/day where a hostile choice is produced. If the current fixture does not reliably reach a hostile encounter, select another deterministic ordinary setup input or connected route without adding dev overrides or changing production behavior. Record the chosen scenario's observable setup criteria in the test, and make absence of a hostile encounter fail explicitly rather than silently skip it.
+Use the existing canonical seed helper, Brutal difficulty, and Boring entropy with the existing real longest map-connected multi-day route. The production-browser probe established that this setup reaches a `foe` encounter on journey day 3. Advance through legal travel-day actions until the fixed scenario yields that hostile choice; make absence of a hostile encounter before route completion fail explicitly rather than silently skip it.
 
-- [ ] **Step 2: Add the browser resolution and recovery behavior**
+- [x] **Step 2: Add the browser resolution and recovery behavior**
 
 Start the deterministic route in the public UI and advance through real visible controls until the server returns a pending hostile encounter. Close and reopen the page before resolution; verify the encounter message and legal offered choice return from the session GET and that day advancement is unavailable. Choose the UI's offered `Fight` action using a deterministic, legal bullet amount that produces a successful resolution. Assert the real resolve POST succeeds, the response clears the pending encounter, the relevant travel-diary day contains an encounter resolution and resolution narrative, and the journey exposes its actual next legal state. Close and reopen again; verify the server response retains that resolution and the visible diary, the UI shows the returned next legal action, and page restoration did not issue a second resolution command.
 
-- [ ] **Step 3: Witness that the browser test detects a broken resolution path**
+- [x] **Step 3: Witness that the browser test detects a broken resolution path**
 
 After the scenario passes, temporarily prevent the real resolution handler from applying its result or suppress the relevant browser command path, one mutation at a time. Run only the new browser scenario and confirm it fails on the expected user-visible or persisted resolution assertion. Restore source byte-for-byte before final validation. Do not commit mutations or introduce a test-only production route.
 
 - [ ] **Step 4: Reconcile PG-007 evidence and run the canonical gate**
 
-Add dated PG-007 evidence for this one hostile encounter's browser resolution and page-reopen recovery, naming only the verified action and observed result. State that trip completion/arrival, other encounter outcomes, deployed behavior, and overall PG-007 remain unqualified. Run `npm run build` and `npm run test:browser` in `src/WildBunch.Web`, then `py -3 tools/run.py ci --check` after all source and evidence changes. Commit through the normal check-only hook. Keep disposable API, database, and browser artifacts outside the repository.
+Add dated PG-007 evidence for this one hostile encounter's browser resolution and page-reopen recovery, naming only the verified action and observed result. State that trip completion/arrival, other encounter outcomes, deployed behavior, and overall PG-007 remain unqualified. Run `npm run build` and `npm run test:browser` in `src/WildBunch.Web`. Commit through the normal check-only hook, which runs `py -3 tools/run.py ci --check` on the staged candidate; use that hook result as the canonical gate instead of duplicating the full gate immediately before commit. Keep disposable API, database, and browser artifacts outside the repository.
 
 ### Task 3: Review, publish, merge, and retire N-85
 
@@ -114,3 +114,9 @@ Squash-merge the reviewed PR into `develop`, verify the merge commit contains th
 Fast-forward the primary checkout to the verified `develop` merge without disturbing its unrelated investigation edit. Use `finishing-a-development-branch` and its remove-worktree script with `--check` then `--apply`; remove only the N-85 worktree, then delete the matching local and upstream branch refs together. Verify PR source/merge identities, both hosted gates, primary `HEAD`, preserved user edit, and absence of the worktree and both refs. Leave this N-85 plan and roadmap evidence for N-86's successor-artifact retirement.
 
 N-85 proves one deterministic hostile encounter resolution through the public browser, including restoration of its server-recorded journal result and next legal travel state. It does not prove completion/arrival, all encounter variants, remaining retained browser paths, deployed behavior, overall `0.1.0` qualification, or cloud deployment.
+
+### Execution Rulings
+
+- **Ruling, 2026-10-15:** The initial Standard/Boring canonical-seed probe completed the selected longest route without a hostile encounter. Use the player-selectable Brutal difficulty with Boring entropy for the deterministic hostile-encounter fixture; this changes only scenario setup, not production logic or dev controls.
+- **Ruling, 2026-10-15:** Advancing into a pending encounter returns `success: false` with an interrupted server snapshot and the legal choice; that is the designed pause, not a failed day mutation. The browser test treats this response as expected only when the returned journey contains the pending encounter.
+- **Ruling, 2026-10-15:** Replacing the server handler's submitted encounter choice with an invalid choice made the new browser scenario fail at the successful resolution assertion with `That is not a lawful way to answer this encounter.` Restoring the handler byte-for-byte made the focused scenario pass again; the mutation was not committed.
