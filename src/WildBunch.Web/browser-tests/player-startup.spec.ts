@@ -202,11 +202,16 @@ interface StartedMultiDayJourney {
   destination: WorldMapResponse["towns"][number];
   departureDay: number;
   initialRemainingDistance: number;
+  expectedDays: number;
 }
 
-async function startMultiDayJourney(page: Page): Promise<StartedMultiDayJourney> {
+async function startMultiDayJourney(
+  page: Page,
+  difficulty: "Standard" | "Brutal" = "Standard",
+): Promise<StartedMultiDayJourney> {
   await page.goto(productionWebUrl);
   await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
+  await page.getByRole("button", { name: difficulty }).click();
   await page.getByRole("button", { name: "Boring" }).click();
   await page.getByLabel("World seed").fill(seedWorldSeedCode());
 
@@ -314,6 +319,7 @@ async function startMultiDayJourney(page: Page): Promise<StartedMultiDayJourney>
     destination,
     departureDay: travelResult.currentSession.clock.day,
     initialRemainingDistance: travelResult.currentSession.journey!.remainingRideDayDistance,
+    expectedDays: previewResult.preview!.expectedDays,
   };
 }
 
@@ -517,6 +523,178 @@ test("a player can advance one travel day and restore the updated trail state", 
     }
 
     expect(advancePosts).toHaveLength(1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("a player can resolve a hostile trail encounter and restore its journal result", async ({
+  browser,
+}) => {
+  test.setTimeout(180_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const advancePosts: string[] = [];
+  const resolvePosts: string[] = [];
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (request.method() !== "POST") return;
+      if (/\/api\/games\/[^/]+\/travel\/advance$/.test(request.url())) {
+        advancePosts.push(request.url());
+      }
+      if (/\/api\/games\/[^/]+\/travel\/encounter\/resolve$/.test(request.url())) {
+        resolvePosts.push(request.url());
+      }
+    });
+  });
+  let page = await context.newPage();
+
+  try {
+    const trip = await startMultiDayJourney(page, "Brutal");
+    type Encounter = {
+      kind: string;
+      message: string;
+      choices: Array<{ id: string; label: string }>;
+    };
+    let pendingEncounter: Encounter | null = null;
+    let lastJourney: {
+      status: number;
+      daysTravelled: number;
+      pendingEncounter: Encounter | null;
+    } | null = null;
+
+    for (let day = 0; day < trip.expectedDays + 2 && !pendingEncounter; day += 1) {
+      const advanceResponsePromise = page.waitForResponse(
+        (response) =>
+          response.url() === `${apiBaseUrl}/api/games/${trip.gameId}/travel/advance` &&
+          response.request().method() === "POST",
+      );
+      await page.getByRole("button", { name: "Advance travel day" }).click();
+      const advanceResponse = await advanceResponsePromise;
+      expect(advanceResponse.ok(), await advanceResponse.text()).toBe(true);
+      const advanced = (await advanceResponse.json()) as {
+        success: boolean;
+        message: string;
+        currentSession: {
+          journey: {
+            status: number;
+            daysTravelled: number;
+            pendingEncounter: Encounter | null;
+          } | null;
+        };
+      };
+      lastJourney = advanced.currentSession.journey;
+      pendingEncounter = lastJourney?.pendingEncounter ?? null;
+      expect(advanced.success, advanced.message).toBe(pendingEncounter === null);
+      expect(lastJourney?.status).not.toBe(JourneyStatus.Completed);
+    }
+
+    expect(pendingEncounter?.kind).toBe("foe");
+    if (!pendingEncounter || !lastJourney) throw new Error("Expected a hostile trail encounter.");
+    expect(lastJourney.daysTravelled).toBeGreaterThan(0);
+    await page.close();
+    page = await context.newPage();
+    const pendingResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const pendingResponse = await pendingResponsePromise;
+    expect(pendingResponse.ok()).toBe(true);
+    const pendingSession = (await pendingResponse.json()) as {
+      journey: { pendingEncounter: Encounter | null; status: number } | null;
+    };
+    expect(pendingSession.journey?.status).toBe(JourneyStatus.Interrupted);
+    expect(pendingSession.journey?.pendingEncounter).toEqual(pendingEncounter);
+    await expect(page.getByText(pendingEncounter.message).last()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Advance travel day" })).toHaveCount(0);
+
+    const fightChoice = pendingEncounter.choices.find((choice) => choice.id === "fight");
+    expect(fightChoice).toBeDefined();
+    if (!fightChoice) throw new Error("Expected a hostile encounter to offer the Fight choice.");
+    const resolveResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}/travel/encounter/resolve` &&
+        response.request().method() === "POST",
+    );
+    await page.getByLabel("Bullets").fill("6");
+    await page.getByRole("button", { name: fightChoice.label }).click();
+    const resolveResponse = await resolveResponsePromise;
+    expect(resolveResponse.ok(), await resolveResponse.text()).toBe(true);
+    const resolved = (await resolveResponse.json()) as {
+      success: boolean;
+      currentSession: {
+        journey: {
+          pendingEncounter: Encounter | null;
+          status: number;
+          daysTravelled: number;
+        } | null;
+        travelDiary: {
+          days: Array<{
+            dayNumber: number;
+            encounterResolution: {
+              choiceId: string;
+              choiceLabel: string;
+              ammoSpent: number;
+            } | null;
+          }>;
+        } | null;
+        logEntries: Array<{ message: string; day: number }>;
+      };
+    };
+    expect(resolved.success, JSON.stringify(resolved)).toBe(true);
+    expect(resolved.currentSession.journey?.pendingEncounter).toBeNull();
+    expect(resolved.currentSession.journey?.status).toBe(JourneyStatus.Active);
+    const resolvedDay = resolved.currentSession.travelDiary?.days.at(-1);
+    expect(resolvedDay?.encounterResolution).toMatchObject({ choiceId: "fight", ammoSpent: 6 });
+    const resolutionEntry = resolved.currentSession.logEntries.find(
+      (entry) => entry.message === "You push the rider behind you and keep moving.",
+    );
+    expect(resolutionEntry, JSON.stringify(resolved.currentSession.logEntries)).toBeDefined();
+    if (!resolutionEntry || !resolvedDay?.encounterResolution) {
+      throw new Error("Expected the successful encounter to reach the player's journal and diary.");
+    }
+    expect(resolvePosts).toEqual([
+      `${apiBaseUrl}/api/games/${trip.gameId}/travel/encounter/resolve`,
+    ]);
+    expect(advancePosts).toHaveLength(lastJourney.daysTravelled);
+
+    await page.close();
+    page = await context.newPage();
+    const resolvedResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const resolvedResponse = await resolvedResponsePromise;
+    expect(resolvedResponse.ok()).toBe(true);
+    const restored = (await resolvedResponse.json()) as {
+      journey: { pendingEncounter: Encounter | null; status: number } | null;
+      travelDiary: {
+        days: Array<{
+          dayNumber: number;
+          encounterResolution: { choiceId: string; choiceLabel: string; ammoSpent: number } | null;
+        }>;
+      } | null;
+      logEntries: Array<{ message: string; day: number }>;
+    };
+    const restoredDay = restored.travelDiary?.days.find(
+      (day) => day.dayNumber === resolvedDay.dayNumber,
+    );
+    expect(restoredDay?.encounterResolution).toEqual(resolvedDay.encounterResolution);
+    expect(restored.logEntries).toContainEqual(resolutionEntry);
+    expect(restored.journey?.pendingEncounter).toBeNull();
+    expect(restored.journey?.status).toBe(JourneyStatus.Active);
+    await page.getByRole("button", { name: "Journal", exact: true }).click();
+    await expect(
+      page.getByRole("dialog").getByText(resolutionEntry.message, { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByText("Encounter resolved", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Advance travel day" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Step into town" })).toHaveCount(0);
+    expect(resolvePosts).toHaveLength(1);
   } finally {
     await context.close();
   }
