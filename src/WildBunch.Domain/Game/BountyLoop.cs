@@ -148,26 +148,6 @@ internal sealed class BountyLoop
                 null);
         }
 
-        var presenceState = context.ActiveSaloonSuspectPresenceState ?? WantedSuspectPresenceState.Unavailable;
-        if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
-        {
-            events.Add(BuildSaloonConfrontedEvent(
-                $"{targetSuspect.Name} is no longer in the saloon.",
-                declaredWantedIdentityHandle,
-                targetName: targetSuspect.Name,
-                personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
-                outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected));
-            return new SaloonConfrontationOutcome(
-                SaloonPersonOfInterestConfrontationResult.Rejected(
-                    $"{targetSuspect.Name} is no longer in the saloon.",
-                    declaredWantedIdentityHandle,
-                    targetSuspect.Name,
-                    sessionChanged: true,
-                    personOfInterestKind: activeSaloonPersonOfInterestKind),
-                events,
-                null);
-        }
-
         if (context.ConfrontationStates.TryGetValue(activeSaloonSuspect, out var existingState))
         {
             events.Add(BuildSaloonConfrontedEvent(

@@ -1727,9 +1727,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
             CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
             CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole,
-            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId is { } poiId
-                ? GetWantedSuspectPresenceState(poiId)
-                : null,
             CaseFile.Suspects,
             CaseFile.KnownWarrants,
             CaseFile.PublicWarrants,
