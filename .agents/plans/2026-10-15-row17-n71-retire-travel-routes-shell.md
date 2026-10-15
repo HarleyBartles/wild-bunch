@@ -35,26 +35,26 @@
 
 **Files:** `.agents/roadmaps/2026-10-07-stable-0.1.0-cleanup.md`, `.agents/plans/2026-10-15-row17-n70-modal-browser-proof.md`, `Directory.Build.props`.
 
-- [ ] Verify PR #373 merged to `develop` from reviewed source `cac0688a2c00c9b672fdd0775389c9a5503cc614` as squash merge `12425d837169afc5bdf6c84fcc64eac0e8c53193`, and confirm exact-head gate `38678530494` plus develop-push gate `38678934634` passed.
-- [ ] Update row 17 to name N-71 as active at `0.1.0-dev.189`; append dated N-70 delivery evidence with PR, source SHA, merge SHA, review result, both hosted gate runs, primary fast-forward, and paired worktree/local/upstream branch cleanup.
-- [ ] Retire `.agents/plans/2026-10-15-row17-n70-modal-browser-proof.md` in the successor commit while retaining the row-17 roadmap and investigation inventories.
-- [ ] Change only `Directory.Build.props` to `0.1.0-dev.189` for the application version advancement, then verify the first substantive commit contains only the promotion, retirement, roadmap, and version files.
+- [x] Verify PR #373 merged to `develop` from reviewed source `cac0688a2c00c9b672fdd0775389c9a5503cc614` as squash merge `12425d837169afc5bdf6c84fcc64eac0e8c53193`, and confirm exact-head gate `38678530494` plus develop-push gate `38678934634` passed.
+- [x] Update row 17 to name N-71 as active at `0.1.0-dev.189`; append dated N-70 delivery evidence with PR, source SHA, merge SHA, review result, both hosted gate runs, primary fast-forward, and paired worktree/local/upstream branch cleanup.
+- [x] Retire `.agents/plans/2026-10-15-row17-n70-modal-browser-proof.md` in the successor commit while retaining the row-17 roadmap and investigation inventories.
+- [x] Change only `Directory.Build.props` to `0.1.0-dev.189` for the application version advancement, then verify the first substantive commit contains only the promotion, retirement, roadmap, and version files.
 
 ### Task 2: Confirm and retire the unmounted route-list shell
 
 **Files:** `src/WildBunch.Web/src/components/TravelRoutesPanel.tsx`, `src/WildBunch.Web/src/tests/TravelRoutesPanel.test.tsx`.
 
-- [ ] Reconfirm with source search that `TravelRoutesPanel` has no production consumer and inspect the live `TravelPrepSurface` and its tests to verify that map preview, selection, dispatch, rejection, and retry behavior remain represented there.
-- [ ] Delete `TravelRoutesPanel.tsx` and `TravelRoutesPanel.test.tsx`; do not create a test that checks their absence.
-- [ ] Run the focused routed travel behavior tests and verify they pass with the old component removed.
+- [x] Reconfirm with source search that `TravelRoutesPanel` has no production consumer and inspect the live `TravelPrepSurface` and its tests to verify that map preview, selection, dispatch, rejection, and retry behavior remain represented there.
+- [x] Delete `TravelRoutesPanel.tsx` and `TravelRoutesPanel.test.tsx`; do not create a test that checks their absence.
+- [x] Run the focused routed travel behavior tests and verify they pass with the old component removed (11 passed).
 
 ### Task 3: Reconcile the finding inventories and deliver N-71
 
 **Files:** `.agents/investigations/stable-0.1.0/2026-10-07-web-layer-investigation.md`, `.agents/investigations/stable-0.1.0/2026-10-07-web-test-followup.md`, `.agents/investigations/stable-0.1.0/2026-10-06-test-quality-investigation.md`, `docs/features.md`, PR description, and all N-71 changes.
 
-- [ ] Add dated N-71 disposition to the owning investigations and update current file-disposition rows to record the component and tests as retired; preserve original dated observations as historical evidence.
-- [ ] Compare ADR-0039 and PG-003 with the final diff, keep both unchanged if they remain truthful, and record in the PR why this removal changes no feature promise, dependency, or durable decision.
-- [ ] Run the focused travel tests and `py -3 tools/run.py ci --check`; inspect the complete fail-fast gate result.
-- [ ] Stage the intended tree, inspect the staged diff and version, and let the normal check-only pre-commit hook validate the exact staged candidate.
+- [x] Add dated N-71 disposition to the owning investigations and update current file-disposition rows to record the component and tests as retired; preserve original dated observations as historical evidence.
+- [x] Compare ADR-0039 and PG-003 with the final diff, keep both unchanged if they remain truthful, and record in the PR why this removal changes no feature promise, dependency, or durable decision.
+- [x] Run the focused travel tests and `py -3 tools/run.py ci --check`; inspect the complete fail-fast gate result (focused travel 11 passed; full gate passed, including 46 web test files/377 tests and 3 Chromium tests).
+- [x] Stage the intended tree, inspect the staged diff and version, and let the normal check-only pre-commit hook validate the exact staged candidate; its full gate passed.
 - [ ] Dispatch a fresh-context whole-branch reviewer to inspect the committed diff and repeat the ADR and feature-matrix comparisons; resolve findings and request a fresh review after any correction.
 - [ ] Publish the PR to `develop`, wait for the exact-head hosted gate to pass before merge, merge it, verify the develop-push hosted gate, fast-forward the primary checkout without disturbing the user's existing investigation edit, and remove the merged worktree with its exact local and upstream branch refs together.
