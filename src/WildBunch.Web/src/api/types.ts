@@ -599,7 +599,7 @@ export interface JournalDto {
   id: string;
   status: GameStatus;
   clock: GameClockDto;
-  currentTown: JournalTownDto;
+  currentTown: JournalTownDto | null;
   caseFile: JournalCaseFileDto;
   logEntries: GameLogEntryDto[];
 }

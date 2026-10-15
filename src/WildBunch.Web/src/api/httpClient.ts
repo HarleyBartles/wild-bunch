@@ -1,4 +1,4 @@
-const defaultApiBaseUrl = "http://localhost:5275";
+const defaultApiBaseUrl = "http://127.0.0.1:5275";
 
 export class HttpRequestError extends Error {
   constructor(

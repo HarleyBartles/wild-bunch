@@ -67,6 +67,10 @@ Bind each release identity to the verified source tree and matching artifact
 digests. Read back the PR base, head, merge method, hosted checks, release tag,
 and artifact identity from their owning systems. Confirm any preprod and
 production deployment only from the deployment workflow's own evidence.
+Artifact identity establishes which bytes were built; it does not establish
+that the candidate satisfies gameplay or operational qualification. Record
+those claims against their owning product and release criteria, with explicit
+scope for local, hosted and deployed evidence.
 Publication of a GitHub Release is the declared public-deployment trigger once
 that automation is in place; this runbook alone does not prove deployment is
 implemented or authorize an operator to publish. The current qualification

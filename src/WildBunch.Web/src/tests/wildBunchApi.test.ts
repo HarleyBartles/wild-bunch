@@ -29,7 +29,7 @@ describe("wildBunchApi", () => {
     await previewTravel("game-1", "holloway");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:5275/api/games/game-1/travel/preview/holloway",
+      "http://127.0.0.1:5275/api/games/game-1/travel/preview/holloway",
       expect.any(Object),
     );
   });
@@ -63,7 +63,7 @@ describe("wildBunchApi", () => {
     await setupGame(request, "8b883c75-4e2e-4e82-90b4-95cb3867ae51");
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("http://localhost:5275/api/games/setup");
+    expect(url).toBe("http://127.0.0.1:5275/api/games/setup");
     expect(new Headers(init.headers).get("Idempotency-Key")).toBe(
       "8b883c75-4e2e-4e82-90b4-95cb3867ae51",
     );
@@ -82,7 +82,7 @@ describe("wildBunchApi", () => {
     );
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe("http://localhost:5275/api/games/game-1/start");
+    expect(url).toBe("http://127.0.0.1:5275/api/games/game-1/start");
     expect(new Headers(init.headers).get("Idempotency-Key")).toBe(
       "fab21f5d-7f89-4382-9520-24a5b4f558d5",
     );

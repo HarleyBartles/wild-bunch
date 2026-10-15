@@ -205,7 +205,7 @@ export function CaseFileSurface({
         <Section as="article">
           <SectionHead>
             <PanelSubtitle>
-              {journal.currentTown.name}, day {journal.clock.day}
+              {journal.currentTown ? `${journal.currentTown.name}, ` : ""}day {journal.clock.day}
             </PanelSubtitle>
           </SectionHead>
           <Fact>{journal.caseFile.caseSummary}</Fact>

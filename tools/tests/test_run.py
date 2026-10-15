@@ -85,9 +85,19 @@ def test_web_build_rejects_stale_generated_identity_after_build(tmp_path, monkey
     assert [command[-1] for command in commands] == [
         "typecheck",
         "test",
-        "test:browser",
         "build",
     ]
+
+
+def test_web_build_runs_browser_only_after_build_and_identity_validation(monkeypatch) -> None:
+    steps: list[str] = []
+    monkeypatch.setattr(run, "_check_web_style", lambda _ctx: steps.append("style"))
+    monkeypatch.setattr(run, "_run", lambda command, _ctx: steps.append(command[-1]))
+    monkeypatch.setattr(run, "_version_identity_check", lambda _ctx: steps.append("identity"))
+
+    run._build_web(run.Ctx("check", False))
+
+    assert steps == ["style", "typecheck", "test", "build", "identity", "test:browser"]
 
 
 def test_selected_target_without_mode_fails_before_target_work(monkeypatch, capsys) -> None:
@@ -290,12 +300,13 @@ def test_ci_lint_failure_stops_before_behavioral_tests(monkeypatch, capfd) -> No
     assert "target 'ci' failed" in captured.err
 
 
-def test_ci_chromium_failure_stops_before_web_build(monkeypatch, capsys) -> None:
+def test_ci_builds_and_checks_identity_before_chromium(monkeypatch, capsys) -> None:
     visited: list[str] = []
+    identity_checks: list[Path] = []
     checks = []
 
     for name, check, repair, recheck in run.CI_CHECKS:
-        if name in {"web-tests", "web-browser-tests", "web-build"}:
+        if name in {"web-tests", "web-build", "build-identity", "web-browser-tests"}:
 
             def record(ctx, *, lane=name, callback=check):
                 visited.append(lane)
@@ -309,14 +320,15 @@ def test_ci_chromium_failure_stops_before_web_build(monkeypatch, capsys) -> None
         if "test:browser" in command:
             raise subprocess.CalledProcessError(1, command)
 
+    monkeypatch.setattr(run, "check_version_identity", identity_checks.append)
     monkeypatch.setattr(run, "CI_CHECKS", tuple(checks))
     monkeypatch.setattr(run, "_run", fail_browser_command)
 
     with pytest.raises(subprocess.CalledProcessError):
         run._ci_check(run.Ctx("check", False))
 
-    assert visited == ["web-tests", "web-browser-tests"]
-    assert "web-build" not in visited
+    assert visited == ["web-tests", "web-build", "build-identity", "web-browser-tests"]
+    assert identity_checks == [run.ROOT]
     assert "check 'web-browser-tests' failed" in capsys.readouterr().err
 
 
