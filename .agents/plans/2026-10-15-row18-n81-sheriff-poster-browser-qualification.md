@@ -60,11 +60,11 @@
 - Consumes: the production public web build, the existing `startIsolatedApi()` disposable PostgreSQL path, the server-created game ID, the existing town-building control, the existing `POST /api/games/{id}/wanted-posters/read` action, and `GameSessionDto.wantedPosters` from `GET /api/games/{id}`.
 - Produces: browser evidence that entering Sheriff Office and reading posters reveals exactly one server-returned public poster, and a separate page close/reopen restores and renders that same poster without another read.
 
-- [ ] Extend the existing real-browser journey after town restoration: click the visible `Sheriff Office` button, wait for the Sheriff Office heading, capture the real wanted-poster POST response, assert HTTP success and `success === true`, assert exactly one returned poster, and capture its `targetDisplayName` from that response.
-- [ ] Assert that the existing Sheriff Office surface renders the returned target after the read. Close the page, create a new page in the same isolated browser context, reopen the production app, wait for the same game's GET response, and assert its `wantedPosters` contains exactly the same target.
-- [ ] Enter Sheriff Office again through the existing town control and assert the same target renders without clicking `Read wanted posters` again; this distinguishes restoration from a second acquisition.
-- [ ] Run the focused browser route on current behavior. Temporarily remove the success-path `refreshGameResources` call in `src/WildBunch.Web/src/flow/places/SheriffPlace.tsx` and rerun the focused route; confirm it fails at the user-visible poster assertion, restore the source, and confirm the route passes.
-- [ ] Run the existing `WantedPosterAcceptanceTests` PostgreSQL acceptance test to retain its independent event-persistence and hidden-truth proof; do not duplicate those assertions in the browser test.
+- [x] Extend the existing real-browser journey after town restoration: click the visible `Sheriff Office` button, wait for the Sheriff Office heading, capture the real wanted-poster POST response, assert HTTP success and `success === true`, assert exactly one returned poster, and capture its `targetDisplayName` from that response.
+- [x] Assert that the existing Sheriff Office surface renders the returned target after the read. Close the page, create a new page in the same isolated browser context, reopen the production app, wait for the same game's GET response, and assert its `wantedPosters` contains exactly the same target.
+- [x] Enter Sheriff Office again through the existing town control and assert the same target renders without clicking `Read wanted posters` again; this distinguishes restoration from a second acquisition.
+- [x] Run the focused browser route on current behavior. Temporarily remove the success-path `refreshGameResources` call in `src/WildBunch.Web/src/flow/places/SheriffPlace.tsx` and rerun the focused route; confirm it fails at the user-visible poster assertion, restore the source, and confirm the route passes.
+- [x] Run the existing `WantedPosterAcceptanceTests` PostgreSQL acceptance test to retain its independent event-persistence and hidden-truth proof; do not duplicate those assertions in the browser test.
 
 ### Task 3: Record the bounded PG-005 evidence
 

@@ -138,6 +138,48 @@ test("a player can start, choose a town, and resume the server state after reope
     };
     expect(restored.player.currentTownId).toBe(town.id);
     await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
+
+    await page.getByRole("button", { name: "Sheriff Office" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Sheriff Office" })).toBeVisible();
+
+    const posterReadResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/wanted-posters/read` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Read wanted posters" }).click();
+    const posterReadResponse = await posterReadResponsePromise;
+    expect(posterReadResponse.status()).toBe(200);
+    const posterRead = (await posterReadResponse.json()) as {
+      success: boolean;
+      wantedPosters: Array<{ targetDisplayName: string }>;
+    };
+    expect(posterRead.success).toBe(true);
+    expect(posterRead.wantedPosters).toHaveLength(1);
+    const targetName = posterRead.wantedPosters[0].targetDisplayName;
+    expect(targetName).toBeTruthy();
+    await expect(page.getByRole("heading", { level: 4, name: targetName })).toBeVisible();
+
+    await page.close();
+    page = await context.newPage();
+    await page.goto(productionWebUrl);
+
+    const restoredPosterResponse = await page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
+        response.request().method() === "GET",
+    );
+    expect(restoredPosterResponse.ok()).toBe(true);
+    const restoredGame = (await restoredPosterResponse.json()) as {
+      wantedPosters: Array<{ targetDisplayName: string }>;
+    };
+    expect(restoredGame.wantedPosters.map((poster) => poster.targetDisplayName)).toEqual([
+      targetName,
+    ]);
+    await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
+    await page.getByRole("button", { name: "Sheriff Office" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Sheriff Office" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 4, name: targetName })).toBeVisible();
   } finally {
     await context.close();
   }
