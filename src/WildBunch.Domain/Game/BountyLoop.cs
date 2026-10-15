@@ -66,6 +66,18 @@ internal sealed class BountyLoop
                 null);
         }
 
+        if (!context.CanConfrontInCurrentContext)
+        {
+            return new SaloonConfrontationOutcome(
+                SaloonPersonOfInterestConfrontationResult.Rejected(
+                    "You can only confront that person while in the saloon.",
+                    context.DeclaredWantedIdentityHandle,
+                    activeSaloonPersonOfInterestDescriptor,
+                    personOfInterestKind: activeSaloonPersonOfInterestKind),
+                [],
+                null);
+        }
+
         if (string.IsNullOrWhiteSpace(context.DeclaredWantedIdentityHandle))
         {
             return new SaloonConfrontationOutcome(
@@ -145,26 +157,6 @@ internal sealed class BountyLoop
                     sessionChanged: false,
                     personOfInterestKind: activeSaloonPersonOfInterestKind),
                 [],
-                null);
-        }
-
-        var presenceState = context.ActiveSaloonSuspectPresenceState ?? WantedSuspectPresenceState.Unavailable;
-        if (presenceState is not (WantedSuspectPresenceState.AvailableInTown or WantedSuspectPresenceState.GoneToGround))
-        {
-            events.Add(BuildSaloonConfrontedEvent(
-                $"{targetSuspect.Name} is no longer in the saloon.",
-                declaredWantedIdentityHandle,
-                targetName: targetSuspect.Name,
-                personOfInterestKind: activeSaloonPersonOfInterestKind ?? SaloonPersonOfInterestKind.WantedSuspect,
-                outcome: SaloonPersonOfInterestConfrontationOutcome.Rejected));
-            return new SaloonConfrontationOutcome(
-                SaloonPersonOfInterestConfrontationResult.Rejected(
-                    $"{targetSuspect.Name} is no longer in the saloon.",
-                    declaredWantedIdentityHandle,
-                    targetSuspect.Name,
-                    sessionChanged: true,
-                    personOfInterestKind: activeSaloonPersonOfInterestKind),
-                events,
                 null);
         }
 

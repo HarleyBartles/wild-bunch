@@ -27,7 +27,7 @@ internal sealed record SaloonConfrontationContext(
     string? ActiveSaloonDescriptor,
     SaloonPersonOfInterestKind? ActiveSaloonPOIKind,
     string? ActiveSaloonCitizenRole,
-    WantedSuspectPresenceState? ActiveSaloonSuspectPresenceState,
+    bool CanConfrontInCurrentContext,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Warrant> KnownWarrants,
     IReadOnlyList<Warrant> PublicWarrants,
