@@ -90,9 +90,7 @@ name matches its directory. `tools/check_plugin_subscriptions.py` checks
 local Codex syntax, paths, selectors, catalog registration, and activation
 targets; behavior tests cover invalid paths, dangling activation, and inactive
 catalog entries. The checker does not fetch or prove access, trust,
-authentication, installation, or current runtime loading. The 2026-09-29
-field-test report under `.agents/docs/` records installed and invocable plugin
-evidence on Codex CLI 0.159.0. Fresh-clone users still need Codex, repository
+authentication, installation, or current runtime loading. Fresh-clone users still need Codex, repository
 trust, and access to the declared Git sources; use `codex plugin marketplace
 upgrade wild-bunch` to refresh the catalog and payloads.
 
@@ -129,13 +127,10 @@ while the command bus checks SemVer syntax, duplicate npm root versions, and
 generated identity equality after the web build. Development checkpoints,
 release candidates, and stable versions follow ADR-0048 and the joint
 Gitflow/SemVer rules. Focused tests reject malformed and stale identities;
-local production builds emitted matching RC, stable, and restored development
-identities. N-79's `release-verify --check` binds the exact API, public-web, and
+`release-verify --check` binds the exact API, public-web, and
 playtest-web artifact trees produced from one clean full source commit and
 authored version, and re-verifies an existing immutable bundle without
 rebuilding. This records the bytes produced by that invocation; it does not
-claim independent builds are reproducible. Row 18 qualifies the retained local
-player routes and the `0.1.0-dev.213` development candidate using the canonical
-gate and this source-bound bundle. The evidence does not establish independent
+claim independent builds are reproducible. The browser lane checks built bootstrap and version identity alongside application-specific player contracts. Local source-bound bundles and browser checks do not establish independent
 build reproducibility, hosted release or hotfix behavior, stable publication,
 cloud deployment, or complete feature implementation.
