@@ -89,6 +89,104 @@ test.afterEach(async () => {
   stopIsolatedApi = undefined;
 });
 
+test("a player can read the case file before town selection", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage();
+  const forbiddenPosts: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      /\/(?:prologue-viewed|start)$/.test(new URL(request.url()).pathname)
+    ) {
+      forbiddenPosts.push(request.url());
+    }
+  });
+
+  try {
+    await page.goto(productionWebUrl);
+    await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
+
+    const setupResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/setup` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const setupResponse = await setupResponsePromise;
+    expect(setupResponse.ok(), await setupResponse.text()).toBe(true);
+    const setup = (await setupResponse.json()) as { id: string };
+
+    await page.close();
+    const restoredPage = await context.newPage();
+    restoredPage.on("request", (request) => {
+      if (
+        request.method() === "POST" &&
+        /\/(?:prologue-viewed|start)$/.test(new URL(request.url()).pathname)
+      ) {
+        forbiddenPosts.push(request.url());
+      }
+    });
+    await restoredPage.goto(productionWebUrl);
+
+    const [sessionResponse, prologueResponse, journalResponse] = await Promise.all([
+      restoredPage.waitForResponse(
+        (response) =>
+          response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
+          response.request().method() === "GET",
+      ),
+      restoredPage.waitForResponse(
+        (response) =>
+          response.url() === `${apiBaseUrl}/api/games/${setup.id}/prologue` &&
+          response.request().method() === "GET",
+      ),
+      restoredPage.waitForResponse(
+        (response) =>
+          response.url() === `${apiBaseUrl}/api/games/${setup.id}/journal` &&
+          response.request().method() === "GET",
+      ),
+    ]);
+    expect(sessionResponse.ok()).toBe(true);
+    expect(prologueResponse.ok()).toBe(true);
+    expect(journalResponse.ok()).toBe(true);
+
+    const session = (await sessionResponse.json()) as {
+      startFlowPhase: number;
+      player: { currentTownId: string | null };
+    };
+    const prologue = (await prologueResponse.json()) as { body: string };
+    const journal = (await journalResponse.json()) as JournalDto;
+    expect(session.startFlowPhase).toBe(1);
+    expect(session.player.currentTownId).toBeNull();
+    expect(journal.currentTown).toBeNull();
+    expect(journal.caseFile.openingLead.trim()).not.toBe("");
+    await expect(restoredPage.getByText(prologue.body, { exact: true })).toBeVisible();
+    await expect(restoredPage.getByRole("button", { name: "Ride on" })).toBeVisible();
+
+    const caseFileButton = restoredPage.getByRole("button", {
+      name: "Case file",
+      exact: true,
+    });
+    await expect(caseFileButton).toBeEnabled();
+    await caseFileButton.click();
+    const caseFile = restoredPage.getByRole("dialog", { name: "Case file" });
+    await expect(caseFile).toBeVisible();
+    await expect(
+      caseFile.getByText(`Opening lead: ${journal.caseFile.openingLead}`, { exact: true }),
+    ).toBeVisible();
+
+    expect(forbiddenPosts).toEqual([]);
+    const unchangedSessionResponse = await restoredPage.request.get(
+      `${apiBaseUrl}/api/games/${setup.id}`,
+    );
+    expect(unchangedSessionResponse.ok()).toBe(true);
+    const unchangedSession = (await unchangedSessionResponse.json()) as typeof session;
+    expect(unchangedSession.startFlowPhase).toBe(1);
+    expect(unchangedSession.player.currentTownId).toBeNull();
+  } finally {
+    await context.close();
+  }
+});
+
 test("a player can start, choose a town, and resume the server state after reopening", async ({
   browser,
 }) => {
