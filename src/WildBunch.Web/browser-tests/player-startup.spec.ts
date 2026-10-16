@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { GameStatus, InvestigationSourceKind, JourneyStatus } from "../src/api/types";
+import type { JournalDto } from "../src/api/types";
 import { startIsolatedApi } from "./support/postgresApi";
 import { seedWorldSeedCode } from "./support/seedWorldSeedCode";
 
@@ -44,6 +45,36 @@ async function clickTownOnWorldMap(
     bounds.x + (markerX / canvasSize.width) * bounds.width,
     bounds.y + (markerY / canvasSize.height) * bounds.height,
   );
+}
+
+function expectCapturedCaseFileProjection(
+  journal: JournalDto,
+  targetName: string,
+  knownFeature: string,
+  bountyAmount: number,
+) {
+  const capturedSuspects = journal.caseFile.discoveredSuspects.filter(
+    (candidate) => candidate.status === 1,
+  );
+  expect(capturedSuspects).toHaveLength(1);
+
+  const warrant = journal.caseFile.caseBoard.warrants.find(
+    (candidate) => candidate.targetName === targetName,
+  );
+  expect(warrant).toBeDefined();
+  expect(warrant?.knownFeatures).toContain(knownFeature);
+  expect([warrant?.targetName, ...(warrant?.knownAliases ?? [])]).toContain(
+    capturedSuspects[0].name,
+  );
+  expect(warrant?.settlement).toMatchObject({ isAlive: true, bountyAmount });
+}
+
+async function expectCapturedCaseFileSurface(page: Page, targetName: string, knownFeature: string) {
+  const caseFile = page.getByRole("dialog", { name: "Case file" });
+  await expect(caseFile).toBeVisible();
+  await expect(caseFile.getByText(targetName, { exact: true }).last()).toBeVisible();
+  await expect(caseFile.getByText("Captured", { exact: true })).toBeVisible();
+  await expect(caseFile.getByText(knownFeature, { exact: false }).first()).toBeVisible();
 }
 
 let stopIsolatedApi: (() => Promise<void>) | undefined;
@@ -856,6 +887,17 @@ test("a player can start, restore a public poster, and take in the named person 
 }) => {
   test.setTimeout(120_000);
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  let confrontationPostCount = 0;
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (
+        request.method() === "POST" &&
+        /\/api\/games\/[^/]+\/investigations\/saloon\/confront$/.test(request.url())
+      ) {
+        confrontationPostCount += 1;
+      }
+    });
+  });
   const page = await context.newPage();
   const seedCode = seedWorldSeedCode();
   await page.goto(productionWebUrl);
@@ -910,6 +952,7 @@ test("a player can start, restore a public poster, and take in the named person 
     wantedPosters: Array<{
       posterId: string;
       targetDisplayName: string;
+      legalTerms: { bountyAmount: number };
       details: { features: Array<{ text: string }> };
     }>;
   };
@@ -919,6 +962,25 @@ test("a player can start, restore a public poster, and take in the named person 
   await expect(
     page.getByRole("heading", { level: 4, name: poster.targetDisplayName }),
   ).toBeVisible();
+
+  const devContextResponse = await page.request.get(
+    `${apiBaseUrl}/api/dev/sessions/${setup.id}/saloon-context`,
+  );
+  expect(devContextResponse.ok()).toBe(true);
+  const devContext = (await devContextResponse.json()) as {
+    suspects: Array<{ suspectId: string; name: string; hasKnownWarrant: boolean }>;
+  };
+  const matchingSuspect = devContext.suspects.find(
+    (suspect) => suspect.name === poster.targetDisplayName && suspect.hasKnownWarrant,
+  );
+  expect(matchingSuspect).toBeDefined();
+  if (!matchingSuspect)
+    throw new Error("The read public poster should resolve to its exact suspect identity.");
+  const forceSuspectResponse = await page.request.post(
+    `${apiBaseUrl}/api/dev/sessions/${setup.id}/saloon/force-override`,
+    { data: { forcedKind: "Suspect", forcedSuspectId: matchingSuspect.suspectId } },
+  );
+  expect(forceSuspectResponse.status()).toBe(204);
 
   await page.close();
   const reopenedPage = await context.newPage();
@@ -1009,6 +1071,40 @@ test("a player can start, restore a public poster, and take in the named person 
     expect(confrontation.isAlive).toBe(true);
     expect(confrontation.isSecured).toBe(true);
     await expect(reopenedPage.getByText(confrontation.message, { exact: true })).toBeVisible();
+
+    const knownFeature = poster.details.features[0]?.text;
+    expect(knownFeature).toBeTruthy();
+    if (!knownFeature) throw new Error("The public poster should disclose at least one feature.");
+    await reopenedPage.getByRole("button", { name: "Case file" }).click();
+    await expectCapturedCaseFileSurface(reopenedPage, poster.targetDisplayName, knownFeature);
+
+    await reopenedPage.close();
+    const casebookReloadedPage = await context.newPage();
+    const restoredCaseFileJournalResponsePromise = casebookReloadedPage.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/journal` &&
+        response.request().method() === "GET",
+    );
+    await casebookReloadedPage.goto(productionWebUrl);
+    const restoredCaseFileJournalResponse = await restoredCaseFileJournalResponsePromise;
+    expect(restoredCaseFileJournalResponse.ok()).toBe(true);
+    const restoredCaseFileJournal = (await restoredCaseFileJournalResponse.json()) as JournalDto;
+    expectCapturedCaseFileProjection(
+      restoredCaseFileJournal,
+      poster.targetDisplayName,
+      knownFeature,
+      poster.legalTerms.bountyAmount,
+    );
+    await expect(
+      casebookReloadedPage.getByRole("heading", { level: 1, name: town.name }),
+    ).toBeVisible();
+    await casebookReloadedPage.getByRole("button", { name: "Case file" }).click();
+    await expectCapturedCaseFileSurface(
+      casebookReloadedPage,
+      poster.targetDisplayName,
+      knownFeature,
+    );
+    expect(confrontationPostCount).toBe(1);
   } finally {
     await context.close().catch(() => undefined);
   }

@@ -125,6 +125,8 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.Equal(2525m, session.Player.Wallet.Cash);
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
+        Assert.DoesNotContain(session.CaseFile.GetDiscoveredSuspects(), suspect =>
+            suspect.Status == SuspectStatus.Captured);
         Assert.True(session.CaseFile.TryGetSheriffTurnInSettlementState(new SuspectId("suspect-1"), out var settlementState));
         Assert.Equal("Mira Cline", settlementState.TargetName);
         Assert.False(settlementState.IsAlive);
@@ -136,6 +138,41 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SettledLivingSuspectIsDiscoveredAndCapturedOnCommandAndEventReplay()
+    {
+        var session = CreateSession();
+        var targetId = new SuspectId("suspect-1");
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(targetId);
+        session.ResolveWantedSuspectConfrontation(targetId, WantedSuspectConfrontationChoice.Surrendered);
+
+        var result = session.SettleSheriffTurnIn(targetId, isAlive: true);
+
+        Assert.True(result.Success);
+        Assert.Contains(session.CaseFile.GetDiscoveredSuspects(), suspect =>
+            suspect.Id == targetId && suspect.Status == SuspectStatus.Captured);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents);
+
+        Assert.Contains(replayed.CaseFile.GetDiscoveredSuspects(), suspect =>
+            suspect.Id == targetId && suspect.Status == SuspectStatus.Captured);
+        Assert.Single(replayed.CaseFile.SheriffTurnInSettlements);
+
+        var snapshot = CaseFileSnapshot.FromDomain(session.CaseFile);
+        var staleSnapshot = snapshot with
+        {
+            Suspects = snapshot.Suspects
+                .Select(suspect => suspect.Id == targetId.Value ? suspect with { Status = nameof(SuspectStatus.AtLarge) } : suspect)
+                .ToArray(),
+            DiscoveredSuspectIds = Array.Empty<string>()
+        };
+        var restored = staleSnapshot.ToDomain();
+
+        Assert.Contains(restored.GetDiscoveredSuspects(), suspect =>
+            suspect.Id == targetId && suspect.Status == SuspectStatus.Captured);
     }
 
     [Fact]

@@ -428,6 +428,26 @@ public sealed class GameSessionSaloonPersonOfInterestTests
     }
 
     [Fact]
+    public void ANameSharedWithAnotherSuspectsWarrantAliasDoesNotAuthorizeThatWarrant()
+    {
+        var session = CreateArmedWantedSession(
+            primaryWarrantAliasForSecondarySuspect: true,
+            includeExplicitTargetIds: true,
+            trueCulpritId: "suspect-1");
+        var activeSuspectId = new SuspectId("suspect-2");
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(activeSuspectId));
+        session.MarkEventsCommitted();
+        Assert.True(session.LookAroundSaloon().Success);
+
+        var result = session.ConfrontSaloonPersonOfInterest("warrant-public-1");
+
+        Assert.True(result.Success);
+        Assert.Equal(SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, result.Outcome);
+        Assert.Empty(session.CaseFile.SheriffTurnInSettlements);
+        Assert.DoesNotContain(session.CaseFile.GetDiscoveredSuspects(), suspect => suspect.Id == activeSuspectId);
+    }
+
+    [Fact]
     public void ConfrontSaloonPersonOfInterestRejectsABlankDeclarationWithoutConsumingTheObservedPerson()
     {
         var session = CreateArmedWantedSession();
@@ -484,7 +504,10 @@ public sealed class GameSessionSaloonPersonOfInterestTests
 
     private static GameSession CreateArmedWantedSession(
         bool includeSecondaryWarrantInKnown = true,
-        bool includePrimaryWarrantInKnown = true)
+        bool includePrimaryWarrantInKnown = true,
+        bool primaryWarrantAliasForSecondarySuspect = false,
+        bool includeExplicitTargetIds = false,
+        string trueCulpritId = "suspect-2")
     {
         var currentTown = new Town(new TownId("current"), "Current Town");
         var connectedTown = new Town(new TownId("connected"), "Connected Town");
@@ -511,13 +534,14 @@ public sealed class GameSessionSaloonPersonOfInterestTests
             new WarrantTerms(
                 WarrantDisposition.DeadOrAlive,
                 2500m,
-                new[] { "Red Wren" },
+                primaryWarrantAliasForSecondarySuspect ? new[] { "Red Wren", "Reno Pike" } : new[] { "Red Wren" },
                 new[] { "Raven-feather pin" },
                 "Dodge City Marshal",
                 InvestigationTargetKind.TrueCulprit,
                 Array.Empty<OutlawGangId>(),
                 null),
-            "Wanted for a stage robbery.");
+            "Wanted for a stage robbery.",
+            includeExplicitTargetIds ? new SuspectId("suspect-1") : null);
         var renoWarrant = new Warrant(
             new WarrantId("warrant-public-2"),
             "Reno Pike",
@@ -530,7 +554,8 @@ public sealed class GameSessionSaloonPersonOfInterestTests
                 InvestigationTargetKind.GangMember,
                 Array.Empty<OutlawGangId>(),
                 null),
-            "Wanted for a train robbery.");
+            "Wanted for a train robbery.",
+            includeExplicitTargetIds ? new SuspectId("suspect-2") : null);
         var publicWarrants = new[] { miraWarrant, renoWarrant };
         var knownWarrants = new List<Warrant>();
         if (includePrimaryWarrantInKnown)
@@ -546,7 +571,7 @@ public sealed class GameSessionSaloonPersonOfInterestTests
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
-            trueCulpritId: new SuspectId("suspect-2"),
+            trueCulpritId: new SuspectId(trueCulpritId),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             knownWarrants: knownWarrants,
