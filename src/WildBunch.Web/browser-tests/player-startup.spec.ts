@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { GameStatus, JourneyStatus } from "../src/api/types";
+import { GameStatus, InvestigationSourceKind, JourneyStatus } from "../src/api/types";
 import { startIsolatedApi } from "./support/postgresApi";
 import { seedWorldSeedCode } from "./support/seedWorldSeedCode";
 
@@ -1289,6 +1289,140 @@ test("a player can make a Store purchase and restore it after reopening", async 
     await expect(inventoryPanel).toContainText(`Food x ${restoredFood}`);
     expect(purchases).toHaveLength(1);
     expect(setupPosts).toHaveLength(1);
+  } finally {
+    await context.close();
+  }
+});
+
+test("a player can gather saloon gossip and restore it in the journal after reopening", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const gossipPosts: string[] = [];
+  context.on("page", (openedPage) => {
+    openedPage.on("request", (request) => {
+      if (
+        request.method() === "POST" &&
+        /\/api\/games\/[^/]+\/investigations\/local-gossip\/gather$/.test(request.url())
+      ) {
+        gossipPosts.push(request.url());
+      }
+    });
+  });
+  let page = await context.newPage();
+
+  try {
+    await page.goto(productionWebUrl);
+    await page.getByLabel("Your name").fill(`Browser rider ${Date.now()}`);
+    await page.getByRole("button", { name: "Boring" }).click();
+    await page.getByLabel("World seed").fill(seedWorldSeedCode());
+
+    const setupResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/setup` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Ride on" }).click();
+    const setupResponse = await setupResponsePromise;
+    expect(setupResponse.ok(), await setupResponse.text()).toBe(true);
+    const setup = (await setupResponse.json()) as { id: string };
+
+    await page.getByRole("button", { name: "Ride on" }).click();
+    await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+    await page.getByRole("button", { name: "Ride on" }).click();
+
+    const mapResponse = await page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/world-map` &&
+        response.request().method() === "GET",
+    );
+    expect(mapResponse.ok()).toBe(true);
+    const map = (await mapResponse.json()) as WorldMapResponse;
+    const town = map.towns[0];
+    const startResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/start` &&
+        response.request().method() === "POST",
+    );
+    await clickTownOnWorldMap(page, map, town);
+    const startResponse = await startResponsePromise;
+    expect(startResponse.ok()).toBe(true);
+    await expect(page.getByRole("heading", { level: 1, name: town.name })).toBeVisible();
+
+    await page.getByRole("button", { name: "Saloon" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Saloon" })).toBeVisible();
+    const gossipResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() ===
+          `${apiBaseUrl}/api/games/${setup.id}/investigations/local-gossip/gather` &&
+        response.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Gather gossip" }).click();
+    const gossipResponse = await gossipResponsePromise;
+    expect(gossipResponse.ok(), await gossipResponse.text()).toBe(true);
+    const gossip = (await gossipResponse.json()) as {
+      success: boolean;
+      currentJournal: {
+        caseFile: {
+          knownClues: Array<{
+            id: string;
+            description: string;
+            sourceKind: InvestigationSourceKind | null;
+          }>;
+        };
+        logEntries: Array<{ message: string }>;
+      };
+    };
+    expect(gossip.success).toBe(true);
+    const gossipEntry = gossip.currentJournal.logEntries.find((entry) =>
+      entry.message.includes("uncover a public lead:"),
+    );
+    expect(gossipEntry).toBeDefined();
+    if (!gossipEntry) throw new Error("Expected the recorded gossip result in the journal.");
+    const lead = gossipEntry.message.match(/uncover a public lead: (.+)\.$/)?.[1];
+    expect(lead).toBeTruthy();
+    const gossipClue = gossip.currentJournal.caseFile.knownClues.find((clue) =>
+      clue.description.includes(lead!),
+    );
+    expect(gossipClue).toBeDefined();
+    if (!gossipClue) throw new Error("Expected the disclosed lead to be a learned clue.");
+    expect(gossipClue.sourceKind).toBe(InvestigationSourceKind.LocalGossip);
+    await page.getByRole("button", { name: "Journal", exact: true }).click();
+    await expect(page.getByText(gossipEntry.message, { exact: true })).toBeVisible();
+    expect(gossipPosts).toEqual([
+      `${apiBaseUrl}/api/games/${setup.id}/investigations/local-gossip/gather`,
+    ]);
+
+    await page.close();
+    page = await context.newPage();
+    const restoredJournalResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${setup.id}/journal` &&
+        response.request().method() === "GET",
+    );
+    await page.goto(productionWebUrl);
+    const restoredJournalResponse = await restoredJournalResponsePromise;
+    expect(restoredJournalResponse.ok()).toBe(true);
+    const restoredJournal = (await restoredJournalResponse.json()) as {
+      caseFile: {
+        knownClues: Array<{
+          id: string;
+          description: string;
+          sourceKind: InvestigationSourceKind | null;
+        }>;
+      };
+      logEntries: Array<{ message: string }>;
+    };
+    expect(restoredJournal.logEntries).toContainEqual(gossipEntry);
+    const restoredGossipClue = restoredJournal.caseFile.knownClues.find(
+      (clue) => clue.id === gossipClue.id,
+    );
+    expect(restoredGossipClue).toEqual(gossipClue);
+    expect(restoredGossipClue?.sourceKind).toBe(InvestigationSourceKind.LocalGossip);
+    await page.getByRole("button", { name: "Journal", exact: true }).click();
+    await expect(page.getByText(gossipEntry.message, { exact: true })).toBeVisible();
+    expect(gossipPosts).toHaveLength(1);
   } finally {
     await context.close();
   }
