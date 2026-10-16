@@ -8,17 +8,12 @@ Producing or revising a town-hub building, road, ground, or prop asset.
 
 - Generate raster assets when the task requires new imagery.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - town-hub-asset-judgment
 
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

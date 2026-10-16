@@ -9,9 +9,8 @@ completion, explicit abandonment, or successor-slice retirement.
 
 - Decide when plans and specs are complete and ready for retirement or promotion.
 
-## Optional capabilities
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -26,6 +25,7 @@ completion, explicit abandonment, or successor-slice retirement.
    required nor sufficient for classification.
 4. Record explicit abandonment and promote durable content before removing an
    artifact whose scope did not ship.
+5. Before cutting to main, perform the same semantic classification on every planning artifact, including investigations. Ask the maintainer about each unclear case. Commit eligible retirement to develop before the cut; preserve live work there and omit it from the main-bound tree. The [artifact custody doctrine](../doctrine/artifact-custody.md#planning-across-branches) governs exclusion and exact pre-merge planning restoration on reconciliation. An automated exclusion check cannot classify completion.
 
 ## Doctrine and contracts
 
@@ -35,11 +35,13 @@ completion, explicit abandonment, or successor-slice retirement.
 
 ## Local commands and paths
 
-- Active homes: `.agents/plans/`, `.agents/specs/`, `.agents/roadmaps/`
+- Active homes on develop: `.agents/plans/`, `.agents/specs/`, `.agents/roadmaps/`, `.agents/investigations/`
 - Optional convenience copy: the repo-segregated completed-artifact directory
   beneath the scratch root resolved by host or repository policy.
 - Verify: `py -3 tools\run.py ci --check`; the normal hook checks the staged
-  candidate and refreshes owned decision freshness output.
+  candidate without applying changes or staging corrections. Run the named
+  owning maintenance command when a particular maintained artifact needs
+  updating; `setup-hooks --apply` configures this checkout's hook path.
 
 Plan creation is committed before execution. Retain the current plan and spec
 through their completing pull request. The next substantive slice assesses

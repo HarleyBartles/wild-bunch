@@ -1,12 +1,7 @@
 import styled from "styled-components";
 import type { InventoryDto, InventoryItemDto } from "../api/types";
 import { formatCanteenState, formatHorseTravelState, formatItemKind } from "../ui/formatters";
-import {
-  StatusCard,
-  StatList,
-  Stack,
-  ItemCard,
-} from "./ui/sharedStyled";
+import { StatusCard, StatList, Stack, ItemCard } from "./ui/sharedStyled";
 
 const ItemList = styled(Stack)`
   margin-top: 16px;
@@ -42,7 +37,9 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       </StatList>
       <ItemList>
         {inventory.items.map((item: InventoryItemDto) => (
-          <ItemCard key={`${item.kind}-${item.horseState?.hunger ?? "none"}-${item.canteenState?.charges ?? "none"}`}>
+          <ItemCard
+            key={`${item.kind}-${item.horseState?.hunger ?? "none"}-${item.canteenState?.charges ?? "none"}`}
+          >
             <strong>
               {formatItemKind(item.kind)} x {item.quantity}
             </strong>

@@ -55,17 +55,17 @@ public sealed class SeedWorldResolverCodecTests
             var seedCode = Guid.NewGuid();
             var bytes = seedCode.ToByteArray();
             var low = BitConverter.ToUInt64(bytes, 0);
-        
+
             // Encode palette value at bits 29-32
             var encodedLow = (low & ~(0xFUL << 29)) | ((ulong)i << 29);
             var encodedBytes = new byte[16];
             BitConverter.TryWriteBytes(encodedBytes.AsSpan(0), encodedLow);
             BitConverter.TryWriteBytes(encodedBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
             var encodedSeedCode = new Guid(encodedBytes);
-        
+
             var decoded = SeedWorldResolver.Resolve(encodedSeedCode);
             var decodedValue = (int)decoded.BuildingLayoutPalette;
-        
+
             Assert.Equal(i, decodedValue);
         }
     }

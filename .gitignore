@@ -496,4 +496,8 @@ $RECYCLE.BIN/
 !/.codex/
 /.codex/*
 !/.codex/config.toml
+!/.codex/hooks.json
+!/.codex/hooks/
+!/.codex/hooks/**
+/.codex/hooks/**/__pycache__/
 .playwright-mcp/

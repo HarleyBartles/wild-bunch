@@ -19,12 +19,21 @@ import { useGameSessionMutations } from "./useGameSessionMutations";
 import { useGameSessionQueries } from "./useGameSessionQueries";
 import { useGameSessionState } from "./useGameSessionState";
 
-type BusyMode = "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
+type BusyMode =
+  "idle" | "booting" | "starting" | "refreshing" | "traveling" | "reading" | "investigating";
 
 export function useCurrentGameSession() {
   const queryClient = useQueryClient();
 
   const state = useGameSessionState();
+  const {
+    setStoredGameId,
+    setWantedPosters,
+    setDeclaredWantedIdentityHandle,
+    setNotice,
+    setError,
+    setResetToken,
+  } = state;
   const gameId = state.storedGameId;
 
   const {
@@ -42,7 +51,6 @@ export function useCurrentGameSession() {
   // The readWantedPosters API call adds them to KnownWarrants and the journal,
   // but we should use the session DTO to avoid requiring a separate API call
   // every time we want to declare an identity.
-  const setWantedPosters = state.setWantedPosters;
   useEffect(() => {
     const posters = sessionQuery.data?.wantedPosters;
     setWantedPosters(posters ?? []);
@@ -56,14 +64,22 @@ export function useCurrentGameSession() {
   useEffect(() => {
     if (sessionQuery.data?.status === GameStatus.Archived) {
       window.localStorage.removeItem(storageKey);
-      state.setStoredGameId(null);
-      state.setWantedPosters([]);
-      state.setDeclaredWantedIdentityHandle("");
+      setStoredGameId(null);
+      setWantedPosters([]);
+      setDeclaredWantedIdentityHandle("");
       queryClient.removeQueries({ queryKey: ["session", gameId] });
       queryClient.removeQueries({ queryKey: ["actions", gameId] });
       queryClient.removeQueries({ queryKey: ["journal", gameId] });
     }
-  }, [sessionQuery.data?.status, gameId, queryClient, state]);
+  }, [
+    sessionQuery.data?.status,
+    gameId,
+    queryClient,
+    state,
+    setStoredGameId,
+    setWantedPosters,
+    setDeclaredWantedIdentityHandle,
+  ]);
 
   const {
     setupGameMutation,
@@ -83,11 +99,11 @@ export function useCurrentGameSession() {
   } = useGameSessionMutations({
     gameId,
     declaredWantedIdentityHandle: state.declaredWantedIdentityHandle,
-    setStoredGameId: state.setStoredGameId,
-    setWantedPosters: state.setWantedPosters,
-    setDeclaredWantedIdentityHandle: state.setDeclaredWantedIdentityHandle,
-    setNotice: state.setNotice,
-    setError: state.setError,
+    setStoredGameId: setStoredGameId,
+    setWantedPosters: setWantedPosters,
+    setDeclaredWantedIdentityHandle: setDeclaredWantedIdentityHandle,
+    setNotice: setNotice,
+    setError: setError,
   });
 
   const investigationPending =
@@ -116,7 +132,9 @@ export function useCurrentGameSession() {
   const canFollowTelegraphLeads = actions.some(actionIsFollowTelegraphLeads);
   const canGatherLocalGossip = actions.some(actionIsGatherLocalGossip);
   const canLookAroundSaloon = actions.some(actionIsLookAroundSaloon);
-  const canConfrontSaloonPersonOfInterest = Boolean(session?.activeSaloonPersonOfInterest && state.declaredWantedIdentityHandle);
+  const canConfrontSaloonPersonOfInterest = Boolean(
+    session?.activeSaloonPersonOfInterest && state.declaredWantedIdentityHandle,
+  );
 
   const handleSetupGame = useCallback(
     async (request: SetupGameRequest) => {
@@ -125,22 +143,22 @@ export function useCurrentGameSession() {
     [setupGameMutation],
   );
 
-  const handleMarkPrologueViewed = useCallback(
-    async () => {
-      if (!gameId) {
-        return;
-      }
-      await markPrologueViewedMutation.mutateAsync(gameId);
-    },
-    [gameId, markPrologueViewedMutation],
-  );
+  const handleMarkPrologueViewed = useCallback(async () => {
+    if (!gameId) {
+      return;
+    }
+    await markPrologueViewedMutation.mutateAsync(gameId);
+  }, [gameId, markPrologueViewedMutation]);
 
   const handleStartGameWithTown = useCallback(
     async (townId: string) => {
       if (!gameId) {
         return;
       }
-      await startGameWithTownMutation.mutateAsync({ activeGameId: gameId, townId });
+      await startGameWithTownMutation.mutateAsync({
+        activeGameId: gameId,
+        townId,
+      });
     },
     [gameId, startGameWithTownMutation],
   );
@@ -160,9 +178,9 @@ export function useCurrentGameSession() {
       const activeGameId = result.currentSession.id;
       queryClient.setQueryData(["session", activeGameId], result.currentSession);
       await invalidateGameQueries(activeGameId);
-      state.setNotice(result.message);
+      setNotice(result.message);
     },
-    [queryClient, invalidateGameQueries, state.setNotice],
+    [queryClient, invalidateGameQueries, setNotice],
   );
 
   const handleTravel = useCallback(
@@ -233,12 +251,12 @@ export function useCurrentGameSession() {
 
   const handleReset = useCallback(() => {
     window.localStorage.removeItem(storageKey);
-    state.setStoredGameId(null);
-    state.setWantedPosters([]);
-    state.setDeclaredWantedIdentityHandle("");
-    state.setNotice("");
-    state.setError("");
-    state.setResetToken((current) => current + 1);
+    setStoredGameId(null);
+    setWantedPosters([]);
+    setDeclaredWantedIdentityHandle("");
+    setNotice("");
+    setError("");
+    setResetToken((current) => current + 1);
     if (gameId) {
       queryClient.removeQueries({ queryKey: ["session", gameId] });
       queryClient.removeQueries({ queryKey: ["actions", gameId] });
@@ -247,12 +265,12 @@ export function useCurrentGameSession() {
   }, [
     gameId,
     queryClient,
-    state.setStoredGameId,
-    state.setWantedPosters,
-    state.setDeclaredWantedIdentityHandle,
-    state.setNotice,
-    state.setError,
-    state.setResetToken,
+    setStoredGameId,
+    setWantedPosters,
+    setDeclaredWantedIdentityHandle,
+    setNotice,
+    setError,
+    setResetToken,
   ]);
 
   const archivePlaythrough = useCallback(async () => {
@@ -300,7 +318,7 @@ export function useCurrentGameSession() {
     canLookAroundSaloon,
     canConfrontSaloonPersonOfInterest,
     declaredWantedIdentityHandle: state.declaredWantedIdentityHandle,
-    setDeclaredWantedIdentityHandle: state.setDeclaredWantedIdentityHandle,
+    setDeclaredWantedIdentityHandle: setDeclaredWantedIdentityHandle,
     handleSetupGame,
     handleMarkPrologueViewed,
     handleStartGameWithTown,
@@ -317,8 +335,8 @@ export function useCurrentGameSession() {
     handleConfrontSaloonPersonOfInterest,
     handleReset,
     setSession,
-    setNotice: state.setNotice,
-    setError: state.setError,
+    setNotice: setNotice,
+    setError: setError,
     archivePlaythrough,
     archiving,
   };

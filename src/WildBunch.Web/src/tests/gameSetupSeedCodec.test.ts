@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createCanonicalSeedState, decodeGameSetupSeed, encodeGameSetupSeed, withRandomSeed } from "../ui/gameSetupSeedCodec";
+import {
+  createCanonicalSeedState,
+  decodeGameSetupSeed,
+  encodeGameSetupSeed,
+  withRandomSeed,
+} from "../ui/gameSetupSeedCodec";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -25,18 +30,26 @@ describe("gameSetupSeedCodec", () => {
   });
 
   it("randomizes seed codes without leaving the UUID shape", () => {
-    const randomUUID = vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue("11111111-2222-3333-4444-555555555555");
+    const randomUUID = vi
+      .spyOn(globalThis.crypto, "randomUUID")
+      .mockReturnValue("11111111-2222-3333-4444-555555555555");
 
     const randomSeed = withRandomSeed(createCanonicalSeedState());
 
     expect(randomSeed.seedCode).toBe("11111111-2222-3333-4444-555555555555");
-    expect(randomSeed.seedCode).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(randomSeed.seedCode).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
     expect(randomUUID).toHaveBeenCalledTimes(1);
   });
 
   it("rejects malformed and WB1 seed codes", async () => {
-    await expect(encodeGameSetupSeed({ seedCode: "WB1-N-03-1000000000000-0000" })).rejects.toThrow(/uuid-shaped/i);
-    await expect(decodeGameSetupSeed("WB1-N-03-1000000000000-0000")).rejects.toThrow(/uuid-shaped/i);
+    await expect(encodeGameSetupSeed({ seedCode: "WB1-N-03-1000000000000-0000" })).rejects.toThrow(
+      /uuid-shaped/i,
+    );
+    await expect(decodeGameSetupSeed("WB1-N-03-1000000000000-0000")).rejects.toThrow(
+      /uuid-shaped/i,
+    );
     await expect(decodeGameSetupSeed("not-a-uuid")).rejects.toThrow(/uuid-shaped/i);
   });
 });

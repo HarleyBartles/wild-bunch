@@ -107,9 +107,7 @@ export function SheriffPlace() {
                 {sheriffLeads.map((clue) => (
                   <ItemCard key={clue.id}>
                     <strong>{clue.description}</strong>
-                    {clue.sourceLabel ? (
-                      <LeadMeta>Source: {clue.sourceLabel}</LeadMeta>
-                    ) : null}
+                    {clue.sourceLabel ? <LeadMeta>Source: {clue.sourceLabel}</LeadMeta> : null}
                   </ItemCard>
                 ))}
               </Stack>

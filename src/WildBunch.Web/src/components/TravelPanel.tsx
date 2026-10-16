@@ -24,13 +24,16 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
           <Eyebrow>Trail notebook</Eyebrow>
           <Title>Travel diary</Title>
           <Lead>
-            A player-facing trail log that keeps the road in first person, with the next action sitting below the pages.
+            A player-facing trail log that keeps the road in first person, with the next action
+            sitting below the pages.
           </Lead>
         </div>
         <HeaderMeta>
           <MetaCard>
             <span>Journey</span>
-            <strong>{formatJourneyStatus(travelUi.session.journey?.status ?? JourneyStatus.Active)}</strong>
+            <strong>
+              {formatJourneyStatus(travelUi.session.journey?.status ?? JourneyStatus.Active)}
+            </strong>
           </MetaCard>
           <MetaCard>
             <span>Destination</span>
@@ -40,11 +43,16 @@ export function TravelPanel({ gameId, session, busy, onTurnResult }: TravelPanel
       </TravelHeader>
 
       {travelUi.actionError ? <ErrorBanner>{travelUi.actionError}</ErrorBanner> : null}
-      {travelUi.refreshing ? <InfoBanner>Refreshing trail pages from the backend.</InfoBanner> : null}
+      {travelUi.refreshing ? (
+        <InfoBanner>Refreshing trail pages from the backend.</InfoBanner>
+      ) : null}
 
       <TravelGrid>
         <TravelSummary session={travelUi.session} />
-        <TravelDiaryNotebook travelDiary={travelUi.session.travelDiary} refreshing={travelUi.refreshing} />
+        <TravelDiaryNotebook
+          travelDiary={travelUi.session.travelDiary}
+          refreshing={travelUi.refreshing}
+        />
         <TravelActions
           session={travelUi.session}
           busy={travelUi.busy}
@@ -67,7 +75,11 @@ const TravelStage = styled.article`
   border-radius: 28px;
   border: 1px solid color-mix(in srgb, var(--accent-strong) 24%, transparent);
   background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--accent-strong) 12%, transparent), transparent 26%),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--accent-strong) 12%, transparent),
+      transparent 26%
+    ),
     linear-gradient(180deg, rgba(34, 25, 16, 0.98), rgba(18, 13, 8, 0.98)); /* no token match — surface gradient */
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
 `;

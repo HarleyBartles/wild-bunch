@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import type { GameDifficulty, GameEntropy, GameSessionDto } from "../api/types";
-import {
-  createCanonicalSeedState,
-  decodeGameSetupSeed,
-  encodeGameSetupSeed,
-  type GameSetupSeedState,
-} from "../ui/gameSetupSeedCodec";
+import { createCanonicalSeedState, type GameSetupSeedState } from "../ui/gameSetupSeedCodec";
 
 interface UseStartGameSeedArgs {
   session: GameSessionDto | null;
@@ -27,19 +22,10 @@ export interface UseStartGameSeedResult {
   randomizeSeed: () => void;
 }
 
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (typeof error === "string" && error.trim()) {
-    return error;
-  }
-
-  return "Unable to update the setup seed.";
-}
-
-export function useStartGameSeed({ session, resetToken }: UseStartGameSeedArgs): UseStartGameSeedResult {
+export function useStartGameSeed({
+  session,
+  resetToken,
+}: UseStartGameSeedArgs): UseStartGameSeedResult {
   const [playerName, setPlayerName] = useState("");
   const [gameDifficulty, setGameDifficulty] = useState<GameDifficulty>(0);
   const [gameEntropy, setGameEntropy] = useState<GameEntropy>(1);

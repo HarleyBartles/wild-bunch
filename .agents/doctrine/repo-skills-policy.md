@@ -5,7 +5,7 @@
 - `.agents/plugins/marketplace.json` declares the four repository plugin dependencies and their Git sources and paths. Their payload refs intentionally track `main`.
 - `.codex/config.toml` binds the Git-backed `wild-bunch` catalog and enables the selected plugin identities. Codex owns installation and cache refresh.
 - `.agents/skills/` contains skills authored for Wild Bunch. Each skill's frontmatter name matches its containing directory. Installed plugin skills remain in Codex's cache.
-- `scripts/check_plugin_subscriptions.py --check` checks Codex catalog syntax, selectors, paths, matching marketplace registration, and local activations. It does not fetch, install, or establish authentication, access, trust, or runtime availability.
+- `py -3 tools/check_plugin_subscriptions.py --check` checks Codex catalog syntax, selectors, paths, matching marketplace registration, and local activations. It does not fetch, install, or establish authentication, access, trust, or runtime availability.
 - Devin can read the repository's scoped rules, but this repository does not declare plugin dependencies for Devin. Do not describe Codex plugin activation as Devin support.
 
 ## Authoring and validation

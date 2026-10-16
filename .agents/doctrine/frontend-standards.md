@@ -1,5 +1,7 @@
 # Frontend Standards
 
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work changes a durable decision.
+
 These are the binding standards for the Wild Bunch web app under
 `src/WildBunch.Web/`.
 
@@ -20,7 +22,7 @@ Player-facing surfaces must be in-world, player-usable surfaces, not cockpit das
 
 - Durable play surfaces belong in the HUD/shell or another player-facing route, not in `DebugCockpitRoute`. The debug cockpit can remain utilitarian scaffolding.
 - Player-facing surfaces conform to
-  `src/WildBunch.Web/.agents/contracts/unslop/play-surface-ui.md`.
+  `.agents/unslop/play-surface-ui.md`.
 
 ## Source Truth
 

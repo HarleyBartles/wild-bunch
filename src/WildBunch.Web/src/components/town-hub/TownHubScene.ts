@@ -2,11 +2,7 @@ import Phaser from "phaser";
 import { AvailableActionKind, BuildingView } from "../../api/types";
 import { BuildingKind } from "./types";
 import type { BuildingPlacementDto, TownLayoutDto } from "./types";
-import {
-  getBackgroundSpriteKey,
-  getBackgroundSpriteUrl,
-  getSpriteUrl,
-} from "./sprite-loader";
+import { getBackgroundSpriteKey, getBackgroundSpriteUrl, getSpriteUrl } from "./sprite-loader";
 import {
   getDirtTileUrl,
   getPathTileUrl,
@@ -201,7 +197,8 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private renderDirtTiles(): void {
-    const seed = this.layout.layoutSalts?.dirtSalt ?? this.layout.resolverVersion ?? "town-hub-dirt";
+    const seed =
+      this.layout.layoutSalts?.dirtSalt ?? this.layout.resolverVersion ?? "town-hub-dirt";
 
     for (let row = 0; row < TileGridHeight; row++) {
       for (let col = 0; col < TileGridWidth; col++) {
@@ -329,7 +326,8 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private renderPropTiles(): void {
-    const seed = this.layout.layoutSalts?.propsSalt ?? this.layout.resolverVersion ?? "town-hub-props";
+    const seed =
+      this.layout.layoutSalts?.propsSalt ?? this.layout.resolverVersion ?? "town-hub-props";
 
     for (let row = 0; row < TileGridHeight; row++) {
       for (let col = 0; col < TileGridWidth; col++) {
@@ -374,7 +372,11 @@ export class TownHubScene extends Phaser.Scene {
 
   private renderBackgroundBuildings(): void {
     for (const placement of this.backgroundPlacements) {
-      const spriteKey = getBackgroundSpriteKey(placement.family, placement.view, this.layout.prosperity);
+      const spriteKey = getBackgroundSpriteKey(
+        placement.family,
+        placement.view,
+        this.layout.prosperity,
+      );
       const offset = this.getBackgroundPlacementOffset(placement);
       this.add
         .image(
@@ -487,7 +489,11 @@ export class TownHubScene extends Phaser.Scene {
   }
 
   private getRoadKey(variant: RoadVariant): string {
-    return variant === "flat" ? "road-main-flat" : variant === "path" ? "road-main-path" : "road-main-spur";
+    return variant === "flat"
+      ? "road-main-flat"
+      : variant === "path"
+        ? "road-main-path"
+        : "road-main-spur";
   }
 
   private getSpurKey(variant: SpurVariant): string {
@@ -563,7 +569,9 @@ export class TownHubScene extends Phaser.Scene {
   private isBlockedByAnyBuildingPlacement(row: number, col: number): boolean {
     const blocksForeground = this.layout.buildings.some((building) => {
       if (building.kind === BuildingKind.Trailhead) {
-        return getTrailheadFootprintTiles(building).some((tile) => tile.row === row && tile.col === col);
+        return getTrailheadFootprintTiles(building).some(
+          (tile) => tile.row === row && tile.col === col,
+        );
       }
 
       const tile = logicalToTileCell(building.x, building.y);
@@ -589,7 +597,10 @@ export class TownHubScene extends Phaser.Scene {
 
       const blockedRow = placement.row + Math.sign(offset.y);
       const blockedCol = placement.col + Math.sign(offset.x);
-      return (placement.row === row && placement.col === col) || (blockedRow === row && blockedCol === col);
+      return (
+        (placement.row === row && placement.col === col) ||
+        (blockedRow === row && blockedCol === col)
+      );
     });
   }
 
@@ -616,7 +627,9 @@ export class TownHubScene extends Phaser.Scene {
     return (
       this.layout.buildings.some((building) => {
         if (building.kind === BuildingKind.Trailhead) {
-          return getTrailheadFootprintTiles(building).some((tile) => tile.row === row && tile.col === col);
+          return getTrailheadFootprintTiles(building).some(
+            (tile) => tile.row === row && tile.col === col,
+          );
         }
 
         const tile = logicalToTileCell(building.x, building.y);
@@ -666,17 +679,26 @@ export class TownHubScene extends Phaser.Scene {
     }
   }
 
-  private getBackgroundPlacementOffset(placement: PlannedBackgroundBuilding): { x: number; y: number } {
+  private getBackgroundPlacementOffset(placement: PlannedBackgroundBuilding): {
+    x: number;
+    y: number;
+  } {
     if (placement.attachesTo === "road") {
       return {
-        x: placement.side === "west" ? -(TilePixelWidth * BuildingNudgeRatio) : TilePixelWidth * BuildingNudgeRatio,
+        x:
+          placement.side === "west"
+            ? -(TilePixelWidth * BuildingNudgeRatio)
+            : TilePixelWidth * BuildingNudgeRatio,
         y: 0,
       };
     }
 
     return {
       x: 0,
-      y: placement.attachesTo === "spur-below" ? TilePixelHeight * BuildingNudgeRatio : -(TilePixelHeight * BuildingNudgeRatio),
+      y:
+        placement.attachesTo === "spur-below"
+          ? TilePixelHeight * BuildingNudgeRatio
+          : -(TilePixelHeight * BuildingNudgeRatio),
     };
   }
 

@@ -11,22 +11,23 @@ Wild Bunch is a C#/.NET Western adventure game in `HarleyBartles/wild-bunch`.
 
 ## Build and test commands
 
-- `py -3 tools/run.py ci --check`
-- `dotnet build`
-- `dotnet test`
-- `npm ci && npm run typecheck && npm run test && npm run build` in `src/WildBunch.Web`
+- `py -3 tools/run.py --help` discovers supported command-bus targets.
+- `py -3 tools/run.py ci --check` runs the complete fail-fast repository gate.
 
 ## Routing pointers
 
+- Before repository work, read the [unslop playbook](.agents/playbooks/unslop.md) and follow its scoped profile selection; read the [decision-record playbook](.agents/playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 - Agent Operating Model adoption: [.agents/contracts/operating-standards.json](.agents/contracts/operating-standards.json) and [standards certification](.agents/contracts/standards-certification.md).
-- Lifecycle runbooks: [repo workflow policy](.agents/doctrine/repo-runbook-policy.md)
+- Lifecycle runbooks: [repo workflow policy](.agents/doctrine/repo-runbook-policy.md) and [release lifecycle](.agents/runbooks/release.md)
+- Decision records: [catalogue](docs/decisions/README.md) and [decision-record playbook](.agents/playbooks/decision-records.md)
 - Topical playbooks: [testing](.agents/playbooks/testing.md) and [code style](.agents/playbooks/code-style.md)
-- Scoped routing: [Devin rules](.devin/rules/scripts.md)
+- Scoped routing: [thin AGENTS policy](.agents/doctrine/repo-runbook-policy.md#scoped-agent-entrypoints)
 - Testing instructions: [.agents/playbooks/testing.md](.agents/playbooks/testing.md)
 - Code style guidelines: [.agents/playbooks/code-style.md](.agents/playbooks/code-style.md)
 - Review guidelines: [.agents/runbooks/code-review.md](.agents/runbooks/code-review.md)
 - Publication proof and PR instructions: [.agents/runbooks/pr.md](.agents/runbooks/pr.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Command bus: [tools guide](tools/README.md)
 - Security considerations: [.agents/playbooks/security.md](.agents/playbooks/security.md)
 
 ## Maintenance responsibility

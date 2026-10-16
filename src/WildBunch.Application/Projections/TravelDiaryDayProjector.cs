@@ -164,9 +164,9 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                     }
                     break;
 
-                // JourneyCompleted and JourneyArrivalAcknowledged do not create diary days.
-                // The last diary day is created by TravelDayAdvanced or JourneyEncounterResolved
-                // with DayCompleted=true. JourneyCompleted carries an empty DiaryMessage.
+                    // JourneyCompleted and JourneyArrivalAcknowledged do not create diary days.
+                    // The last diary day is created by TravelDayAdvanced or JourneyEncounterResolved
+                    // with DayCompleted=true. JourneyCompleted carries an empty DiaryMessage.
             }
         }
 

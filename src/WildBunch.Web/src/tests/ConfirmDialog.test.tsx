@@ -31,7 +31,10 @@ function renderDialog(props: Partial<ComponentProps<typeof ConfirmDialog>> = {})
 
 describe("ConfirmDialog", () => {
   it("renders the title and body when open", () => {
-    renderDialog({ title: "Discard progress?", body: "This cannot be undone." });
+    renderDialog({
+      title: "Discard progress?",
+      body: "This cannot be undone.",
+    });
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Discard progress?")).toBeInTheDocument();

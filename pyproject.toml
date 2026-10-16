@@ -1,0 +1,18 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+  "**/bin",
+  "**/obj",
+  "**/node_modules",
+  "**/dist",
+  "**/build",
+  ".venv",
+  "venv",
+]
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]

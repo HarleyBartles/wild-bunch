@@ -50,7 +50,13 @@ export function TravelActions({
     <ActionCard>
       <SectionHeader>
         <strong>Trail action</strong>
-        <span>{pendingEncounter ? "Encounter waiting" : arrivalPending ? "Arrival pending" : "Ready to ride"}</span>
+        <span>
+          {pendingEncounter
+            ? "Encounter waiting"
+            : arrivalPending
+              ? "Arrival pending"
+              : "Ready to ride"}
+        </span>
       </SectionHeader>
 
       {actionError ? <InlineError>{actionError}</InlineError> : null}
@@ -66,17 +72,29 @@ export function TravelActions({
         />
       ) : arrivalPending ? (
         <>
-          <ActionCopy>The trail pages are still open. Acknowledge the arrival when you are ready to step into town.</ActionCopy>
-          <PrimaryButton type="button" onClick={() => void onAcknowledgeTravelArrival()} disabled={disabled}>
+          <ActionCopy>
+            The trail pages are still open. Acknowledge the arrival when you are ready to step into
+            town.
+          </ActionCopy>
+          <PrimaryButton
+            type="button"
+            onClick={() => void onAcknowledgeTravelArrival()}
+            disabled={disabled}
+          >
             {busy ? "Entering town..." : "Enter town"}
           </PrimaryButton>
         </>
       ) : canAdvance ? (
         <>
           <ActionCopy>
-            The notebook is ready for the next stretch of road. Advance the day when you want the trail to continue.
+            The notebook is ready for the next stretch of road. Advance the day when you want the
+            trail to continue.
           </ActionCopy>
-          <PrimaryButton type="button" onClick={() => void onAdvanceTravelDay()} disabled={disabled}>
+          <PrimaryButton
+            type="button"
+            onClick={() => void onAdvanceTravelDay()}
+            disabled={disabled}
+          >
             {busy ? "Advancing..." : "Advance travel day"}
           </PrimaryButton>
         </>

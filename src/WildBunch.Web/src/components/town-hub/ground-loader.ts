@@ -1,7 +1,6 @@
 const DIRT_VARIANTS = ["dirt-1", "dirt-2", "dirt-3"] as const;
 const PROP_KINDS = ["barrel", "cactus", "fence-piece", "tumbleweed", "water-trough"] as const;
 
-type Side = "east" | "west";
 type RoadVariant = "flat" | "path" | "spur";
 type SpurVariant = "straight" | "path" | "end-cap" | "cross";
 type PathOrientation = "horizontal" | "vertical";
@@ -41,12 +40,20 @@ function jitter(seed: string, magnitude: number): number {
 }
 
 export function getDirtTileUrl(variantIndex: number): string {
-  const variant = DIRT_VARIANTS[((variantIndex % DIRT_VARIANTS.length) + DIRT_VARIANTS.length) % DIRT_VARIANTS.length];
+  const variant =
+    DIRT_VARIANTS[
+      ((variantIndex % DIRT_VARIANTS.length) + DIRT_VARIANTS.length) % DIRT_VARIANTS.length
+    ];
   return `/assets/town-hub-ground/dirt/${variant}.png`;
 }
 
 export function getRoadTileUrl(variant: RoadVariant): string {
-  const fileName = variant === "flat" ? "road-flat-edge" : variant === "path" ? "road-path-edge" : "road-spur-edge";
+  const fileName =
+    variant === "flat"
+      ? "road-flat-edge"
+      : variant === "path"
+        ? "road-path-edge"
+        : "road-spur-edge";
   return `/assets/town-hub-roads/main-road/${fileName}.png`;
 }
 
@@ -82,7 +89,12 @@ export function pickDirtMirroring(seed: string, row: number, col: number): TileM
   };
 }
 
-export function shouldPlaceProp(seed: string, row: number, col: number, blockedByBuilding = false): boolean {
+export function shouldPlaceProp(
+  seed: string,
+  row: number,
+  col: number,
+  blockedByBuilding = false,
+): boolean {
   if (blockedByBuilding) {
     return false;
   }
@@ -93,7 +105,12 @@ export function pickPropKind(seed: string, row: number, col: number): PropKind {
   return PROP_KINDS[hashString(seedForCell(seed, row, col, "prop-kind")) % PROP_KINDS.length];
 }
 
-export function pickPropPlacement(seed: string, row: number, col: number, kind: PropKind): PropPlacement {
+export function pickPropPlacement(
+  seed: string,
+  row: number,
+  col: number,
+  kind: PropKind,
+): PropPlacement {
   const placementSeed = seedForCell(seed, row, col, `prop-${kind}`);
   return {
     offsetX: jitter(`${placementSeed}:x`, PropJitterX),

@@ -5,6 +5,9 @@
 Changing repository plugin declarations, authored skill custody, or AOM
 subscription and certification records.
 
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 ## Composition
 
 1. Declare repository plugins in `.agents/plugins/marketplace.json` and bind
@@ -34,3 +37,4 @@ subscription and certification records.
 ## Runbook routing
 
 - [Implementing](../runbooks/implementing.md)
+- [Decision records](decision-records.md) - when standards adoption or agent-surface ownership changes a durable repository decision.

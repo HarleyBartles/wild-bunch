@@ -110,13 +110,20 @@ export const Error = styled.div`
   border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
 `;
 
-export const Grid = styled.div<{ $cols?: number; $tabletCols?: number; $mobileCols?: number }>`
+export const Grid = styled.div<{
+  $cols?: number;
+  $tabletCols?: number;
+  $mobileCols?: number;
+}>`
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(${({ $cols }) => $cols ?? 2}, minmax(0, 1fr));
 
   @media (max-width: 1280px) {
-    grid-template-columns: repeat(${({ $tabletCols, $cols }) => $tabletCols ?? $cols ?? 2}, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      ${({ $tabletCols, $cols }) => $tabletCols ?? $cols ?? 2},
+      minmax(0, 1fr)
+    );
   }
 
   @media (max-width: 960px) {
@@ -194,7 +201,8 @@ export const ItemCard = styled.div`
   border: 1px solid var(--border);
 `;
 
-type FlowSurfaceVariant = "pre-session" | "town-hub" | "place" | "travel-prep" | "trail" | "arrival";
+type FlowSurfaceVariant =
+  "pre-session" | "town-hub" | "place" | "travel-prep" | "trail" | "arrival";
 
 export const FlowSurface = styled.div<{ $variant?: FlowSurfaceVariant }>`
   display: grid;
@@ -202,10 +210,7 @@ export const FlowSurface = styled.div<{ $variant?: FlowSurfaceVariant }>`
   max-width: ${({ $variant }) => ($variant === "pre-session" ? "720px" : "1100px")};
   margin: 0 auto;
 
-  ${({ $variant }) =>
-    $variant
-      ? `padding: 8px 0 24px; align-content: start;`
-      : ""}
+  ${({ $variant }) => ($variant ? `padding: 8px 0 24px; align-content: start;` : "")}
 
   @media (max-width: 1366px) {
     max-width: ${({ $variant }) => ($variant === "pre-session" ? "720px" : "960px")};

@@ -50,9 +50,15 @@ describe("ground-loader", () => {
   it("maps prop kinds to normalized sprite urls", () => {
     expect(getPropSpriteUrl("barrel")).toBe("/assets/town-hub-ground/props/barrel-normalized.png");
     expect(getPropSpriteUrl("cactus")).toBe("/assets/town-hub-ground/props/cactus-normalized.png");
-    expect(getPropSpriteUrl("fence-piece")).toBe("/assets/town-hub-ground/props/fence-piece-normalized.png");
-    expect(getPropSpriteUrl("tumbleweed")).toBe("/assets/town-hub-ground/props/tumbleweed-normalized.png");
-    expect(getPropSpriteUrl("water-trough")).toBe("/assets/town-hub-ground/props/water-trough-normalized.png");
+    expect(getPropSpriteUrl("fence-piece")).toBe(
+      "/assets/town-hub-ground/props/fence-piece-normalized.png",
+    );
+    expect(getPropSpriteUrl("tumbleweed")).toBe(
+      "/assets/town-hub-ground/props/tumbleweed-normalized.png",
+    );
+    expect(getPropSpriteUrl("water-trough")).toBe(
+      "/assets/town-hub-ground/props/water-trough-normalized.png",
+    );
   });
 
   it("picks deterministic dirt variants from a salt", () => {

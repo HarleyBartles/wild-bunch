@@ -1,0 +1,1 @@
+When working in `src/WildBunch.Assets/scripts/`, read [pipeline custody](../docs/asset-operations.md#pipeline-custody) and follow the [unslop playbook](../../../.agents/playbooks/unslop.md); consult the [decision-record playbook](../../../.agents/playbooks/decision-records.md) for durable changes; outside this tree these local pointers do not apply.

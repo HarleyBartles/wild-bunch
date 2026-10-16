@@ -57,10 +57,7 @@ export class StartingTownMapScene extends Phaser.Scene {
 
     const dataWidth = maxX - minX || 1;
     const dataHeight = maxY - minY || 1;
-    const scale = Math.min(
-      (width - padding * 2) / dataWidth,
-      (height - padding * 2) / dataHeight,
-    );
+    const scale = Math.min((width - padding * 2) / dataWidth, (height - padding * 2) / dataHeight);
 
     const scaledWidth = dataWidth * scale;
     const scaledHeight = dataHeight * scale;
@@ -142,7 +139,13 @@ export class StartingTownMapScene extends Phaser.Scene {
   }
 }
 
-export function PhaserMapHost({ mapData, selectedTownId, onTownSelected, currentTownId, selectableTownIds }: PhaserMapHostProps) {
+export function PhaserMapHost({
+  mapData,
+  selectedTownId,
+  onTownSelected,
+  currentTownId,
+  selectableTownIds,
+}: PhaserMapHostProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onTownSelectedRef = useRef(onTownSelected);
   onTownSelectedRef.current = onTownSelected;
@@ -175,13 +178,7 @@ export function PhaserMapHost({ mapData, selectedTownId, onTownSelected, current
     };
   }, [mapData, selectedTownId, currentTownId, selectableTownIds]);
 
-  return (
-    <MapCanvas
-      ref={containerRef}
-      role="img"
-      aria-label="Trail map of starting towns"
-    />
-  );
+  return <MapCanvas ref={containerRef} role="img" aria-label="Trail map of starting towns" />;
 }
 
 const MapCanvas = styled.div`

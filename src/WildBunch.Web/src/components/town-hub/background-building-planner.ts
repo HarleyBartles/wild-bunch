@@ -1,4 +1,10 @@
-import { BuildingKind, BuildingView, TownProsperity, type BuildingPlacementDto, type TownLayoutDto } from "../../api/types";
+import {
+  BuildingKind,
+  BuildingView,
+  TownProsperity,
+  type BuildingPlacementDto,
+  type TownLayoutDto,
+} from "../../api/types";
 
 export interface BackgroundSlot {
   row: number;
@@ -49,7 +55,10 @@ function seedForCell(seed: string, row: number, col: number, suffix: string): st
   return `${seed}:${suffix}:${row}:${col}`;
 }
 
-function logicalToTileCell(building: BuildingPlacementDto): { row: number; col: number } {
+function logicalToTileCell(building: BuildingPlacementDto): {
+  row: number;
+  col: number;
+} {
   return {
     col: Math.floor(building.x / 10),
     row: Math.floor(building.y / 10),
@@ -76,15 +85,25 @@ function getSlotKey(row: number, col: number): string {
   return `${row}:${col}`;
 }
 
-function candidateScore(seed: string, row: number, col: number, attachesTo: BackgroundSlot["attachesTo"]): number {
+function candidateScore(
+  seed: string,
+  row: number,
+  col: number,
+  attachesTo: BackgroundSlot["attachesTo"],
+): number {
   return hashString(seedForCell(seed, row, col, attachesTo));
 }
 
-export function getTrailheadFootprintTiles(building: BuildingPlacementDto): Array<{ row: number; col: number }> {
+export function getTrailheadFootprintTiles(
+  building: BuildingPlacementDto,
+): Array<{ row: number; col: number }> {
   const left = Math.max(0, Math.floor((building.x - building.width / 2) / 10));
   const right = Math.min(TileGridWidth - 1, Math.ceil((building.x + building.width / 2) / 10) - 1);
   const top = Math.max(0, Math.floor((building.y - building.height / 2) / 10));
-  const bottom = Math.min(TileGridHeight - 1, Math.ceil((building.y + building.height / 2) / 10) - 1);
+  const bottom = Math.min(
+    TileGridHeight - 1,
+    Math.ceil((building.y + building.height / 2) / 10) - 1,
+  );
   const tiles: Array<{ row: number; col: number }> = [];
 
   for (let row = top; row <= bottom; row++) {
@@ -134,8 +153,15 @@ function pickBudgetCount(seed: string, prosperity: TownProsperity, eligibleCount
   return min + (hashString(seedForCell(seed, min, max, "budget")) % (spread + 1));
 }
 
-function pickFamily(seed: string, row: number, col: number, attachesTo: BackgroundSlot["attachesTo"]): "background-house" | "background-shop" {
-  return hashString(seedForCell(seed, row, col, `${attachesTo}:family`)) % 2 === 0 ? "background-house" : "background-shop";
+function pickFamily(
+  seed: string,
+  row: number,
+  col: number,
+  attachesTo: BackgroundSlot["attachesTo"],
+): "background-house" | "background-shop" {
+  return hashString(seedForCell(seed, row, col, `${attachesTo}:family`)) % 2 === 0
+    ? "background-house"
+    : "background-shop";
 }
 
 function pickView(
@@ -153,7 +179,11 @@ function pickView(
   return pool[hashString(seedForCell(seed, row, col, `${attachesTo}:view`)) % pool.length];
 }
 
-function pickFlipX(col: number, attachesTo: BackgroundSlot["attachesTo"], view: BuildingView): boolean {
+function pickFlipX(
+  col: number,
+  attachesTo: BackgroundSlot["attachesTo"],
+  view: BuildingView,
+): boolean {
   if (attachesTo === "road") {
     return col < 5;
   }
@@ -161,7 +191,7 @@ function pickFlipX(col: number, attachesTo: BackgroundSlot["attachesTo"], view: 
   return view === BuildingView.FrontOblique || view === BuildingView.RearOblique ? col < 5 : false;
 }
 
-function pickFlipY(attachesTo: BackgroundSlot["attachesTo"]): boolean {
+function pickFlipY(_attachesTo: BackgroundSlot["attachesTo"]): boolean {
   return false;
 }
 
@@ -170,7 +200,9 @@ export function collectForegroundOccupiedSlots(layout: TownLayoutDto): Set<strin
 
   for (const building of layout.buildings) {
     const tiles =
-      building.kind === BuildingKind.Trailhead ? getTrailheadFootprintTiles(building) : [logicalToTileCell(building)];
+      building.kind === BuildingKind.Trailhead
+        ? getTrailheadFootprintTiles(building)
+        : [logicalToTileCell(building)];
     for (const tile of tiles) {
       occupied.add(getSlotKey(tile.row, tile.col));
     }
@@ -218,17 +250,29 @@ export function collectEligibleBackgroundSlots(layout: TownLayoutDto): Backgroun
     const score = candidateScore(seed, slot.row, slot.col, slot.attachesTo);
     const candidate: SlotCandidate = { ...slot, score };
     const existing = seen.get(key);
-    if (!existing || candidate.score < existing.score || (candidate.score === existing.score && candidate.attachesTo < existing.attachesTo)) {
+    if (
+      !existing ||
+      candidate.score < existing.score ||
+      (candidate.score === existing.score && candidate.attachesTo < existing.attachesTo)
+    ) {
       seen.set(key, candidate);
     }
   };
 
   for (let row = 0; row < TileGridHeight; row++) {
-    if (getCell(layout, row, 4) === 1 && isEmptyCell(layout, row, 3) && !occupied.has(getSlotKey(row, 3))) {
+    if (
+      getCell(layout, row, 4) === 1 &&
+      isEmptyCell(layout, row, 3) &&
+      !occupied.has(getSlotKey(row, 3))
+    ) {
       addCandidate({ row, col: 3, side: "west", attachesTo: "road" });
     }
 
-    if (getCell(layout, row, 5) === 1 && isEmptyCell(layout, row, 6) && !occupied.has(getSlotKey(row, 6))) {
+    if (
+      getCell(layout, row, 5) === 1 &&
+      isEmptyCell(layout, row, 6) &&
+      !occupied.has(getSlotKey(row, 6))
+    ) {
       addCandidate({ row, col: 6, side: "east", attachesTo: "road" });
     }
   }
@@ -282,7 +326,9 @@ export function planBackgroundBuildings(
   }
 
   const seed = getLayoutSeed(layout);
-  const eligible = collectEligibleBackgroundSlots(layout).filter((slot) => !occupiedSlots.has(getSlotKey(slot.row, slot.col)));
+  const eligible = collectEligibleBackgroundSlots(layout).filter(
+    (slot) => !occupiedSlots.has(getSlotKey(slot.row, slot.col)),
+  );
   const budget = pickBudgetCount(seed, layout.prosperity, eligible.length);
   const placements: PlannedBackgroundBuilding[] = [];
 
@@ -313,7 +359,9 @@ export function planSpurCrossTiles(
   }
 
   const foregroundPlacements = collectForegroundOccupiedSlots(layout);
-  const backgroundOccupied = new Set(backgroundPlacements.map((placement) => getSlotKey(placement.row, placement.col)));
+  const backgroundOccupied = new Set(
+    backgroundPlacements.map((placement) => getSlotKey(placement.row, placement.col)),
+  );
   const hasPlacementAt = (row: number, col: number): boolean => {
     const key = getSlotKey(row, col);
     return foregroundPlacements.has(key) || backgroundOccupied.has(key);

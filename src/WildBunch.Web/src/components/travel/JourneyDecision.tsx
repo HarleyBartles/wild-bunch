@@ -18,7 +18,14 @@ interface JourneyDecisionProps {
   ) => Promise<void>;
 }
 
-export function JourneyDecision({ encounter, ammo, cash, busy, refreshing, onResolveEncounter }: JourneyDecisionProps) {
+export function JourneyDecision({
+  encounter,
+  ammo,
+  cash,
+  busy,
+  refreshing,
+  onResolveEncounter,
+}: JourneyDecisionProps) {
   const disabled = busy || refreshing;
   const maxBulletSpend = Math.min(6, ammo);
   const hasFightChoice = encounter.choices.some((choice) => choice.id === "fight");
@@ -79,7 +86,9 @@ export function JourneyDecision({ encounter, ammo, cash, busy, refreshing, onRes
                 onChange={(event) => setBribeAmount(Number.parseFloat(event.target.value) || 0)}
                 disabled={disabled || cash <= 0}
               />
-              <ControlHint>{cash > 0 ? `Offer up to $${cash.toFixed(2)}.` : "No cash is left to offer."}</ControlHint>
+              <ControlHint>
+                {cash > 0 ? `Offer up to $${cash.toFixed(2)}.` : "No cash is left to offer."}
+              </ControlHint>
             </ControlCard>
           ) : null}
         </EncounterControls>
@@ -94,7 +103,12 @@ export function JourneyDecision({ encounter, ammo, cash, busy, refreshing, onRes
               void onResolveEncounter(
                 choice.id,
                 choice.id === "fight"
-                  ? { bulletSpend: maxBulletSpend === 0 ? 0 : Math.max(1, Math.min(fightBullets, maxBulletSpend)) }
+                  ? {
+                      bulletSpend:
+                        maxBulletSpend === 0
+                          ? 0
+                          : Math.max(1, Math.min(fightBullets, maxBulletSpend)),
+                    }
                   : choice.id === "bribe"
                     ? { bribeAmount: Math.max(0, Math.min(bribeAmount, cash)) }
                     : undefined,

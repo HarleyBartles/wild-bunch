@@ -1,5 +1,7 @@
 # Architecture guardrails
 
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work changes a durable decision.
+
 Wild Bunch uses DDD, CQRS, and event sourcing as established architecture, not
 optional aspirations.
 

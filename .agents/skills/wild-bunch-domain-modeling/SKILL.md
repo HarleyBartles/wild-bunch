@@ -12,6 +12,8 @@ metadata:
 
 # Wild Bunch Domain Modeling
 
+Before using this skill, follow the [unslop playbook](../../playbooks/unslop.md) for gameplay-domain boundaries and read the selected profiles in full; consult the [decision-record playbook](../../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 ## Owned decision
 
 Decide which Wild Bunch domain owner holds a proposed gameplay invariant or

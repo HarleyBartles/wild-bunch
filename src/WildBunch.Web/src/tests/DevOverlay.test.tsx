@@ -6,7 +6,6 @@ import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
 import type { DevSurface } from "../dev/DevSurfaceContext";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { getSessionAudit } from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
   getSessionAudit: vi.fn(),
@@ -37,8 +36,6 @@ vi.mock("../api/wildBunchApi", () => ({
   resolveTravelEncounter: vi.fn(),
   previewTravel: vi.fn(),
 }));
-
-const mockedGetSessionAudit = vi.mocked(getSessionAudit);
 
 afterEach(() => {
   cleanup();
@@ -112,7 +109,9 @@ describe("DevOverlay", () => {
   it("renders the session audit panel tab on town surface", () => {
     renderOverlay(true, () => {}, 0, "town");
     // Session audit should appear in the bottom section, not in the main list
-    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
+    const sessionAuditButtons = screen.getAllByRole("button", {
+      name: /session audit/i,
+    });
     expect(sessionAuditButtons).toHaveLength(1);
   });
 
@@ -156,7 +155,9 @@ describe("DevOverlay contextual panel visibility", () => {
   it("does not show Saloon dev tab when surface is sheriff", () => {
     renderOverlay(true, () => {}, 0, "sheriff");
     // Session audit should appear in the bottom section
-    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
+    const sessionAuditButtons = screen.getAllByRole("button", {
+      name: /session audit/i,
+    });
     expect(sessionAuditButtons).toHaveLength(1);
     expect(screen.queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
   });
@@ -207,7 +208,9 @@ describe("DevOverlay contextual panel visibility", () => {
   it("shows only session audit when surface is store (no contextual panels)", () => {
     renderOverlay(true, () => {}, 0, "store");
     // When there are no main panels, session audit should be the only panel
-    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
+    const sessionAuditButtons = screen.getAllByRole("button", {
+      name: /session audit/i,
+    });
     expect(sessionAuditButtons).toHaveLength(1);
     expect(screen.queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /travel dev/i })).not.toBeInTheDocument();
@@ -220,7 +223,9 @@ describe("DevOverlay contextual panel visibility", () => {
     // so the empty state won't trigger with current panels. Instead verify
     // session audit is the only panel on pre-session.
     renderOverlay(true, () => {}, 0, "pre-session");
-    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
+    const sessionAuditButtons = screen.getAllByRole("button", {
+      name: /session audit/i,
+    });
     expect(sessionAuditButtons).toHaveLength(1);
     expect(screen.queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /travel dev/i })).not.toBeInTheDocument();

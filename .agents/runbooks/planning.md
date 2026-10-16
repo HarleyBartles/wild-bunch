@@ -9,17 +9,8 @@ Turning settled Wild Bunch requirements into an executable plan or roadmap.
 - Author an executable plan from an approved specification for a bounded change.
 - Design a roadmap when delivery requires multiple consecutive plans.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -27,8 +18,10 @@ Turning settled Wild Bunch requirements into an executable plan or roadmap.
    multi-plan roadmap design for multiple consecutive plans.
 2. Read the accepted specification and bind the applicable doctrine, contracts,
    repository paths, and validation commands below.
-3. Save and commit the active artifact in its declared home before execution.
-4. Hand execution exact seams, exclusions, task exits, and evidence without
+3. Select governing ADRs through the [decision-record playbook](../playbooks/decision-records.md) and include required record creation, correction, or supersession in the plan.
+4. For a plan that changes a product promise, capability boundary, release disposition or dependency, read the `docs/features.md` (when present on the current branch) through its [maintenance playbook](../playbooks/feature-matrix.md) and include any required matrix update in the same delivery.
+5. Save and commit the active artifact in its declared home before execution.
+6. Hand execution exact seams, exclusions, task exits, and evidence without
    copying the planning skill's method into the artifact.
 
 ## Doctrine and contracts

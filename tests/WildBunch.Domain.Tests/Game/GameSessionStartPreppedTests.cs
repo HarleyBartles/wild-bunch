@@ -12,7 +12,7 @@ public sealed class GameSessionStartPreppedTests
     public void StartPrepped_CreatesMinimalSessionWithPreppedStatus()
     {
         var session = GameSession.StartPrepped("test-seed", GameDifficulty.Standard, GameEntropy.Classic);
-        
+
         Assert.NotNull(session);
         Assert.Equal(GameStatus.Prepped, session.Status);
         Assert.Equal("test-seed", session.SeedCode);

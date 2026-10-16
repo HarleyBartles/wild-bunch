@@ -9,10 +9,6 @@ Adding or changing a Wild Bunch developer control or panel.
 - Develop focused behavior tests, run browser playtests, and verify implementation evidence.
 - Apply frontend composition and styling guidance when browser surfaces change.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - dev-control-boundary
@@ -20,9 +16,9 @@ Adding or changing a Wild Bunch developer control or panel.
 - wild-bunch-dotnet-architecture
 - wild-bunch-browser-game
 
-## Optional repository-owned skills
+## Before work
 
-- None.
+Follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -39,7 +35,6 @@ Adding or changing a Wild Bunch developer control or panel.
 ## Doctrine and contracts
 
 - [Dev-overlay doctrine](../doctrine/dev-overlay.md)
-- [Dev-overlay anti-slop contract](../contracts/unslop/dev-overlay.md)
 - [Dev-overlay proof contract](../contracts/dev-overlay-proof.md)
 
 ## Local commands and paths
@@ -64,3 +59,4 @@ Adding or changing a Wild Bunch developer control or panel.
 
 - [Design](../runbooks/design.md)
 - [Implementing](../runbooks/implementing.md)
+- [Decision records](decision-records.md) - when a developer-control invariant is made, changed, or retired.

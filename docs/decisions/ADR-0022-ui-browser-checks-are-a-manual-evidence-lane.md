@@ -1,102 +1,34 @@
-# ADR-0022 UI browser checks are a manual evidence lane
+# ADR-0022 Browser Checks Are a Manual Evidence Lane
 
 ## Status
 
-live
+`live`
 
-## Dated Status History
+## Dated History
 
-- 2026-06-01 - live: the repo now records UI browser checks as a manual evidence lane with separate human and worker guidance.
+- `2026-06-01` - Distinguished manual browser checks from automated test lanes for changes that affect visible game behavior.
+- `2026-10-08` - Editorial clarification: this record sets the evidence distinction, not current route names or a requirement to manually repeat every automated check.
 
 ## Decision Type
 
-ui, testing, process
+`testing`
 
 ## Related ADRs
 
-- `depends on`: ADR-0004, ADR-0015, ADR-0016, ADR-0017
-- `informs`: ADR-0001
-- `related to`: ADR-0011, ADR-0021
+- `related to`: ADR-0017
 
 ## Context
 
-Issue #37 asked for a stable route that future human and agent dispatches can reference when a UI or game-flow change needs a local browser check. The repo already distinguishes backend validation lanes, frontend test lanes, and explicit PostgreSQL validation, but it did not yet have a durable policy for manual browser evidence.
+Automated tests do not always expose visual, interaction, or browser-level behavior that matters to a player. Browser observations also do not replace behavior tests or provider validation.
 
-The closeout lesson from issue #5 was that browser evidence is most useful when it is easy to repeat, easy to report, and clearly separate from automated validation results. This ADR turns that lesson into a stable policy surface instead of leaving it in an issue thread.
+## Decision
 
-## Decision Drivers
+Use manual browser checks as a distinct evidence lane when a change affects a visible player flow or when a task requires them. Report the observed behavior and limits separately from automated test results.
 
-- UI work needs a human-readable route for local browser checks.
-- Worker dispatches need a precise evidence policy they can reference without restating setup.
-- Browser checks should stay distinct from automated unit, acceptance, and integration tests.
-- Backend and frontend validation levels need separate definitions so manual browser evidence does not blur the lanes.
-- Documentation must serve both humans running the app locally and agents preparing dispatches.
+## Rationale and Alternatives
 
-## Decision Summary
+A browser observation can reveal interaction and rendering problems that a test suite does not cover. Treating it as a substitute for automated tests would make repeatable behavior harder to protect.
 
-UI browser checks are a manual evidence lane, not an automated validation substitute. The repo now keeps a human-facing testing posture document and a worker-facing playbook that both point at the same local run route, checklist, and reporting contract. Browser checks are required only when the UI/game-flow change or Harley explicitly calls for them; they are optional or skippable for backend-only, docs, or tooling work when automated validation is sufficient.
+## Consequences
 
-## Detailed Decision Breakdown
-
-The manual browser lane exists to prove what a user can see and click in the running app. It is intentionally separate from the automated testing stack described in ADR-0017. A browser check can support confidence in a UI slice, but it does not replace unit, acceptance, integration, or provider/storage tests.
-
-The repo documents backend validation as unit, acceptance, integration, and manual; and frontend validation as unit, acceptance, integration, and manual. That split keeps the manual browser lane from swallowing the automated lanes. In practice, a browser check should be reported as user-facing evidence, while the automated lanes remain reported as test/build evidence.
-
-The operational browser route is now captured in source so a worker can say "follow the browser-check playbook" instead of rediscovering commands, ports, or evidence format. The human-facing doc is written as testing posture and coverage guidance for a developer or Harley running the app locally. The worker-facing doc is written for future dispatches and includes trigger policy, skip policy, and report format.
-
-## Options Considered and Rejected
-
-- Treat browser checks as an informal conversation artifact with no durable repo doc.
-- Fold browser evidence into automated validation results.
-- Make browser checks mandatory for every UI-related dispatch.
-- Hide the route in an issue thread instead of source-controlled docs.
-
-## When a Rejected Option Would Have Been Better
-
-An informal route would only be better for a one-off exploratory session, not for a recurring repo workflow. Mandatory browser checks would only be better if every UI dispatch were high-risk visible-flow work, which is not the repo posture.
-
-## Benefits
-
-- Future dispatches can point to a stable browser-check route.
-- Humans get repeatable testing-posture guidance and a clear evidence model.
-- Workers can report skipped browser checks without pretending they passed.
-- Backend and frontend validation stay distinct and legible.
-
-## Accepted Tradeoffs
-
-- The repo now maintains an extra pair of docs for a manual lane.
-- Some UI dispatches will still report browser checks as skipped or blocked.
-
-## Risks
-
-- If the local run ports or launch profiles change, the docs must be updated.
-- If future workers ignore the reporting split, manual evidence could still be blurred with automated results.
-
-## Consequences for Future Work
-
-Future UI or game-flow dispatches may require browser checks when the visible flow is part of the change, when the issue explicitly asks for them, or when Harley requests them. Backend-only dispatches should not start requiring browser checks by default. Closeout reports should keep automated validation evidence separate from manual browser evidence and should state lawful skips plainly.
-
-## Implementation Status or Plan
-
-Live. The posture doc, worker playbook, and repo indices now carry the route.
-
-## Related Stable Source Surfaces
-
-- `docs/testing-posture.md`
-- `.agents/playbooks/ui-browser-check.md`
-- `docs/testing-lanes.md`
-- `docs/local-postgresql.md`
-- `src/WildBunch.Api/Properties/launchSettings.json`
-- `src/WildBunch.Web/package.json`
-- `docs/decisions/README.md`
-- `.agents/INDEX.md`
-
-## Proof of Implementation or Explicit Non-Implementation
-
-The repo now contains a human-facing testing posture document, a worker-facing browser-check playbook, and index links to both. The API launch profile and web client package scripts provide the verified local run targets that the docs reference.
-
-## Review Triggers
-
-- When the API or web launch commands change.
-- When the local UI port changes.
-- When the repo adopts automated browser testing and the manual lane needs to be re-scoped.
+Manual browser checks are selected for relevant visible changes, not used as a blanket ritual. Their operational steps belong in the browser playbook and do not belong in this decision record.

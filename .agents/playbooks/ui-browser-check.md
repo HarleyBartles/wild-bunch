@@ -8,17 +8,13 @@ Browser behavior, layout, interaction, or player-flow evidence is required.
 
 - Run browser playtests and automated browser checks when the task calls for them.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - wild-bunch-browser-game (when client state authority is in question).
 
-## Optional repository-owned skills
+## Before work
 
-- None.
+Follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when browser behavior or evidence makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -34,8 +30,7 @@ Browser behavior, layout, interaction, or player-flow evidence is required.
 
 ## Doctrine and contracts
 
-[Frontend standards](../doctrine/frontend-standards.md) and applicable scoped
-anti-slop contracts bind the observed surface.
+[Frontend standards](../doctrine/frontend-standards.md) binds the observed surface.
 
 ## Local commands and paths
 
@@ -65,3 +60,4 @@ leave shared PostgreSQL running.
 
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
+- [Decision records](decision-records.md) - when player-visible interaction or browser evidence policy changes durably.

@@ -25,16 +25,24 @@ describe("actionTypePredicates", () => {
   });
 
   it("identifies InspectNoticeBoard", () => {
-    expect(actionIsInspectNoticeBoard(makeAction(AvailableActionKind.InspectNoticeBoard))).toBe(true);
-    expect(actionIsInspectNoticeBoard(makeAction(AvailableActionKind.ReadWantedPosters))).toBe(false);
+    expect(actionIsInspectNoticeBoard(makeAction(AvailableActionKind.InspectNoticeBoard))).toBe(
+      true,
+    );
+    expect(actionIsInspectNoticeBoard(makeAction(AvailableActionKind.ReadWantedPosters))).toBe(
+      false,
+    );
   });
 
   it("identifies CheckSheriffRecords as checkLocalRecords", () => {
-    expect(actionIsCheckLocalRecords(makeAction(AvailableActionKind.CheckSheriffRecords))).toBe(true);
+    expect(actionIsCheckLocalRecords(makeAction(AvailableActionKind.CheckSheriffRecords))).toBe(
+      true,
+    );
   });
 
   it("identifies FollowTelegraphLeads", () => {
-    expect(actionIsFollowTelegraphLeads(makeAction(AvailableActionKind.FollowTelegraphLeads))).toBe(true);
+    expect(actionIsFollowTelegraphLeads(makeAction(AvailableActionKind.FollowTelegraphLeads))).toBe(
+      true,
+    );
   });
 
   it("identifies GatherLocalGossip", () => {

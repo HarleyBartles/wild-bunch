@@ -8,17 +8,8 @@ Designing a Wild Bunch feature or behavior before implementation planning.
 
 - Facilitate structured feature discovery, clarify behavior, and produce an accepted design specification.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -27,6 +18,8 @@ Designing a Wild Bunch feature or behavior before implementation planning.
    validation lane before accepting the design.
 3. Save the accepted specification under `.agents/specs/` for planning; keep
    transient exploration in branch-scoped scratch.
+4. Select governing ADRs through the [decision-record playbook](../playbooks/decision-records.md) and identify any durable decision the design makes or changes.
+5. When the design changes a product promise, capability boundary or dependency, read and update the `docs/features.md` (when present on the current branch) through its [maintenance playbook](../playbooks/feature-matrix.md).
 
 ## Doctrine and contracts
 

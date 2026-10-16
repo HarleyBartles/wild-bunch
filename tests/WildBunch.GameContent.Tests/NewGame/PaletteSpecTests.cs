@@ -14,7 +14,7 @@ public sealed class PaletteSpecTests
             SpurRows: new[] { 4 },
             SpurDirections: new[] { SpurDirection.East },
             PlacementStrategy: PlacementStrategy.SpreadEvenly);
-        
+
         Assert.Equal(1, spec.SpurCount);
         Assert.Single(spec.SpurRows);
         Assert.Equal(4, spec.SpurRows[0]);

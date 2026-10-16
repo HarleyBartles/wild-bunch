@@ -15,17 +15,16 @@ import {
   type JournalDto,
   type TownLayoutDto,
 } from "../api/types";
-import {
-  getAvailableActions,
-  getGame,
-  getJournal,
-  getTownStoreOffers,
-} from "../api/wildBunchApi";
+import { getAvailableActions, getGame, getJournal, getTownStoreOffers } from "../api/wildBunchApi";
 
 const mockState = vi.hoisted(() => ({
-  games: [] as Array<{ config: { scene: TownHubScene }; destroyed: boolean; destroy: () => void }>,
+  games: [] as Array<{
+    config: { scene: TownHubScene };
+    destroyed: boolean;
+    destroy: () => void;
+  }>,
   navigate: vi.fn(),
-  search: {} as Record<string, unknown>,
+  search: {},
 }));
 
 vi.mock("phaser", () => {
@@ -97,11 +96,46 @@ afterEach(() => {
 function createLayout(): TownLayoutDto {
   return {
     buildings: [
-      { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 46, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 80, y: 15, width: 8, height: 10 },
-      { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
-      { kind: BuildingKind.Telegraph, view: BuildingView.FrontOblique, x: 46, y: 70, width: 8, height: 10 },
+      {
+        kind: BuildingKind.Store,
+        view: BuildingView.Profile,
+        x: 12,
+        y: 15,
+        width: 8,
+        height: 10,
+      },
+      {
+        kind: BuildingKind.Sheriff,
+        view: BuildingView.Profile,
+        x: 46,
+        y: 15,
+        width: 8,
+        height: 10,
+      },
+      {
+        kind: BuildingKind.Saloon,
+        view: BuildingView.Profile,
+        x: 80,
+        y: 15,
+        width: 8,
+        height: 10,
+      },
+      {
+        kind: BuildingKind.Trailhead,
+        view: BuildingView.Rear,
+        x: 90,
+        y: 50,
+        width: 8,
+        height: 10,
+      },
+      {
+        kind: BuildingKind.Telegraph,
+        view: BuildingView.FrontOblique,
+        x: 46,
+        y: 70,
+        width: 8,
+        height: 10,
+      },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
@@ -125,7 +159,12 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     player: { name: "Ruth", currentTownId: "t-town", health: 9 },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0, layout: createLayout() },
+        {
+          id: "t-town",
+          name: "Tumbleweed",
+          services: 0,
+          layout: createLayout(),
+        },
         { id: "dust-fork", name: "Dust Fork", services: 0 },
       ],
       trails: [],
@@ -353,10 +392,7 @@ describe("TownHubSurface accessibility fallback", () => {
 
   it("does not render fallback buttons for unavailable buildings", async () => {
     // Only BuySupplies is available — Sheriff, Saloon, Trailhead are not.
-    primeMocks(
-      createSession(),
-      [AvailableActionKind.BuySupplies],
-    );
+    primeMocks(createSession(), [AvailableActionKind.BuySupplies]);
     renderHub();
 
     await waitFor(() => {
@@ -399,7 +435,9 @@ describe("TownHubSurface accessibility fallback", () => {
 
     // Tab moves to the next building button.
     await user.tab();
-    const sheriffButton = screen.getByRole("button", { name: /sheriff office/i });
+    const sheriffButton = screen.getByRole("button", {
+      name: /sheriff office/i,
+    });
     expect(sheriffButton).toHaveFocus();
   });
 });
@@ -431,10 +469,15 @@ describe("TownHubSurface arrival notice", () => {
     mockState.search = { arrived: "1" };
     renderHub();
 
-    const dismissButton = await screen.findByRole("button", { name: /dismiss arrival notice/i });
+    const dismissButton = await screen.findByRole("button", {
+      name: /dismiss arrival notice/i,
+    });
     const user = userEvent.setup();
     await user.click(dismissButton);
 
-    expect(mockState.navigate).toHaveBeenCalledWith({ to: "/town", search: {} });
+    expect(mockState.navigate).toHaveBeenCalledWith({
+      to: "/town",
+      search: {},
+    });
   });
 });

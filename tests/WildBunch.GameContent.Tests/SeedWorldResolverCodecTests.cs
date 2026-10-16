@@ -28,7 +28,7 @@ public sealed class SeedWorldResolverCodecTests
             var modified = seedWorld with { TownCount = townCount };
             var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(modified);
             var resolved = SeedWorldResolver.Resolve(seedCode);
-            
+
             Assert.Equal(townCount, resolved.TownCount);
         }
     }
@@ -58,7 +58,7 @@ public sealed class SeedWorldResolverCodecTests
         // Create a seed with townCount value 15 (outside defined range 5-10)
         var bytes = new byte[16];
         var seedCode = new Guid(bytes);
-        
+
         // Set bits 14-17 to 15 (binary 1111)
         var low = BitConverter.ToUInt64(bytes, 0);
         low |= 0xFUL << 14;
@@ -66,7 +66,7 @@ public sealed class SeedWorldResolverCodecTests
         seedCode = new Guid(bytes);
 
         var resolved = SeedWorldResolver.Resolve(seedCode);
-        
+
         // Should wrap to 5 + ((15 + 5 - 5) % 6) = 5 + (15 % 6) = 5 + 3 = 8
         Assert.Equal(8, resolved.TownCount);
     }
@@ -77,7 +77,7 @@ public sealed class SeedWorldResolverCodecTests
         // Create a seed with prosperityPalette value 7 (within range 0-7)
         var bytes = new byte[16];
         var seedCode = new Guid(bytes);
-        
+
         // Set bits 18-20 to 7
         var low = BitConverter.ToUInt64(bytes, 0);
         low |= 0x7UL << 18;
@@ -85,7 +85,7 @@ public sealed class SeedWorldResolverCodecTests
         seedCode = new Guid(bytes);
 
         var resolved = SeedWorldResolver.Resolve(seedCode);
-        
+
         // Should wrap to 7 % 8 = 7 (within range)
         Assert.Equal((ProsperityPalette)7, resolved.ProsperityPalette);
     }
@@ -96,7 +96,7 @@ public sealed class SeedWorldResolverCodecTests
         // Create a seed with servicesPalette value 7 (within range 0-7)
         var bytes = new byte[16];
         var seedCode = new Guid(bytes);
-        
+
         // Set bits 21-23 to 7
         var low = BitConverter.ToUInt64(bytes, 0);
         low |= 0x7UL << 21;
@@ -104,7 +104,7 @@ public sealed class SeedWorldResolverCodecTests
         seedCode = new Guid(bytes);
 
         var resolved = SeedWorldResolver.Resolve(seedCode);
-        
+
         // Should wrap to 7 % 8 = 7 (within range)
         Assert.Equal((ServicesPalette)7, resolved.ServicesPalette);
     }

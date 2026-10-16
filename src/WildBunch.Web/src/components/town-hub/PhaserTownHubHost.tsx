@@ -24,10 +24,8 @@ export function PhaserTownHubHost({
       return;
     }
 
-    const scene = new TownHubScene(
-      layout,
-      availableActions,
-      (kind: BuildingKind) => onBuildingSelectedRef.current(kind),
+    const scene = new TownHubScene(layout, availableActions, (kind: BuildingKind) =>
+      onBuildingSelectedRef.current(kind),
     );
 
     const game = new Phaser.Game({
@@ -47,13 +45,7 @@ export function PhaserTownHubHost({
     };
   }, [layout, availableActions]);
 
-  return (
-    <TownHubCanvas
-      ref={containerRef}
-      role="img"
-      aria-label="Town hub surface"
-    />
-  );
+  return <TownHubCanvas ref={containerRef} role="img" aria-label="Town hub surface" />;
 }
 
 const TownHubCanvas = styled.div`

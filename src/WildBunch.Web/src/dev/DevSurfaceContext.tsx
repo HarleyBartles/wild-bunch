@@ -6,13 +6,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  * to decide which dev panels are contextually relevant.
  */
 export type DevSurface =
-  | "pre-session"
-  | "town"
-  | "saloon"
-  | "sheriff"
-  | "store"
-  | "trailhead"
-  | "trail";
+  "pre-session" | "town" | "saloon" | "sheriff" | "store" | "trailhead" | "trail";
 
 const DevSurfaceContext = createContext<DevSurface>("pre-session");
 const DevSurfaceSetterContext = createContext<(surface: DevSurface) => void>(() => {});
@@ -28,9 +22,7 @@ export function DevSurfaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <DevSurfaceSetterContext.Provider value={setter}>
-      <DevSurfaceContext.Provider value={value.surface}>
-        {children}
-      </DevSurfaceContext.Provider>
+      <DevSurfaceContext.Provider value={value.surface}>{children}</DevSurfaceContext.Provider>
     </DevSurfaceSetterContext.Provider>
   );
 }

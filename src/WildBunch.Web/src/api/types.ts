@@ -647,7 +647,6 @@ export interface JournalDto {
   logEntries: GameLogEntryDto[];
 }
 
-
 export interface WantedPosterDto {
   posterId: string;
   targetDisplayName: string;
@@ -737,7 +736,7 @@ export interface SaloonPersonOfInterestConfrontationResultDto {
   personOfInterestKind?: SaloonPersonOfInterestKind | null;
 }
 
-export interface WantedSuspectConfrontationResultDto extends SaloonPersonOfInterestConfrontationResultDto {}
+export type WantedSuspectConfrontationResultDto = SaloonPersonOfInterestConfrontationResultDto;
 
 export interface PrologueDto {
   heading: string;

@@ -177,7 +177,7 @@ public sealed class TownLayoutGeneratorTests
         // With a spur, at least one building should be placed on the spur
         var oneSpurLayout = TownLayoutGenerator.GenerateLayout(
             TownServices.Telegraph, TownProsperity.Prosperous, townId, 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
-        
+
         // Check that at least one building is on the left side (where the spur is)
         // Spur building zone is at column 2 (left of building zone at column 3)
         var leftSideBuildings = oneSpurLayout.Buildings.Where(b => b.X < 35).ToList();
@@ -202,7 +202,7 @@ public sealed class TownLayoutGeneratorTests
             TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         Assert.NotNull(layout.TileGrid);
-        
+
         // Road tiles should be at columns 4 and 5 (center) for all rows
         for (var row = 0; row < 10; row++)
         {
@@ -218,7 +218,7 @@ public sealed class TownLayoutGeneratorTests
             TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.NoSpurs_SpreadEvenly, "1.0.0");
 
         Assert.NotNull(layout.TileGrid);
-        
+
         // Building zones should be at columns 3 (left) and 6 (right) for rows 1-8 (skip trailhead rows)
         for (var row = 1; row < 9; row++)
         {
@@ -234,7 +234,7 @@ public sealed class TownLayoutGeneratorTests
             TownServices.Telegraph, TownProsperity.Prosperous, NewTownId("town-1"), 0, NewLayoutSource(), BuildingLayoutPalette.OneSpurLeft_SpreadEvenly, "1.0.0");
 
         Assert.NotNull(layout.TileGrid);
-        
+
         // OneSpurLeft palette has a spur at row 4, direction West
         // SpurStart at column 3 (junction), SpurRoad at column 2 (extension)
         Assert.Equal(3, layout.TileGrid[4][3]); // SpurStart
@@ -249,7 +249,7 @@ public sealed class TownLayoutGeneratorTests
 
         // Get non-trailhead buildings
         var nonTrailheadBuildings = layout.Buildings.Where(b => b.Kind != BuildingKind.Trailhead).ToList();
-        
+
         // Buildings should be spread across different rows, not bunched at the top
         var rows = nonTrailheadBuildings.Select(b => b.Y / 10).Distinct().ToList();
         Assert.True(rows.Count > 1, "Buildings should be distributed across multiple rows");

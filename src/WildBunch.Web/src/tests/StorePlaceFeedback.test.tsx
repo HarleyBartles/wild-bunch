@@ -226,11 +226,31 @@ function primeMocks() {
     currentJournal: createJournal(),
     wantedPosters: [],
   });
-  mockedInspectNoticeBoard.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedCheckLocalRecords.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedFollowTelegraphLeads.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedGatherLocalGossip.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedLookAroundSaloon.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
+  mockedInspectNoticeBoard.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedCheckLocalRecords.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedFollowTelegraphLeads.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedGatherLocalGossip.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedLookAroundSaloon.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
   mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
     success: true,
     message: "ok",
@@ -300,15 +320,25 @@ describe("Archive notice clears on new game setup", () => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
     await user.click(within(hud).getByRole("button", { name: /game settings/i }));
-    const settingsOverlay = await screen.findByRole("dialog", { name: /game settings/i });
+    const settingsOverlay = await screen.findByRole("dialog", {
+      name: /game settings/i,
+    });
     await user.click(within(settingsOverlay).getByRole("button", { name: /start over/i }));
-    const confirmDialog = await screen.findByRole("dialog", { name: /start over\?/i });
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
+    const confirmDialog = await screen.findByRole("dialog", {
+      name: /start over\?/i,
+    });
+    await user.click(
+      within(confirmDialog).getByRole("button", {
+        name: /archive and start over/i,
+      }),
+    );
 
     // The archive notice should appear on the pre-session surface.
     await waitFor(() => {
       expect(
-        screen.getByText("Your old playthrough has been archived. Start a new one when you are ready."),
+        screen.getByText(
+          "Your old playthrough has been archived. Start a new one when you are ready.",
+        ),
       ).toBeInTheDocument();
     });
 
@@ -325,7 +355,9 @@ describe("Archive notice clears on new game setup", () => {
     // The archive notice should be cleared — it should no longer be in the document.
     await waitFor(() => {
       expect(
-        screen.queryByText("Your old playthrough has been archived. Start a new one when you are ready."),
+        screen.queryByText(
+          "Your old playthrough has been archived. Start a new one when you are ready.",
+        ),
       ).not.toBeInTheDocument();
     });
   });

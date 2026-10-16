@@ -1,5 +1,7 @@
 # Coding Discipline
 
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 ## Code style guidelines
 
 This document defines the code style and coding discipline for Wild Bunch. See the sections below for scope, architecture-stack, and refactoring rules.

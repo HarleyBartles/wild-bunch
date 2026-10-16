@@ -1,5 +1,5 @@
 import type { GameSessionDto, TownDto } from "../api/types";
-import { formatServices, formatGameStatus } from "../ui/formatters";
+import { formatServices } from "../ui/formatters";
 import { InventoryPanel } from "./InventoryPanel";
 import { StoreOffersPanel } from "./StoreOffersPanel";
 import { TravelPanel } from "./TravelPanel";
@@ -37,7 +37,11 @@ export function FieldReportPanel({
           </div>
           <div>
             <dt>Town</dt>
-            <dd>{currentTown ? `${currentTown.name} (${currentTown.id})` : session.player.currentTownId}</dd>
+            <dd>
+              {currentTown
+                ? `${currentTown.name} (${currentTown.id})`
+                : session.player.currentTownId}
+            </dd>
           </div>
           <div>
             <dt>Current health</dt>
@@ -87,12 +91,7 @@ export function FieldReportPanel({
         onBuyOffer={onBuyOffer}
       />
       {session.journey ? (
-        <TravelPanel
-          gameId={gameId}
-          session={session}
-          busy={busy}
-          onTurnResult={onTurnResult}
-        />
+        <TravelPanel gameId={gameId} session={session} busy={busy} onTurnResult={onTurnResult} />
       ) : null}
     </Grid>
   );

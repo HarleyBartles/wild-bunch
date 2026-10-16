@@ -9,27 +9,46 @@ Opening, updating, or publishing a Wild Bunch pull request.
 - Verify repository state, validation evidence, and publication prerequisites.
 - Publish a branch and open or update a Draft PR, then verify its head and checks.
 
-## Optional capabilities
+## Before publication
 
-- None.
+Follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection for the actual diff. Consult the [decision-record playbook](../playbooks/decision-records.md) when the diff makes, changes, corrects, or materially removes a durable decision.
 
-## Required repository-owned skills
+For a release or hotfix PR, also follow the [release lifecycle runbook](release.md)
+and verify the applicable branch route and merge method against current hosting
+facts.
 
-- None.
+## Decision-record check
 
-## Optional repository-owned skills
+Before requesting review, compare the actual proposed diff with applicable
+records through the [decision-record playbook](../playbooks/decision-records.md).
+Include required ADR creation, correction, or supersession, or state why no
+durable decision changes. The reviewer must independently repeat this check
+against the diff; the author's statement or the presence of an ADR edit is not
+proof that the log remains true.
 
-- None.
+## Feature-matrix check
+
+Before requesting review, compare the proposed diff with `docs/features.md` (when present on the current branch) through the [feature-matrix playbook](../playbooks/feature-matrix.md). Include a truthful matrix update when a product promise, dependency, disposition or evidence assessment changes, or state why current feature truth did not change. The reviewer independently repeats this comparison against the diff.
 
 ## Composition
 
+Use `develop` as the repository's default base for ordinary development PRs. `main` is the release line; target it only when the approved release or hotfix flow requires it. Follow the active roadmap or execution plan for campaign-specific sequencing and version requirements; do not duplicate those temporary rules in this durable publication procedure.
+
+A separately approved agent/repository-tooling promotion may target main without a product release, tag or GitHub Release. Keep it distinct from application behavior, review its actual dependencies, and reconcile by merge commit. [ADR-0049](../../docs/decisions/ADR-0049-planning-custody-across-integration-and-promotion.md) governs this route and planning custody. Before any main-bound cut, complete semantic retirement on develop and remove all planning from the proposed main tree while repairing references. On reconciliation restore exactly the planning tree from develop immediately before the merge.
+
+Set `WILD_BUNCH_TARGET_BRANCH` to the actual PR base for local canonical validation, especially when a `codex/*` branch targets main. Hosted validation supplies the real PR base or pushed branch. The main exclusion guard checks the full indexed tree, including planning inherited from the base; it does not infer completion. Review also catches planning disguised outside the declared homes.
+
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.
-2. Use evidence-based result verification to bind the publication claim to the
+2. Resolve the author decision-record check above before requesting review.
+3. Resolve the author feature-matrix check above before requesting review.
+4. Use evidence-based result verification to bind the publication claim to the
    committed head and canonical validation result.
-3. Use GitHub branch and Draft PR publication to push the task branch and create or update the
-   Draft PR against `main`.
-4. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
+5. The canonical local and hosted gate is fail-fast and cheapest-first; resolve
+   any formatter or linter failure before it starts builds or tests.
+6. Use GitHub branch and Draft PR publication to push the task branch and create or update the
+   Draft PR against the selected base branch (`develop` by default).
+7. Read back the GitHub PR and reconcile its head SHA, body, Draft state, and
    applicable hosted checks with the published tree.
 
 ## Doctrine and contracts
@@ -37,22 +56,26 @@ Opening, updating, or publishing a Wild Bunch pull request.
 - This runbook is the publication-proof surface routed from root
   [AGENTS.md](../../AGENTS.md).
 - [Repository command declaration](../contracts/repo-standards-commands.json)
-  defines the canonical apply and check capabilities.
+  defines the canonical apply and check capabilities; pre-commit and hosted
+  validation invoke only check.
 
 ## Local commands and paths
 
-- Base branch: `main`
+- Default base branch: `develop`
 - Default PR state: Draft
-- Apply: `py -3 tools/run.py ci --apply`
+- Hook setup: `py -3 tools/run.py setup-hooks --apply`
 - Check: `py -3 tools/run.py ci --check`
-- Diagnostics: `py -3 tools/run.py ci --check --diagnostics`
+- Manual diagnostics: `py -3 tools/run.py ci --check --diagnostics` (not the commit/CI gate; may continue after failures)
+- Run the named owning maintenance command before staging when a particular
+  maintained artifact needs updating; review and stage those changes deliberately.
+- The commit hook validates the staged candidate without mutating or staging it.
 - Pull-request jobs run when the PR is not Draft.
 - Direct pushes to `main` require explicit authorization.
 
 ## Evidence contract
 
 - [ ] The local tree is clean and the branch is published from a dedicated worktree.
-- [ ] The GitHub PR targets `main` and its remote head equals local `HEAD`.
+- [ ] The GitHub PR targets the selected base branch (`develop` by default) and its remote head equals local `HEAD`.
 - [ ] The PR body describes current scope and validation evidence.
 - [ ] Draft state and hosted-check expectations match the repo policy.
 

@@ -12,6 +12,8 @@ metadata:
 
 # Wild Bunch Browser Game
 
+Before using this skill, follow the [unslop playbook](../../playbooks/unslop.md) for browser presentation and any developer boundary it touches and read the selected profiles in full; consult the [decision-record playbook](../../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 ## Owned decision
 
 Decide whether browser state belongs to React presentation, Phaser playfield

@@ -1,5 +1,7 @@
 # Dev overlay doctrine
 
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work changes a durable decision.
+
 This is the binding repository doctrine for the Dev Overlay and Playtest
 Control Plane. All dev-overlay work must follow it.
 

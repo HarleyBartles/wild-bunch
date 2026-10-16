@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import type { StoreOfferDto, TownStoreOffersDto } from "../api/types";
-import {
-  StatusCard,
-  Stack,
-  Muted,
-  Button,
-} from "./ui/sharedStyled";
+import { StatusCard, Stack, Muted, Button } from "./ui/sharedStyled";
 
 const OfferRow = styled.div`
   display: flex;
@@ -90,18 +85,19 @@ function StoreOfferRow({
         onChange={(event) => setQuantity(event.target.value)}
         disabled={disabled}
       />
-      <Button
-        type="button"
-        onClick={handleBuy}
-        disabled={disabled || offer.availability !== 0}
-      >
+      <Button type="button" onClick={handleBuy} disabled={disabled || offer.availability !== 0}>
         Buy
       </Button>
     </OfferRow>
   );
 }
 
-export function StoreOffersPanel({ storeOffers, loading, busy, onBuyOffer }: StoreOffersPanelProps) {
+export function StoreOffersPanel({
+  storeOffers,
+  loading,
+  busy,
+  onBuyOffer,
+}: StoreOffersPanelProps) {
   return (
     <StatusCard>
       {loading && storeOffers === null ? <Muted>Loading town offers...</Muted> : null}

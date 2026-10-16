@@ -27,10 +27,11 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
     reloadCurrentGame,
   } = session;
 
-  const { storeOffers, loading: storeOffersLoading, refreshStoreOffers } = useTownStoreOffers(
-    gameId,
-    currentTown?.id,
-  );
+  const {
+    storeOffers,
+    loading: storeOffersLoading,
+    refreshStoreOffers,
+  } = useTownStoreOffers(gameId, currentTown?.id);
 
   const selectedWantedPoster = useMemo(
     () =>
@@ -69,10 +70,20 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
         setNotice("");
         setError(result.message);
       } catch (exception) {
-        setError(exception instanceof Error ? exception.message : "Unable to buy the selected item.");
+        setError(
+          exception instanceof Error ? exception.message : "Unable to buy the selected item.",
+        );
       }
     },
-    [gameId, currentTown?.id, setNotice, setError, setSession, reloadCurrentGame, refreshStoreOffers],
+    [
+      gameId,
+      currentTown?.id,
+      setNotice,
+      setError,
+      setSession,
+      reloadCurrentGame,
+      refreshStoreOffers,
+    ],
   );
 
   const value = useMemo<GameSessionValue>(
@@ -84,7 +95,14 @@ export function GameSessionProvider({ children }: { children: ReactNode }) {
       handleBuyOffer,
       selectedWantedPoster,
     }),
-    [session, storeOffers, storeOffersLoading, refreshStoreOffers, handleBuyOffer, selectedWantedPoster],
+    [
+      session,
+      storeOffers,
+      storeOffersLoading,
+      refreshStoreOffers,
+      handleBuyOffer,
+      selectedWantedPoster,
+    ],
   );
 
   return <GameSessionContext.Provider value={value}>{children}</GameSessionContext.Provider>;

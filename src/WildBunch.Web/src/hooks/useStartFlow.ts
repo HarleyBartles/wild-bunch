@@ -108,4 +108,3 @@ export function useStartFlow({ session, resetToken }: UseStartFlowArgs): UseStar
     buildStartGameRequest,
   };
 }
-
