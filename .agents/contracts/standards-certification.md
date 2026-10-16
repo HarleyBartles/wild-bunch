@@ -132,6 +132,8 @@ identities. N-79's `release-verify --check` binds the exact API, public-web, and
 playtest-web artifact trees produced from one clean full source commit and
 authored version, and re-verifies an existing immutable bundle without
 rebuilding. This records the bytes produced by that invocation; it does not
-claim independent builds are reproducible. Retained-route qualification,
-hosted release behavior, and full candidate qualification remain open in row
-18.
+claim independent builds are reproducible. Row 18 qualifies the retained local
+player routes and the `0.1.0-dev.213` development candidate using the canonical
+gate and this source-bound bundle. The evidence does not establish independent
+build reproducibility, hosted release or hotfix behavior, stable publication,
+cloud deployment, or complete feature implementation.
