@@ -9,7 +9,6 @@ interface TravelDiaryDayCardProps {
 }
 
 export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
-  const hasHorseState = day.horseStateBefore !== null || day.horseStateAfter !== null;
   const badgeState =
     day.status === JourneyStatus.Completed
       ? "arrival"
@@ -41,8 +40,9 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
         <div>
           <DayTitle>{day.journeyBeat ?? `Day ${day.dayNumber}`}</DayTitle>
           <DaySubhead>
-            {day.originTownName} to {day.destinationTownName} | {formatTravelMode(day.startingTravelMode)} to{" "}
-            {formatTravelMode(day.endingTravelMode)} | {day.status === JourneyStatus.Active ? "In motion" : formatJourneyStatus(day.status)}
+            {day.originTownName} to {day.destinationTownName} |{" "}
+            {formatTravelMode(day.startingTravelMode)} to {formatTravelMode(day.endingTravelMode)} |{" "}
+            {day.status === JourneyStatus.Active ? "In motion" : formatJourneyStatus(day.status)}
           </DaySubhead>
         </div>
         <DayBadge data-state={badgeState}>{badgeLabel}</DayBadge>
@@ -54,7 +54,10 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
         {day.beatSlots && day.beatSlots.length > 0 && (
           <BeatSlotList>
             {day.beatSlots.map((slot) => (
-              <BeatSlotItem key={slot.slotIndex} data-slot-type={beatSlotTypeCssName(slot.slotType)}>
+              <BeatSlotItem
+                key={slot.slotIndex}
+                data-slot-type={beatSlotTypeCssName(slot.slotType)}
+              >
                 {formatBeatSlotLabel(slot.slotType)}
               </BeatSlotItem>
             ))}
@@ -83,7 +86,9 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
   );
 }
 
-function renderResolutionSummary(resolution: NonNullable<TravelDiaryDayDto["encounterResolution"]>) {
+function renderResolutionSummary(
+  resolution: NonNullable<TravelDiaryDayDto["encounterResolution"]>,
+) {
   switch (resolution.choiceId) {
     case "run":
       return "I run for it and keep the trail moving.";
@@ -136,7 +141,11 @@ const DiaryDayCard = styled.article`
   padding: 16px;
   border-radius: 18px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--text) 6%, transparent), rgba(255, 255, 255, 0.02)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--text) 6%, transparent),
+      rgba(255, 255, 255, 0.02)
+    ),
     rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text);

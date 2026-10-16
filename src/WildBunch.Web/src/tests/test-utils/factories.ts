@@ -1,8 +1,4 @@
-import type {
-  GameSessionDto,
-  JournalDto,
-  TownStoreOffersDto,
-} from "../../api/types";
+import type { GameSessionDto, JournalDto, TownStoreOffersDto } from "../../api/types";
 import { StartFlowPhase } from "../../api/types";
 
 /**

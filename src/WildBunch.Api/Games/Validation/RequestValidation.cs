@@ -90,7 +90,7 @@ public static class RequestValidation
 
         if (skip is < 0)
         {
-            errors["skip"] = ["Skip must be at least 0."]; 
+            errors["skip"] = ["Skip must be at least 0."];
         }
 
         if (take is not null && take < 1)

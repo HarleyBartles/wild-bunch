@@ -5,7 +5,13 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { AvailableActionKind, JourneyStatus, StartFlowPhase, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
+import {
+  AvailableActionKind,
+  JourneyStatus,
+  type GameSessionDto,
+  type JournalDto,
+  type TownStoreOffersDto,
+} from "../api/types";
 import {
   acknowledgeTravelArrival,
   getAvailableActions,
@@ -185,23 +191,55 @@ function createStoreOffers(): TownStoreOffersDto {
 function createOnTrailSession(): GameSessionDto {
   const session = createSession();
   session.journey = {
-    originTownId: "t-town", originTownName: "Tumbleweed",
-    destinationTownId: "dust-fork", destinationTownName: "Dust Fork",
-    travelMode: 1, status: JourneyStatus.Active,
-    mountedTravelAvailable: false, waterSecure: true,
-    rideDayDistance: 3, remainingRideDayDistance: 2,
-    baselineRideDays: 3, expectedDays: 3, remainingDays: 1,
-    canteenChargesPerDay: 0, requiredCanteenCharges: 0,
-    availableCanteenCharges: 0, canteenReserveCharges: 0,
-    delayMarginDays: 0, delayRisk: false,
-    requiredFood: 0, availableFood: 0,
-    requiredHorseFeed: 0, availableHorseFeed: 0,
-    horseState: null, daysTravelled: 1, delayDays: 0,
-    pendingEncounter: null, warnings: [],
-    routeProfile: { trailId: "trail-1", risk: 1, terrain: 0, waterFeature: 0, rideDayDistance: 3, mountedRideDayProgress: 1, footRideDayProgress: 0.5, warnings: [] },
+    originTownId: "t-town",
+    originTownName: "Tumbleweed",
+    destinationTownId: "dust-fork",
+    destinationTownName: "Dust Fork",
+    travelMode: 1,
+    status: JourneyStatus.Active,
+    mountedTravelAvailable: false,
+    waterSecure: true,
+    rideDayDistance: 3,
+    remainingRideDayDistance: 2,
+    baselineRideDays: 3,
+    expectedDays: 3,
+    remainingDays: 1,
+    canteenChargesPerDay: 0,
+    requiredCanteenCharges: 0,
+    availableCanteenCharges: 0,
+    canteenReserveCharges: 0,
+    delayMarginDays: 0,
+    delayRisk: false,
+    requiredFood: 0,
+    availableFood: 0,
+    requiredHorseFeed: 0,
+    availableHorseFeed: 0,
+    horseState: null,
+    daysTravelled: 1,
+    delayDays: 0,
+    pendingEncounter: null,
+    warnings: [],
+    routeProfile: {
+      trailId: "trail-1",
+      risk: 1,
+      terrain: 0,
+      waterFeature: 0,
+      rideDayDistance: 3,
+      mountedRideDayProgress: 1,
+      footRideDayProgress: 0.5,
+      warnings: [],
+    },
   };
   session.world.trails = [
-    { id: "trail-1", fromTownId: "t-town", toTownId: "dust-fork", risk: 1, terrain: 0, waterFeature: 0, rideDayDistance: 3 },
+    {
+      id: "trail-1",
+      fromTownId: "t-town",
+      toTownId: "dust-fork",
+      risk: 1,
+      terrain: 0,
+      waterFeature: 0,
+      rideDayDistance: 3,
+    },
   ];
   return session;
 }
@@ -228,7 +266,10 @@ function createInTownSessionAtDestination(): GameSessionDto {
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+    {
+      kind: AvailableActionKind.ReadWantedPosters,
+      label: "Read wanted posters",
+    },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -247,11 +288,31 @@ function primeMocks() {
     currentJournal: createJournal(),
     wantedPosters: [],
   });
-  mockedInspectNoticeBoard.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedCheckLocalRecords.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedFollowTelegraphLeads.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedGatherLocalGossip.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedLookAroundSaloon.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
+  mockedInspectNoticeBoard.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedCheckLocalRecords.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedFollowTelegraphLeads.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedGatherLocalGossip.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedLookAroundSaloon.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
   mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
     success: true,
     message: "ok",
@@ -317,7 +378,9 @@ describe("AppShell", () => {
     await user.click(screen.getByRole("button", { name: /^case file$/i }));
 
     expect(await screen.findByRole("heading", { name: /^case file$/i })).toBeInTheDocument();
-    expect(screen.getByText(/player-known facts and does not guess at hidden truth/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/player-known facts and does not guess at hidden truth/i),
+    ).toBeInTheDocument();
   });
 
   it("opens the Journal overlay and renders the journal surface", async () => {
@@ -335,11 +398,15 @@ describe("AppShell", () => {
 
     await user.click(within(hud).getByRole("button", { name: /journal/i }));
 
-    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
+    const journalDialog = await screen.findByRole("dialog", {
+      name: /journal/i,
+    });
     const journalScope = within(journalDialog);
     expect(journalScope.getByRole("heading", { level: 2, name: /^journal$/i })).toBeInTheDocument();
     expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
-    expect(journalScope.queryByText("Find the culprit before the law closes in.")).not.toBeInTheDocument();
+    expect(
+      journalScope.queryByText("Find the culprit before the law closes in."),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a Dev toggle button that opens the developer overlay drawer", async () => {
@@ -370,7 +437,9 @@ describe("AppShell", () => {
     });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
-    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
+    const drawer = await screen.findByRole("region", {
+      name: /developer overlay/i,
+    });
     expect(drawer).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
@@ -424,7 +493,10 @@ describe("AppShell", () => {
     mockedGetGame.mockResolvedValue(createOnTrailSession());
     mockedGetAvailableActions.mockResolvedValue([]);
     mockedGetJournal.mockResolvedValue(createJournal());
-    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
+    mockedGetSessionAudit.mockResolvedValue({
+      sessionId: "game-1",
+      entries: [],
+    });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/trail");
 
@@ -436,12 +508,16 @@ describe("AppShell", () => {
     });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
-    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
+    const drawer = await screen.findByRole("region", {
+      name: /developer overlay/i,
+    });
 
     // The "Travel dev" panel only appears for "trail" or "trailhead" surfaces.
     // Its presence as the default active tab proves useDevSurfaceSync set the
     // surface to "trail" through the real AppShell provider boundary.
-    const travelTab = within(drawer).getByRole("button", { name: /travel dev/i });
+    const travelTab = within(drawer).getByRole("button", {
+      name: /travel dev/i,
+    });
     expect(travelTab).toBeInTheDocument();
     expect(travelTab.getAttribute("aria-pressed")).toBe("true");
   });
@@ -453,7 +529,10 @@ describe("AppShell", () => {
     ]);
     mockedGetJournal.mockResolvedValue(createJournal());
     mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
-    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
+    mockedGetSessionAudit.mockResolvedValue({
+      sessionId: "game-1",
+      entries: [],
+    });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/town/store");
 
@@ -465,7 +544,9 @@ describe("AppShell", () => {
     });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
-    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
+    const drawer = await screen.findByRole("region", {
+      name: /developer overlay/i,
+    });
 
     // "store" surface has no surface-owner panel, so only "Session audit" and
     // "Session dev" appear (no "Travel dev" or "Saloon dev"). This proves the
@@ -482,7 +563,10 @@ describe("AppShell", () => {
     mockedGetGame.mockResolvedValue(createInTownSessionAtDestination());
     mockedGetAvailableActions.mockResolvedValue([]);
     mockedGetJournal.mockResolvedValue(createJournal());
-    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
+    mockedGetSessionAudit.mockResolvedValue({
+      sessionId: "game-1",
+      entries: [],
+    });
     mockedAcknowledgeTravelArrival.mockResolvedValue({
       success: true,
       message: "You step into town.",
@@ -498,7 +582,11 @@ describe("AppShell", () => {
     renderShell();
 
     const user = userEvent.setup();
-    const stepButton = await screen.findByRole("button", { name: /step into town/i }, { timeout: 10000 });
+    const stepButton = await screen.findByRole(
+      "button",
+      { name: /step into town/i },
+      { timeout: 10000 },
+    );
     await user.click(stepButton);
 
     // After acknowledge, the session becomes in-town, usePhaseRouteSync

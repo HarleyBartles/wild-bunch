@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
+import shlex
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOK = REPO_ROOT / "githooks" / "pre-commit"
+GIT_BASH = Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git" / "bin" / "bash.exe"
+BASH = str(GIT_BASH) if GIT_BASH.is_file() else shutil.which("bash")
 
 
 def _git(root: Path, *args: str) -> str:
@@ -19,7 +21,7 @@ def _git(root: Path, *args: str) -> str:
 
 
 def _fixture(root: Path) -> None:
-    if shutil.which("bash") is None:
+    if BASH is None:
         pytest.skip("Bash is required to exercise the tracked hook")
     _git(root, "init", "-b", "main")
     _git(root, "config", "user.name", "Test")
@@ -33,7 +35,6 @@ def _fixture(root: Path) -> None:
             {
                 "apply": ["@python", "tools/gate.py", "--apply"],
                 "check": ["@python", "tools/gate.py", "--check"],
-                "generated_paths": ["docs/decisions/README.md"],
             }
         ),
         encoding="utf-8",
@@ -42,11 +43,14 @@ def _fixture(root: Path) -> None:
         "from pathlib import Path\n"
         "import sys\n"
         "root = Path.cwd()\n"
+        "if (root / 'intent.txt').exists():\n"
+        "    raise SystemExit(29)\n"
         "if '--apply' in sys.argv:\n"
         "    out = root / 'docs/decisions/README.md'\n"
         "    out.parent.mkdir(parents=True, exist_ok=True)\n"
-        "    out.write_bytes(b'fresh\\r\\n')\n"
-        "    out.write_bytes(out.read_bytes().replace(b'\\r\\n', b'\\n'))\n"
+        "    out.write_bytes(b'fresh\\n')\n"
+        "elif (root / 'docs/decisions/README.md').read_bytes() != b'fresh\\n':\n"
+        "    raise SystemExit(18)\n"
         "elif (root / 'candidate.cfg').read_text(encoding='utf-8').strip() != 'good':\n"
         "    raise SystemExit(17)\n",
         encoding="utf-8",
@@ -60,18 +64,29 @@ def _fixture(root: Path) -> None:
     _git(root, "config", "core.hooksPath", "githooks")
 
 
-def _run_hook(root: Path) -> subprocess.CompletedProcess[str]:
+def _run_hook(root: Path, *, path_prefix: Path | None = None) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment.pop("REPO_STANDARDS_HOSTED_COMMIT", None)
-    return subprocess.run(
-        ["bash", "githooks/pre-commit"], cwd=root, text=True, capture_output=True, env=environment
-    )
+    command = [BASH or "bash", "githooks/pre-commit"]
+    if path_prefix is not None:
+        prefix = path_prefix.as_posix()
+        if len(prefix) > 1 and prefix[1] == ":":
+            prefix = f"/{prefix[0].lower()}{prefix[2:]}"
+        command = [
+            BASH or "bash",
+            "-c",
+            f"export PATH={shlex.quote(prefix)}:$PATH; exec bash githooks/pre-commit",
+        ]
+    return subprocess.run(command, cwd=root, text=True, capture_output=True, env=environment)
 
 
 def test_hook_checks_staged_candidate_and_restores_unstaged_repair(tmp_path):
     _fixture(tmp_path)
     (tmp_path / "candidate.cfg").write_text("reject\n", encoding="utf-8")
     _git(tmp_path, "add", "candidate.cfg")
+    generated = tmp_path / "docs/decisions/README.md"
+    generated.write_bytes(b"fresh\n")
+    _git(tmp_path, "add", "docs/decisions/README.md")
     (tmp_path / "candidate.cfg").write_text("good\n", encoding="utf-8")
     notes = tmp_path / "notes.md"
     notes.write_bytes(b"preserve failure-side CRLF bytes\r\n")
@@ -87,38 +102,202 @@ def test_hook_checks_staged_candidate_and_restores_unstaged_repair(tmp_path):
     assert future.read_bytes() == b"preserve failure-side untracked bytes\r\n"
 
 
-def test_hook_preserves_unrelated_work_and_stages_declared_generated_output(tmp_path):
+def test_hook_rejects_stale_generated_content_without_repairing_or_staging_it(tmp_path):
     _fixture(tmp_path)
     (tmp_path / "candidate.cfg").write_text("good\n", encoding="utf-8")
     _git(tmp_path, "add", "candidate.cfg")
-    (tmp_path / "unrelated.txt").write_text("keep unstaged\n", encoding="utf-8")
-    (tmp_path / "future.txt").write_text("keep untracked\n", encoding="utf-8")
+    generated = tmp_path / "docs/decisions/README.md"
+    before = generated.read_bytes()
+    staged_tree = _git(tmp_path, "write-tree")
 
     result = _run_hook(tmp_path)
 
-    assert result.returncode == 0, result.stderr
-    assert _git(tmp_path, "show", ":docs/decisions/README.md") == "fresh"
-    assert (tmp_path / "unrelated.txt").read_text(encoding="utf-8") == "keep unstaged\n"
-    assert (tmp_path / "future.txt").read_text(encoding="utf-8") == "keep untracked\n"
-    assert "unrelated.txt" in _git(tmp_path, "status", "--short")
-    assert "future.txt" in _git(tmp_path, "status", "--short")
+    assert result.returncode == 18
+    assert generated.read_bytes() == before
+    assert _git(tmp_path, "show", ":docs/decisions/README.md") == "stale"
+    assert _git(tmp_path, "write-tree") == staged_tree
+    assert "docs/decisions/README.md" not in _git(tmp_path, "diff", "--cached", "--name-only")
 
 
-def test_hook_stages_normalized_declared_output_and_preserves_unstaged_crlf_bytes(tmp_path):
+def test_hook_success_preserves_candidate_and_unrelated_work_without_applying(tmp_path):
     _fixture(tmp_path)
     (tmp_path / "candidate.cfg").write_text("good\n", encoding="utf-8")
     _git(tmp_path, "add", "candidate.cfg")
+    generated = tmp_path / "docs/decisions/README.md"
+    generated.write_bytes(b"fresh\n")
+    _git(tmp_path, "add", "docs/decisions/README.md")
+    (tmp_path / "unrelated.txt").write_text("keep unstaged\n", encoding="utf-8")
+    (tmp_path / "future.txt").write_bytes(b"keep untracked CRLF\r\n")
+    head = _git(tmp_path, "rev-parse", "HEAD")
+    staged_tree = _git(tmp_path, "write-tree")
     notes = tmp_path / "notes.md"
     notes.write_bytes(b"keep these CRLF bytes\r\n")
 
     result = _run_hook(tmp_path)
 
     assert result.returncode == 0, result.stderr
+    assert _git(tmp_path, "rev-parse", "HEAD") == head
+    assert _git(tmp_path, "write-tree") == staged_tree
     assert _git(tmp_path, "show", ":candidate.cfg") == "good"
-    generated = tmp_path / "docs/decisions/README.md"
     assert generated.read_bytes() == b"fresh\n"
     assert _git(tmp_path, "show", ":docs/decisions/README.md") == "fresh"
     assert notes.read_bytes() == b"keep these CRLF bytes\r\n"
+    assert (tmp_path / "unrelated.txt").read_text(encoding="utf-8") == "keep unstaged\n"
+    assert (tmp_path / "future.txt").read_bytes() == b"keep untracked CRLF\r\n"
     status = _git(tmp_path, "status", "--short")
-    assert "candidate.cfg" in status
+    assert "M  candidate.cfg" in status
+    assert "M  docs/decisions/README.md" in status
+    assert "unrelated.txt" in status
+    assert "future.txt" in status
     assert "notes.md" in status
+
+
+@pytest.mark.parametrize(
+    ("candidate", "expected_status"),
+    [("good", 0), ("reject", 17)],
+    ids=["successful-check", "failed-check"],
+)
+def test_hook_restores_intent_to_add_file_and_unstaged_edits(tmp_path, candidate, expected_status):
+    _fixture(tmp_path)
+    generated = tmp_path / "docs/decisions/README.md"
+    generated.write_bytes(b"fresh\n")
+    _git(tmp_path, "add", "docs/decisions/README.md")
+    (tmp_path / "candidate.cfg").write_text(f"{candidate}\n", encoding="utf-8")
+    _git(tmp_path, "add", "candidate.cfg")
+    notes = tmp_path / "notes.md"
+    notes.write_bytes(b"preserve unrelated unstaged bytes\r\n")
+    intent = tmp_path / "intent.txt"
+    intent.write_bytes(b"preserve intent-to-add content\r\n")
+    _git(tmp_path, "add", "-N", "intent.txt")
+    head = _git(tmp_path, "rev-parse", "HEAD")
+    staged_tree = _git(tmp_path, "write-tree")
+
+    result = _run_hook(tmp_path)
+
+    assert result.returncode == expected_status, result.stderr
+    assert _git(tmp_path, "rev-parse", "HEAD") == head
+    assert _git(tmp_path, "write-tree") == staged_tree
+    assert _git(tmp_path, "show", ":candidate.cfg") == candidate
+    assert notes.read_bytes() == b"preserve unrelated unstaged bytes\r\n"
+    assert intent.read_bytes() == b"preserve intent-to-add content\r\n"
+    assert " A intent.txt" in _git(tmp_path, "status", "--short")
+    assert _git(tmp_path, "diff", "--cached", "--name-only").splitlines() == [
+        "candidate.cfg",
+        "docs/decisions/README.md",
+    ]
+    assert "intent.txt" in _git(tmp_path, "diff", "--", "intent.txt")
+
+
+def test_hosted_validation_keeps_detached_head_and_index_unchanged(tmp_path):
+    _fixture(tmp_path)
+    generated = tmp_path / "docs/decisions/README.md"
+    generated.write_bytes(b"fresh\n")
+    _git(tmp_path, "add", "docs/decisions/README.md")
+    (tmp_path / "candidate.cfg").write_text("good\n", encoding="utf-8")
+    _git(tmp_path, "add", "candidate.cfg", "docs/decisions/README.md")
+    _git(tmp_path, "commit", "-m", "fresh generated candidate")
+    _git(tmp_path, "checkout", "--detach", "HEAD")
+    head = _git(tmp_path, "rev-parse", "HEAD")
+    staged_tree = _git(tmp_path, "write-tree")
+    environment = os.environ.copy()
+    environment["REPO_STANDARDS_HOSTED_COMMIT"] = "HEAD"
+
+    result = subprocess.run(
+        [BASH or "bash", "githooks/pre-commit"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        env=environment,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert _git(tmp_path, "rev-parse", "HEAD") == head
+    assert _git(tmp_path, "write-tree") == staged_tree
+    assert _git(tmp_path, "status", "--porcelain") == ""
+
+
+def test_hosted_validation_failure_keeps_detached_head_and_index_unchanged(tmp_path):
+    _fixture(tmp_path)
+    _git(tmp_path, "checkout", "--detach", "HEAD")
+    head = _git(tmp_path, "rev-parse", "HEAD")
+    staged_tree = _git(tmp_path, "write-tree")
+    environment = os.environ.copy()
+    environment["REPO_STANDARDS_HOSTED_COMMIT"] = "HEAD"
+
+    result = subprocess.run(
+        [BASH or "bash", "githooks/pre-commit"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        env=environment,
+    )
+
+    assert result.returncode == 18
+    assert _git(tmp_path, "rev-parse", "HEAD") == head
+    assert _git(tmp_path, "write-tree") == staged_tree
+    assert _git(tmp_path, "status", "--porcelain") == ""
+
+
+def test_hook_rejects_unformatted_staged_source_without_mutating_candidate(tmp_path):
+    if BASH is None:
+        pytest.skip("Bash is required to exercise the tracked hook")
+    _git(tmp_path, "init", "-b", "main")
+    _git(tmp_path, "config", "user.name", "Test")
+    _git(tmp_path, "config", "user.email", "test@example.invalid")
+    (tmp_path / "githooks").mkdir()
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "githooks/pre-commit").write_bytes(HOOK.read_bytes())
+    for name in (
+        "run.py",
+        "style.py",
+        "shared_checkout.py",
+        "versioning.py",
+        "release_artifacts.py",
+    ):
+        shutil.copy2(REPO_ROOT / "tools" / name, tmp_path / "tools" / name)
+    shutil.copy2(REPO_ROOT / ".gitignore", tmp_path / ".gitignore")
+    (tmp_path / ".agents/contracts").mkdir(parents=True)
+    (tmp_path / ".agents/contracts/repo-standards-commands.json").write_text(
+        json.dumps(
+            {
+                "apply": ["@python", "tools/run.py", "format", "--apply", "candidate.py"],
+                "check": ["@python", "tools/run.py", "format", "--check", "candidate.py"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_bytes((REPO_ROOT / "pyproject.toml").read_bytes())
+    source = tmp_path / "candidate.py"
+    source.write_text("value = 1\n", encoding="utf-8")
+    notes = tmp_path / "notes.md"
+    notes.write_text("baseline\n", encoding="utf-8")
+    _git(
+        tmp_path,
+        "add",
+        "githooks",
+        "tools",
+        ".agents",
+        ".gitignore",
+        "pyproject.toml",
+        "candidate.py",
+        "notes.md",
+    )
+    _git(tmp_path, "commit", "-m", "style hook fixture")
+    _git(tmp_path, "config", "core.hooksPath", "githooks")
+
+    source.write_text("value=1\n", encoding="utf-8")
+    _git(tmp_path, "add", "candidate.py")
+    source.write_text("value = 1\n", encoding="utf-8")
+    notes.write_text("preserve this unstaged edit\n", encoding="utf-8")
+    staged_tree = _git(tmp_path, "write-tree")
+
+    python_launcher = shutil.which("py") or shutil.which("python3") or shutil.which("python")
+    assert python_launcher is not None
+    result = _run_hook(tmp_path, path_prefix=Path(python_launcher).parent)
+
+    assert result.returncode != 0
+    assert "would be reformatted" in result.stdout.lower(), result.stdout + result.stderr
+    assert _git(tmp_path, "write-tree") == staged_tree
+    assert _git(tmp_path, "show", ":candidate.py") == "value=1"
+    assert source.read_text(encoding="utf-8") == "value = 1\n"
+    assert notes.read_text(encoding="utf-8") == "preserve this unstaged edit\n"

@@ -9,30 +9,27 @@ Implementing an approved Wild Bunch change in a task worktree.
 - Develop observable behavior through focused, behavior-first tests.
 - Verify claims against current repository and hosted evidence.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) and its scoped profile selection. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
 1. Read the approved plan and invoke only the focused Wild Bunch capability
    skills whose declared boundaries the change crosses.
-2. Bind those decisions to the applicable doctrine and contracts below.
-3. Use behavior-focused test development to construct each observable behavior through
+2. Follow the decisions named by the plan; use the [decision-record playbook](../playbooks/decision-records.md) to record any discovered divergence or material removal in the same change.
+3. When actual product promises, release disposition or dependencies change, follow the [feature-matrix playbook](../playbooks/feature-matrix.md) and update the `docs/features.md` (when present on the current branch) in the same PR.
+4. Bind those decisions to the applicable doctrine and contracts below.
+5. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
-4. Refresh ADR freshness metadata and run the repository's structural checks
-   with `py -3 tools/run.py ci --apply`, stage the intended tree, and use the
-   normal hooked commit. This command does not regenerate agent guidance or
-   install subscribed assets.
-5. Use evidence-based result verification to reconcile the committed head with
+6. When a maintained artifact needs updating, run its named owning maintenance
+   command and review its changes before staging. `setup-hooks --apply`
+   configures this checkout's hook path; validation uses `ci --check`. Then
+   stage the intended tree and use the normal hooked commit; the hook validates
+   the staged candidate and never applies or stages corrections.
+7. The canonical gate is fail-fast and cheapest-first. Resolve a formatter or
+   linter failure before starting builds or behavioral tests; do not wait for
+   downstream test suites when an earlier check has already failed.
+8. Use evidence-based result verification to reconcile the committed head with
    focused behavior proof and the hook's canonical result.
 
 ## Doctrine and contracts
@@ -47,14 +44,14 @@ Implementing an approved Wild Bunch change in a task worktree.
 ## Local commands and paths
 
 Select focused tests from [validation doctrine](../doctrine/validation-policy.md),
-then use [testing](../playbooks/testing.md). A normal commit uses the installed hook over the
-exact staged snapshot.
+then use [testing](../playbooks/testing.md). A normal commit uses the installed
+check-only hook over the exact staged snapshot.
 
 ## Evidence contract
 
 - [ ] The implemented behavior has focused automated or browser proof.
 - [ ] Applicable doctrine and contracts are satisfied at the committed head.
-- [ ] Generated ADR freshness metadata is current when applicable.
+- [ ] Required ADR history and catalogue changes are included, or the unchanged decision boundary is understood.
 - [ ] The normal hooked commit passed the canonical staged-snapshot gate.
 
 ## Prohibited combinations

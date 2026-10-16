@@ -5,7 +5,12 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
+import {
+  AvailableActionKind,
+  type GameSessionDto,
+  type JournalDto,
+  type TownStoreOffersDto,
+} from "../api/types";
 import {
   archiveGame,
   getAvailableActions,
@@ -174,7 +179,10 @@ function createStoreOffers(): TownStoreOffersDto {
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+    {
+      kind: AvailableActionKind.ReadWantedPosters,
+      label: "Read wanted posters",
+    },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -194,11 +202,31 @@ function primeMocks() {
     currentJournal: createJournal(),
     wantedPosters: [],
   });
-  mockedInspectNoticeBoard.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedCheckLocalRecords.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedFollowTelegraphLeads.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedGatherLocalGossip.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedLookAroundSaloon.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
+  mockedInspectNoticeBoard.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedCheckLocalRecords.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedFollowTelegraphLeads.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedGatherLocalGossip.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedLookAroundSaloon.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
   mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
     success: true,
     message: "ok",
@@ -253,7 +281,11 @@ describe("Start Over confirmation", () => {
     const user = userEvent.setup();
     const confirmDialog = await openConfirmDialog(user);
 
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
+    await user.click(
+      within(confirmDialog).getByRole("button", {
+        name: /archive and start over/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(mockedArchiveGame).toHaveBeenCalledWith("game-1");
@@ -269,7 +301,11 @@ describe("Start Over confirmation", () => {
     const user = userEvent.setup();
     const confirmDialog = await openConfirmDialog(user);
 
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
+    await user.click(
+      within(confirmDialog).getByRole("button", {
+        name: /archive and start over/i,
+      }),
+    );
 
     // localStorage key is cleared.
     await waitFor(() => {
@@ -295,11 +331,17 @@ describe("Start Over confirmation", () => {
     const user = userEvent.setup();
     const confirmDialog = await openConfirmDialog(user);
 
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
+    await user.click(
+      within(confirmDialog).getByRole("button", {
+        name: /archive and start over/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(
-        screen.getByText("Your old playthrough has been archived. Start a new one when you are ready."),
+        screen.getByText(
+          "Your old playthrough has been archived. Start a new one when you are ready.",
+        ),
       ).toBeInTheDocument();
     });
   });
@@ -356,7 +398,11 @@ describe("Start Over confirmation", () => {
     const user = userEvent.setup();
     const confirmDialog = await openConfirmDialog(user);
 
-    await user.click(within(confirmDialog).getByRole("button", { name: /archive and start over/i }));
+    await user.click(
+      within(confirmDialog).getByRole("button", {
+        name: /archive and start over/i,
+      }),
+    );
 
     // The ConfirmDialog should close.
     await waitFor(() => {

@@ -9,7 +9,12 @@ import { GameSessionProvider } from "../state/GameSessionProvider";
 import { DevOverlay } from "../dev/DevOverlay";
 import { DevSurfaceProvider, useSetDevSurface } from "../dev/DevSurfaceContext";
 import type { DevSurface } from "../dev/DevSurfaceContext";
-import { AvailableActionKind, type GameSessionDto, type JournalDto, type TownStoreOffersDto } from "../api/types";
+import {
+  AvailableActionKind,
+  type GameSessionDto,
+  type JournalDto,
+  type TownStoreOffersDto,
+} from "../api/types";
 import {
   getAvailableActions,
   getGame,
@@ -184,7 +189,10 @@ function createStoreOffers(): TownStoreOffersDto {
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
+    {
+      kind: AvailableActionKind.ReadWantedPosters,
+      label: "Read wanted posters",
+    },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -204,11 +212,31 @@ function primeMocks() {
     currentJournal: createJournal(),
     wantedPosters: [],
   });
-  mockedInspectNoticeBoard.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedCheckLocalRecords.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedFollowTelegraphLeads.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedGatherLocalGossip.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
-  mockedLookAroundSaloon.mockResolvedValue({ success: true, message: "ok", currentJournal: createJournal() });
+  mockedInspectNoticeBoard.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedCheckLocalRecords.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedFollowTelegraphLeads.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedGatherLocalGossip.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
+  mockedLookAroundSaloon.mockResolvedValue({
+    success: true,
+    message: "ok",
+    currentJournal: createJournal(),
+  });
   mockedConfrontSaloonPersonOfInterest.mockResolvedValue({
     success: true,
     message: "ok",
@@ -288,21 +316,26 @@ describe("Start Over regression — player-facing, not dev-only", () => {
 
     // The Game Settings button must live in the HUD banner (player-facing shell),
     // not behind a dev-only surface.
-    const gameSettingsButton = within(hud).getByRole("button", { name: /game settings/i });
+    const gameSettingsButton = within(hud).getByRole("button", {
+      name: /game settings/i,
+    });
     expect(gameSettingsButton).toBeInTheDocument();
     expect(gameSettingsButton).not.toBeDisabled();
   });
 
-  it.each(allSurfaces)("does NOT render the Game Settings button in the DevOverlay (surface: %s)", (surface) => {
-    primeMocks();
-    renderDevOverlay(true, surface);
+  it.each(allSurfaces)(
+    "does NOT render the Game Settings button in the DevOverlay (surface: %s)",
+    (surface) => {
+      primeMocks();
+      renderDevOverlay(true, surface);
 
-    // The DevOverlay region is present...
-    expect(screen.getByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
+      // The DevOverlay region is present...
+      expect(screen.getByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
 
-    // ...but must NOT expose a Game Settings button. Start Over must stay player-facing.
-    expect(screen.queryByRole("button", { name: /game settings/i })).not.toBeInTheDocument();
-  });
+      // ...but must NOT expose a Game Settings button. Start Over must stay player-facing.
+      expect(screen.queryByRole("button", { name: /game settings/i })).not.toBeInTheDocument();
+    },
+  );
 
   it("reaches Start Over through the player-facing Game Settings overlay, not through dev tooling", async () => {
     primeMocks();
@@ -320,7 +353,9 @@ describe("Start Over regression — player-facing, not dev-only", () => {
     // Open the Game Settings overlay from the HUD (player-facing) button.
     await user.click(within(hud).getByRole("button", { name: /game settings/i }));
 
-    const overlay = await screen.findByRole("dialog", { name: /game settings/i });
+    const overlay = await screen.findByRole("dialog", {
+      name: /game settings/i,
+    });
     const scope = within(overlay);
 
     // The Start Over action is reachable inside the player-facing overlay.

@@ -16,7 +16,9 @@ export function useGameSessionState() {
       return;
     }
     setDeclaredWantedIdentityHandle((current) =>
-      wantedPosters.some((poster) => poster.posterId === current) ? current : wantedPosters[0].posterId,
+      wantedPosters.some((poster) => poster.posterId === current)
+        ? current
+        : wantedPosters[0].posterId,
     );
   }, [wantedPosters]);
 

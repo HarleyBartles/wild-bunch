@@ -3,7 +3,9 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { AppShell } from "./AppShell";
 
 const PreSessionSurface = lazy(() =>
-  import("../flow/PreSessionSurface").then((m) => ({ default: m.PreSessionSurface })),
+  import("../flow/PreSessionSurface").then((m) => ({
+    default: m.PreSessionSurface,
+  })),
 );
 const TownHubSurface = lazy(() =>
   import("../flow/TownHubSurface").then((m) => ({ default: m.TownHubSurface })),
@@ -12,16 +14,24 @@ const StorePlace = lazy(() =>
   import("../flow/places/StorePlace").then((m) => ({ default: m.StorePlace })),
 );
 const SheriffPlace = lazy(() =>
-  import("../flow/places/SheriffPlace").then((m) => ({ default: m.SheriffPlace })),
+  import("../flow/places/SheriffPlace").then((m) => ({
+    default: m.SheriffPlace,
+  })),
 );
 const SaloonPlace = lazy(() =>
-  import("../flow/places/SaloonPlace").then((m) => ({ default: m.SaloonPlace })),
+  import("../flow/places/SaloonPlace").then((m) => ({
+    default: m.SaloonPlace,
+  })),
 );
 const TravelPrepSurface = lazy(() =>
-  import("../flow/TravelPrepSurface").then((m) => ({ default: m.TravelPrepSurface })),
+  import("../flow/TravelPrepSurface").then((m) => ({
+    default: m.TravelPrepSurface,
+  })),
 );
 const TrailFlowSurface = lazy(() =>
-  import("../flow/TrailFlowSurface").then((m) => ({ default: m.TrailFlowSurface })),
+  import("../flow/TrailFlowSurface").then((m) => ({
+    default: m.TrailFlowSurface,
+  })),
 );
 
 const rootRoute = createRootRoute({

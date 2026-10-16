@@ -14,16 +14,16 @@ public sealed class MapGeneratorDevSaltsTests
     {
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
         var source = new GameSetupDeterministicSource(SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString());
-        
+
         var world = MapGenerator.Generate(
             seedWorld,
             source,
             GameEntropy.Classic,
             null);
-        
+
         Assert.NotNull(world);
         Assert.NotNull(world.Towns);
-        
+
         foreach (var town in world.Towns)
         {
             Assert.NotNull(town.Layout);
@@ -40,26 +40,26 @@ public sealed class MapGeneratorDevSaltsTests
     {
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString();
-        
+
         var world1 = MapGenerator.Generate(
             seedWorld,
             new GameSetupDeterministicSource(seedCode),
             GameEntropy.Classic,
             null);
-        
+
         var world2 = MapGenerator.Generate(
             seedWorld,
             new GameSetupDeterministicSource(seedCode),
             GameEntropy.Classic,
             null);
-        
+
         Assert.Equal(world1.Towns.Count, world2.Towns.Count);
-        
+
         for (var i = 0; i < world1.Towns.Count; i++)
         {
             var layout1 = world1.Towns.ElementAt(i).Layout;
             var layout2 = world2.Towns.ElementAt(i).Layout;
-            
+
             Assert.Equal(layout1!.Buildings, layout2!.Buildings);
             Assert.Equal(layout1!.LayoutSalts, layout2!.LayoutSalts);
         }
@@ -72,14 +72,14 @@ public sealed class MapGeneratorDevSaltsTests
         // actually affect layout generation through the layout-scoped source.
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString();
-        
+
         // Generate with normal derived salts (no dev override)
         var world1 = MapGenerator.Generate(
             seedWorld,
             new GameSetupDeterministicSource(seedCode),
             GameEntropy.Classic,
             null);
-        
+
         // Generate with dev override that changes buildings salt
         var devSalts = new LayoutSalts("different-buildings", "roads", "dirt", "props");
         var world2 = MapGenerator.Generate(
@@ -88,12 +88,12 @@ public sealed class MapGeneratorDevSaltsTests
             GameEntropy.Classic,
             null,
             devSalts); // Dev salts are passed separately to MapGenerator
-        
+
         // Building views should differ due to different buildings salt
         // This proves that the layout-scoped source correctly uses the salts
         var layout1 = world1.Towns.ElementAt(0).Layout;
         var layout2 = world2.Towns.ElementAt(0).Layout;
-        
+
         Assert.NotEqual(layout1!.Buildings, layout2!.Buildings);
     }
 
@@ -103,20 +103,20 @@ public sealed class MapGeneratorDevSaltsTests
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString();
         var devSalts = new LayoutSalts("dev-buildings", "dev-roads", "dev-dirt", "dev-props");
-        
+
         var worldWithDev = MapGenerator.Generate(
             seedWorld,
             new GameSetupDeterministicSource(seedCode), // Global source has NO layout salts
             GameEntropy.Classic,
             null,
             devSalts); // Dev salts are passed separately to MapGenerator
-        
+
         var worldWithoutDev = MapGenerator.Generate(
             seedWorld,
             new GameSetupDeterministicSource(seedCode),
             GameEntropy.Classic,
             null);
-        
+
         // Dev salts should be on the layout
         var layoutWithDev = worldWithDev.Towns.ElementAt(0).Layout;
         Assert.Equal("dev-buildings", layoutWithDev!.LayoutSalts!.BuildingsSalt);
@@ -134,15 +134,15 @@ public sealed class MapGeneratorDevSaltsTests
     {
         var seedWorld = SeedWorldResolver.Resolve(SeedWorldResolver.CreateCanonicalSeedCode());
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString();
-        
+
         var world = MapGenerator.Generate(
             seedWorld,
             new GameSetupDeterministicSource(seedCode),
             GameEntropy.Classic,
             null);
-        
+
         var layout = world.Towns.ElementAt(0).Layout;
-        
+
         // Layout should have the derived salts, not null
         Assert.NotNull(layout!.LayoutSalts!);
         Assert.NotNull(layout!.LayoutSalts!.BuildingsSalt);

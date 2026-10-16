@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider, createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
+import {
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+} from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SheriffPlace } from "../flow/places/SheriffPlace";
@@ -125,7 +131,9 @@ function renderSheriffPlace() {
     path: "/town/sheriff",
     component: () => <SheriffPlace />,
   });
-  const router = createRouter({ routeTree: rootRoute.addChildren([sheriffRoute]) });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([sheriffRoute]),
+  });
   window.history.replaceState({}, "", "/town/sheriff");
   render(
     <QueryClientProvider client={queryClient}>
@@ -140,8 +148,14 @@ function primeMocks() {
   vi.mocked(getGame).mockResolvedValue(createSession());
   vi.mocked(getJournal).mockResolvedValue(createJournal());
   vi.mocked(getAvailableActions).mockResolvedValue([
-    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
-    { kind: AvailableActionKind.CheckSheriffRecords, label: "Check local records" },
+    {
+      kind: AvailableActionKind.ReadWantedPosters,
+      label: "Read wanted posters",
+    },
+    {
+      kind: AvailableActionKind.CheckSheriffRecords,
+      label: "Check local records",
+    },
   ]);
   vi.mocked(getTownStoreOffers).mockResolvedValue({
     townId: "t-town",
@@ -181,7 +195,9 @@ describe("beatNarration in investigation notice", () => {
     renderSheriffPlace();
     const user = userEvent.setup();
 
-    const checkButton = await screen.findByRole("button", { name: /check local records/i });
+    const checkButton = await screen.findByRole("button", {
+      name: /check local records/i,
+    });
     await user.click(checkButton);
 
     // The notice must contain the beat narration text — this only happens if the hook
@@ -205,7 +221,9 @@ describe("beatNarration in investigation notice", () => {
     renderSheriffPlace();
     const user = userEvent.setup();
 
-    const checkButton = await screen.findByRole("button", { name: /check local records/i });
+    const checkButton = await screen.findByRole("button", {
+      name: /check local records/i,
+    });
     await user.click(checkButton);
 
     await waitFor(() => {
@@ -225,7 +243,9 @@ describe("beatNarration in investigation notice", () => {
     renderSheriffPlace();
     const user = userEvent.setup();
 
-    const checkButton = await screen.findByRole("button", { name: /check local records/i });
+    const checkButton = await screen.findByRole("button", {
+      name: /check local records/i,
+    });
     await user.click(checkButton);
 
     await waitFor(() => {

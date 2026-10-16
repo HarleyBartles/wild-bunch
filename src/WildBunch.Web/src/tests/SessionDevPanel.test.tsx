@@ -4,7 +4,13 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SessionDevPanel } from "../dev/panels/SessionDevPanel";
 import { GameSessionProvider } from "../state/GameSessionProvider";
-import { clearRng, forceDevDifficulty, getSessionDevContext, lockRng, setDevEntropy } from "../dev/devApi";
+import {
+  clearRng,
+  forceDevDifficulty,
+  getSessionDevContext,
+  lockRng,
+  setDevEntropy,
+} from "../dev/devApi";
 
 vi.mock("../dev/devApi", () => ({
   getSessionDevContext: vi.fn(),
@@ -114,7 +120,10 @@ describe("SessionDevPanel", () => {
 
   it("calls lockRng when Lock RNG is clicked", async () => {
     seedGameId("test-game-2");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-2" });
+    mockedGetContext.mockResolvedValue({
+      ...mockContext,
+      sessionId: "test-game-2",
+    });
     mockedLock.mockResolvedValue(undefined);
     renderPanel();
 
@@ -131,7 +140,10 @@ describe("SessionDevPanel", () => {
 
   it("calls clearRng when Clear RNG is clicked", async () => {
     seedGameId("test-game-3");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-3" });
+    mockedGetContext.mockResolvedValue({
+      ...mockContext,
+      sessionId: "test-game-3",
+    });
     mockedClear.mockResolvedValue(undefined);
     renderPanel();
 
@@ -148,7 +160,10 @@ describe("SessionDevPanel", () => {
 
   it("renders difficulty control and travel-rule facts", async () => {
     seedGameId("test-game-4");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-4" });
+    mockedGetContext.mockResolvedValue({
+      ...mockContext,
+      sessionId: "test-game-4",
+    });
     renderPanel();
 
     await waitFor(() => {
@@ -168,7 +183,10 @@ describe("SessionDevPanel", () => {
 
   it("calls forceDevDifficulty when difficulty option is clicked", async () => {
     seedGameId("test-game-5");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-5" });
+    mockedGetContext.mockResolvedValue({
+      ...mockContext,
+      sessionId: "test-game-5",
+    });
     mockedForceDifficulty.mockResolvedValue(undefined);
     renderPanel();
 
@@ -179,13 +197,18 @@ describe("SessionDevPanel", () => {
     await user.click(screen.getByRole("button", { name: "Brutal" }));
 
     await waitFor(() => {
-      expect(mockedForceDifficulty).toHaveBeenCalledWith("test-game-5", { difficulty: "Brutal" });
+      expect(mockedForceDifficulty).toHaveBeenCalledWith("test-game-5", {
+        difficulty: "Brutal",
+      });
     });
   });
 
   it("renders entropy control", async () => {
     seedGameId("test-game-6");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-6" });
+    mockedGetContext.mockResolvedValue({
+      ...mockContext,
+      sessionId: "test-game-6",
+    });
     renderPanel();
 
     await waitFor(() => {
@@ -199,7 +222,10 @@ describe("SessionDevPanel", () => {
 
   it("calls setDevEntropy when entropy option is clicked", async () => {
     seedGameId("test-game-7");
-    mockedGetContext.mockResolvedValue({ ...mockContext, sessionId: "test-game-7" });
+    mockedGetContext.mockResolvedValue({
+      ...mockContext,
+      sessionId: "test-game-7",
+    });
     mockedSetEntropy.mockResolvedValue(undefined);
     renderPanel();
 
@@ -210,7 +236,9 @@ describe("SessionDevPanel", () => {
     await user.click(screen.getByRole("button", { name: "Wild" }));
 
     await waitFor(() => {
-      expect(mockedSetEntropy).toHaveBeenCalledWith("test-game-7", { entropy: "Wild" });
+      expect(mockedSetEntropy).toHaveBeenCalledWith("test-game-7", {
+        entropy: "Wild",
+      });
     });
   });
 });

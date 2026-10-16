@@ -9,19 +9,14 @@ town, or setup-owned player facts.
 
 - Develop focused behavior tests and verify implementation evidence.
 
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - seed-ownership
 - wild-bunch-domain-modeling (when gameplay invariants change)
 - wild-bunch-dotnet-architecture (when application or persistence boundaries change)
 
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -65,3 +60,4 @@ architecture or gameplay doctrine bind the change.
 
 - [Design](../runbooks/design.md)
 - [Implementing](../runbooks/implementing.md)
+- [Decision records](decision-records.md) - when setup ownership or deterministic setup rules change.

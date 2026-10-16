@@ -14,7 +14,14 @@ function createGrid(): number[][] {
 function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   return {
     buildings: [
-      { kind: BuildingKind.Store, view: BuildingView.Profile, x: 13, y: 13, width: 8, height: 10 },
+      {
+        kind: BuildingKind.Store,
+        view: BuildingView.Profile,
+        x: 13,
+        y: 13,
+        width: 8,
+        height: 10,
+      },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
@@ -64,8 +71,22 @@ describe("background building planner", () => {
     const layout = createLayout({
       tileGrid: grid,
       buildings: [
-        { kind: BuildingKind.Trailhead, view: BuildingView.Profile, x: 50, y: 5, width: 20, height: 10 },
-        { kind: BuildingKind.Trailhead, view: BuildingView.Profile, x: 50, y: 95, width: 20, height: 10 },
+        {
+          kind: BuildingKind.Trailhead,
+          view: BuildingView.Profile,
+          x: 50,
+          y: 5,
+          width: 20,
+          height: 10,
+        },
+        {
+          kind: BuildingKind.Trailhead,
+          view: BuildingView.Profile,
+          x: 50,
+          y: 95,
+          width: 20,
+          height: 10,
+        },
       ],
     });
 
@@ -192,7 +213,11 @@ describe("background building planner", () => {
     }
 
     const allowedViews = [BuildingView.Profile, BuildingView.FrontOblique] as const;
-    const forbiddenViews = [BuildingView.Front, BuildingView.Rear, BuildingView.RearOblique] as const;
+    const forbiddenViews = [
+      BuildingView.Front,
+      BuildingView.Rear,
+      BuildingView.RearOblique,
+    ] as const;
 
     for (let seedIndex = 0; seedIndex < 64; seedIndex++) {
       const layout = createLayout({
@@ -225,7 +250,16 @@ describe("background building planner", () => {
     const layout = createLayout({
       prosperity: TownProsperity.Boomtown,
       tileGrid: grid,
-      buildings: [{ kind: BuildingKind.Store, view: BuildingView.Profile, x: 65, y: 35, width: 8, height: 10 }],
+      buildings: [
+        {
+          kind: BuildingKind.Store,
+          view: BuildingView.Profile,
+          x: 65,
+          y: 35,
+          width: 8,
+          height: 10,
+        },
+      ],
       layoutSalts: {
         resolverVersion: "1.0.0",
         buildingsSalt: "town-hub-buildings",

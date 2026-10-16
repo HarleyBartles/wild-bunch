@@ -15,10 +15,7 @@ import {
   startGameWithTown,
   travel,
 } from "../api/wildBunchApi";
-import type {
-  SetupGameRequest,
-  WantedPosterDto,
-} from "../api/types";
+import type { SetupGameRequest, WantedPosterDto } from "../api/types";
 import { formatMoney, storageKey } from "../utils/formatting";
 import { formatInvestigationNotice } from "../ui/beatFormatters";
 
@@ -74,7 +71,9 @@ export function useGameSessionMutations({
       await invalidateGameQueries(updatedSession.id);
     },
     onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to mark prologue as viewed.");
+      setError(
+        exception instanceof Error ? exception.message : "Unable to mark prologue as viewed.",
+      );
     },
   });
 
@@ -179,7 +178,9 @@ export function useGameSessionMutations({
       setError("");
     },
     onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to inspect the notice board.");
+      setError(
+        exception instanceof Error ? exception.message : "Unable to inspect the notice board.",
+      );
     },
   });
 
@@ -205,7 +206,9 @@ export function useGameSessionMutations({
       setError("");
     },
     onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to follow telegraph leads.");
+      setError(
+        exception instanceof Error ? exception.message : "Unable to follow telegraph leads.",
+      );
     },
   });
 
@@ -231,12 +234,15 @@ export function useGameSessionMutations({
       setError("");
     },
     onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to look around the saloon.");
+      setError(
+        exception instanceof Error ? exception.message : "Unable to look around the saloon.",
+      );
     },
   });
 
   const confrontSaloonMutation = useMutation({
-    mutationFn: () => confrontSaloonPersonOfInterest(gameId as string, declaredWantedIdentityHandle),
+    mutationFn: () =>
+      confrontSaloonPersonOfInterest(gameId as string, declaredWantedIdentityHandle),
     onSuccess: async (result) => {
       queryClient.setQueryData(["session", gameId], result.currentSession);
       await invalidateGameQueries(gameId as string);
@@ -248,7 +254,11 @@ export function useGameSessionMutations({
       setError("");
     },
     onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to confront the person in the saloon.");
+      setError(
+        exception instanceof Error
+          ? exception.message
+          : "Unable to confront the person in the saloon.",
+      );
     },
   });
 

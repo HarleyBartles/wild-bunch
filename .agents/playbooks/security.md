@@ -10,17 +10,8 @@ truth, or a sensitive mutation boundary.
 - Evaluate connector and tool mutations for authority and side effects.
 - Apply scope and safety gates when authority, source truth, or impact requires them.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -60,3 +51,4 @@ repo files or command output.
 - [Planning](../runbooks/planning.md)
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
+- [Decision records](decision-records.md) - when authority, privacy, or hidden-truth policy changes durably.

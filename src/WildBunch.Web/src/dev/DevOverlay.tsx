@@ -51,7 +51,8 @@ export function DevOverlay({ open, onClose, top = 0 }: DevOverlayProps) {
       return;
     }
 
-    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeButtonRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -78,7 +79,7 @@ export function DevOverlay({ open, onClose, top = 0 }: DevOverlayProps) {
   }
 
   const activePanel = availablePanels.find((p) => p.id === activePanelId) ?? availablePanels[0];
-  
+
   // Session audit is always available but handled separately
   const sessionAuditPanel = devPanels.find((p) => p.id === "session-audit");
   const mainPanels = availablePanels.filter((p) => p.id !== "session-audit");
@@ -87,7 +88,13 @@ export function DevOverlay({ open, onClose, top = 0 }: DevOverlayProps) {
   return (
     <>
       <ClickAway $top={top} onClick={onClose} aria-hidden="true" data-testid="dev-click-away" />
-      <Drawer $expanded={expanded} $top={top} role="region" aria-label="Developer overlay" data-testid="dev-drawer">
+      <Drawer
+        $expanded={expanded}
+        $top={top}
+        role="region"
+        aria-label="Developer overlay"
+        data-testid="dev-drawer"
+      >
         <DrawerHeader>
           <TitleGroup>
             <Eyebrow>Dev</Eyebrow>
@@ -141,7 +148,11 @@ export function DevOverlay({ open, onClose, top = 0 }: DevOverlayProps) {
             )}
           </Sidebar>
           <Content data-testid="dev-overlay-content">
-            {activePanel ? activePanel.render({ expanded }) : <MutedText>No contextual dev panel for this surface.</MutedText>}
+            {activePanel ? (
+              activePanel.render({ expanded })
+            ) : (
+              <MutedText>No contextual dev panel for this surface.</MutedText>
+            )}
           </Content>
         </DrawerBody>
       </Drawer>
@@ -311,7 +322,7 @@ const SessionAuditSection = styled.div`
   margin-top: auto;
   padding-top: 8px;
   border-top: 1px solid var(--border);
-  
+
   @media (max-width: 640px) {
     margin-top: 0;
     padding-top: 0;

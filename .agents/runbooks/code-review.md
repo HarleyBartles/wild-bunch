@@ -9,17 +9,11 @@ Reviewing a Wild Bunch diff, branch, or pull request.
 - Provide independent review of a committed diff and select relevant domain and quality lenses.
 - Analyze review feedback, resolve findings with evidence, and verify the resulting head.
 
-## Optional capabilities
+## Before review
 
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+Follow the [unslop playbook](../playbooks/unslop.md) and select profiles for
+each changed concern. For durable-decision scope, independently compare the
+actual diff with relevant records through the [decision-record playbook](../playbooks/decision-records.md).
 
 ## Composition
 
@@ -27,10 +21,16 @@ Reviewing a Wild Bunch diff, branch, or pull request.
    the applicable Wild Bunch capability and anti-slop lenses.
 2. Check the diff against the doctrine, contracts, local commands, and evidence
    obligations below rather than against the PR summary.
-3. Route every accepted finding through review finding analysis and correction; re-check the
+3. Independently compare the actual diff with relevant decisions from the [catalogue](../../docs/decisions/README.md); require matching history updates or evidence that no durable decision changed. Do not rely on the PR author's assertion or the presence of an ADR edit.
+4. Independently compare product promises, dependencies, dispositions and evidence changes with the `docs/features.md` (when present on the current branch) through its [maintenance playbook](../playbooks/feature-matrix.md); require a truthful update or evidence that no current feature truth changed.
+5. Route every accepted finding through review finding analysis and correction; re-check the
    repaired diff rather than trusting the response.
-4. Use evidence-based result verification to bind the final verdict to the
+6. Use evidence-based result verification to bind the final verdict to the
    current local head and, when a PR exists, its remote head and checks.
+7. For release or hotfix work, independently verify the branch route,
+   promotion/reconciliation method, version checkpoint, and source/artifact
+   binding against the [release lifecycle runbook](release.md) and actual
+   evidence.
 
 ## Doctrine and contracts
 
@@ -38,13 +38,13 @@ Reviewing a Wild Bunch diff, branch, or pull request.
   and [event-sourcing integrity](../doctrine/event-sourcing-integrity.md).
 - Frontend changes: [frontend standards](../doctrine/frontend-standards.md).
 - Tests: [validation doctrine](../doctrine/validation-policy.md).
-- Apply relevant binding profiles from `../contracts/unslop/` and scoped
-  contract homes; use an available review capability for portable profiles.
+- Select code-review and changed-concern profiles through the [unslop playbook](../playbooks/unslop.md); route new observations through that playbook's observation loop.
 
 ## Local commands and paths
 
-Use `py -3 tools/run.py ci --check` for deliberate CI-parity proof. Apply the
-canonical command when selected standards or plugin subscriptions change.
+Use `py -3 tools/run.py ci --check` for deliberate fail-fast CI-parity proof.
+Use the focused target in [the command bus guide](../../tools/README.md) while
+constructing the change; manual diagnostics do not replace the canonical gate.
 
 ## Evidence contract
 

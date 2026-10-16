@@ -102,7 +102,14 @@ describe("TravelDevPanel", () => {
       pendingFoeProfile: null,
       pendingDevOverride: {
         forcedCategory: "Foe",
-        foeProfile: { speed: 5, fightStrength: 4, minimumBribe: 8, speedBand: "fast", fightBand: "tough", bribeBand: "high" },
+        foeProfile: {
+          speed: 5,
+          fightStrength: 4,
+          minimumBribe: 8,
+          speedBand: "fast",
+          fightBand: "tough",
+          bribeBand: "high",
+        },
         encounterMessage: "A hard-eyed rider blocks the trail.",
       },
     });
@@ -139,9 +146,12 @@ describe("TravelDevPanel", () => {
     await user.click(screen.getByRole("button", { name: /force override/i }));
 
     await waitFor(() => {
-      expect(mockedForce).toHaveBeenCalledWith("test-game-3", expect.objectContaining({
-        forcedCategory: "Foe",
-      }));
+      expect(mockedForce).toHaveBeenCalledWith(
+        "test-game-3",
+        expect.objectContaining({
+          forcedCategory: "Foe",
+        }),
+      );
     });
   });
 

@@ -20,7 +20,12 @@ export function useDevSurfaceSync(): void {
 }
 
 function deriveDevSurface(phase: string, pathname: string): DevSurface {
-  if (phase === "pre-session" || phase === "setup" || phase === "prologue" || phase === "town-selection") {
+  if (
+    phase === "pre-session" ||
+    phase === "setup" ||
+    phase === "prologue" ||
+    phase === "town-selection"
+  ) {
     return "pre-session";
   }
   if (phase === "on-trail") {

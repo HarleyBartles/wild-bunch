@@ -12,6 +12,8 @@ metadata:
 
 # Seed Ownership
 
+Before using this skill, follow the [unslop playbook](../../playbooks/unslop.md) for seeded setup and developer preparation and read the selected profiles in full; consult the [decision-record playbook](../../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 ## Owned decision
 
 Classify one setup fact into exactly one owner: seed identity, difficulty

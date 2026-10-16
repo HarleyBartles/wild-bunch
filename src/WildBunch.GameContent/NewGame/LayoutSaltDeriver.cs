@@ -21,25 +21,25 @@ internal static class LayoutSaltDeriver
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(entropyPolicy);
-        
+
         // If dev salts are set, use them directly (dev control overrides derivation)
         if (devLayoutSalts is not null)
         {
             return devLayoutSalts;
         }
-        
+
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
-        
+
         // Derive each salt from seed + town context + entropy policy
         // Fixed mode still preserves deterministic partitioning by seed, town, slot, and concern
         var buildingsSalt = DeriveSalt(seedCode.ToString(), townId.Value, townSlotIndex, "buildings", entropyPolicy.SaltSourceMode);
         var roadsSalt = DeriveSalt(seedCode.ToString(), townId.Value, townSlotIndex, "roads", entropyPolicy.SaltSourceMode);
         var dirtSalt = DeriveSalt(seedCode.ToString(), townId.Value, townSlotIndex, "dirt", entropyPolicy.SaltSourceMode);
         var propsSalt = DeriveSalt(seedCode.ToString(), townId.Value, townSlotIndex, "props", entropyPolicy.SaltSourceMode);
-        
+
         return new LayoutSalts(buildingsSalt, roadsSalt, dirtSalt, propsSalt);
     }
-    
+
     private static string DeriveSalt(string seedCode, string townId, int townSlotIndex, string concern, SaltSourceMode mode)
     {
         var input = $"{seedCode}|{townId}|{townSlotIndex}|{concern}|{mode}";

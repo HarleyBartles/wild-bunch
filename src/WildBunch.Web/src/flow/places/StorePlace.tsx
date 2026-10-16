@@ -22,7 +22,8 @@ const PlaceBody = styled.div`
 
 export function StorePlace() {
   const navigate = useNavigate();
-  const { session, storeOffers, storeOffersLoading, loading, handleBuyOffer, notice, error } = useGameSession();
+  const { session, storeOffers, storeOffersLoading, loading, handleBuyOffer, notice, error } =
+    useGameSession();
 
   if (!session) {
     return null;

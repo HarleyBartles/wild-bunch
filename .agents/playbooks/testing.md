@@ -9,17 +9,8 @@ Adding, changing, or running Wild Bunch tests and validation gates.
 - Construct observable behavior through focused, behavior-first tests.
 - Verify claims against current repository and hosted evidence.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 
@@ -29,9 +20,18 @@ Adding, changing, or running Wild Bunch tests and validation gates.
    PostgreSQL or browser evidence only when the boundary requires it.
 3. Start shared PostgreSQL with `.\tools\postgres-dev.ps1 ensure` before lanes
    that use `localhost:5435`.
-4. Refresh ADR freshness metadata when applicable, stage the intended tree,
-   and let the normal hook run the canonical check.
-5. Use evidence-based result verification to report focused and canonical proof
+4. For native browser behavior, build first with `npm --prefix
+   src/WildBunch.Web run build`, then run `npm --prefix src/WildBunch.Web run
+   test:browser`; install Chromium locally once with `npx --prefix
+   src/WildBunch.Web playwright install chromium`. The browser lane serves the
+   production build. Application-specific browser tests may require an isolated API and PostgreSQL; the tooling bootstrap check does not.
+   Hosted CI installs locked web dependencies and Chromium with system
+   dependencies before the tracked gate.
+5. When a maintained artifact needs updating, run its named owning maintenance
+   command and review the changes it produces. `setup-hooks --apply` configures
+   this checkout's Git hook; it is separate from validation. Stage the intended
+   tree, then let the normal check-only hook validate it.
+6. Use evidence-based result verification to report focused and canonical proof
    for the same tested state.
 
 ## Doctrine and contracts
@@ -48,13 +48,15 @@ Adding, changing, or running Wild Bunch tests and validation gates.
 py -3 tools\run.py ci --check
 ```
 
-For hook setup or repair, run `ci --apply`; it activates the tracked hook,
-refreshes ADR freshness metadata, and checks repository-owned declarations. It
-does not regenerate agent surfaces or install subscribed assets. Hook custody
-is defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
+For hook setup, run `py -3 tools/run.py setup-hooks --apply` explicitly. Use
+`py -3 tools/run.py ci --check --diagnostics` only for manual troubleshooting; the pre-commit hook invokes fail-fast `ci --check`, ordered from cheaper to more expensive checks, and never applies repairs or stages corrections. Hook custody is defined in [repo runbook policy](../doctrine/repo-runbook-policy.md).
 
-Use `ci --apply` when hook activation or ADR freshness metadata needs updating;
-use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
+The canonical gate is fail-fast and ordered from cheaper checks to more
+expensive work: repository contracts and whitespace, format and lint for each
+language, typechecking and builds with build identity validation, then
+behavioral test suites (Vitest and Chromium browser tests). Resolve the first failure before starting downstream checks; do not
+make an agent wait for tests when an earlier formatter or linter has failed.
+Use `--diagnostics` only to collect independent failures. Persistence changes also run `dotnet tool
 restore` and `dotnet ef migrations list --project src\WildBunch.Persistence
 --startup-project src\WildBunch.Api`. Direct PostgreSQL checks use the shared
 service at `localhost:5435`.
@@ -70,10 +72,12 @@ service at `localhost:5435`.
 ## Prohibited combinations
 
 - Do not treat a broad green suite as proof of an unexercised behavior.
-- Do not run `ci --apply` as the final non-mutating proof.
+- Do not treat `setup-hooks --apply` as validation proof; use `ci --check` and the
+  check-only commit hook.
 
 ## Runbook routing
 
 - [Implementing](../runbooks/implementing.md)
 - [Code review](../runbooks/code-review.md)
 - [Pull request](../runbooks/pr.md)
+- [Decision records](decision-records.md) - when an invariant, test boundary, or validation lane becomes a durable repository rule.

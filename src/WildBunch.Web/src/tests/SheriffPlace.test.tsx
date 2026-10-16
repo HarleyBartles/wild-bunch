@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider, createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
+import {
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+} from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { SheriffPlace } from "../flow/places/SheriffPlace";
 import { GameSessionProvider } from "../state/GameSessionProvider";
@@ -160,7 +166,9 @@ function renderSheriffPlace() {
     path: "/town/sheriff",
     component: () => <SheriffPlace />,
   });
-  const router = createRouter({ routeTree: rootRoute.addChildren([sheriffRoute]) });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([sheriffRoute]),
+  });
   window.history.replaceState({}, "", "/town/sheriff");
   render(
     <QueryClientProvider client={queryClient}>
@@ -174,8 +182,14 @@ function renderSheriffPlace() {
 function primeMocksWithSheriffLeads() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
-    { kind: AvailableActionKind.CheckSheriffRecords, label: "Check local records" },
+    {
+      kind: AvailableActionKind.ReadWantedPosters,
+      label: "Read wanted posters",
+    },
+    {
+      kind: AvailableActionKind.CheckSheriffRecords,
+      label: "Check local records",
+    },
   ]);
   mockedGetJournal.mockResolvedValue(createJournalWithSheriffLeads());
   mockedGetTownStoreOffers.mockResolvedValue({
@@ -223,8 +237,14 @@ describe("SheriffPlace", () => {
     seedGameId("game-1");
     mockedGetGame.mockResolvedValue(createSession());
     mockedGetAvailableActions.mockResolvedValue([
-      { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
-      { kind: AvailableActionKind.CheckSheriffRecords, label: "Check local records" },
+      {
+        kind: AvailableActionKind.ReadWantedPosters,
+        label: "Read wanted posters",
+      },
+      {
+        kind: AvailableActionKind.CheckSheriffRecords,
+        label: "Check local records",
+      },
     ]);
     mockedGetJournal.mockResolvedValue({
       id: "game-1",

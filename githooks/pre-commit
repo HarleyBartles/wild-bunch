@@ -1,41 +1,20 @@
 #!/usr/bin/env bash
-# Regenerate owned mechanical surfaces, then prove the complete staged product.
+# Validate the exact candidate without applying or staging repository changes.
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
 # Git exports repository-local variables to hooks. Clear them after resolving
-# this worktree so nested Git commands can honour their own working directory.
+# this worktree so nested Git commands honour their own working directory.
 unset $(git rev-parse --local-env-vars)
 
-# Local Git invokes this hook with the candidate tree in the index and HEAD
-# still at its parent. Hosted CI opts into the same state by naming the checked
-# out commit. This keeps consumer command selection independent of whether the
-# hook was entered by Git or by CI.
 HOSTED_COMMIT="${REPO_STANDARDS_HOSTED_COMMIT:-}"
-HOSTED_TREE=""
-if [ -n "$HOSTED_COMMIT" ]; then
-  if git symbolic-ref -q HEAD >/dev/null; then
-    echo "pre-commit: hosted parity mode requires a detached checkout" >&2
-    exit 1
-  fi
-  if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-    echo "pre-commit: hosted parity mode requires a clean checkout" >&2
-    exit 1
-  fi
-  HOSTED_TREE=$(git rev-parse "$HOSTED_COMMIT^{tree}")
-  HOSTED_PARENT=$(git rev-parse "$HOSTED_COMMIT^")
-  git reset --soft "$HOSTED_PARENT"
-  if [ "$(git write-tree)" != "$HOSTED_TREE" ]; then
-    echo "pre-commit: could not reconstruct the hosted commit as a staged snapshot" >&2
-    exit 1
-  fi
-fi
-AFTER_STATUS=""
-UNSTAGED_PATCH=$(mktemp)
-ORIGINAL_STAGED_PATHS=$(mktemp)
-GENERATED_PATHS_FILE=$(mktemp)
+HEAD_BEFORE=$(git rev-parse HEAD)
+TREE_BEFORE=""
+UNSTAGED_PATCH=""
+EXPECTED_WORKTREE_DIFF=""
+INTENT_TO_ADD_PATHS=""
 UNTRACKED_STASHED=0
 WORKTREE_RESET=0
 PATCH_RESTORE_FAILED=0
@@ -44,6 +23,11 @@ restore_worktree() {
   local exit_code=$?
   trap - EXIT
   if [ "$WORKTREE_RESET" -eq 1 ]; then
+    if [ -n "$INTENT_TO_ADD_PATHS" ] && [ -s "$INTENT_TO_ADD_PATHS" ]; then
+      while IFS= read -r -d '' path; do
+        rm -f -- "$path"
+      done < "$INTENT_TO_ADD_PATHS"
+    fi
     if ! git apply --binary --whitespace=nowarn "$UNSTAGED_PATCH"; then
       echo "pre-commit: validation finished but the unstaged patch could not be restored from $UNSTAGED_PATCH" >&2
       exit_code=1
@@ -56,34 +40,85 @@ restore_worktree() {
       exit_code=1
     fi
   fi
-  rm -f "$AFTER_STATUS"
-  rm -f "$GENERATED_PATHS_FILE"
-  rm -f "$ORIGINAL_STAGED_PATHS"
   if [ "$PATCH_RESTORE_FAILED" -eq 0 ]; then
-    rm -f "$UNSTAGED_PATCH"
+    [ -z "$UNSTAGED_PATCH" ] || rm -f "$UNSTAGED_PATCH"
   fi
+  [ -z "$EXPECTED_WORKTREE_DIFF" ] || rm -f "$EXPECTED_WORKTREE_DIFF"
+  [ -z "$INTENT_TO_ADD_PATHS" ] || rm -f "$INTENT_TO_ADD_PATHS"
   exit "$exit_code"
 }
 
-trap restore_worktree EXIT
+assert_git_state_unchanged() {
+  local current_head current_tree current_diff tracked_changed unstaged untracked
+  current_head=$(git rev-parse HEAD)
+  current_tree=$(git write-tree)
+  if [ "$current_head" != "$HEAD_BEFORE" ] || [ "$current_tree" != "$TREE_BEFORE" ]; then
+    echo "pre-commit: check command changed HEAD or the staged candidate" >&2
+    return 1
+  fi
+  unstaged=$(git diff --name-only)
+  untracked=$(git ls-files --others --exclude-standard)
+  tracked_changed=0
+  if [ -n "$EXPECTED_WORKTREE_DIFF" ]; then
+    current_diff=$(mktemp)
+    git diff --binary --no-ext-diff --full-index -- > "$current_diff"
+    if ! cmp -s "$EXPECTED_WORKTREE_DIFF" "$current_diff"; then
+      tracked_changed=1
+    fi
+    rm -f "$current_diff"
+  elif [ -n "$unstaged" ]; then
+    tracked_changed=1
+  fi
+  if [ "$tracked_changed" -eq 1 ] || [ -n "$untracked" ]; then
+    echo "pre-commit: check command changed the materialized candidate or created untracked files:" >&2
+    [ -z "$unstaged" ] || echo "$unstaged" >&2
+    [ -z "$untracked" ] || echo "$untracked" >&2
+    return 1
+  fi
+}
 
-# Remember the user's intended paths before apply-mode tools rewrite the staged
-# snapshot. Mechanical edits to these paths are part of the candidate tree;
-# unrelated authored paths remain protected.
-git diff --cached --name-only -z > "$ORIGINAL_STAGED_PATHS"
-
-# Materialize the index in the working tree before regeneration. Every generated
-# file and every validation command must observe the snapshot Git will commit,
-# never an unstaged repair layered over it.
-git diff --binary --no-ext-diff --full-index -- > "$UNSTAGED_PATCH"
-if [ -s "$UNSTAGED_PATCH" ]; then
-  git checkout -- .
-  WORKTREE_RESET=1
-fi
-
-if [ -n "$(git ls-files --others --exclude-standard)" ]; then
-  git stash push --quiet --keep-index --include-untracked -m "repo-standards pre-commit untracked snapshot $$"
-  UNTRACKED_STASHED=1
+HOSTED_MODE=0
+if [ -n "$HOSTED_COMMIT" ]; then
+  HOSTED_MODE=1
+  if git symbolic-ref -q HEAD >/dev/null; then
+    echo "pre-commit: hosted parity mode requires a detached checkout" >&2
+    exit 1
+  fi
+  if [ "$(git rev-parse "$HOSTED_COMMIT^{commit}")" != "$HEAD_BEFORE" ]; then
+    echo "pre-commit: hosted commit must match detached HEAD" >&2
+    exit 1
+  fi
+  if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+    echo "pre-commit: hosted parity mode requires a clean checkout" >&2
+    exit 1
+  fi
+  TREE_BEFORE=$(git write-tree)
+else
+  UNSTAGED_PATCH=$(mktemp)
+  EXPECTED_WORKTREE_DIFF=$(mktemp)
+  INTENT_TO_ADD_PATHS=$(mktemp)
+  trap restore_worktree EXIT
+  # Save the user's unstaged tracked patch, then materialize the staged tree so
+  # every check sees exactly the candidate Git would commit.
+  git diff --name-only --diff-filter=A -z -- > "$INTENT_TO_ADD_PATHS"
+  git diff --binary --no-ext-diff --full-index -- > "$UNSTAGED_PATCH"
+  if [ -s "$UNSTAGED_PATCH" ]; then
+    git checkout -- .
+    WORKTREE_RESET=1
+  fi
+  if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    git stash push --quiet --keep-index --include-untracked -m "repo-standards pre-commit untracked snapshot $$"
+    UNTRACKED_STASHED=1
+  fi
+  # Intent-to-add entries are absent from the index tree. Remove their
+  # worktree placeholders so checks see the same candidate as git write-tree.
+  if [ -s "$INTENT_TO_ADD_PATHS" ]; then
+    while IFS= read -r -d '' path; do
+      rm -f -- "$path"
+    done < "$INTENT_TO_ADD_PATHS"
+  fi
+  TREE_BEFORE=$(git write-tree)
+  git diff --binary --no-ext-diff --full-index -- > "$EXPECTED_WORKTREE_DIFF"
 fi
 
 if command -v py >/dev/null 2>&1; then
@@ -103,16 +138,15 @@ if [ ! -f "$COMMAND_DECLARATION" ]; then
   exit 1
 fi
 
-run_declared() {
-  "${PYTHON[@]}" - "$COMMAND_DECLARATION" "$1" "$REPO_ROOT" <<'PY'
+if "${PYTHON[@]}" - "$COMMAND_DECLARATION" "$REPO_ROOT" <<'PY'
 import json
 import subprocess
 import sys
 
-declaration_path, capability, repo_root = sys.argv[1:]
+declaration_path, repo_root = sys.argv[1:]
 with open(declaration_path, encoding="utf-8") as stream:
     declaration = json.load(stream)
-raw = declaration.get(capability)
+raw = declaration.get("check")
 if isinstance(raw, list) and raw and all(isinstance(item, str) for item in raw):
     commands = [raw]
 elif (
@@ -127,70 +161,25 @@ elif (
 ):
     commands = raw
 else:
-    raise SystemExit(f"invalid declared {capability} command")
-required_switch = "--apply" if capability == "apply" else "--check"
+    raise SystemExit("invalid declared check command")
 for command in commands:
-    if required_switch not in command:
-        raise SystemExit(f"declared {capability} command is missing {required_switch}")
+    if "--check" not in command:
+        raise SystemExit("declared check command is missing --check")
     if command[0] == "@python":
         command = [sys.executable, *command[1:]]
     result = subprocess.run(command, cwd=repo_root)
     if result.returncode:
         raise SystemExit(result.returncode)
 PY
-}
-
-run_declared apply
-
-# Re-stage apply-mode edits only for paths the user had already staged. Update
-# the index directly so additions, rewrites, and removals all work in local and
-# hosted full-PR snapshots. The NUL-delimited input keeps filenames safe.
-git update-index --add --remove -z --stdin < "$ORIGINAL_STAGED_PATHS"
-
-if ! "${PYTHON[@]}" - "$COMMAND_DECLARATION" > "$GENERATED_PATHS_FILE" <<'PY'
-import json, pathlib, re, sys
-for raw in json.load(open(sys.argv[1], encoding="utf-8"))["generated_paths"]:
-    path = raw.replace("\\", "/") if isinstance(raw, str) else ""
-    parts = pathlib.PurePosixPath(path).parts if path else ()
-    invalid = (
-        not path or path in {"*", "**", ".", "./*", "./**"}
-        or path.startswith(("/", ":", "!")) or re.match(r"^[A-Za-z]:/", path)
-        or ".." in parts or "\x00" in path
-    )
-    if invalid:
-        raise SystemExit(f"invalid generated_paths entry: {raw!r}")
-    print(path)
-PY
 then
-  exit 1
+  CHECK_STATUS=0
+else
+  CHECK_STATUS=$?
 fi
 
-while IFS= read -r generated_path; do
-  generated_path="${generated_path%$'\r'}"
-  [ -n "$generated_path" ] || continue
-  if [[ "$generated_path" == */** ]]; then
-    git add -A -- "${generated_path%/**}/" 2>/dev/null || true
-  elif [[ "$generated_path" == *"*"* ]]; then
-    git add -A -- ":(glob)$generated_path" 2>/dev/null || true
-  else
-    git add -A -- "$generated_path" 2>/dev/null || true
-  fi
-done < "$GENERATED_PATHS_FILE"
+assert_git_state_unchanged
 
-AFTER_STATUS=$(mktemp)
-git status --porcelain --untracked-files=all > "$AFTER_STATUS"
-UNSTAGED=$(awk 'substr($0,2,1) != " "' "$AFTER_STATUS")
-if [ -n "$UNSTAGED" ]; then
-  echo "pre-commit: regeneration produced unstaged changes outside its staging allow-list:" >&2
-  echo "$UNSTAGED" >&2
-  exit 1
+if [ "$HOSTED_MODE" -eq 1 ]; then
+  trap - EXIT
 fi
-
-# The safety checks above must fail immediately. The validation runner can then
-# collect every independent product failure from this exact staged snapshot.
-run_declared check
-
-if [ -n "$HOSTED_TREE" ] && [ "$(git write-tree)" != "$HOSTED_TREE" ]; then
-  echo "pre-commit: hosted validation changed the committed staged snapshot" >&2
-  exit 1
-fi
+exit "$CHECK_STATUS"

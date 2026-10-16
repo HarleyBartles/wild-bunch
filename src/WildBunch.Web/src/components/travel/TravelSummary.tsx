@@ -1,5 +1,12 @@
 import type { GameSessionDto } from "../../api/types";
-import { formatHorseTravelState, formatJourneyStatus, formatRisk, formatTrailTerrain, formatTravelMode, formatWaterFeature } from "../../ui/formatters";
+import {
+  formatHorseTravelState,
+  formatJourneyStatus,
+  formatRisk,
+  formatTrailTerrain,
+  formatTravelMode,
+  formatWaterFeature,
+} from "../../ui/formatters";
 import { formatRemainingRideDays } from "../../ui/beatFormatters";
 import { Card, SectionHeader } from "./travelShared";
 import styled from "styled-components";

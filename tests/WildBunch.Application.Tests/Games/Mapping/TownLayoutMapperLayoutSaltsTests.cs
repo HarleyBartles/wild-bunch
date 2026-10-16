@@ -20,9 +20,9 @@ public sealed class TownLayoutMapperLayoutSaltsTests
             null,
             "1.0.0",
             salts);
-        
+
         var dto = TownLayoutMapper.ToDto(layout);
-        
+
         Assert.NotNull(dto);
         Assert.NotNull(dto.LayoutSalts);
         Assert.Equal("buildings", dto.LayoutSalts.BuildingsSalt);

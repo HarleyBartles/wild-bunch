@@ -16,17 +16,14 @@ interface GlobalOverlaysProps {
 }
 
 export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysProps) {
-  const { journal, wantedPosters, loading, error, archivePlaythrough, archiving } = useGameSession();
+  const { journal, wantedPosters, loading, error, archivePlaythrough, archiving } =
+    useGameSession();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <>
       <OverlayButtons role="toolbar" aria-label="Reference overlays">
-        <OverlayButton
-          type="button"
-          onClick={() => onOpenOverlay("case-file")}
-          disabled={!journal}
-        >
+        <OverlayButton type="button" onClick={() => onOpenOverlay("case-file")} disabled={!journal}>
           Case file
         </OverlayButton>
         <OverlayButton
@@ -64,7 +61,12 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         title="Journal"
         onClose={() => onOpenOverlay(null)}
       >
-        <JournalSurface journal={journal} loading={loading} error={error} sessionLogEntries={journal?.logEntries ?? []} />
+        <JournalSurface
+          journal={journal}
+          loading={loading}
+          error={error}
+          sessionLogEntries={journal?.logEntries ?? []}
+        />
       </CockpitOverlayFrame>
 
       <CockpitOverlayFrame
@@ -104,7 +106,9 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
               setConfirmOpen(false);
               onOpenOverlay(null);
             })
-            .catch(() => { /* onError already handled in mutation */ });
+            .catch(() => {
+              /* onError already handled in mutation */
+            });
         }}
       />
     </>

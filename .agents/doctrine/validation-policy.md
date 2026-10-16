@@ -1,5 +1,7 @@
 # Validation doctrine
 
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 This file records Wild Bunch test-lane ownership and invariants. The executable
 sequence and environment setup live in the [testing playbook](../playbooks/testing.md).
 
@@ -12,8 +14,19 @@ sequence and environment setup live in the [testing playbook](../playbooks/testi
   distribution guardrails.
 - `WildBunch.Integration.Tests`: full HTTP and persistence flows against real
   PostgreSQL; user-facing flows live under `Acceptance/`.
-- `src/WildBunch.Web`: Vitest component/route behavior, TypeScript checking,
-  and production build.
+- `src/WildBunch.Web`: Vitest component/route behavior, Chromium/Playwright
+  native browser behavior, TypeScript checking, and production build.
+
+The Playwright lane owns native browser contracts that JSDOM cannot observe,
+including modal focus behavior and rendered viewport geometry when those application contracts are added. The current tooling check verifies built-application bootstrap and served version identity; it does not claim those newer player contracts are already covered. Build locally
+with `npm --prefix src/WildBunch.Web run build`, ensure PostgreSQL with
+`pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, then run `npm --prefix
+src/WildBunch.Web run test:browser`; install Chromium with `npx --prefix
+src/WildBunch.Web playwright install chromium`. Hosted CI installs locked web
+dependencies, builds the public web artifact and validates its version
+identity before the Chromium lane, then installs Chromium and its system
+dependencies with `npx playwright install --with-deps chromium` from the web
+project before the tracked commit gate.
 
 Tests follow the source-layer namespace and folder. Repository fixtures and
 builders live under `TestInfrastructure/`; fakes and stubs live under

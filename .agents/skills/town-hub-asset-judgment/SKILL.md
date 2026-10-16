@@ -12,6 +12,8 @@ metadata:
 
 # Town Hub Asset Judgment
 
+Before using this skill, follow the [unslop playbook](../../playbooks/unslop.md) for asset writing and player presentation and read the selected profiles in full; consult the [decision-record playbook](../../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
+
 ## Owned decision
 
 Decide whether a candidate belongs to its intended family, satisfies its camera

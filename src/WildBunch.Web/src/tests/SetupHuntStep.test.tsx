@@ -20,8 +20,8 @@ interface StepHandlers {
 
 function StatefulSetupHuntStep({
   initialName = "",
-  initialDifficulty = 0 as GameDifficulty,
-  initialGameEntropy = 1 as GameEntropy,
+  initialDifficulty = 0,
+  initialGameEntropy = 1,
   initialSeedDraft = "00000000-0000-0000-0000-000000000000",
   onPlayerNameChange,
   onGameDifficultyChange,
@@ -77,21 +77,23 @@ function StatefulSetupHuntStep({
   );
 }
 
-function renderStep(overrides: Partial<{
-  playerName: string;
-  gameDifficulty: GameDifficulty;
-  gameEntropy: GameEntropy;
-  seedDraft: string;
-  seedDirty: boolean;
-  decodeError: string | null;
-  stateful: boolean;
-  onPlayerNameChange: (value: string) => void;
-  onGameDifficultyChange: (difficulty: GameDifficulty) => void;
-  onGameEntropyChange: (gameEntropy: GameEntropy) => void;
-  onSeedDraftChange: (value: string) => void;
-  onRandomizeSeed: () => void;
-  onContinue: () => void;
-}> = {}) {
+function renderStep(
+  overrides: Partial<{
+    playerName: string;
+    gameDifficulty: GameDifficulty;
+    gameEntropy: GameEntropy;
+    seedDraft: string;
+    seedDirty: boolean;
+    decodeError: string | null;
+    stateful: boolean;
+    onPlayerNameChange: (value: string) => void;
+    onGameDifficultyChange: (difficulty: GameDifficulty) => void;
+    onGameEntropyChange: (gameEntropy: GameEntropy) => void;
+    onSeedDraftChange: (value: string) => void;
+    onRandomizeSeed: () => void;
+    onContinue: () => void;
+  }> = {},
+) {
   const handlers: StepHandlers = {
     onPlayerNameChange: overrides.onPlayerNameChange ?? vi.fn(),
     onGameDifficultyChange: overrides.onGameDifficultyChange ?? vi.fn(),
@@ -142,28 +144,32 @@ describe("SetupHuntStep", () => {
   it("renders the setup heading and lead copy", () => {
     renderStep();
 
-    expect(
-      screen.getByRole("heading", { name: /set up your hunt/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
   });
 
   it("shows the validation message when the name is empty after being touched", async () => {
     const user = userEvent.setup();
     renderStep({ stateful: true });
 
-    expect(screen.queryByText(/tell me what name you go by before we ride on\./i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/tell me what name you go by before we ride on\./i),
+    ).not.toBeInTheDocument();
 
     const nameInput = screen.getByLabelText(/your name/i);
     await user.type(nameInput, "Ranger Vale");
     await user.clear(nameInput);
 
-    expect(screen.getByText(/tell me what name you go by before we ride on\./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/tell me what name you go by before we ride on\./i),
+    ).toBeInTheDocument();
   });
 
   it("does not show the validation message before the field has been touched", () => {
     renderStep();
 
-    expect(screen.queryByText(/tell me what name you go by before we ride on\./i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/tell me what name you go by before we ride on\./i),
+    ).not.toBeInTheDocument();
   });
 
   it("disables the Ride on button until a valid name is entered", async () => {
@@ -200,7 +206,9 @@ describe("SetupHuntStep", () => {
     fireEvent.submit(form);
 
     expect(onContinue).not.toHaveBeenCalled();
-    expect(screen.getByText(/tell me what name you go by before we ride on\./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/tell me what name you go by before we ride on\./i),
+    ).toBeInTheDocument();
   });
 
   it("calls onGameDifficultyChange when a difficulty option is selected", async () => {

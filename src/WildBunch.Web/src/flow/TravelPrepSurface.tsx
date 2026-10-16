@@ -61,7 +61,8 @@ function connectedDestinations(session: GameSessionDto) {
       continue;
     }
 
-    const destinationTownId = trail.fromTownId === currentTownId ? trail.toTownId : trail.fromTownId;
+    const destinationTownId =
+      trail.fromTownId === currentTownId ? trail.toTownId : trail.fromTownId;
     const town = townMap.get(destinationTownId);
     if (!town) {
       continue;
@@ -69,7 +70,10 @@ function connectedDestinations(session: GameSessionDto) {
 
     const entry = destinations.get(destinationTownId);
     if (entry) {
-      destinations.set(destinationTownId, { town, trailCount: entry.trailCount + 1 });
+      destinations.set(destinationTownId, {
+        town,
+        trailCount: entry.trailCount + 1,
+      });
       continue;
     }
 
@@ -86,7 +90,7 @@ export function TravelPrepSurface() {
   const { session, gameId, loading, handleTravel, notice, error } = useGameSession();
   const [selectedDestId, setSelectedDestId] = useState<string | null>(null);
   const [preview, setPreview] = useState<TravelPreviewDto | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [, setPreviewLoading] = useState(false);
 
   const destinations = useMemo(() => (session ? connectedDestinations(session) : []), [session]);
 

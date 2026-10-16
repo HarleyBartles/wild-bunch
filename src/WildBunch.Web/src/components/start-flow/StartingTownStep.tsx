@@ -1,6 +1,5 @@
 import styled from "styled-components";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "../ui/sharedStyled";
 import { getStartingTownMap } from "../../api/wildBunchApi";
 import { PhaserMapHost } from "./PhaserMapHost";
 
@@ -10,7 +9,11 @@ interface StartingTownStepProps {
   onSelectTown: (townId: string) => void;
 }
 
-export function StartingTownStep({ sessionId, selectedTownId, onSelectTown }: StartingTownStepProps) {
+export function StartingTownStep({
+  sessionId,
+  selectedTownId,
+  onSelectTown,
+}: StartingTownStepProps) {
   const mapQuery = useQuery({
     queryKey: ["starting-town-map", sessionId],
     queryFn: () => getStartingTownMap(sessionId),
@@ -20,7 +23,8 @@ export function StartingTownStep({ sessionId, selectedTownId, onSelectTown }: St
   });
 
   const mapData = mapQuery.data ?? null;
-  const isPending = mapQuery.isLoading || mapQuery.isError || !mapData || mapData.towns.length === 0;
+  const isPending =
+    mapQuery.isLoading || mapQuery.isError || !mapData || mapData.towns.length === 0;
 
   return (
     <StepCard>
@@ -58,7 +62,11 @@ const StepCard = styled.article`
   border-radius: 24px;
   border: 1px solid color-mix(in srgb, var(--accent-strong) 20%, transparent);
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-strong) 14%, transparent), transparent 28%),
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent-strong) 14%, transparent),
+      transparent 28%
+    ),
     linear-gradient(180deg, rgba(29, 23, 16, 0.98), rgba(16, 12, 8, 0.98));
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
 `;

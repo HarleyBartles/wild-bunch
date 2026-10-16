@@ -9,17 +9,8 @@ Creating or changing a repository-local Wild Bunch skill.
 - Design and author a focused repository capability and its behavior tests.
 - Validate authored skill custody and test executable script behavior.
 
-## Optional capabilities
-
-- None.
-
-## Required repository-owned skills
-
-- None.
-
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

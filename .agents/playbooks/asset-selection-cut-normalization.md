@@ -5,21 +5,12 @@
 A town-hub candidate accepted by `/town-hub-asset-judgment` needs deterministic
 sheet slicing, background removal, normalization, staging, or promotion.
 
-## Required capabilities
-
-- None.
-
-## Optional capabilities
-
-- None.
-
 ## Required repository-owned skills
 
 - town-hub-asset-judgment (when selecting or promoting a generated Wild Bunch asset).
 
-## Optional repository-owned skills
-
-- None.
+## Unslop before work
+Before work in this scope, follow the [unslop playbook](unslop.md) and its scoped profile selection. Consult the [decision-record playbook](decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 ## Composition
 

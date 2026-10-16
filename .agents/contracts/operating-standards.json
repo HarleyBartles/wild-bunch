@@ -2,6 +2,15 @@
   "version": 2,
   "standards": [
     {
+      "id": "unslop",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "c72751a0ac2893a3968b70111fbc21bdd3b119f3",
+        "definition": "skills/unslop/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#unslop"
+    },
+    {
       "id": "root-agent-router",
       "source": {
         "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
@@ -32,10 +41,19 @@
       "id": "tracked-validation-hook",
       "source": {
         "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
-        "commit": "b481f98ae90aa45e5271d10fe1f7aaeb6c7047aa",
+        "commit": "a9d9f280316a87ac66cb2653384bc30a683603f0",
         "definition": "skills/tracked-repo-hooks/references/standard.md"
       },
       "certification": ".agents/contracts/standards-certification.md#tracked-validation-hook"
+    },
+    {
+      "id": "command-bus",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "a9d9f280316a87ac66cb2653384bc30a683603f0",
+        "definition": "skills/command-bus/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#command-bus"
     },
     {
       "id": "completed-artifact-custody",
@@ -54,6 +72,24 @@
         "definition": "skills/repo-agent-assets/references/standard.md"
       },
       "certification": ".agents/contracts/standards-certification.md#repo-plugin-subscriptions"
+    },
+    {
+      "id": "gitflow",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "7a20ef191bb6be3b67fbbb9e86bd7b0050f96fc5",
+        "definition": "skills/gitflow/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#gitflow"
+    },
+    {
+      "id": "semver",
+      "source": {
+        "repository": "https://github.com/HarleyBartles/agent-asset-marketplace.git",
+        "commit": "12c86626f80cad1a2ac05b2f6690c882a3d5959a",
+        "definition": "skills/semver/references/standard.md"
+      },
+      "certification": ".agents/contracts/standards-certification.md#semver"
     }
   ]
 }

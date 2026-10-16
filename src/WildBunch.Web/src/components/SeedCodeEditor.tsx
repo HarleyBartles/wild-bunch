@@ -7,7 +7,12 @@ interface SeedCodeEditorProps {
   onSeedDraftChange: (value: string) => void;
 }
 
-export function SeedCodeEditor({ seedDraft, seedDirty, decodeError, onSeedDraftChange }: SeedCodeEditorProps) {
+export function SeedCodeEditor({
+  seedDraft,
+  seedDirty,
+  decodeError,
+  onSeedDraftChange,
+}: SeedCodeEditorProps) {
   return (
     <Field>
       <Label htmlFor="setup-seed">Setup seed</Label>
@@ -22,7 +27,8 @@ export function SeedCodeEditor({ seedDraft, seedDirty, decodeError, onSeedDraftC
         autoComplete="off"
       />
       <Hint>
-        Paste a UUID-shaped replay key, then click Apply to validate it. Randomize creates a fresh UUID.
+        Paste a UUID-shaped replay key, then click Apply to validate it. Randomize creates a fresh
+        UUID.
       </Hint>
       {seedDirty ? <DraftNotice>Seed changes are staged until you apply them.</DraftNotice> : null}
       {decodeError ? <InlineError>{decodeError}</InlineError> : null}
