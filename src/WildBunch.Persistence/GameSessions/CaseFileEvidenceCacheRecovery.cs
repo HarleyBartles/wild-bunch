@@ -196,6 +196,7 @@ internal static class CaseFileEvidenceCacheRecovery
 
     private static bool SameWarrantPayload(WarrantSnapshot expected, WarrantSnapshot actual)
         => expected.Id == actual.Id
+            && expected.TargetSuspectId == actual.TargetSuspectId
             && expected.TargetName == actual.TargetName
             && expected.Summary == actual.Summary
             && expected.Terms.Disposition == actual.Terms.Disposition
