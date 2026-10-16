@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { GameStatus, InvestigationSourceKind, JourneyStatus } from "../src/api/types";
-import type { JournalDto } from "../src/api/types";
+import type { GameLogEntryDto, JournalDto } from "../src/api/types";
 import { startIsolatedApi } from "./support/postgresApi";
 import { seedWorldSeedCode } from "./support/seedWorldSeedCode";
 
@@ -661,6 +661,7 @@ test("a player can resolve a hostile trail encounter and restore its journal res
           daysTravelled: number;
         } | null;
         travelDiary: {
+          journeyEntries: GameLogEntryDto[];
           days: Array<{
             dayNumber: number;
             encounterResolution: {
@@ -670,7 +671,7 @@ test("a player can resolve a hostile trail encounter and restore its journal res
             } | null;
           }>;
         } | null;
-        logEntries: Array<{ message: string; day: number }>;
+        logEntries: GameLogEntryDto[];
       };
     };
     expect(resolved.success, JSON.stringify(resolved)).toBe(true);
@@ -685,6 +686,7 @@ test("a player can resolve a hostile trail encounter and restore its journal res
     if (!resolutionEntry || !resolvedDay?.encounterResolution) {
       throw new Error("Expected the successful encounter to reach the player's journal and diary.");
     }
+    expect(resolved.currentSession.travelDiary?.journeyEntries).toContainEqual(resolutionEntry);
     expect(resolvePosts).toEqual([
       `${apiBaseUrl}/api/games/${trip.gameId}/travel/encounter/resolve`,
     ]);
@@ -697,26 +699,43 @@ test("a player can resolve a hostile trail encounter and restore its journal res
         response.url() === `${apiBaseUrl}/api/games/${trip.gameId}` &&
         response.request().method() === "GET",
     );
+    const resolvedJournalResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url() === `${apiBaseUrl}/api/games/${trip.gameId}/journal` &&
+        response.request().method() === "GET",
+    );
     await page.goto(productionWebUrl);
     const resolvedResponse = await resolvedResponsePromise;
+    const resolvedJournalResponse = await resolvedJournalResponsePromise;
     expect(resolvedResponse.ok()).toBe(true);
+    expect(resolvedJournalResponse.ok()).toBe(true);
     const restored = (await resolvedResponse.json()) as {
       journey: { pendingEncounter: Encounter | null; status: number } | null;
       travelDiary: {
+        journeyEntries: GameLogEntryDto[];
         days: Array<{
           dayNumber: number;
           encounterResolution: { choiceId: string; choiceLabel: string; ammoSpent: number } | null;
         }>;
       } | null;
-      logEntries: Array<{ message: string; day: number }>;
+      logEntries: GameLogEntryDto[];
     };
+    const restoredJournal = (await resolvedJournalResponse.json()) as JournalDto;
     const restoredDay = restored.travelDiary?.days.find(
       (day) => day.dayNumber === resolvedDay.dayNumber,
     );
     expect(restoredDay?.encounterResolution).toEqual(resolvedDay.encounterResolution);
     expect(restored.logEntries).toContainEqual(resolutionEntry);
+    expect(restored.travelDiary?.journeyEntries).toContainEqual(resolutionEntry);
+    expect(restoredJournal.logEntries).toContainEqual(resolutionEntry);
     expect(restored.journey?.pendingEncounter).toBeNull();
     expect(restored.journey?.status).toBe(JourneyStatus.Active);
+    const travelView = page.locator("article").filter({ hasText: "Trail notebook" });
+    await expect(travelView.getByText(resolutionEntry.message, { exact: true })).toBeVisible();
+    await expect(
+      travelView.getByText(resolvedDay.encounterResolution.choiceLabel, { exact: true }),
+    ).toBeVisible();
+    await expect(travelView.getByText(/Ammo spent 6/)).toBeVisible();
     await page.getByRole("button", { name: "Journal", exact: true }).click();
     await expect(
       page.getByRole("dialog").getByText(resolutionEntry.message, { exact: true }),
@@ -726,6 +745,7 @@ test("a player can resolve a hostile trail encounter and restore its journal res
     await expect(page.getByRole("button", { name: "Advance travel day" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Step into town" })).toHaveCount(0);
     expect(resolvePosts).toHaveLength(1);
+    expect(advancePosts).toHaveLength(lastJourney.daysTravelled);
   } finally {
     await context.close();
   }
