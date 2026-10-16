@@ -25,6 +25,7 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
    required nor sufficient for classification.
 4. Record explicit abandonment and promote durable content before removing an
    artifact whose scope did not ship.
+5. Before cutting to main, perform the same semantic classification on every planning artifact, including investigations. Ask the maintainer about each unclear case. Commit eligible retirement to develop before the cut; preserve live work there and omit it from the main-bound tree. The [artifact custody doctrine](../doctrine/artifact-custody.md#planning-across-branches) governs exclusion and exact pre-merge planning restoration on reconciliation. An automated exclusion check cannot classify completion.
 
 ## Doctrine and contracts
 
@@ -34,7 +35,7 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
 
 ## Local commands and paths
 
-- Active homes: `.agents/plans/`, `.agents/specs/`, `.agents/roadmaps/`
+- Active homes on develop: `.agents/plans/`, `.agents/specs/`, `.agents/roadmaps/`, `.agents/investigations/`
 - Optional convenience copy: the repo-segregated completed-artifact directory
   beneath the scratch root resolved by host or repository policy.
 - Verify: `py -3 tools\run.py ci --check`; the normal hook checks the staged

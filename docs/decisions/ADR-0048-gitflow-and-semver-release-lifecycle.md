@@ -9,6 +9,8 @@
 - `2026-10-15` - Adopt the pinned AOM Gitflow and SemVer standards for the Wild Bunch browser-game product and record the repository's pre-1.0 compatibility and release policy.
 - `2026-10-15` - Clarify that pre-1.0 adoption makes no promise about a future `1.0.0` contract; define that stable compatibility contract only when preparing that release.
 
+- `2026-10-16` - [ADR-0049](ADR-0049-planning-custody-across-integration-and-promotion.md) clarifies planning custody during cuts and reconciliation and permits a separate non-release tooling promotion without a product release identity. The ordinary product release rules survive.
+
 ## Decision Type
 
 `operations`, `process`

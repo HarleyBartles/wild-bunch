@@ -34,6 +34,10 @@ Before requesting review, compare the proposed diff with [docs/features.md](../.
 
 Use `develop` as the repository's default base for ordinary development PRs. `main` is the release line; target it only when the approved release or hotfix flow requires it. Follow the active roadmap or execution plan for campaign-specific sequencing and version requirements; do not duplicate those temporary rules in this durable publication procedure.
 
+A separately approved agent/repository-tooling promotion may target main without a product release, tag or GitHub Release. Keep it distinct from application behavior, review its actual dependencies, and reconcile by merge commit. [ADR-0049](../../docs/decisions/ADR-0049-planning-custody-across-integration-and-promotion.md) governs this route and planning custody. Before any main-bound cut, complete semantic retirement on develop and remove all planning from the proposed main tree while repairing references. On reconciliation restore exactly the planning tree from develop immediately before the merge.
+
+Set `WILD_BUNCH_TARGET_BRANCH` to the actual PR base for local canonical validation, especially when a `codex/*` branch targets main. Hosted validation supplies the real PR base or pushed branch. The main exclusion guard checks the full indexed tree, including planning inherited from the base; it does not infer completion. Review also catches planning disguised outside the declared homes.
+
 1. Use repository branch, source, validation, and publication guidance to confirm dedicated-worktree, branch, clean-tree,
    and source-custody state.
 2. Resolve the author decision-record check above before requesting review.

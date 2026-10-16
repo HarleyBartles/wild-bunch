@@ -8,7 +8,7 @@ or hotfix.
 ## Before a release
 
 Read [ADR-0048](../../docs/decisions/ADR-0048-gitflow-and-semver-release-lifecycle.md),
-the [Gitflow and release-identity contract](../specs/2026-10-06-cloud-playability-and-releases.md#gitflow-and-release-identity),
+the [planning custody decision](../../docs/decisions/ADR-0049-planning-custody-across-integration-and-promotion.md),
 and the [decision-record playbook](../playbooks/decision-records.md). Verify the
 current remote refs, default branch, allowed merge methods, required checks,
 and protection rules. Documentation and branch names do not prove that hosting
@@ -31,7 +31,7 @@ qualification, or deployment proof.
    PR to `develop`. Reconcile the proposed development checkpoint against the
    latest integration head before merge; one merged PR establishes one unique
    `MAJOR.MINOR.PATCH-dev.N` checkpoint, regardless of its commit count.
-2. Start `release/*` from `develop` for release stabilization. Select its core
+2. Perform the semantic planning preflight below, then start `release/*` from the cleaned `develop` for release stabilization. Select its core
    version from the current compatibility policy and intended release scope;
    set the first qualified candidate to `MAJOR.MINOR.PATCH-rc.1` in the one
    authored version source, `Directory.Build.props`.
@@ -46,11 +46,19 @@ qualification, or deployment proof.
    and verify the stable artifact identity and digest; keep the human tag in
    the form `vMAJOR.MINOR.PATCH`. Never replace contents under a published
    version or tag.
-6. Reconcile the release into `develop` with a merge commit. If `develop` is
+6. Reconcile the release into `develop` with a merge commit, restoring the exact planning snapshot from develop immediately before the merge as described below. If `develop` is
    left at the released baseline, retain the stable version until the first
    ordinary development merge starts the next line at `dev.1`. If next-release
    work already continues, preserve its core and advance its next unique
    checkpoint for the reconciliation PR.
+
+## Planning preflight and reconciliation
+
+Before cutting to main, follow [completing plans](../playbooks/completing-plans.md): read every plan, spec, roadmap and investigation, promote enduring knowledge, ask the maintainer about each unclear completion classification, and commit eligible retirement to develop. Keep live planning on develop. Remove all planning from the main-bound candidate and repair its references to durable current owners or immutable history. This includes removing older planning already on main; retain Git history. A plan needed to complete the cut remains on develop through its completing delivery.
+
+Before merging promoted main back into develop, capture the latest develop commit. Merge with `--no-commit --no-ff` in an isolated reconciliation worktree, resolve tooling/application conflicts deliberately, and restore the four planning homes exactly from that develop snapshot into the index and worktree. Use the union of snapshot and merge-result paths to remove paths absent from the snapshot as well as restoring present paths. Verify `git diff --cached --exit-code <developBeforeMerge> -- .agents/plans .agents/specs .agents/roadmaps .agents/investigations` succeeds before the normal hooked commit. If develop advances before integration, refresh the candidate and snapshot and repeat verification. Do not use the original cut's tree or a blanket conflict strategy.
+
+For main-bound local validation set `WILD_BUNCH_TARGET_BRANCH=main`; the canonical gate rejects indexed planning regardless of the task branch name. This mechanical check does not establish semantic retirement or replace review of planning disguised elsewhere.
 
 ## Hotfix procedure
 

@@ -4,11 +4,14 @@
 
 Run `py -3 tools/run.py` to list available targets, or `py -3 tools/run.py <target> --help` for a target's modes, prerequisites, side effects, and arguments. A selected target requires an explicit mode; target work never starts because a mode was silently assumed.
 
+For a main-bound candidate use `py -3 tools/run.py planning-custody --check --target main`, and set `WILD_BUNCH_TARGET_BRANCH=main` for its canonical gate. An explicit target takes precedence over the environment. Without either, the local main branch selects main and other task branches select develop; this fallback cannot infer a PR destination. Hosted validation supplies the actual PR base or pushed branch. The guard reads the full Git index, including inherited files and staged deletions, without changing files or staging. It enforces the four planning homes; agents still classify completion semantically and reviewers check for planning disguised elsewhere.
+
 ## Targets
 
 | Target | Modes | Purpose |
 | --- | --- | --- |
 | `ci` | `--check` | Run the complete fail-fast check gate used by pre-commit and hosted CI. |
+| `planning-custody` | `--check` | Check all indexed paths for planning in a main-bound candidate; use `--target <actual-base>` explicitly or `WILD_BUNCH_TARGET_BRANCH`. |
 | `release-verify` | `--check` | Build or verify the immutable local API, public web, and playtest web bundle for one clean source commit. |
 | `format` | `--check`, `--apply` | Check formatting or format explicit supported files; whole-repository apply requires `--all`. |
 | `lint` | `--check` | Run check-only language diagnostics; lint checks never apply fixes. |

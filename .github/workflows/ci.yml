@@ -80,4 +80,5 @@ jobs:
       - name: Validate tracked commit gate
         env:
           REPO_STANDARDS_HOSTED_COMMIT: HEAD
+          WILD_BUNCH_TARGET_BRANCH: ${{ github.base_ref || github.ref_name }}
         run: githooks/pre-commit

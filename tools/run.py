@@ -30,6 +30,7 @@ class Ctx:
     verbose: bool = False
     diagnostics: bool = False
     target_args: tuple[str, ...] = ()
+    target_branch: str | None = None
 
 
 class CiDiagnosticsError(RuntimeError):
@@ -204,6 +205,24 @@ def _plugin_subscriptions_check(ctx: Ctx) -> None:
     _run([sys.executable, "tools/check_plugin_subscriptions.py", "--check"], ctx)
 
 
+def _planning_custody_check(ctx: Ctx) -> None:
+    target = (
+        ctx.target_branch
+        if ctx.target_branch is not None
+        else os.environ.get("WILD_BUNCH_TARGET_BRANCH")
+    )
+    if target is None:
+        branch = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        target = "main" if branch == "main" else "develop"
+    _run([sys.executable, "tools/check_planning_custody.py", "--check", "--target", target], ctx)
+
+
 def _test_script_behaviors(ctx: Ctx) -> None:
     _run([sys.executable, "-m", "pytest", "scripts/tests", "-q", *ctx.target_args], ctx)
 
@@ -332,6 +351,12 @@ def _diff_check(ctx: Ctx) -> None:
 
 
 CI_CHECKS = (
+    (
+        "planning-custody",
+        _planning_custody_check,
+        "perform semantic retirement on develop and omit planning from the main candidate",
+        "py -3 tools/run.py planning-custody --check --target <actual-base>",
+    ),
     (
         "diff-check",
         _diff_check,
@@ -490,6 +515,7 @@ def _ci_check(ctx: Ctx) -> None:
 
 TARGETS = {
     "ci": {"check": _ci_check},
+    "planning-custody": {"check": _planning_custody_check},
     "release-verify": {"check": _release_verify},
     "format": {"check": _format, "apply": _format},
     "lint": {"check": _lint},
@@ -501,6 +527,14 @@ TARGETS = {
 }
 
 TARGET_DESCRIPTIONS = {
+    "planning-custody": (
+        "Check the complete Git index for planning in a main-bound candidate. "
+        "--target selects the actual destination; otherwise WILD_BUNCH_TARGET_BRANCH is used, "
+        "then local main or develop for other task branches. Hosted validation supplies the "
+        "actual PR base or pushed branch. Requires Git and Python; changes no files or staging. "
+        "Checks the four declared planning homes, not completion or disguised planning. "
+        "Mode: --check. Argument: --target <branch>."
+    ),
     "release-verify": (
         "Build or verify an immutable local release bundle for the clean current source commit: "
         "a Release API publish plus public and playtest web builds. The ignored output is "
@@ -607,6 +641,8 @@ def _target_parser(target: str) -> argparse.ArgumentParser:
         description=TARGET_DESCRIPTIONS[target],
     )
     modes = TARGETS[target]
+    if target == "planning-custody":
+        parser.add_argument("--target", dest="target_branch", help="actual destination branch")
     group = parser.add_mutually_exclusive_group()
     if "apply" in modes:
         group.add_argument(
@@ -688,6 +724,7 @@ def main(argv: list[str] | None = None) -> int:
         verbose=args.verbose,
         diagnostics=diagnostics,
         target_args=args.target_args,
+        target_branch=getattr(args, "target_branch", None),
     )
 
     if args.apply:
