@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { GameStatus, JourneyStatus } from "../src/api/types";
+import { GameStatus, InvestigationSourceKind, JourneyStatus } from "../src/api/types";
 import { startIsolatedApi } from "./support/postgresApi";
 import { seedWorldSeedCode } from "./support/seedWorldSeedCode";
 
@@ -1364,7 +1364,13 @@ test("a player can gather saloon gossip and restore it in the journal after reop
     const gossip = (await gossipResponse.json()) as {
       success: boolean;
       currentJournal: {
-        caseFile: { knownClues: Array<{ description: string }> };
+        caseFile: {
+          knownClues: Array<{
+            id: string;
+            description: string;
+            sourceKind: InvestigationSourceKind | null;
+          }>;
+        };
         logEntries: Array<{ message: string }>;
       };
     };
@@ -1376,11 +1382,12 @@ test("a player can gather saloon gossip and restore it in the journal after reop
     if (!gossipEntry) throw new Error("Expected the recorded gossip result in the journal.");
     const lead = gossipEntry.message.match(/uncover a public lead: (.+)\.$/)?.[1];
     expect(lead).toBeTruthy();
-    expect(gossip.currentJournal.caseFile.knownClues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ description: expect.stringContaining(lead!) }),
-      ]),
+    const gossipClue = gossip.currentJournal.caseFile.knownClues.find((clue) =>
+      clue.description.includes(lead!),
     );
+    expect(gossipClue).toBeDefined();
+    if (!gossipClue) throw new Error("Expected the disclosed lead to be a learned clue.");
+    expect(gossipClue.sourceKind).toBe(InvestigationSourceKind.LocalGossip);
     await page.getByRole("button", { name: "Journal", exact: true }).click();
     await expect(page.getByText(gossipEntry.message, { exact: true })).toBeVisible();
     expect(gossipPosts).toEqual([
@@ -1398,15 +1405,21 @@ test("a player can gather saloon gossip and restore it in the journal after reop
     const restoredJournalResponse = await restoredJournalResponsePromise;
     expect(restoredJournalResponse.ok()).toBe(true);
     const restoredJournal = (await restoredJournalResponse.json()) as {
-      caseFile: { knownClues: Array<{ description: string }> };
+      caseFile: {
+        knownClues: Array<{
+          id: string;
+          description: string;
+          sourceKind: InvestigationSourceKind | null;
+        }>;
+      };
       logEntries: Array<{ message: string }>;
     };
     expect(restoredJournal.logEntries).toContainEqual(gossipEntry);
-    expect(restoredJournal.caseFile.knownClues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ description: expect.stringContaining(lead!) }),
-      ]),
+    const restoredGossipClue = restoredJournal.caseFile.knownClues.find(
+      (clue) => clue.id === gossipClue.id,
     );
+    expect(restoredGossipClue).toEqual(gossipClue);
+    expect(restoredGossipClue?.sourceKind).toBe(InvestigationSourceKind.LocalGossip);
     await page.getByRole("button", { name: "Journal", exact: true }).click();
     await expect(page.getByText(gossipEntry.message, { exact: true })).toBeVisible();
     expect(gossipPosts).toHaveLength(1);
