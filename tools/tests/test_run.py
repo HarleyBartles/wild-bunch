@@ -16,6 +16,33 @@ sys.modules[SPEC.name] = run
 SPEC.loader.exec_module(run)
 
 
+@pytest.mark.parametrize("selection", ["environment", "explicit"])
+def test_main_planning_guard_uses_destination_on_codex_branch(tmp_path, monkeypatch, selection):
+    def git(*arguments):
+        subprocess.run(["git", *arguments], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q", "-b", "codex/promotion")
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    (tools / "check_planning_custody.py").write_bytes(
+        (ROOT / "tools/check_planning_custody.py").read_bytes()
+    )
+    plan = tmp_path / ".agents/plans/live.md"
+    plan.parent.mkdir(parents=True)
+    plan.write_text("Live planning", encoding="utf-8")
+    git("add", ".")
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setenv(
+        "WILD_BUNCH_TARGET_BRANCH", "main" if selection == "environment" else "develop"
+    )
+    arguments = ["planning-custody", "--check"]
+    if selection == "explicit":
+        arguments.extend(["--target", "main"])
+
+    assert run.main(arguments) == 1
+    assert run.main(["planning-custody", "--check", "--target", "develop"]) == 0
+
+
 def test_diagnostics_collects_independent_ci_failures(monkeypatch, capsys) -> None:
     visited: list[str] = []
 
