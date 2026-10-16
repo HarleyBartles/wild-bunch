@@ -58,7 +58,7 @@ Expected: the production bundle reaches Saloon through the normal player flow, t
 
 Temporarily intercept the gossip POST with a success-shaped response that contains a plausible updated journal/clue but does not forward the request to the API. Confirm the immediate response-based assertion can observe that supplied fact, while the fresh session read after reopen omits it and the browser test fails. Restore the test file byte-for-byte, verify its before/after SHA-256, rerun the focused test against the real API and confirm it passes. Do not commit the interception.
 
-- [ ] **Step 4: Reconcile evidence and successor artifacts, then validate**
+- [x] **Step 4: Reconcile evidence and successor artifacts, then validate**
 
 Update PG-005 evidence with the bounded local route, real gossip command, disclosed clue in the player journal and restored server read; retain limits for other knowledge sources, hosted behavior and deployment. In the row-18 roadmap, record N-88's merged PR #391, source and squash-merge identities, both hosted gates and paired worktree/branch cleanup, then point the active plan to N-89. Delete the completed N-88 plan in this first substantive implementation commit and change the sole authored application version to `0.1.0-dev.207`. Run `npm --prefix src/WildBunch.Web run build` and the full `npm --prefix src/WildBunch.Web run test:browser`. Stage the intended tree and commit through the normal check-only hook; its `py -3 tools/run.py ci --check` result is the canonical local gate. Do not rerun the full canonical gate immediately before or after a successful hooked commit.
 
