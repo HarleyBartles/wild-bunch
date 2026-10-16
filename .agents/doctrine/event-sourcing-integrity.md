@@ -1,12 +1,13 @@
 # Event-sourcing integrity doctrine
 
-Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work changes a durable decision.
+Before work governed by this doctrine, follow the [unslop playbook](../playbooks/unslop.md) to select applicable profiles. Consult the [decision-record playbook](../playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision.
 
 This doctrine is the primary repository surface for event-sourcing integrity in
-the Wild Bunch repo. ADR-0028 is the decision record (why the architecture was
-chosen); this doctrine states what must remain true in the implementation and
-which failure modes are prohibited. ADR-0028 references this doctrine for the
-live canonical flow rather than duplicating it.
+the Wild Bunch repo. The [decision catalogue](../../docs/decisions/README.md)
+routes readers to ADR-0028 and any successor that records why the architecture
+was chosen; this doctrine states what must remain true in implementation and
+which failure modes are prohibited. Relevant durable changes follow the
+[decision-record playbook](../playbooks/decision-records.md).
 
 ## Design Principles
 

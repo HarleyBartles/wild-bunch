@@ -13,7 +13,6 @@ These are the binding standards for the Wild Bunch web app under
 - Reference design tokens via `var(--token-name)` to stay on-palette.
 - Re-use shared primitives from `src/components/ui/sharedStyled.tsx` for genuine cross-surface patterns (Panel, StatusCard, Button, Grid, ItemCard, etc.).
 - Feature-specific styled components should stay local in the component file that uses them.
-- Durable guidance: `docs/frontend-styling.md`.
 - Enforced by `src/tests/stylingEnforcement.test.ts`.
 
 ## Play-Surface UI

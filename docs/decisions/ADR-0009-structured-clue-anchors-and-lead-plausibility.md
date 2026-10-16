@@ -2,106 +2,34 @@
 
 ## Status
 
-live
+`live`
 
-## Dated Status History
+## Dated History
 
-- 2026-06-01 - live: clues now carry structured anchors for subjects,
-  locations, times, and directions where relevant.
+- `2026-06-01` - Chose structured clue anchors for subjects, locations, times, and directions where they clarify what a lead means.
+- `2026-10-08` - Editorial clarification: anchors support fair interpretation without claiming that every lead is backed by a fully simulated movement history.
 
 ## Decision Type
 
-gameplay, domain
+`gameplay`
 
 ## Related ADRs
 
 - `depends on`: ADR-0005, ADR-0006, ADR-0007
-- `informs`: ADR-0010
+- `related to`: ADR-0010
 
 ## Context
 
-The case board, read models, and seed content need clues that can point at a
-person or place in a structured way instead of relying on freeform prose alone.
-The repo already models clue anchors in the domain and uses them in mapping.
+Clue prose alone may not preserve enough meaning for a case board or other player read surface to explain who or where a lead concerns.
 
-## Decision Drivers
+## Decision
 
-- Clues should have readable, stable meaning beyond their prose text.
-- The case board needs anchor data to render evidence plausibly.
-- Investigative leads should be fair without requiring full movement simulation.
-- The data model should remain flexible enough for different clue shapes.
+Use structured anchors for clue subjects, locations, times, and directions when those facts are relevant to the clue. Interpret and display leads from their authored meaning rather than implying unimplemented world simulation.
 
-## Decision Summary
+## Rationale and Alternatives
 
-Model clues with structured anchors for subjects, locations, times, and
-directions. Use those anchors to support plausible leads and readable case-board
-rendering.
+Plain prose alone makes it difficult to preserve a clue's subject and place across authoring and display. Requiring full movement simulation for every lead would promise more world behavior than the game needs to support this decision.
 
-## Detailed Decision Breakdown
+## Consequences
 
-Clues may carry linked suspects and anchor metadata. Subject anchors can point
-to a suspect, alias, feature, or fact. Location anchors can point to a town or
-route. Time anchors can capture recency. Direction anchors can capture movement
-or route direction.
-
-This gives the case board and other read surfaces enough structure to present a
-lead without pretending the game simulates every underlying world movement in
-full detail.
-
-## Options Considered and Rejected
-
-- Keep clues as plain text only.
-- Force every lead to be backed by a fully simulated movement system.
-- Collapse all anchor shapes into one generic “evidence pointer” blob.
-
-## When a Rejected Option Would Have Been Better
-
-Plain text would only be better for throwaway debug strings. Full movement
-simulation would only be better if the game were already built around detailed
-world-state tracing for every clue, which it is not.
-
-## Benefits
-
-- Read surfaces can explain a clue’s meaning more clearly.
-- The case board can build evidence entries from stable anchor shapes.
-- Seed content can author clues with more nuance.
-
-## Accepted Tradeoffs
-
-- Clue authoring is a little more verbose.
-- The domain has to keep the anchor shapes coherent across serialization and
-  mapping.
-
-## Risks
-
-- Anchor data can become inconsistent if seed content is sloppy.
-- A future movement system could tempt the code to over-promise what the anchor
-  data means.
-
-## Consequences for Future Work
-
-New clue or warrant content should prefer structured anchors when a lead needs
-to point at a subject, town, route, or time.
-
-## Implementation Status or Plan
-
-Live. The domain, seed builders, and mapping layers already use structured clue
-anchors.
-
-## Related Stable Source Surfaces
-
-- `src/WildBunch.Domain/Cases/CaseModels.cs`
-- `src/WildBunch.Application/Games/Mapping/CaseBoardMapper.cs`
-- `src/WildBunch.GameContent/NewGame/SeedCaseBuilder.cs`
-- `tests/WildBunch.Domain.Tests/CaseFileTests.cs`
-- `tests/WildBunch.Application.Tests/CaseBoardMapperTests.cs`
-
-## Proof of Implementation or Explicit Non-Implementation
-
-Clues in the domain carry anchor data, the seed builder authoring uses it, and
-the case-board mapper consumes it for public evidence display.
-
-## Review Triggers
-
-- When a lead type needs a new anchor shape.
-- When case-board rendering no longer matches the anchor semantics.
+Clue authoring and presentation must preserve the meaning of any supplied anchors. New anchor forms should express a player-understandable lead, not expose hidden truth or imply unsupported simulation.
