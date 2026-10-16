@@ -2726,16 +2726,23 @@ public sealed class EfGameSessionRepositoryTests
         Assert.Equal(investigationCount, fresh.AllEvents.OfType<InvestigationPerformed>().Count());
     }
 
-    [Fact]
-    public async Task ReadModel_CaseFileCacheSameIdAlteredKnownWarrantPayloadRecoversFromEventsWithoutWritingBack()
+    [Theory]
+    [InlineData(true, "payload")]
+    [InlineData(true, "changed-target")]
+    [InlineData(true, "missing-target")]
+    [InlineData(false, "changed-target")]
+    [InlineData(false, "missing-target")]
+    public async Task ReadModel_CaseFileCacheSameIdAlteredWarrantPayloadRecoversFromEventsWithoutWritingBack(bool known, string mutation)
     {
         using var fixture = new PostgreSqlPersistenceFixture();
-        var expectedWarrant = CreatePayloadCacheWarrant("known-payload-cache-warrant");
+        var template = CreatePayloadCacheWarrant("payload-cache-warrant");
+        var expectedWarrant = new Warrant(template.Id, template.TargetName, template.Terms, template.Summary, new SuspectId("suspect-1"));
         var session = CreateSession(publicWarrants: new[] { expectedWarrant });
-        var posterRead = session.ReadWantedPosters();
-        Assert.True(posterRead.Success);
-        var originalInvestigation = Assert.Single(session.UncommittedEvents.OfType<InvestigationPerformed>());
-        Assert.Equal(expectedWarrant.Id, originalInvestigation.WarrantId);
+        if (known)
+        {
+            Assert.True(session.ReadWantedPosters().Success);
+            Assert.Equal(expectedWarrant.Id, Assert.Single(session.UncommittedEvents.OfType<InvestigationPerformed>()).WarrantId);
+        }
 
         var repository = CreateRepository(fixture, out var unitOfWork);
         await PersistAsync(repository, unitOfWork, session);
@@ -2745,11 +2752,18 @@ public sealed class EfGameSessionRepositoryTests
             var component = await context.GameSessionComponents.SingleAsync(candidate =>
                 candidate.SessionId == session.Id.Value && candidate.ComponentName == "caseFile");
             var payload = JsonNode.Parse(component.PayloadJson)!.AsObject();
-            var warrant = payload["knownWarrants"]!.AsArray().Single()!.AsObject();
-            warrant["summary"] = "The altered cache invents a different wanted notice.";
-            warrant["terms"]!["bountyAmount"] = 1m;
-            warrant["terms"]!["knownAliases"]![0] = "An invented alias";
-            warrant["terms"]!["knownFeatures"]![0] = "a silver spur";
+            var warrant = payload[known ? "knownWarrants" : "publicWarrants"]!.AsArray().Single()!.AsObject();
+            if (mutation == "payload")
+            {
+                warrant["summary"] = "The altered cache invents a different wanted notice.";
+                warrant["terms"]!["bountyAmount"] = 1m;
+                warrant["terms"]!["knownAliases"]![0] = "An invented alias";
+                warrant["terms"]!["knownFeatures"]![0] = "a silver spur";
+            }
+            else
+            {
+                warrant["targetSuspectId"] = mutation == "changed-target" ? "suspect-2" : null;
+            }
             component.PayloadJson = payload.ToJsonString();
             await context.SaveChangesAsync();
         }
@@ -2767,11 +2781,18 @@ public sealed class EfGameSessionRepositoryTests
             CreateReadStoreLoader()).GetByIdAsync(session.Id);
 
         Assert.NotNull(commandRead);
-        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(commandRead!.CaseFile.KnownWarrants));
+        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(known ? commandRead!.CaseFile.KnownWarrants : commandRead!.CaseFile.PublicWarrants));
         Assert.NotNull(playerRead);
-        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(playerRead!.CaseFile.KnownWarrants));
+        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(known ? playerRead!.CaseFile.KnownWarrants : playerRead!.CaseFile.PublicWarrants));
         Assert.NotNull(journalRead);
-        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(journalRead!.KnownWarrants));
+        if (known)
+        {
+            AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(journalRead!.KnownWarrants));
+        }
+        else
+        {
+            Assert.Empty(journalRead!.KnownWarrants);
+        }
 
         var actualStoredState = await CaptureCaseFileCacheRecoveryStateAsync(fixture, session.Id);
         Assert.Equal(expectedStoredState.ComponentVersion, actualStoredState.ComponentVersion);
@@ -2788,8 +2809,8 @@ public sealed class EfGameSessionRepositoryTests
 
         var fresh = await CreateRepository(fixture, out _).GetByIdAsync(session.Id);
         Assert.NotNull(fresh);
-        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(fresh!.CaseFile.KnownWarrants));
-        Assert.Empty(fresh.CaseFile.PublicWarrants);
+        AssertWarrantPayloadEqual(expectedWarrant, Assert.Single(known ? fresh!.CaseFile.KnownWarrants : fresh!.CaseFile.PublicWarrants));
+        Assert.Empty(known ? fresh.CaseFile.PublicWarrants : fresh.CaseFile.KnownWarrants);
         Assert.Equal(investigationCount, fresh.AllEvents.OfType<InvestigationPerformed>().Count());
     }
 
@@ -6404,6 +6425,7 @@ public sealed class EfGameSessionRepositoryTests
     private static void AssertWarrantPayloadEqual(Warrant expected, Warrant actual)
     {
         Assert.Equal(expected.Id, actual.Id);
+        Assert.Equal(expected.TargetSuspectId, actual.TargetSuspectId);
         Assert.Equal(expected.TargetName, actual.TargetName);
         Assert.Equal(expected.Summary, actual.Summary);
         Assert.Equal(expected.Terms.Disposition, actual.Terms.Disposition);
