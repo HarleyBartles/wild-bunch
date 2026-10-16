@@ -76,6 +76,8 @@ maintainer records evidence and promotes durable content before retiring an
 artifact and stale links. The change that updates this policy keeps its own
 plan and spec through its completing PR.
 
+Branch custody adds [ADR-0049](../../docs/decisions/ADR-0049-planning-custody-across-integration-and-promotion.md) without changing this subscription pin: agents perform semantic preflight on develop before a main-bound cut, asking about each unclear whole-scope classification. Durable product rules move to `docs/gameplay.md`, deferred intent to `docs/features.md`, and historical references use immutable source links. Main carries no planning, while reconciliation restores exactly the current pre-merge develop planning snapshot. The check-only main guard enforces indexed-path exclusion; review judges completion, knowledge promotion and disguised planning. The exclusion guard cannot certify semantic completion, and documented reconciliation is not proof that a promoted merge has occurred.
+
 ## repo-plugin-subscriptions
 
 **Assessment:** Self-certified for repository declarations and authored-skill

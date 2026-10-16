@@ -2,7 +2,7 @@
 
 Status: approved for implementation planning on 2026-10-06. This document describes the agreed direction; planning approval does not authorize implementation or changes to the purchased server.
 
-**Dated clarification, 2026-10-07:** The user subsequently settled confirmed start over as immediate durable archival, independent of creating a replacement. That confirmed archival is not rolled back if the player leaves setup or never creates another game. The atomic-replacement language below must not override that rule; creation/retry still protects the per-user active-playthrough invariant and cannot archive another user's game. See the [lifecycle decision](../investigations/stable-0.1.0/2026-10-07-playthrough-lifecycle-contract.md) and proposed [baseline specification](2026-10-07-stable-0.1.0-baseline.md). Stable 0.1.0 cleanup precedes the separate account and deployment work.
+**Dated clarification, 2026-10-07:** The user subsequently settled confirmed start over as immediate durable archival, independent of creating a replacement. That confirmed archival is not rolled back if the player leaves setup or never creates another game. The atomic-replacement language below must not override that rule; creation/retry still protects the per-user active-playthrough invariant and cannot archive another user's game. See the [lifecycle decision](https://github.com/HarleyBartles/wild-bunch/blob/6ab221b9d7616d6f549fa5e1a026acda82cf0fc3/.agents/investigations/stable-0.1.0/2026-10-07-playthrough-lifecycle-contract.md) and proposed [baseline specification](https://github.com/HarleyBartles/wild-bunch/blob/6ab221b9d7616d6f549fa5e1a026acda82cf0fc3/.agents/specs/2026-10-07-stable-0.1.0-baseline.md). The local baseline cleanup is complete. The [current gameplay rules](../../docs/gameplay.md) and [feature matrix](../../docs/features.md) now own retained rules; account and deployment work remains live.
 
 **Dated clarification, 2026-10-08:** Stable 0.1.0 cleanup retired the developer `StartPrepped`/prep-start flow and its manual layout-salt mutations. The paragraph below describing how that path would establish ownership is superseded: future account and deployment work must use the supported event-backed player setup flow and must not restore the retired developer preparation path or its semantics. This clarification does not change the ownership, authentication or active-playthrough decisions below.
 
@@ -17,11 +17,11 @@ Preserve DDD, CQRS, event sourcing, and the existing migration strategy. Public 
 ## Current gaps
 
 - `WildBunch.Api/Program.cs` and `Games/GameEndpoints.cs` configure no authentication or game authorization.
-- `CompletePlayerSetupHandler` queries every active session and archives them when creating a replacement. The rule currently has database-wide scope.
+- The current local active-session constraint has no user dimension. Account work must enforce at most one active playthrough per user without making setup archive an existing game.
 - `GameSessionEntity` and repository interfaces carry no owner identity. Queries and commands select sessions by game ID.
 - The web app remembers a game ID in local storage rather than resolving an authenticated user's active game.
-- `DevRoleGuard` allows calls based on `IsDevelopment()`. Dev routes are always registered and `AppShell` always renders the dev menu.
-- CI and contribution guidance target `main`; the web package declares `0.0.0`. Release branches, versioned artifacts, and environment deployment workflows must be introduced.
+- Public/playtest build and endpoint switches exist locally, but verified-user hosted admission and deployment isolation remain unimplemented.
+- Develop is the integration/default branch. One MSBuild-authored version and locally verified API/public/playtest artifacts exist. Hosted candidate/public promotion and deployment remain unqualified.
 
 These observations identify affected seams, not instructions to preserve those implementations.
 
@@ -37,7 +37,7 @@ Every newly created playthrough has exactly one immutable owner. A creation even
 
 For player setup, the creation event establishes the owner and replay reconstructs ownership. Developer preparation is not a supported creation path; the former zero-event `StartPrepped` implementation was retired during stable 0.1.0 cleanup. Any future developer creation must use a separately approved event-backed flow and must obey the per-user active-playthrough rule. Pre-0.1.0 local playthroughs are disposable under the stable 0.1.0 history boundary; future persistence work preserves schema migration history and does not fabricate historical ownership.
 
-A user may own many `GameSession` aggregates over time, but at most one may be active. An unfinished setup counts as active. Starting over archives only that user's active playthrough and creates its replacement through the respective aggregates' events. The replacement is atomic: failure does not leave the old playthrough archived without its replacement. Concurrent starts must preserve the per-user invariant. The domain rule spans sessions; the implementation must coordinate and enforce it without giving a session permission to mutate another aggregate directly.
+A user may own many `GameSession` aggregates over time, but at most one may be active. An unfinished setup counts as active. Confirmed Start Over durably archives only that user's active playthrough before returning to setup. Replacement creation is separate; failure or abandonment never reverses archival. Concurrent starts preserve the per-user invariant, and setup cannot archive or displace an active game. The domain rule spans sessions; the implementation must coordinate and enforce it without giving a session permission to mutate another aggregate directly.
 
 Owner transfer is not supported. Pre-existing unowned local streams must not be silently assigned to a Google user or made publicly accessible. The transition may explicitly discard those development playthroughs, separately from schema migration. It must not fabricate historical ownership in an upcaster.
 
@@ -96,33 +96,7 @@ Release deployment runs the appropriate schema migrations in a controlled step b
 
 ## Gitflow and release identity
 
-The repository adopts the immutable AOM `gitflow` and `semver` definitions recorded in
-[operating standards](../contracts/operating-standards.json) and maintains its conformance
-assessment in [standards certification](../contracts/standards-certification.md). The pinned
-Gitflow definition is from Marketplace commit
-`7a20ef191bb6be3b67fbbb9e86bd7b0050f96fc5`; the pinned SemVer definition is from commit
-`12c86626f80cad1a2ac05b2f6690c882a3d5959a`. The standards define the operating and version
-contracts below; the repository owns their implementation and evidence. Pre-1.0 adoption does
-not require a promise about the future stable API.
-
-Preserve the settled flow: `develop` is the feature-integration and default branch; ordinary feature branches start from current `develop` and merge by PR into `develop`, with squash merges permitted. Cut `release/*` from `develop` for stabilization, versioning, and migration validation. Promote a reviewed release to `main` with a merge commit and reconcile it to `develop` with a merge commit. Hotfixes start from the released `main` state, promote to `main`, then reconcile to `develop` and every affected active release line. Verify current remote refs, PR targets, merge methods, and hosting policy at publication; the written branch names do not prove remote enforcement.
-
-The intended SemVer subject is the Wild Bunch browser-game product, not internal implementation details or independently versioned event/schema formats. The `0.y.z` line is pre-1.0 development and makes no public API or gameplay-compatibility promise; `0.1.0` identifies the qualified initial baseline, not a guarantee that every pre-release playthrough remains usable. The existing event/schema migration strategy remains mandatory for data the repository declares supported. This epic does not decide a `1.0.0` compatibility contract or require a stable 1.0 release; determine future compatibility expectations only when that release is genuinely in scope.
-
-`Directory.Build.props` is the single authored application version. The web build derives its
-runtime `version.json` identity from evaluated MSBuild properties, and the repository command
-bus validates the generated identity while rejecting duplicate application-version fields in
-npm metadata. Each ordinary merge into `develop`, including documentation and tooling changes,
-receives one unique `0.1.0-dev.N` checkpoint per merged PR, never per commit. The release
-procedure uses `0.1.0-rc.N` for changed and requalified release candidates, beginning at `rc.1`;
-rerunning validation on identical source does not consume another candidate number. Promote
-the verified candidate to stable `0.1.0` only from the exact qualified source. A published
-version and its artifact identity are immutable. Event schemas and payload versions remain
-independent compatibility authorities.
-
-Release and hotfix reconciliation follows the pinned joint cadence: if integration is left at the released baseline, keep the stable version until a later development merge diverges; if next-release development is already underway, preserve that core and advance its next unique checkpoint for the reconciliation PR. Reconcile stale or duplicate development checkpoint proposals against the latest `develop` before merge. Development checkpoints do not create tags or GitHub Releases; the GitHub Release remains the authorized public-deployment trigger described by this specification.
-
-The first releases establish a reproducible, validated base and the actual release process. They do not require finishing gameplay or deploying publicly before the account and environment boundaries exist. Infrastructure and account work then use that process, and subsequent features continue through `develop`. This describes release intent, not an implementation task plan.
+Reusable branch, version and source-bound artifact rules live in [ADR-0048](../../docs/decisions/ADR-0048-gitflow-and-semver-release-lifecycle.md) and the [release runbook](../runbooks/release.md). [ADR-0049](../../docs/decisions/ADR-0049-planning-custody-across-integration-and-promotion.md) governs semantic preflight, main exclusion and exact develop planning restoration. The current local version/build/bundle capability does not prove hosted promotion or deployment. This live specification owns the remaining cloud deployment requirements below.
 
 Preprod continuously deploys passing updates from the selected release branch. Ordinary feature PRs and arbitrary branches cannot overwrite it. Only one selected candidate owns this environment at a time; deployments are serialized so older runs cannot replace newer candidates after they finish. Hotfix candidates use the same preprod validation route.
 
@@ -140,7 +114,7 @@ A hosted develop environment is deferred. When introduced, it will track `develo
 
 Acceptance focuses on observable boundaries and negative cases. Do not add tests that merely detect filenames, source strings, or the existence of this specification. Follow the repository's existing test-lane ownership.
 
-- Domain/application behaviour: player creation and developer preparation emit ownership, full replay without snapshots restores it, owner transfer is impossible, setup counts as active, and restarting a user affects only that user's sessions. A failed or concurrent replacement preserves the at-most-one-active invariant without partial archival.
+- Domain/application behaviour: supported player creation emits ownership, full replay without snapshots restores it, owner transfer is impossible, setup counts as active, and restarting a user affects only that user's sessions. Confirmed archive persists without a replacement; failed or concurrent creation preserves the at-most-one-active invariant without archiving an active game.
 - HTTP/PostgreSQL integration: two independently authenticated users can create and continue their own games. Neither can read, mutate, archive, or obtain projections for the other's game, even with a valid ID. Expired/invalid authentication and forged mutations fail. Concurrent first sign-ins resolve one internal user. The authenticated current-game lookup works without browser-local IDs.
 - Environment integration: public has no reachable dev query or mutation route; preprod admits only the configured owner identity. Public cookies cannot authenticate preprod. Database and credential separation is checked against the deployed configuration. Anonymous hosted dev access is denied.
 - Browser behaviour: Google sign-in, Continue, confirmed Start over, partial-setup resume, sign-out/sign-in, account switching, and refresh of a stale tab follow server state. Lost-response recovery does not automatically resubmit gameplay actions. Public assets have no dev UI.
