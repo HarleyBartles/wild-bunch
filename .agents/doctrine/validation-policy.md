@@ -18,7 +18,7 @@ sequence and environment setup live in the [testing playbook](../playbooks/testi
   native browser behavior, TypeScript checking, and production build.
 
 The Playwright lane owns native browser contracts that JSDOM cannot observe,
-including modal focus behavior and rendered viewport geometry. Build locally
+including modal focus behavior and rendered viewport geometry when those application contracts are added. The current tooling check verifies built-application bootstrap and served version identity; it does not claim those newer player contracts are already covered. Build locally
 with `npm --prefix src/WildBunch.Web run build`, ensure PostgreSQL with
 `pwsh -NoProfile -File tools/postgres-dev.ps1 ensure`, then run `npm --prefix
 src/WildBunch.Web run test:browser`; install Chromium with `npx --prefix

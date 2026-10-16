@@ -27,14 +27,7 @@ which failure modes are prohibited. Relevant durable changes follow the
 
 ## Event payload history
 
-`WorldGenerated` is currently v2. Historical v1 rows exist in both shapes: an
-early form without `caseFile`, and a later form with it. The v1-to-v2 upcaster
-adds `caseFile: null` only when the property is absent and preserves an existing
-value. Replay leaves case-file state untouched for that legacy event and relies
-on the following `CaseFileGenerated` event. A stream with a null `WorldGenerated`
-case file and no `CaseFileGenerated` event is unrecoverable and must fail closed;
-it must never retain the replay placeholder as real case-file state. Current
-writers continue to include the populated case file in both events.
+`WorldGenerated` is currently v3. Historical v1 rows exist in both shapes: an early form without `caseFile`, and a later form with it. The v1-to-v2 upcaster adds `caseFile: null` only when the property is absent and preserves an existing value. Replay leaves case-file state untouched for that legacy event and relies on the following `CaseFileGenerated` event. A stream with a null `WorldGenerated` case file and no `CaseFileGenerated` event is unrecoverable and must fail closed; it must never retain the replay placeholder as real case-file state. Current writers continue to include the populated case file in both events. The v2-to-v3 upcaster removes the historical `occurredAt` field; current event payloads do not carry that timestamp.
 
 ## Repository rules
 

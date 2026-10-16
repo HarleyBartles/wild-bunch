@@ -17,7 +17,7 @@ Before work in this scope, follow the [unslop playbook](../playbooks/unslop.md) 
 1. Read the approved plan and invoke only the focused Wild Bunch capability
    skills whose declared boundaries the change crosses.
 2. Follow the decisions named by the plan; use the [decision-record playbook](../playbooks/decision-records.md) to record any discovered divergence or material removal in the same change.
-3. When actual product promises, release disposition or dependencies change, follow the [feature-matrix playbook](../playbooks/feature-matrix.md) and update the [matrix](../../docs/features.md) in the same PR.
+3. When actual product promises, release disposition or dependencies change, follow the [feature-matrix playbook](../playbooks/feature-matrix.md) and update the `docs/features.md` (when present on the current branch) in the same PR.
 4. Bind those decisions to the applicable doctrine and contracts below.
 5. Use behavior-focused test development to construct each observable behavior through
    the focused test lane named by validation doctrine.
