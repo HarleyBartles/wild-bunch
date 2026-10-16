@@ -24,7 +24,7 @@ The game needs an HTTP adapter that maps requests and responses without making t
 
 ## Decision
 
-Use ASP.NET Core Minimal APIs as the game HTTP boundary. Endpoint code owns HTTP routing, validation at the transport boundary, and response mapping, and delegates application use cases to handlers. Gameplay invariants remain in the domain and persistence remains behind application ports.
+Use ASP.NET Core Minimal APIs as the game HTTP boundary. Endpoint code owns HTTP routing, validation at the transport boundary, and response mapping, and delegates application use cases to handlers. Gameplay invariants remain in the domain and persistence remains behind application ports. Keep OpenAPI metadata available for development-time discovery.
 
 ## Rationale and Alternatives
 
@@ -32,4 +32,4 @@ Minimal APIs provide explicit capability-oriented route composition without requ
 
 ## Consequences
 
-HTTP endpoints remain adapters rather than owners of gameplay rules. Route inventories and OpenAPI configuration are operational/source details, not durable parts of this decision.
+HTTP endpoints remain adapters rather than owners of gameplay rules. Route inventories and exact OpenAPI configuration remain operational/source details; availability of development-time OpenAPI metadata remains part of this decision.
