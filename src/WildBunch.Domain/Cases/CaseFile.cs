@@ -107,6 +107,8 @@ public sealed class CaseFile
             {
                 throw new ArgumentException("The sheriff turn-in settlement does not belong to this case.", nameof(sheriffTurnInSettlements));
             }
+
+            ApplySettlementToSuspect(settlement);
         }
 
         _sheriffTurnInSettlementsView = _sheriffTurnInSettlements.AsReadOnly();
@@ -276,6 +278,24 @@ public sealed class CaseFile
         }
 
         _sheriffTurnInSettlements.Add(settlementState);
+        ApplySettlementToSuspect(settlementState);
+    }
+
+    private void ApplySettlementToSuspect(SheriffTurnInSettlementState settlementState)
+    {
+        if (!settlementState.IsAlive)
+        {
+            return;
+        }
+
+        var suspectIndex = _suspects.FindIndex(suspect => suspect.Id.Equals(settlementState.SuspectId));
+        if (suspectIndex < 0)
+        {
+            throw new ArgumentException("The sheriff turn-in settlement does not belong to this case.", nameof(settlementState));
+        }
+
+        _suspects[suspectIndex] = _suspects[suspectIndex] with { Status = SuspectStatus.Captured };
+        DiscoverSuspect(settlementState.SuspectId);
     }
 
     public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null)

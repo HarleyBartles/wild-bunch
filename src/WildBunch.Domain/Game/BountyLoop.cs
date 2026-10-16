@@ -636,6 +636,11 @@ internal sealed class BountyLoop
         ArgumentNullException.ThrowIfNull(warrant);
         ArgumentNullException.ThrowIfNull(targetSuspect);
 
+        if (warrant.TargetSuspectId is { } targetSuspectId)
+        {
+            return targetSuspectId.Equals(targetSuspect.Id);
+        }
+
         if (string.Equals(warrant.TargetName, targetSuspect.Name, StringComparison.OrdinalIgnoreCase))
         {
             return true;
