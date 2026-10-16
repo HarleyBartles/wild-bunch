@@ -4,6 +4,17 @@
 
 Establish whether the retained local product paths, supported persistence/recovery evidence, and source-bound API/public-web/playtest bundle are sufficient to call `develop` a qualified `0.1.0` pre-release candidate. Record the exact qualification boundary in the baseline specification, feature matrix, standards certification, and roadmap. This does not create a release branch, RC, stable tag, GitHub Release, deployment, or `0.1.0` stable claim.
 
+## Execution Strategy
+
+Native inline execution. The evidence review, documentation reconciliation, version update and source-bound bundle are sequential and depend on the same current source and qualification boundary; splitting them across implementers would add reconstruction cost without useful parallelism. The final committed branch receives one independent fresh-context whole-branch review.
+
+## Review Focus
+
+- Do the cited retained-route and supported-history/cache-recovery tests support the local qualification claim, with partial feature assessments and evidence limits preserved?
+- Do the specification, certification and roadmap distinguish the qualified development candidate from an actual release, stable publication, hosted release behavior and deployment?
+- Does the bundle manifest bind the exact final source commit and sole authored version to the API and both web artifacts, and does repeat verification preserve the same bytes?
+- Does the diff preserve ADR-0048 and the feature matrix's current product truth without asserting complete gameplay or introducing document-shape tests?
+
 ## Source material
 
 - `.agents/specs/2026-10-07-stable-0.1.0-baseline.md`
