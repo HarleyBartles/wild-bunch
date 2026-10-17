@@ -28,7 +28,7 @@ proof that the log remains true.
 
 ## Feature-matrix check
 
-Before requesting review, compare the proposed diff with [docs/features.md](../../docs/features.md) through the [feature-matrix playbook](../playbooks/feature-matrix.md). Include a truthful matrix update when a product promise, dependency, disposition or evidence assessment changes, or state why current feature truth did not change. The reviewer independently repeats this comparison against the diff.
+Before requesting review, compare the proposed diff with `docs/features.md` (when present on the current branch) through the [feature-matrix playbook](../playbooks/feature-matrix.md). Include a truthful matrix update when a product promise, dependency, disposition or evidence assessment changes, or state why current feature truth did not change. The reviewer independently repeats this comparison against the diff.
 
 ## Composition
 

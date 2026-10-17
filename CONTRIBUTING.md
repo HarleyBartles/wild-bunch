@@ -12,7 +12,7 @@ This file is the repo's contributor entry point.
 - Read [`.agents/doctrine/repo-runbook-policy.md`](./.agents/doctrine/repo-runbook-policy.md) for this repo's mapping to the cross-repo runbook standard.
 - Read the [release lifecycle runbook](./.agents/runbooks/release.md) when preparing or reconciling a release or hotfix.
 - Read the [decision-record playbook](./.agents/playbooks/decision-records.md) when work makes, changes, corrects, or materially removes a durable decision; the lifecycle runbooks carry the author and reviewer obligations.
-- For work that changes a product promise, disposition, capability boundary or dependency, follow the [feature-matrix playbook](./.agents/playbooks/feature-matrix.md) and update the [authoritative matrix](./docs/features.md) with the same change.
+- For work that changes a product promise, disposition, capability boundary or dependency, follow the [feature-matrix playbook](./.agents/playbooks/feature-matrix.md) and update the `docs/features.md` (when present on the current branch) with the same change.
 - Use the [repository command bus guide](./tools/README.md) to discover supported build, test, and validation targets.
 - Read [`.agents/playbooks/code-style.md`](./.agents/playbooks/code-style.md) for
   source conventions; use the unslop playbook's scoped selection for authored prose.
