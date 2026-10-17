@@ -4961,6 +4961,97 @@ public sealed class EfGameSessionRepositoryTests
     }
 
     [Theory]
+    [InlineData("player")]
+    [InlineData("world")]
+    [InlineData("caseFile")]
+    [InlineData("clock")]
+    [InlineData("pursuitState")]
+    [InlineData("setup")]
+    public async Task ReadModel_MissingRequiredComponentReplaysWithoutWritingBack(string componentName)
+    {
+        using var fixture = new PostgreSqlPersistenceFixture();
+        var repository = CreateRepository(fixture, out var unitOfWork);
+        var session = CreateSession();
+        PurchaseFood(session, 2);
+        await PersistAsync(repository, unitOfWork, session);
+
+        await using (var context = fixture.CreateContext())
+        {
+            var component = await context.GameSessionComponents.SingleAsync(candidate =>
+                candidate.SessionId == session.Id.Value && candidate.ComponentName == componentName);
+            context.GameSessionComponents.Remove(component);
+            await context.SaveChangesAsync();
+        }
+        async Task<string> CaptureAsync()
+        {
+            await using var context = fixture.CreateContext();
+            return JsonSerializer.Serialize(new
+            {
+                Envelope = await context.GameSessions.AsNoTracking().SingleAsync(entity => entity.Id == session.Id.Value),
+                Components = await context.GameSessionComponents.AsNoTracking().Where(entity => entity.SessionId == session.Id.Value).OrderBy(entity => entity.ComponentName).ToArrayAsync(),
+                Events = await context.StoredEvents.AsNoTracking().Where(entity => entity.StreamId == session.Id.Value).OrderBy(entity => entity.Sequence).ToArrayAsync(),
+                Diary = await context.GameSessionDiaryDays.AsNoTracking().Where(entity => entity.SessionId == session.Id.Value).OrderBy(entity => entity.Sequence).ToArrayAsync()
+            });
+        }
+        var before = await CaptureAsync();
+
+        await using (var context = fixture.CreateContext())
+        {
+            var read = await new EfGameSessionReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+            Assert.NotNull(read);
+            Assert.Equal(session.Player.Wallet.Cash, read.Player.Wallet.Cash);
+            Assert.Equal(session.Player.Inventory.GetQuantity(DomainItemKind.Food), read.Player.Inventory.GetQuantity(DomainItemKind.Food));
+            Assert.Equal(session.World.Towns.Select(town => town.Id), read.World.Towns.Select(town => town.Id));
+            Assert.Equal(session.Clock.Day, read.Clock.Day);
+            Assert.Equal(session.PursuitState.Heat, read.PursuitState.Heat);
+        }
+        await using (var context = fixture.CreateContext())
+        {
+            var journal = await new EfGameJournalReadRepository(context, CreateReadStoreLoader()).GetByIdAsync(session.Id);
+            Assert.NotNull(journal);
+            Assert.Equal(session.CaseFile.OpeningLead.Description, journal.OpeningLead);
+        }
+
+        Assert.Equal(before, await CaptureAsync());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CaseFileCacheAcceptsLawfulCapturesButRejectsUnrecordedStatusAndDiscovery(bool generatedFacts)
+    {
+        var session = CreateSessionWithTwoSettledWantedSuspects();
+        Assert.Equal(2, session.CaseFile.Suspects.Count(suspect => suspect.Status == SuspectStatus.Captured));
+        bool Matches(IReadOnlyList<IDomainEvent> events) => generatedFacts
+            ? CaseFileGenerationCacheRecovery.MatchesEventGeneratedFacts(events, session.CaseFile)
+            : CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(events, session.CaseFile);
+        Assert.True(Matches(session.AllEvents));
+
+        var generatedIndex = session.AllEvents.ToList().FindIndex(domainEvent => domainEvent is CaseFileGenerated);
+        var generationOnly = session.AllEvents.Take(generatedIndex + 1).ToArray();
+        Assert.False(Matches(generationOnly));
+    }
+
+    [Fact]
+    public void CaseFileCacheDoesNotTreatDeadSettlementsAsCapturesOrDiscovery()
+    {
+        var session = CreateSessionWithTwoSettledWantedSuspects();
+        var events = session.AllEvents.Select(domainEvent => domainEvent is SheriffTurnInSettled settlement
+            ? settlement with { IsAlive = false }
+            : domainEvent).ToArray();
+        var caseFile = events.OfType<CaseFileGenerated>().Last().CaseFile.ToDomain();
+        foreach (var settlement in events.OfType<SheriffTurnInSettled>())
+        {
+            caseFile.RecordSheriffTurnInSettlementState(ToSettlementState(settlement));
+        }
+
+        Assert.All(caseFile.Suspects, suspect => Assert.Equal(SuspectStatus.AtLarge, suspect.Status));
+        Assert.Empty(caseFile.DiscoveredSuspectIds);
+        Assert.True(CaseFileGenerationCacheRecovery.MatchesEventGeneratedFacts(events, caseFile));
+        Assert.True(CaseFileEvidenceCacheRecovery.MatchesEventEvidenceCollections(events, caseFile));
+    }
+
+    [Theory]
     [InlineData("player", "wallet")]
     [InlineData("player", "inventory")]
     [InlineData("player", "inventory.items")]

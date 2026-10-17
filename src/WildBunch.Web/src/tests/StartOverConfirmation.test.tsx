@@ -8,12 +8,14 @@ import { GameSessionProvider } from "../state/GameSessionProvider";
 import {
   AvailableActionKind,
   GameStatus,
+  StartFlowPhase,
   type GameSessionDto,
   type JournalDto,
   type TownStoreOffersDto,
 } from "../api/types";
 import {
   archiveGame,
+  getPrologue,
   getAvailableActions,
   getGame,
   getJournal,
@@ -30,6 +32,10 @@ import { HttpRequestError } from "../api/httpClient";
 
 vi.mock("../api/wildBunchApi", () => ({
   archiveGame: vi.fn(),
+  getPrologue: vi.fn(),
+  markPrologueViewed: vi.fn(),
+  startGameWithTown: vi.fn(),
+  setupGame: vi.fn(),
   buyStoreItem: vi.fn(),
   getAvailableActions: vi.fn(),
   getGame: vi.fn(),
@@ -242,6 +248,46 @@ async function openConfirmDialog(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("Start Over confirmation", () => {
+  it.each([
+    StartFlowPhase.SetupComplete,
+    StartFlowPhase.PrologueViewed,
+    StartFlowPhase.StartingTownSelected,
+  ])(
+    "can archive a saved setup session in phase %s before first arrival",
+    async (startFlowPhase) => {
+      primeMocks();
+      const session = createSession();
+      vi.mocked(getPrologue).mockResolvedValue({
+        heading: "The story so far",
+        body: "The trail is fresh.",
+        primaryAction: "Ride on",
+        variantId: "variant-1",
+      });
+      mockedGetGame.mockResolvedValue({
+        ...session,
+        startFlowPhase,
+        player: { ...session.player, currentTownId: null, health: null },
+        inventory: null,
+      });
+      window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+      renderShell();
+
+      const user = userEvent.setup();
+      const confirmation = await openConfirmDialog(user);
+      expect(screen.queryByText("Health")).not.toBeInTheDocument();
+      expect(screen.queryByText("Cash")).not.toBeInTheDocument();
+      await user.click(
+        within(confirmation).getByRole("button", { name: /archive and start over/i }),
+      );
+
+      await waitFor(() => expect(mockedArchiveGame).toHaveBeenCalledWith("game-1"));
+      await waitFor(() =>
+        expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull(),
+      );
+      expect(await screen.findByRole("heading", { name: /^wild bunch$/i })).toBeInTheDocument();
+    },
+  );
+
   it("calls archiveGame with the correct game id when Confirm is clicked", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");

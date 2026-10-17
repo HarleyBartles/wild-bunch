@@ -40,7 +40,15 @@ export function Hud({ onOpenJournal, onOpenGameSettings }: HudProps) {
     session.inventory === null ||
     session.player.health === null
   ) {
-    return null;
+    return (
+      <HudBar role="banner" aria-label="Game status">
+        <HudActions>
+          <HudButton type="button" onClick={onOpenGameSettings}>
+            Game Settings
+          </HudButton>
+        </HudActions>
+      </HudBar>
+    );
   }
 
   const cash = session.inventory.wallet.cash;
