@@ -9,6 +9,7 @@
 - `2026-06-10` - Chose to distinguish legal eligibility, turn-in outcome, settlement, murder-case resolution, and hidden culprit truth.
 - `2026-10-08` - Factual correction: sheriff turn-in and bounty-cash settlement now exist in the game. Their implementation does not collapse bounty success into murder-case success; the earlier statement that those paths were absent is historical.
 - `2026-10-12` - Editorial clarification: bounty amounts and recorded bounty settlements are nonnegative credits. Fines are separate capped penalties, and a negative bounty fact is rejected at event construction/deserialization before replay or projection can interpret it as a debit.
+- `2026-10-17` - Editorial clarification: retain the accepted alive-confession requirement for future murder-case success; the precise clear-name/win transition remains unsettled.
 
 ## Decision Type
 
@@ -34,6 +35,8 @@ Preserve the distinction between:
 - the hidden culprit identity.
 
 Accepting a wanted person or paying a bounty does not establish murder-case success. A dead true culprit may satisfy a dead-or-alive bounty term, but killing the person who could clear the player's name is a case failure. A wrong identity or a dead wrong person is not equivalent to a correct lawful turn-in. Player-facing outcomes must not reveal hidden culprit truth.
+
+Future murder-case success requires the alive confession path unless a later explicit decision changes that rule. Capturing the culprit alive or accepting an ordinary bounty alone does not establish case success; the precise clear-name/win transition remains a separate product contract to settle.
 
 Bounty amounts and recorded bounty settlements are nonnegative credits; zero is valid. Penalties such as mistaken-take-in fines are separate wallet debits capped at available cash.
 
