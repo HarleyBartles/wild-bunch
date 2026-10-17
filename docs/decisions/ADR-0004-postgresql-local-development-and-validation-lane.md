@@ -8,7 +8,7 @@
 
 - `2026-06-01` - Chose PostgreSQL for local development and real-provider validation.
 - `2026-06-22` - Moved the local service to a shared long-lived developer lane.
-- `2026-08-24` - Moved the shared PostgreSQL service to `Z:/pg` outside the repository's local cluster directory; the topology changed, not the provider decision.
+- `2026-08-24` - Moved the shared PostgreSQL service to `Z:/_postgres-cluster` outside the repository's local cluster directory; the topology changed, not the provider decision.
 - `2026-10-08` - Editorial clarification: exact service paths, ports, and commands belong in operational documentation, not this decision record.
 
 ## Decision Type

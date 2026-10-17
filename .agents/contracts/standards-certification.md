@@ -40,7 +40,7 @@ route contributors to relevant testing and implementation concerns. Useful
 scope, reachability, category, and upkeep are assessed by maintainers; the
 router checker checks links and does not score content.
 
-The [feature-matrix playbook](../playbooks/feature-matrix.md) owns maintenance of [docs/features.md](../../docs/features.md) and is routed from design, planning, implementation, code-review and PR stages. Authors update it when feature promises, dependencies, dispositions or evidence assessments change; reviewers compare the actual diff independently. Semantic review assesses promise truth and directed dependency meaning; no heading, file-existence or table-shape test substitutes for that work.
+The [feature-matrix playbook](../playbooks/feature-matrix.md) owns maintenance of `docs/features.md` (when present on the current branch) and is routed from design, planning, implementation, code-review and PR stages. Authors update it when feature promises, dependencies, dispositions or evidence assessments change; reviewers compare the actual diff independently. Semantic review assesses promise truth and directed dependency meaning; no heading, file-existence or table-shape test substitutes for that work.
 
 ## command-bus
 
@@ -76,7 +76,7 @@ maintainer records evidence and promotes durable content before retiring an
 artifact and stale links. The change that updates this policy keeps its own
 plan and spec through its completing PR.
 
-Branch custody adds [ADR-0049](../../docs/decisions/ADR-0049-planning-custody-across-integration-and-promotion.md) without changing this subscription pin: agents perform semantic preflight on develop before a main-bound cut, asking about each unclear whole-scope classification. Durable product rules move to `docs/gameplay.md`, deferred intent to `docs/features.md`, and historical references use immutable source links. Main carries no planning, while reconciliation restores exactly the current pre-merge develop planning snapshot. The check-only main guard enforces indexed-path exclusion; review judges completion, knowledge promotion and disguised planning. The exclusion guard cannot certify semantic completion, and documented reconciliation is not proof that a promoted merge has occurred.
+Branch custody adds [ADR-0049](../../docs/decisions/ADR-0049-planning-custody-across-integration-and-promotion.md) without changing this subscription pin: agents perform semantic preflight on develop before a main-bound cut, asking about each unclear whole-scope classification. Durable product rules move to their current owners, deferred intent moves to the feature matrix when present on the branch, and historical references use immutable source links. Main carries no planning, while reconciliation restores exactly the current pre-merge develop planning snapshot. The check-only main guard enforces indexed-path exclusion; review judges completion, knowledge promotion and disguised planning. The exclusion guard cannot certify semantic completion, and documented reconciliation is not proof that a promoted merge has occurred.
 
 ## repo-plugin-subscriptions
 

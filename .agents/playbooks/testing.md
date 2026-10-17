@@ -24,7 +24,7 @@ Before work in this scope, follow the [unslop playbook](unslop.md) and its scope
    src/WildBunch.Web run build`, then run `npm --prefix src/WildBunch.Web run
    test:browser`; install Chromium locally once with `npx --prefix
    src/WildBunch.Web playwright install chromium`. The browser lane serves the
-   production build and needs local PostgreSQL for its isolated API database.
+   production build. Application-specific browser tests may require an isolated API and PostgreSQL; the tooling bootstrap check does not.
    Hosted CI installs locked web dependencies and Chromium with system
    dependencies before the tracked gate.
 5. When a maintained artifact needs updating, run its named owning maintenance

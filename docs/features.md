@@ -74,7 +74,7 @@ Dependency edges use these meanings: **requires** means the target is a necessar
 
 **Assessment and evidence:** Partial. Prologue knowledge, Sheriff Office wanted posters and saloon gossip are supported; saloon observation/named take-in is assessed under PG-006. Generated-case, Domain and API coverage addresses opening-clue provenance, privacy and removal of unsupported Telegraph, noticeboard and sheriff-records interactions. [Wanted-poster acceptance coverage](../tests/WildBunch.Integration.Tests/Acceptance/WantedPosterAcceptanceTests.cs) exercises persisted public journal state and hidden-truth safety. [Local production-browser coverage](../src/WildBunch.Web/browser-tests/player-startup.spec.ts) includes reading a public poster and restoring it after reopen without another read, plus gossip whose learned clue and authored journal entry retain LocalGossip provenance after a fresh journal read. These routes do not establish every knowledge source, hosted behavior or deployment. The [historical Application assessment](https://github.com/HarleyBartles/wild-bunch/blob/6ab221b9d7616d6f549fa5e1a026acda82cf0fc3/.agents/investigations/stable-0.1.0/2026-10-07-application-layer-investigation.md) records the earlier source boundary.
 
-**0.1.0 disposition:** Retain and repair the prologue, Sheriff Office wanted posters, saloon gossip and observation. The thin noticeboard and fake sheriff-records surfaces and their authored public-notice clue are removed; the two redundant telegraph gang clues are removed and telegraph remains unavailable pending the lawman feature. Do not add an automatic deduction engine. ADR-0024 clarifies that earlier newspaper/source forecasts are historical exploration, not a current promise; no newspaper interaction is included in 0.1.0.
+**0.1.0 disposition:** Retain and repair the prologue, Sheriff Office wanted posters, saloon gossip and observation. The thin noticeboard and fake sheriff-records surfaces and their authored public-notice clue are removed; the two redundant telegraph gang clues are removed and telegraph remains unavailable pending the lawman feature. Do not add an automatic deduction engine. ADR-0024 preserves the accepted source-specific variation rules as constraints on future implementation, not evidence that those mechanics exist; no newspaper interaction is included in 0.1.0.
 
 ### PG-006 - Name and take in a saloon person
 
@@ -241,7 +241,7 @@ A developer may later visit a town and preview alternative salts using its recor
 
 **Assessment and dependency:** Not implemented in the 0.1.0 local release. This is a prerequisite for public deployment and account-backed resume in `PG-002`; browser session expiry must not become game-state authority.
 
-**Disposition:** Excluded from the local 0.1.0 baseline; owned by the separate [cloud playability specification](https://github.com/HarleyBartles/wild-bunch/blob/94e7d6c35fbfcc7182a77b4fcf2286920a52cf07/.agents/specs/2026-10-06-cloud-playability-and-releases.md).
+**Disposition:** Excluded from the local 0.1.0 baseline; owned by the separate [cloud playability specification](https://github.com/HarleyBartles/wild-bunch/blob/face6b2f3373df726fcf4c51f716b22a225b8a81/.agents/specs/2026-10-06-cloud-playability-and-releases.md).
 
 ### PLAT-003 - Environment isolation and cloud delivery
 
@@ -249,7 +249,7 @@ A developer may later visit a town and preview alternative salts using its recor
 
 **Assessment and dependency:** Not implemented by this local baseline. It depends on user isolation in `PLAT-002`, and preprod must not expose developer controls to public play. The developer playtest environment is a preproduction environment, not a second public audience.
 
-**Disposition:** Excluded from the local 0.1.0 baseline; the [cloud roadmap](https://github.com/HarleyBartles/wild-bunch/blob/94e7d6c35fbfcc7182a77b4fcf2286920a52cf07/.agents/roadmaps/2026-10-06-cloud-playability.md) owns the later deployment investigation.
+**Disposition:** Excluded from the local 0.1.0 baseline; the [cloud roadmap](https://github.com/HarleyBartles/wild-bunch/blob/face6b2f3373df726fcf4c51f716b22a225b8a81/.agents/roadmaps/2026-10-06-cloud-playability.md) owns the later deployment investigation.
 
 ### PLAT-004 - Versioned integration and release identity
 
@@ -263,4 +263,4 @@ A developer may later visit a town and preview alternative salts using its recor
 
 CQRS and event sourcing apply at the implementation boundary: commands validate and produce facts through the game aggregate; queries return safe projections; replay restores recorded facts without rerolling randomness. These are system obligations, not dependency edges between every pair of features. The [backend architecture unslop profile](../.agents/unslop/backend-architecture.md), [architecture guardrails](../.agents/doctrine/architecture-guardrails.md) and [event-sourcing integrity doctrine](../.agents/doctrine/event-sourcing-integrity.md) own their implementation constraints.
 
-The game can be a stable, intentionally incomplete `0.1.0`. An unfinished hunt, deferred lawman, disabled telegraph, removed unrelated-criminal loop, or future developer tool does not become a hidden promise because the code contains a matching enum, type or test. Update this matrix when those promises or their dependencies change, and keep future additions separate from the retirement work that clears the 0.1.0 boundary. Container delivery, infrastructure-as-code and environment isolation remain in the separate [cloud roadmap](https://github.com/HarleyBartles/wild-bunch/blob/94e7d6c35fbfcc7182a77b4fcf2286920a52cf07/.agents/roadmaps/2026-10-06-cloud-playability.md).
+The game can be a stable, intentionally incomplete `0.1.0`. An unfinished hunt, deferred lawman, disabled telegraph, removed unrelated-criminal loop, or future developer tool does not become a hidden promise because the code contains a matching enum, type or test. Update this matrix when those promises or their dependencies change, and keep future additions separate from the retirement work that clears the 0.1.0 boundary. Container delivery, infrastructure-as-code and environment isolation remain in the separate [cloud roadmap](https://github.com/HarleyBartles/wild-bunch/blob/face6b2f3373df726fcf4c51f716b22a225b8a81/.agents/roadmaps/2026-10-06-cloud-playability.md).

@@ -6,7 +6,7 @@ Use this playbook when design, planning, implementation, review or release work 
 
 ## Source of truth
 
-The current capability promises, release dispositions and directed dependencies live in the [Wild Bunch Feature Matrix](../../docs/features.md). The [current gameplay rules](../../docs/gameplay.md) explain retained gameplay and persistence rules. Immutable historical investigations preserve assessment evidence; plans sequence a bounded implementation; ADRs preserve durable decisions and their history; none is a second current feature matrix.
+When the current branch carries `docs/features.md`, it owns current capability promises, release dispositions and directed dependencies. Read `docs/gameplay.md` when present for the retained gameplay and persistence rules. On a branch without those application documents, assess product truth from its current source and applicable ADRs; do not import another branch's feature assessments to satisfy this workflow. Immutable historical investigations preserve assessment evidence; plans sequence a bounded implementation; ADRs preserve durable decisions and their history; none is a second current feature matrix.
 
 ## Lifecycle procedure
 
