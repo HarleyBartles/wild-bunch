@@ -1,0 +1,188 @@
+name: Wild Bunch Learning Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Plan, apply an exact reviewed plan, plan teardown, or apply an exact teardown plan
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy-plan
+          - destroy
+      source_sha:
+        description: Full commit SHA from main for plan or destroy-plan
+        required: false
+        type: string
+      plan_id:
+        description: Plan ID from an earlier plan or destroy-plan run for apply or destroy
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: wild-bunch-learning-infrastructure
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main' && (inputs.mode == 'plan' || inputs.mode == 'destroy-plan')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: wild-bunch-learning
+    env:
+      AWS_REGION: eu-north-1
+      TF_STATE_BUCKET: ${{ secrets.WB_TF_STATE_BUCKET }}
+      TF_VAR_state_bucket_name: ${{ secrets.WB_TF_STATE_BUCKET }}
+      TF_VAR_engineer_iam_role_arn: ${{ secrets.WB_ENGINEER_IAM_ROLE_ARN }}
+      TF_VAR_engineer_ipv4_cidr: ${{ secrets.WB_ENGINEER_IPV4_CIDR }}
+    steps:
+      - name: Check out the privileged workflow revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve trusted Terraform source
+        id: source
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          test -n "$TF_STATE_BUCKET"
+          test -n "$TF_VAR_engineer_iam_role_arn"
+          test -n "$TF_VAR_engineer_ipv4_cidr"
+          SOURCE_SHA="$(python3 -c 'import os; from tools.deployment.source import resolve_trusted_source; print(resolve_trusted_source(os.environ["SOURCE_SHA"]))')"
+          PLAN_ID="${SOURCE_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "plan_id=$PLAN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the exact trusted Terraform configuration
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        run: git checkout --detach "$SOURCE_SHA"
+
+      - name: Install pinned Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+
+      - name: Assume the environment provisioning role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.WB_INFRASTRUCTURE_ROLE_ARN }}
+          aws-region: eu-north-1
+          role-session-name: wild-bunch-infrastructure-plan
+
+      - name: Initialize and validate the environment root
+        working-directory: deploy/terraform/environment
+        run: |
+          set -euo pipefail
+          terraform init -input=false -lockfile=readonly -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=environment/terraform.tfstate" -backend-config="region=$AWS_REGION" -backend-config="encrypt=true" -backend-config="use_lockfile=true" > "$RUNNER_TEMP/terraform-init.log" 2>&1 || { echo 'Terraform initialization failed; diagnostic output remains private.'; exit 1; }
+          terraform validate -no-color > "$RUNNER_TEMP/terraform-validate.log" 2>&1 || { echo 'Terraform validation failed; diagnostic output remains private.'; exit 1; }
+
+      - name: Save a private Terraform plan
+        env:
+          MODE: ${{ inputs.mode }}
+          PLAN_ID: ${{ steps.source.outputs.plan_id }}
+        working-directory: deploy/terraform/environment
+        run: |
+          set -euo pipefail
+          PLAN_FILE="$RUNNER_TEMP/wild-bunch.tfplan"
+          PLAN_LOG="$RUNNER_TEMP/wild-bunch-plan.log"
+          if [ "$MODE" = "destroy-plan" ]; then
+            terraform plan -destroy -input=false -no-color -out="$PLAN_FILE" > "$PLAN_LOG" 2>&1 || PLAN_STATUS=$?
+          else
+            terraform plan -input=false -no-color -out="$PLAN_FILE" > "$PLAN_LOG" 2>&1 || PLAN_STATUS=$?
+          fi
+          PLAN_STATUS="${PLAN_STATUS:-0}"
+          aws s3 cp --only-show-errors --sse AES256 "$PLAN_LOG" "s3://$TF_STATE_BUCKET/plans/$PLAN_ID/terraform.log" > /dev/null 2>&1 || { echo 'Terraform diagnostics could not be stored privately.'; exit 1; }
+          if [ "$PLAN_STATUS" -ne 0 ]; then
+            echo 'Terraform planning failed; full diagnostics remain in protected S3 storage.'
+            exit 1
+          fi
+          aws s3 cp --only-show-errors --sse AES256 "$PLAN_FILE" "s3://$TF_STATE_BUCKET/plans/$PLAN_ID/terraform.tfplan" > /dev/null 2>&1 || { echo 'The saved plan could not be stored in protected S3 storage.'; exit 1; }
+          if ! terraform show -json "$PLAN_FILE" 2> /dev/null | python3 -c 'import json,sys; p=json.load(sys.stdin); c=[r.get("change",{}).get("actions",[]) for r in p.get("resource_changes",[])]; print("Resource action counts: create={}, update={}, delete={}, replace={}".format(sum(a==["create"] for a in c),sum(a==["update"] for a in c),sum(a==["delete"] for a in c),sum(a in (["delete","create"],["create","delete"]) for a in c)))' >> "$GITHUB_STEP_SUMMARY" 2> "$RUNNER_TEMP/plan-summary.log"; then
+            echo 'Plan summary generation failed; the saved plan remains private for local inspection.'
+            exit 1
+          fi
+          echo "Plan ID: $PLAN_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo 'The exact plan and full diagnostics are in the private, versioned deployment bucket. Review the plan locally before starting an apply or destroy run.' >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    if: github.ref == 'refs/heads/main' && (inputs.mode == 'apply' || inputs.mode == 'destroy')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: wild-bunch-learning
+    env:
+      AWS_REGION: eu-north-1
+      TF_STATE_BUCKET: ${{ secrets.WB_TF_STATE_BUCKET }}
+      TF_VAR_state_bucket_name: ${{ secrets.WB_TF_STATE_BUCKET }}
+      TF_VAR_engineer_iam_role_arn: ${{ secrets.WB_ENGINEER_IAM_ROLE_ARN }}
+      TF_VAR_engineer_ipv4_cidr: ${{ secrets.WB_ENGINEER_IPV4_CIDR }}
+      PLAN_ID: ${{ inputs.plan_id }}
+      MODE: ${{ inputs.mode }}
+    steps:
+      - name: Check out the privileged workflow revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve the exact reviewed plan source
+        id: source
+        run: |
+          set -euo pipefail
+          test -n "$TF_STATE_BUCKET"
+          test -n "$TF_VAR_engineer_iam_role_arn"
+          test -n "$TF_VAR_engineer_ipv4_cidr"
+          [[ "$PLAN_ID" =~ ^([0-9a-f]{40})-([0-9]+)-([0-9]+)$ ]]
+          SOURCE_SHA="${BASH_REMATCH[1]}"
+          export SOURCE_SHA
+          python3 -c 'import os; from tools.deployment.source import resolve_trusted_source; print(resolve_trusted_source(os.environ["SOURCE_SHA"]))' > "$RUNNER_TEMP/source-sha"
+          RESOLVED_SHA="$(cat "$RUNNER_TEMP/source-sha")"
+          test "$RESOLVED_SHA" = "$SOURCE_SHA"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the exact reviewed Terraform configuration
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        run: git checkout --detach "$SOURCE_SHA"
+
+      - name: Install pinned Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+
+      - name: Assume the environment provisioning role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.WB_INFRASTRUCTURE_ROLE_ARN }}
+          aws-region: eu-north-1
+          role-session-name: wild-bunch-infrastructure-apply
+
+      - name: Initialize and validate the exact planned configuration
+        working-directory: deploy/terraform/environment
+        run: |
+          set -euo pipefail
+          terraform init -input=false -lockfile=readonly -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="key=environment/terraform.tfstate" -backend-config="region=$AWS_REGION" -backend-config="encrypt=true" -backend-config="use_lockfile=true" > "$RUNNER_TEMP/terraform-init.log" 2>&1 || { echo 'Terraform initialization failed; diagnostic output remains private.'; exit 1; }
+          terraform validate -no-color > "$RUNNER_TEMP/terraform-validate.log" 2>&1 || { echo 'Terraform validation failed; diagnostic output remains private.'; exit 1; }
+
+      - name: Apply only the saved plan with this plan ID
+        working-directory: deploy/terraform/environment
+        run: |
+          set -euo pipefail
+          PLAN_FILE="$RUNNER_TEMP/wild-bunch.tfplan"
+          APPLY_LOG="$RUNNER_TEMP/wild-bunch-apply.log"
+          aws s3 cp --only-show-errors "s3://$TF_STATE_BUCKET/plans/$PLAN_ID/terraform.tfplan" "$PLAN_FILE" > /dev/null 2>&1 || { echo 'The exact saved plan could not be retrieved from private storage.'; exit 1; }
+          terraform apply -input=false -no-color "$PLAN_FILE" > "$APPLY_LOG" 2>&1 || { aws s3 cp --only-show-errors --sse AES256 "$APPLY_LOG" "s3://$TF_STATE_BUCKET/plans/$PLAN_ID/apply.log" > /dev/null 2>&1 || true; echo 'Terraform apply failed; full diagnostics remain in protected S3 storage.'; exit 1; }
+          echo "Applied reviewed plan $PLAN_ID from source ${{ steps.source.outputs.source_sha }}." >> "$GITHUB_STEP_SUMMARY"

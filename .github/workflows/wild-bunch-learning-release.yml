@@ -1,0 +1,294 @@
+name: Wild Bunch Learning Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Publish and deploy a trusted main revision, or recover a saved known-good release
+        required: true
+        type: choice
+        options:
+          - deploy
+          - recover
+      source_sha:
+        description: Full commit SHA from main for deploy mode
+        required: false
+        type: string
+      compatibility_acknowledgement:
+        description: "Assess schema, constraints, stored data/events and writes; end with recovery: selected-known-good or recovery: none"
+        required: false
+        type: string
+      known_good_release_id:
+        description: Exact saved known-good release ID for recovery mode
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wild-bunch-learning-release
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && inputs.mode == 'deploy'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: wild-bunch-learning
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: wildbunch_dev
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      source_sha: ${{ steps.source.outputs.source_sha }}
+      release_id: ${{ steps.contract.outputs.release_id }}
+    env:
+      AWS_REGION: eu-north-1
+      WB_ENVIRONMENT_CONTRACT_JSON: ${{ secrets.WB_ENVIRONMENT_CONTRACT_JSON }}
+    steps:
+      - name: Check out the privileged workflow revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Set up .NET for the canonical repository gate
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Set up Node for the canonical repository gate
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: src/WildBunch.Web/package-lock.json
+
+      - name: Resolve the full commit from origin/main
+        id: source
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          test -n "$WB_ENVIRONMENT_CONTRACT_JSON"
+          SOURCE_SHA="$(python3 -c 'import os; from tools.deployment.source import resolve_trusted_source; print(resolve_trusted_source(os.environ["SOURCE_SHA"]))')"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the exact trusted application revision
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        run: git checkout --detach "$SOURCE_SHA"
+
+      - name: Install locked deployment dependencies
+        run: python3 -m pip install --disable-pip-version-check -r scripts/requirements.txt -r tools/deployment/requirements.txt
+
+      - name: Run the canonical repository gate and focused deployment tests
+        run: |
+          set -euo pipefail
+          export REPO_STANDARDS_HOSTED_COMMIT=HEAD
+          python3 tools/run.py ci --check > "$RUNNER_TEMP/canonical-ci.log" 2>&1 || { echo 'Canonical CI failed; review the trusted source locally.'; exit 1; }
+          python3 -m unittest discover -s tools/deployment/tests -v > "$RUNNER_TEMP/deployment-tests.log" 2>&1 || { echo 'Deployment tests failed; review the trusted source locally.'; exit 1; }
+
+      - name: Build the source-addressed images
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+        run: python3 -m tools.deployment.images build --source-sha "$SOURCE_SHA"
+
+      - name: Assume the ECR image-publisher role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.WB_IMAGE_PUBLISHER_ROLE_ARN }}
+          aws-region: eu-north-1
+          role-session-name: wild-bunch-image-publisher
+
+      - name: Publish immutable source tags and resolve image digests
+        id: images
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          WB_ENVIRONMENT_CONTRACT_JSON: ${{ secrets.WB_ENVIRONMENT_CONTRACT_JSON }}
+        run: |
+          set -euo pipefail
+          REGISTRY="$(python3 -c 'import json,os; print(json.loads(os.environ["WB_ENVIRONMENT_CONTRACT_JSON"])["image_repositories"]["api"].split("/")[0])')"
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY" > "$RUNNER_TEMP/ecr-login.log" 2>&1 || { echo 'ECR authentication failed.'; exit 1; }
+          python3 - <<'PY' > "$RUNNER_TEMP/image-digests.env"
+          import json, os, subprocess
+          try:
+              contract = json.loads(os.environ["WB_ENVIRONMENT_CONTRACT_JSON"])
+              sha = os.environ["SOURCE_SHA"]
+              for name in ("frontend", "api", "migrations"):
+                  repository = contract["image_repositories"][name]
+                  repository_name = repository.rsplit("/", 1)[1]
+                  existing = subprocess.run(
+                      ["aws", "ecr", "describe-images", "--region", os.environ["AWS_REGION"], "--repository-name", repository_name, "--image-ids", f"imageTag={sha}", "--query", "imageDetails[0].imageDigest", "--output", "text", "--no-cli-pager"],
+                      capture_output=True, text=True,
+                  )
+                  if existing.returncode == 0 and existing.stdout.strip().startswith("sha256:"):
+                      digest = existing.stdout.strip()
+                  else:
+                      subprocess.run(["docker", "tag", f"wild-bunch/{name}:{sha}", f"{repository}:{sha}"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                      with open(os.environ["RUNNER_TEMP"] + "/ecr-push.log", "a", encoding="utf-8") as log:
+                          subprocess.run(["docker", "push", f"{repository}:{sha}"], check=True, stdout=log, stderr=subprocess.STDOUT)
+                      result = subprocess.run(
+                          ["aws", "ecr", "describe-images", "--region", os.environ["AWS_REGION"], "--repository-name", repository_name, "--image-ids", f"imageTag={sha}", "--query", "imageDetails[0].imageDigest", "--output", "text", "--no-cli-pager"],
+                          check=True, capture_output=True, text=True,
+                      )
+                      digest = result.stdout.strip()
+                  if not digest.startswith("sha256:") or len(digest) != len("sha256:") + 64:
+                      raise ValueError("invalid image digest")
+                  print(f"{name}={repository}@{digest}")
+          except Exception:
+              raise SystemExit("Image publication failed; inspect the AWS execution identity and ECR privately.") from None
+          PY
+          echo 'The three immutable images were resolved by digest.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build and store the non-secret release contract privately
+        id: contract
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.source_sha }}
+          IMAGE_DIGESTS_FILE: ${{ runner.temp }}/image-digests.env
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          COMPATIBILITY_ACKNOWLEDGEMENT: ${{ inputs.compatibility_acknowledgement }}
+          WB_ENVIRONMENT_CONTRACT_JSON: ${{ secrets.WB_ENVIRONMENT_CONTRACT_JSON }}
+        run: |
+          set -euo pipefail
+          CURRENT_RELEASE_FILE="$RUNNER_TEMP/current-release.json"
+          RELEASE_BUCKET="$(python3 -c 'import json,os; print(json.loads(os.environ["WB_ENVIRONMENT_CONTRACT_JSON"])["release_bucket"])')"
+          if aws s3 cp --only-show-errors "s3://$RELEASE_BUCKET/releases/current.json" "$CURRENT_RELEASE_FILE" > /dev/null 2>&1; then
+            export WB_CURRENT_RELEASE_ID="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("release_id", ""))' "$CURRENT_RELEASE_FILE")"
+          else
+            export WB_CURRENT_RELEASE_ID=""
+          fi
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          from tools.deployment.contracts import EnvironmentContract, ReleaseContract, validate_contracts
+          environment = EnvironmentContract.from_json(os.environ["WB_ENVIRONMENT_CONTRACT_JSON"])
+          images = {}
+          for line in Path(os.environ["IMAGE_DIGESTS_FILE"]).read_text(encoding="utf-8").splitlines():
+              name, reference = line.split("=", 1)
+              images[name] = reference
+          recovery = os.environ.get("WB_CURRENT_RELEASE_ID") or None
+          release_id = f"{os.environ['SOURCE_SHA']}-{os.environ['RUN_ID']}-{os.environ['RUN_ATTEMPT']}"
+          acknowledgement = os.environ["COMPATIBILITY_ACKNOWLEDGEMENT"].strip()
+          if acknowledgement.endswith("recovery: selected-known-good"):
+              if recovery is None:
+                  raise SystemExit("There is no known-good release to select for recovery compatibility.")
+              acknowledgement = acknowledgement.removesuffix("selected-known-good") + recovery
+          elif acknowledgement.endswith("recovery: none"):
+              if recovery is not None:
+                  raise SystemExit("A known-good release exists; explicitly assess compatibility with that release.")
+          else:
+              raise SystemExit("Compatibility acknowledgement must end with recovery: selected-known-good or recovery: none.")
+          release = ReleaseContract(
+              owner_id=environment.owner_id,
+              release_id=release_id,
+              source_sha=os.environ["SOURCE_SHA"],
+              images=images,
+              config_map_name=f"api-config-{release_id}",
+              runtime_secret_name=f"runtime-{release_id}",
+              migration_secret_name=f"migration-{release_id}",
+              recovery_release_id=recovery,
+              compatibility_acknowledgement=acknowledgement,
+          )
+          validate_contracts(
+              environment,
+              release,
+              expected_context=environment.kubernetes_context,
+              expected_region="eu-north-1",
+              expected_owner_id="wild-bunch-learning",
+              expected_namespace="wild-bunch-learning",
+              allow_local_tags=False,
+          )
+          destination = Path(os.environ["RUNNER_TEMP"]) / "release-contract.json"
+          destination.write_text(release.to_json(), encoding="utf-8")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"release_id={release_id}\n")
+          bucket = environment.release_bucket
+          key = f"releases/{release_id}/contract.json"
+          import subprocess
+          try:
+              subprocess.run(
+                  ["aws", "s3", "cp", "--only-show-errors", "--sse", "AES256", str(destination), f"s3://{bucket}/{key}"],
+                  check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+              )
+          except (OSError, subprocess.CalledProcessError):
+              raise SystemExit("Release contract transfer to private storage failed.") from None
+          PY
+          echo 'Only the release contract was transferred to the protected release bucket; no GitHub artifact contains the environment contract or Terraform plan.' >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    if: always() && github.ref == 'refs/heads/main' && (inputs.mode == 'recover' || needs.publish.result == 'success')
+    needs: [publish]
+    runs-on: codebuild-wild-bunch-learning-codebuild-release-${{ github.run_id }}-${{ github.run_attempt }}
+    timeout-minutes: 60
+    environment: wild-bunch-learning
+    permissions:
+      contents: read
+    env:
+      AWS_REGION: eu-north-1
+      WB_ENVIRONMENT_CONTRACT_JSON: ${{ secrets.WB_ENVIRONMENT_CONTRACT_JSON }}
+      SOURCE_SHA: ${{ needs.publish.outputs.source_sha }}
+      RELEASE_ID: ${{ needs.publish.outputs.release_id }}
+      MODE: ${{ inputs.mode }}
+      KNOWN_GOOD_RELEASE_ID: ${{ inputs.known_good_release_id }}
+    steps:
+      - name: Check out only the validated source or trusted recovery controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.mode == 'deploy' && needs.publish.outputs.source_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python and install locked private-runner dependencies
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Install deployment dependencies
+        run: python3 -m pip install --disable-pip-version-check -r tools/deployment/requirements.txt
+
+      - name: Configure private EKS access
+        run: |
+          set -euo pipefail
+          test -n "$WB_ENVIRONMENT_CONTRACT_JSON"
+          aws eks update-kubeconfig --region "$AWS_REGION" --name wild-bunch-learning > "$RUNNER_TEMP/kubeconfig-update.log" 2>&1 || { echo 'Private EKS authentication failed.'; exit 1; }
+          python3 - <<'PY' > "$RUNNER_TEMP/environment-contract.json"
+          import json, os
+          print(json.dumps(json.loads(os.environ["WB_ENVIRONMENT_CONTRACT_JSON"]), separators=(",", ":")))
+          PY
+
+      - name: Deploy the immutable release after its database migration
+        if: inputs.mode == 'deploy'
+        run: |
+          set -euo pipefail
+          RELEASE_BUCKET="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["release_bucket"])' "$RUNNER_TEMP/environment-contract.json")"
+          aws s3 cp --only-show-errors "s3://$RELEASE_BUCKET/releases/$RELEASE_ID/contract.json" "$RUNNER_TEMP/release-contract.json" > /dev/null 2>&1 || { echo 'The validated release contract is missing from protected storage.'; exit 1; }
+          python3 -m tools.deployment.release deploy --environment "$RUNNER_TEMP/environment-contract.json" --release "$RUNNER_TEMP/release-contract.json"
+
+      - name: Recover the explicitly selected known-good release
+        if: inputs.mode == 'recover'
+        run: |
+          set -euo pipefail
+          [[ "$KNOWN_GOOD_RELEASE_ID" =~ ^[0-9a-f]{40}-[0-9]+-[0-9]+$ ]]
+          python3 -m tools.deployment.release recover --environment "$RUNNER_TEMP/environment-contract.json" --release-id "$KNOWN_GOOD_RELEASE_ID"

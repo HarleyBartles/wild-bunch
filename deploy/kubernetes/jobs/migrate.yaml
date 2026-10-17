@@ -1,0 +1,77 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "migration-template",
+    "namespace": "wild-bunch-learning",
+    "labels": {
+      "app.kubernetes.io/name": "wild-bunch-migration",
+      "app.kubernetes.io/part-of": "wild-bunch-learning",
+      "learning.wildbunch.dev/release-prefix": "template"
+    },
+    "annotations": {
+      "learning.wildbunch.dev/release-id": "template",
+      "learning.wildbunch.dev/source-sha": "template"
+    }
+  },
+  "spec": {
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 300,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "wild-bunch-migration",
+          "app.kubernetes.io/part-of": "wild-bunch-learning",
+          "learning.wildbunch.dev/release-prefix": "template"
+        },
+        "annotations": {
+          "learning.wildbunch.dev/release-id": "template",
+          "learning.wildbunch.dev/source-sha": "template"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "restartPolicy": "Never",
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1654,
+          "runAsGroup": 1654,
+          "seccompProfile": {"type": "RuntimeDefault"}
+        },
+        "containers": [
+          {
+            "name": "migrations",
+            "image": "wild-bunch/migrations",
+            "imagePullPolicy": "IfNotPresent",
+            "env": [
+              {
+                "name": "DOTNET_BUNDLE_EXTRACT_BASE_DIR",
+                "value": "/tmp"
+              },
+              {
+                "name": "ConnectionStrings__WildBunchPostgresDb",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "migration-database-credential",
+                    "key": "connectionString"
+                  }
+                }
+              }
+            ],
+            "resources": {
+              "requests": {"cpu": "250m", "memory": "256Mi"},
+              "limits": {"cpu": "1", "memory": "512Mi"}
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {"drop": ["ALL"]}
+            },
+            "volumeMounts": [{"name": "tmp", "mountPath": "/tmp"}]
+          }
+        ],
+        "volumes": [{"name": "tmp", "emptyDir": {"sizeLimit": "32Mi"}}]
+      }
+    }
+  }
+}
