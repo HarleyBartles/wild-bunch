@@ -229,14 +229,14 @@ test("a player can start, choose a town, and resume the server state after reope
 
     await page.close();
     page = await context.newPage();
-    await page.goto(productionWebUrl);
-
-    const restoredPrologueResponse = await page.waitForResponse(
+    const restoredPrologueResponsePromise = page.waitForResponse(
       (response) =>
         response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
         response.request().method() === "GET",
       { timeout: 5_000 },
     );
+    await page.goto(productionWebUrl);
+    const restoredPrologueResponse = await restoredPrologueResponsePromise;
     expect(restoredPrologueResponse.ok()).toBe(true);
     const restoredPrologue = (await restoredPrologueResponse.json()) as {
       startFlowPhase: number;
@@ -278,13 +278,13 @@ test("a player can start, choose a town, and resume the server state after reope
 
     await page.close();
     page = await context.newPage();
-    await page.goto(productionWebUrl);
-
-    const restoredTownResponse = await page.waitForResponse(
+    const restoredTownResponsePromise = page.waitForResponse(
       (response) =>
         response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
         response.request().method() === "GET",
     );
+    await page.goto(productionWebUrl);
+    const restoredTownResponse = await restoredTownResponsePromise;
     expect(restoredTownResponse.ok()).toBe(true);
     const restored = (await restoredTownResponse.json()) as {
       player: { currentTownId: string };
@@ -315,13 +315,13 @@ test("a player can start, choose a town, and resume the server state after reope
 
     await page.close();
     page = await context.newPage();
-    await page.goto(productionWebUrl);
-
-    const restoredPosterResponse = await page.waitForResponse(
+    const restoredPosterResponsePromise = page.waitForResponse(
       (response) =>
         response.url() === `${apiBaseUrl}/api/games/${setup.id}` &&
         response.request().method() === "GET",
     );
+    await page.goto(productionWebUrl);
+    const restoredPosterResponse = await restoredPosterResponsePromise;
     expect(restoredPosterResponse.ok()).toBe(true);
     const restoredGame = (await restoredPosterResponse.json()) as {
       wantedPosters: Array<{ targetDisplayName: string }>;
