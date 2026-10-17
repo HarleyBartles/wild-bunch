@@ -38,7 +38,7 @@ describe("Hud", () => {
 
     renderHud(session);
 
-    expect(screen.queryByRole("banner", { name: "Game status" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Game Settings" })).toBeEnabled();
     expect(screen.queryByText("Health")).not.toBeInTheDocument();
     expect(screen.queryByText("Cash")).not.toBeInTheDocument();
   });

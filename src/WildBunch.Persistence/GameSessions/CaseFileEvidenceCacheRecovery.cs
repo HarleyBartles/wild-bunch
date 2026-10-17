@@ -85,6 +85,14 @@ internal static class CaseFileEvidenceCacheRecovery
             }
         }
 
+        foreach (var settlement in events.Skip(generatedCaseFileIndex + 1).OfType<SheriffTurnInSettled>())
+        {
+            if (settlement.IsAlive && generatedSuspectIds.Contains(settlement.TargetSuspectId.Value))
+            {
+                expectedDiscoveredSuspectIds.Add(settlement.TargetSuspectId.Value);
+            }
+        }
+
         var actualDiscoveredSuspectIds = cachedCaseFile.DiscoveredSuspectIds
             .Select(suspectId => suspectId.Value)
             .ToHashSet(StringComparer.Ordinal);

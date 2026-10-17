@@ -141,9 +141,9 @@ public sealed class GameSessionReadStoreLoader
 
         try
         {
-            var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Player));
+            var player = _serializer.DeserializePlayer(GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.Player));
 
-            var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.World));
+            var world = _serializer.DeserializeWorld(GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.World));
             if (!WorldCacheRecovery.MatchesGeneratedWorld(store.AllEvents, world, _serializer))
             {
                 return CreateReadStateFromEvents(store, logEntries);
@@ -151,7 +151,7 @@ public sealed class GameSessionReadStoreLoader
 
             var entropyJson = GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.Setup);
             var entropy = _serializer.DeserializeSetup(entropyJson);
-            var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredPayload(
+            var caseFile = _serializer.DeserializeCaseFile(GameSessionComponentPayloads.GetRequiredCachePayload(
                 store.ComponentPayloads,
                 GameSessionComponentNames.CaseFile));
             if (!CaseFileGenerationCacheRecovery.MatchesEventGeneratedFacts(store.AllEvents, caseFile)
@@ -178,8 +178,8 @@ public sealed class GameSessionReadStoreLoader
                 player,
                 world,
                 caseFile,
-                _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.Clock)),
-                _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredPayload(store.ComponentPayloads, GameSessionComponentNames.PursuitState)),
+                _serializer.DeserializeClock(GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.Clock)),
+                _serializer.DeserializePursuitState(GameSessionComponentPayloads.GetRequiredCachePayload(store.ComponentPayloads, GameSessionComponentNames.PursuitState)),
                 townVisitState,
                 journeyJson is null ? null : _serializer.DeserializeJourneySnapshot(journeyJson),
                 store.TravelDiaryDays,

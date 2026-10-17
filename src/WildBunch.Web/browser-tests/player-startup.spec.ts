@@ -89,7 +89,9 @@ test.afterEach(async () => {
   stopIsolatedApi = undefined;
 });
 
-test("a player can read the case file before town selection", async ({ browser }) => {
+test("a player can read the case file and start over before town selection", async ({
+  browser,
+}) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
   const forbiddenPosts: string[] = [];
@@ -182,6 +184,17 @@ test("a player can read the case file before town selection", async ({ browser }
     const unchangedSession = (await unchangedSessionResponse.json()) as typeof session;
     expect(unchangedSession.startFlowPhase).toBe(1);
     expect(unchangedSession.player.currentTownId).toBeNull();
+
+    await restoredPage.keyboard.press("Escape");
+    await restoredPage.setViewportSize({ width: 390, height: 844 });
+    await restoredPage.getByRole("button", { name: "Game Settings", exact: true }).click();
+    await restoredPage.getByRole("button", { name: "Start Over", exact: true }).click();
+    await restoredPage.getByRole("button", { name: "Archive and start over" }).click();
+    await expect(restoredPage.getByLabel("Your name")).toBeVisible();
+    const archivedResponse = await restoredPage.request.get(`${apiBaseUrl}/api/games/${setup.id}`);
+    expect(archivedResponse.ok()).toBe(true);
+    expect((await archivedResponse.json()).status).toBe(GameStatus.Archived);
+    expect(forbiddenPosts).toEqual([]);
   } finally {
     await context.close();
   }
