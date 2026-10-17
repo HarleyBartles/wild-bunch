@@ -67,19 +67,23 @@ public sealed class GameSessionDevEntropyTests
         // BEFORE forcing entropy, so the replay stream has a GameStarted
         // with the original entropy (Classic) followed by DevEntropyChanged.
         var session = TestSessionFactory.CreateDefault();
-        var originalSetupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
+        var originalStart = Assert.Single(session.AllEvents.OfType<GameStarted>());
+        Assert.Equal(GameEntropy.Classic, originalStart.GameEntropy);
+        Assert.Equal(GameDifficulty.Easy, originalStart.GameDifficulty);
+        Assert.Equal("test-seed", originalStart.SeedCode);
+        Assert.Equal(SaltSource.CreateFixed(string.Empty), originalStart.SaltSource);
 
         session.SetDevEntropy(GameEntropy.Wild);
-        session.MarkEventsCommitted();
-
-        var events = originalSetupEvents
-            .Concat(session.CommittedEvents.OfType<IDomainEvent>())
-            .ToList();
+        var events = session.AllEvents.ToArray();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
         // The GameStarted event carries Classic, but the DevEntropyChanged
         // event must override it to Wild during replay.
         Assert.Equal(GameEntropy.Wild, rehydrated.GameEntropy);
+        Assert.Equal(originalStart.GameDifficulty, rehydrated.GameDifficulty);
+        Assert.Equal(originalStart.SeedCode, rehydrated.SeedCode);
+        Assert.Equal(originalStart.SaltSource, rehydrated.SaltSource);
+        Assert.Equal(session.Version, rehydrated.Version);
     }
 }

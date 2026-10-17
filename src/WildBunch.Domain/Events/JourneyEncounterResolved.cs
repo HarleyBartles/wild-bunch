@@ -9,7 +9,8 @@ namespace WildBunch.Domain.Events;
 /// are captured in JourneySnapshot.PendingEncounter.HiddenState.
 /// JourneySnapshot is ABSOLUTE — Apply sets _journey from it.
 /// PlayerHealth and WalletCash are ABSOLUTE — Apply sets them from the event.
-/// AmmoSpent and StolenItem are ADDITIVE — Apply applies them to the player.
+/// AmmoSpent and stolen RevolverAmmo are ADDITIVE — Apply applies them to the player.
+/// Food and HorseFeed theft are reflected by JourneySnapshot and applied as absolute resources.
 /// PursuitHeat is ABSOLUTE — Apply sets pursuit heat from it. Under the current
 /// heat model (ADR-0029), trail encounters do not affect heat; PursuitHeat is
 /// always the current heat value (unchanged by encounter resolution).

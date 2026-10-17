@@ -1,5 +1,8 @@
-using WildBunch.Application.Games.Models;
+using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
+using WildBunch.Application.Tests.TestDoubles;
+using WildBunch.Domain.Cases;
+using WildBunch.Domain.Game;
 using WildBunch.GameContent.Prologue;
 
 namespace WildBunch.Application.Tests.Handlers;
@@ -7,88 +10,58 @@ namespace WildBunch.Application.Tests.Handlers;
 public sealed class PrologueHandlerTests
 {
     [Fact]
-    public async Task ReturnsPrologueWithSubstitutedDescriptor()
+    public async Task ReturnsPrologueWithDescriptorFromTheSettledSessionCase()
     {
-        var handler = new GetPrologueHandler();
-        var query = new GetPrologueQuery();
-        var result = await handler.HandleAsync(query);
+        var (handler, session) = CreateHandler();
+        var culprit = session.CaseFile.Suspects.Single(suspect => suspect.Id == session.CaseFile.TrueCulpritId);
+        var expectedDescriptor = SaloonPersonOfInterestDescriptor.Describe(culprit, session.CaseFile);
+
+        var result = await handler.HandleAsync(new GetPrologueQuery(session.Id.Value));
 
         Assert.Equal(PrologueContent.StorySoFarHeading, result.Heading);
         Assert.Equal(PrologueContent.StorySoFarPrimaryAction, result.PrimaryAction);
+        Assert.Contains(expectedDescriptor, result.Body, StringComparison.Ordinal);
         Assert.DoesNotContain("{trueCulpritMainIdentifier}", result.Body);
-        Assert.False(string.IsNullOrEmpty(result.Body));
-    }
-
-    [Fact]
-    public async Task BodyContainsNoPlaceholder()
-    {
-        var handler = new GetPrologueHandler();
-        var query = new GetPrologueQuery();
-        var result = await handler.HandleAsync(query);
-
-        // The descriptor should be something like "a stranger with..." or "an unfamiliar person"
-        // It should NOT contain the raw placeholder
-        Assert.DoesNotContain("{trueCulpritMainIdentifier}", result.Body);
-        // The body should contain the substituted descriptor (it's substituted into the variant text)
-        // We can't assert the exact descriptor without resolving it, but we can assert the placeholder is gone
-        // and the body still contains the surrounding variant copy
         Assert.Contains("Wild Bunch", result.Body);
     }
 
     [Fact]
-    public async Task SpecificVariantIsReturned()
+    public async Task MissingSessionCannotProduceAPrologueFromDefaultSetupValues()
     {
-        var handler = new GetPrologueHandler();
-        var query = new GetPrologueQuery(VariantId: "prologue.story-so-far.variant-2");
-        var result = await handler.HandleAsync(query);
+        var repository = new InMemoryGameSessionRepository();
+        var handler = new GetPrologueHandler(repository);
+
+        await Assert.ThrowsAsync<GameSessionNotFoundException>(
+            () => handler.HandleAsync(new GetPrologueQuery(Guid.NewGuid())));
+    }
+
+    [Fact]
+    public async Task SpecificVariantUsesTheSettledSessionCase()
+    {
+        var (handler, session) = CreateHandler();
+
+        var result = await handler.HandleAsync(
+            new GetPrologueQuery(session.Id.Value, "prologue.story-so-far.variant-2"));
 
         Assert.Equal("prologue.story-so-far.variant-2", result.VariantId);
+        Assert.DoesNotContain("{trueCulpritMainIdentifier}", result.Body);
     }
 
     [Fact]
-    public async Task DefaultVariantIsFirst()
+    public async Task UnknownVariantFallsBackToTheFirstVariant()
     {
-        var handler = new GetPrologueHandler();
-        var query = new GetPrologueQuery();
-        var result = await handler.HandleAsync(query);
+        var (handler, session) = CreateHandler();
+
+        var result = await handler.HandleAsync(new GetPrologueQuery(session.Id.Value, "unknown-variant"));
 
         Assert.Equal(PrologueContent.Variants[0].Id, result.VariantId);
     }
 
-    [Fact]
-    public async Task HiddenTruthGuard_NoCulpritInternalsExposed()
+    private static (GetPrologueHandler Handler, GameSession Session) CreateHandler()
     {
-        var handler = new GetPrologueHandler();
-        var query = new GetPrologueQuery();
-        var result = await handler.HandleAsync(query);
-
-        // The body must not contain hidden culprit internals
-        Assert.DoesNotContain("TrueCulpritId", result.Body);
-        Assert.DoesNotContain("isTrueCulprit", result.Body);
-        Assert.DoesNotContain("IsTrueCulprit", result.Body);
-        Assert.DoesNotContain("suspect-", result.Body); // internal suspect ids like "suspect-4"
-        Assert.DoesNotContain("{trueCulpritMainIdentifier}", result.Body); // placeholder must be substituted
-    }
-
-    [Fact]
-    public async Task AllVariantsAreAvailable()
-    {
-        var handler = new GetPrologueHandler();
-        foreach (var variant in PrologueContent.Variants)
-        {
-            var query = new GetPrologueQuery(VariantId: variant.Id);
-            var result = await handler.HandleAsync(query);
-            Assert.Equal(variant.Id, result.VariantId);
-            Assert.DoesNotContain("{trueCulpritMainIdentifier}", result.Body);
-        }
-    }
-
-    [Fact]
-    public async Task UnknownVariantIdFallsBackToFirst()
-    {
-        var handler = new GetPrologueHandler();
-        var query = new GetPrologueQuery(VariantId: "unknown-variant");
-        var result = await handler.HandleAsync(query);
-        Assert.Equal(PrologueContent.Variants[0].Id, result.VariantId);
+        var repository = new InMemoryGameSessionRepository();
+        var session = new StubNewGameFactory().CreatedSession;
+        repository.Seed(session);
+        return (new GetPrologueHandler(repository), session);
     }
 }

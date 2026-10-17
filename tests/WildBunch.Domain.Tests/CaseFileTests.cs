@@ -206,23 +206,23 @@ public sealed class CaseFileTests
                     "A posted notice describes a rider wearing a faded blue scarf.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.GangMember,
-                    InvestigationSourceKind.NoticeBoard),
+                    InvestigationSourceKind.SheriffWarrants),
                 new Clue(
                     new ClueId("clue-public-2"),
                     ClueKind.Record,
                     "A sheriff note ties the rider to a rail ledger.",
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
-                    InvestigationSourceKind.LocalRecords)
+                    InvestigationSourceKind.LocalGossip)
             });
 
-        var revealed = caseFile.RevealNextPublicClue(InvestigationSourceKind.LocalRecords);
+        var revealed = caseFile.RevealNextPublicClue(InvestigationSourceKind.LocalGossip);
 
         Assert.NotNull(revealed);
         Assert.Equal("A sheriff note ties the rider to a rail ledger.", revealed!.Description);
         Assert.Single(caseFile.KnownClues);
         Assert.Single(caseFile.PublicClues);
-        Assert.Equal(InvestigationSourceKind.NoticeBoard, caseFile.PublicClues[0].SourceKind);
+        Assert.Equal(InvestigationSourceKind.SheriffWarrants, caseFile.PublicClues[0].SourceKind);
     }
 
     [Fact]
@@ -271,19 +271,20 @@ public sealed class CaseFileTests
                 300m,
                 new[] { "The Magpie" },
                 new[] { "Mismatched spurs" },
-                "Silver Creek Sheriff",
-                InvestigationTargetKind.UnrelatedWantedCriminal,
-                Array.Empty<OutlawGangId>(),
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                [OutlawGangIds.WildBunch],
                 null),
-            "Wanted for cattle theft.");
+            "Wanted as a member of the Wild Bunch.");
 
         var caseFile = new CaseFile(
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
             },
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
             publicWarrants: new[] { warrant });
@@ -299,7 +300,7 @@ public sealed class CaseFileTests
     [Fact]
     public void RevealingPublicWarrantBySourceSkipsMismatchedSources()
     {
-        var noticeBoardWarrant = new Warrant(
+        var otherWarrant = new Warrant(
             new WarrantId("warrant-public-1"),
             "Reno Pike",
             new WarrantTerms(
@@ -307,11 +308,11 @@ public sealed class CaseFileTests
                 300m,
                 new[] { "The Magpie" },
                 new[] { "Mismatched spurs" },
-                "Silver Creek Sheriff",
-                InvestigationTargetKind.UnrelatedWantedCriminal,
-                Array.Empty<OutlawGangId>(),
+                "Dodge City Marshal",
+                InvestigationTargetKind.GangMember,
+                [OutlawGangIds.WildBunch],
                 null,
-                InvestigationSourceKind.NoticeBoard));
+                InvestigationSourceKind.LocalGossip));
 
         var sheriffWarrant = new Warrant(
             new WarrantId("warrant-public-2"),
@@ -331,12 +332,13 @@ public sealed class CaseFileTests
             accusation: null,
             suspects: new[]
             {
-                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge)
+                new Suspect(new SuspectId("suspect-1"), "Reno Pike", SuspectTraits.FromTags(SuspectTraitTags.Local), SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
             },
-            trueCulpritId: new SuspectId("suspect-1"),
+            trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
-            publicWarrants: new[] { noticeBoardWarrant, sheriffWarrant });
+            publicWarrants: new[] { otherWarrant, sheriffWarrant });
 
         var revealed = caseFile.RevealNextPublicWarrant(InvestigationSourceKind.SheriffWarrants);
 
@@ -344,7 +346,7 @@ public sealed class CaseFileTests
         Assert.Equal(sheriffWarrant.Id, revealed!.Id);
         Assert.Single(caseFile.KnownWarrants);
         Assert.Single(caseFile.PublicWarrants);
-        Assert.Equal(InvestigationSourceKind.NoticeBoard, caseFile.PublicWarrants[0].Terms.SourceKind);
+        Assert.Equal(InvestigationSourceKind.LocalGossip, caseFile.PublicWarrants[0].Terms.SourceKind);
     }
 
     [Fact]

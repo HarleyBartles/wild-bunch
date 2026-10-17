@@ -13,8 +13,6 @@ public static class StoreCatalogMapper
         return new TownStoreOffersDto(
             catalog.TownId.Value,
             catalog.TownName,
-            catalog.Available,
-            catalog.SourceNote,
             catalog.Offers.Select(ToDto).ToArray());
     }
 
@@ -22,8 +20,5 @@ public static class StoreCatalogMapper
         => new(
             offer.ItemKind,
             offer.DisplayName,
-            offer.Price,
-            offer.VendorType,
-            offer.Availability,
-            offer.SourceNote);
+            offer.Price);
 }

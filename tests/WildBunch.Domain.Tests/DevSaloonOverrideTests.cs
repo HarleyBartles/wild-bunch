@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -61,7 +60,7 @@ public sealed class DevSaloonOverrideTests
     [Fact]
     public void ForceDevSaloonOverride_RejectsTrueCulprit_WhenKillerReleaseGateIsLocked()
     {
-        // Default session: killer-release gate is locked (progress=0, threshold=2).
+        // Default session: killer-release gate is locked (progress=0, threshold=5).
         // The true culprit is gated out of saloon POI, not permanently barred.
         var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
         var trueCulpritId = new SuspectId("suspect-2");
@@ -80,7 +79,7 @@ public sealed class DevSaloonOverrideTests
     [Fact]
     public void ForceDevSaloonOverride_AcceptsTrueCulprit_WhenKillerReleaseGateIsOpen()
     {
-        // Gate-open session: killer-release progress = threshold = 2.
+        // Gate-open session: five distinct gang-member settlements meet the threshold.
         // The true culprit is now eligible as a saloon POI candidate.
         var session = TestSessionFactory.CreateWithKillerReleaseGateOpen();
         var trueCulpritId = new SuspectId("suspect-2");
@@ -282,23 +281,38 @@ public sealed class DevSaloonOverrideTests
     }
 
     [Fact]
+    public void EventReplay_ForcedAndUnconsumed_RestoresPendingOverride()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        var setupEvents = session.AllEvents.ToArray();
+        var suspectId = new SuspectId("suspect-1");
+
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+
+        var events = setupEvents.Concat(session.AllEvents.Skip(setupEvents.Length)).ToList();
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, session.World, events);
+
+        Assert.Equal(DevSaloonOverride.ForSuspect(suspectId), rehydrated.PendingDevSaloonOverride);
+    }
+
+    [Fact]
     public void EventReplay_ForcedThenConsumed_ReconstructsCorrectState()
     {
         var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
-        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(new SuspectId("suspect-1")));
+        var setupEvents = session.AllEvents.ToArray();
+        var suspectId = new SuspectId("suspect-1");
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
         session.MarkEventsCommitted();
 
         session.LookAroundSaloon();
         session.MarkEventsCommitted();
 
-        // Rehydrate from the full event stream: Forced -> Consumed -> SaloonPersonOfInterestSpotted
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(session);
-        var events = setupEvents.Concat(session.CommittedEvents.OfType<IDomainEvent>()).ToList();
+        var events = setupEvents.Concat(session.AllEvents.Skip(setupEvents.Length)).ToList();
         var rehydrated = GameSession.RehydrateFromEvents(
             session.Id, session.World, events);
 
-        // Critical replay-safety proof: override is null after replay
         Assert.Null(rehydrated.PendingDevSaloonOverride);
+        Assert.Equal(suspectId, rehydrated.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
     }
 
     [Fact]

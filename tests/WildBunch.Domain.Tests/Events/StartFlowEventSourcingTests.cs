@@ -291,8 +291,8 @@ public class StartFlowEventSourcingTests
 
     private static DomainWorld CreateWorld()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         return new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

@@ -7,7 +7,6 @@ using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -64,9 +63,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateDefault()
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -107,10 +105,10 @@ public static class TestSessionFactory
     /// fact but no known warrants). LookAroundSaloon will spot this suspect as a wanted-suspect
     /// person of interest. Used by BUNCH-80 bounty/saloon event-sourcing tests.
     /// </summary>
-    public static GameSession CreateWithConfrontableSaloonSuspect()
+    public static GameSession CreateWithConfrontableSaloonSuspect(string salt = "")
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -138,26 +136,26 @@ public static class TestSessionFactory
 
         var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+            SaltSource.CreateFixed(salt));
         session.MarkEventsCommitted();
         return session;
     }
 
     /// <summary>
     /// Creates a session identical to CreateWithConfrontableSaloonSuspect but with
-    /// the killer-release gate fully open (killerReleaseProgress = killerReleaseThreshold = 2).
+    /// the killer-release gate fully open through five qualifying sheriff settlements.
     /// The true culprit (suspect-2) is therefore eligible as a saloon POI candidate.
     /// Used by BUNCH-90 gate-aware true culprit eligibility tests.
     /// </summary>
     public static GameSession CreateWithKillerReleaseGateOpen()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
 
-        var suspects = new[]
+        var suspects = new List<Suspect>
         {
             new Suspect(
                 new SuspectId("suspect-1"),
@@ -170,19 +168,51 @@ public static class TestSessionFactory
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
 
+        var warrants = new List<Warrant>();
+        for (var i = 3; i <= 7; i++)
+        {
+            var suspectId = new SuspectId($"suspect-{i}");
+            suspects.Add(new Suspect(suspectId, $"Gang Member {i}", SuspectTraits.Empty, SuspectStatus.AtLarge));
+            warrants.Add(new Warrant(
+                new WarrantId($"warrant-{i}"),
+                $"Gang Member {i}",
+                new WarrantTerms(
+                    WarrantDisposition.DeadOrAlive,
+                    100m,
+                    Array.Empty<string>(),
+                    Array.Empty<string>(),
+                    "Sheriff",
+                    InvestigationTargetKind.GangMember,
+                    new[] { OutlawGangIds.WildBunch },
+                    OutlawGangIds.WildBunch,
+                    InvestigationSourceKind.SheriffWarrants),
+                "Wanted for gang activity.",
+                suspectId));
+        }
+
         var caseFile = new CaseFile(
             accusation: null,
             suspects,
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
             knownClues: Array.Empty<Clue>(),
-            killerReleaseThreshold: 2,
-            killerReleaseProgress: 2,
-            knownWarrants: Array.Empty<Warrant>());
+            killerReleaseThreshold: 5,
+            knownWarrants: warrants);
 
         var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
+            Wallet.Starting(25m),
+            new DomainInventory(new[] { new InventoryItem(ItemKind.Revolver, 1) }),
+            GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
+        for (var i = 3; i <= 7; i++)
+        {
+            var suspectId = new SuspectId($"suspect-{i}");
+            session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+            session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+            session.MarkEventsCommitted();
+            session.LookAroundSaloon();
+            session.ConfrontSaloonPersonOfInterest($"warrant-{i}");
+        }
         session.MarkEventsCommitted();
         return session;
     }
@@ -194,8 +224,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithNoConfrontableSaloonSuspect()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -216,60 +246,14 @@ public static class TestSessionFactory
     }
 
     /// <summary>
-    /// Creates a session with a sabotaged saloon source catalog (Conditional + Telegraph required)
-    /// in a town with TownServices.None. This was used by BUNCH-80 tests to simulate no-saloon
-    /// scenarios. After BUNCH-90, every town has a saloon and the dead IsAvailable check in
-    /// LookAroundSaloon is removed, so this factory no longer causes LookAroundSaloon to fail.
-    /// Kept for backward compatibility with existing tests that may still reference it.
-    /// </summary>
-    public static GameSession CreateWithNoSaloon()
-    {
-        // SaloonLookAround is Baseline availability (always available). To make it unavailable,
-        // we replace it with a Conditional definition requiring Telegraph service, then use a
-        // town without Telegraph. This makes IsAvailable return false without removing the
-        // source from the catalog (which would cause GetRequiredDefinition to throw).
-        var noSaloonCatalog = new TownSourceCatalog(
-            TownSourceCatalog.Default.Definitions
-                .Select(d => d.Kind == InvestigationSourceKind.SaloonLookAround
-                    ? d with { Availability = TownSourceAvailability.Conditional, RequiredServices = TownServices.Telegraph }
-                    : d)
-                .ToArray());
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None, TownProsperity.Prosperous, noSaloonCatalog);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
-        var world = new DomainWorld(
-            new[] { town, connected },
-            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
-
-        var suspects = new[]
-        {
-            new Suspect(new SuspectId("suspect-1"), "Ira Flint",
-                SuspectTraits.Empty, SuspectStatus.AtLarge)
-        };
-
-        var caseFile = new CaseFile(
-            accusation: null,
-            suspects,
-            trueCulpritId: new SuspectId("suspect-1"),
-            openingLead: CaseOpeningLead.Create("Follow the public leads."),
-            knownClues: Array.Empty<Clue>(),
-            knownWarrants: Array.Empty<Warrant>());
-
-        var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
-        session.MarkEventsCommitted();
-        return session;
-    }
-
-    /// <summary>
     /// Creates a session with a suspect that has a known warrant (DeadOrAlive, $2500 bounty).
     /// The suspect is at large and not yet confronted. Used by BUNCH-80 confrontation
     /// event-sourcing tests.
     /// </summary>
     public static GameSession CreateWithWarrantedSuspect()
     {
-        var town = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        var town = new Town(new TownId("pinecross"), "Pinecross");
+        var connected = new Town(new TownId("connected"), "Connected");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -317,9 +301,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithIneligibleWarrantedSuspect()
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -381,13 +364,14 @@ public static class TestSessionFactory
     }
 
     /// <summary>
-    /// Creates a session with an active citizen saloon person of interest (no suspects,
-    /// LookAroundSaloon called to set a citizen POI). Used by BUNCH-80 saloon confrontation
-    /// event-sourcing tests.
+    /// Creates a session with a known warrant and an active citizen saloon person of interest.
+    /// Used by saloon confrontation event-sourcing tests that require a valid declared identity.
     /// </summary>
     public static GameSession CreateWithActiveCitizenSaloonPerson()
     {
-        var session = CreateWithNoConfrontableSaloonSuspect();
+        var session = CreateWithWarrantedSuspect();
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForCitizen());
+        session.MarkEventsCommitted();
         session.LookAroundSaloon();
         session.MarkEventsCommitted();
         return session;
@@ -403,8 +387,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithArmedCorrectDeclarationSetup()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -466,13 +450,29 @@ public static class TestSessionFactory
     /// <summary>
     /// Creates a session with a single public clue matching the given source kind.
     /// The clue is in <see cref="CaseFile.PublicClues"/> and NOT in <see cref="CaseFile.KnownClues"/>.
-    /// The town supports NoticeBoard, Telegraph, and Lodging services.
+    /// Services and service availability are supplied by the town fixture.
     /// </summary>
     public static GameSession CreateWithPublicClue(InvestigationSourceKind sourceKind, string description)
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        return CreatePublicClueSession(sourceKind, description, commitSetupEvents: true);
+    }
+
+    /// <summary>
+    /// Creates the same public-clue scenario while preserving its canonical setup events
+    /// as uncommitted, for replay tests that need the complete event history.
+    /// </summary>
+    public static GameSession CreateUncommittedWithPublicClue(InvestigationSourceKind sourceKind, string description)
+    {
+        return CreatePublicClueSession(sourceKind, description, commitSetupEvents: false);
+    }
+
+    private static GameSession CreatePublicClueSession(
+        InvestigationSourceKind sourceKind,
+        string description,
+        bool commitSetupEvents)
+    {
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -514,7 +514,10 @@ public static class TestSessionFactory
         var session = StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
             Wallet.Starting(25m), inventory, GameDifficulty.Easy,
             SaltSource.CreateFixed(string.Empty));
-        session.MarkEventsCommitted();
+        if (commitSetupEvents)
+        {
+            session.MarkEventsCommitted();
+        }
         return session;
     }
 
@@ -548,9 +551,8 @@ public static class TestSessionFactory
     /// </summary>
     public static GameSession CreateWithPublicWarrantAndClue(InvestigationSourceKind sourceKind)
     {
-        var town = new Town(new TownId("current"), "Current Town",
-            TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -637,51 +639,4 @@ public static class TestSessionFactory
         session.StartJourney(preview);
     }
 
-    /// <summary>
-    /// Creates a FRESH baseline <see cref="CaseFile"/> from the same template used to create
-    /// the session, before any investigation mutations. The public clues that were in the
-    /// session's original CaseFile are in <see cref="CaseFile.PublicClues"/> and NOT in
-    /// <see cref="CaseFile.KnownClues"/>. Used for replay tests that must prove the event
-    /// replay path discovers clues from events (not from the already-mutated session state).
-    /// </summary>
-    public static CaseFile CreateBaselineCaseFileFor(GameSession session)
-    {
-        ArgumentNullException.ThrowIfNull(session);
-
-        var originalCase = session.CaseFile;
-        return new CaseFile(
-            accusation: null,
-            originalCase.Suspects,
-            originalCase.TrueCulpritId,
-            originalCase.OpeningLead,
-            knownClues: Array.Empty<Clue>(),
-            discoveredSuspectIds: originalCase.DiscoveredSuspectIds,
-            publicClues: ReconstructPublicClues(originalCase),
-            killerReleaseThreshold: originalCase.KillerReleaseThreshold,
-            killerReleaseProgress: originalCase.KillerReleaseProgress,
-            knownWarrants: Array.Empty<Warrant>(),
-            publicWarrants: ReconstructPublicWarrants(originalCase),
-            suspectTurfAssignments: originalCase.SuspectTurfAssignments,
-            wantedSuspectConfrontations: originalCase.WantedSuspectConfrontations,
-            sheriffTurnInSettlements: originalCase.SheriffTurnInSettlements);
-    }
-
-    private static IEnumerable<Clue> ReconstructPublicClues(CaseFile originalCase)
-    {
-        // The public clues that remain in the session are the un-revealed ones.
-        // For a baseline, we need ALL public clues (including ones already revealed).
-        // Since we can't recover revealed clues from the mutated session, we use
-        // the KnownClues as the clues that were originally public and are now known.
-        // This reconstructs the original public pool: known clues (that came from public) + remaining public.
-        var knownFromPublic = originalCase.KnownClues
-            .Where(c => c.SourceKind.HasValue)
-            .ToList();
-        return knownFromPublic.Concat(originalCase.PublicClues).ToList();
-    }
-
-    private static IEnumerable<Warrant> ReconstructPublicWarrants(CaseFile originalCase)
-    {
-        // Same logic as clues: known warrants (from public) + remaining public warrants.
-        return originalCase.KnownWarrants.Concat(originalCase.PublicWarrants).ToList();
-    }
 }

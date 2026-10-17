@@ -18,13 +18,9 @@ import {
 import { getAvailableActions, getGame, getJournal, getTownStoreOffers } from "../api/wildBunchApi";
 
 const mockState = vi.hoisted(() => ({
-  games: [] as Array<{
-    config: { scene: TownHubScene };
-    destroyed: boolean;
-    destroy: () => void;
-  }>,
+  games: [] as Array<{ config: { scene: TownHubScene }; destroyed: boolean; destroy: () => void }>,
   navigate: vi.fn(),
-  search: {},
+  search: Object.fromEntries([]),
 }));
 
 vi.mock("phaser", () => {
@@ -57,25 +53,20 @@ vi.mock("../api/wildBunchApi", () => ({
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
   buyStoreItem: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
   advanceTravelDay: vi.fn(),
   resolveTravelEncounter: vi.fn(),
   getWorldMap: vi.fn(),
-  getStartingTownMap: vi.fn(),
   setupGame: vi.fn(),
   markPrologueViewed: vi.fn(),
   startGameWithTown: vi.fn(),
   archiveGame: vi.fn(),
   getPrologue: vi.fn(),
-  getStartingTowns: vi.fn(),
   previewTravel: vi.fn(),
 }));
 
@@ -96,14 +87,7 @@ afterEach(() => {
 function createLayout(): TownLayoutDto {
   return {
     buildings: [
-      {
-        kind: BuildingKind.Store,
-        view: BuildingView.Profile,
-        x: 12,
-        y: 15,
-        width: 8,
-        height: 10,
-      },
+      { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
       {
         kind: BuildingKind.Sheriff,
         view: BuildingView.Profile,
@@ -112,22 +96,8 @@ function createLayout(): TownLayoutDto {
         width: 8,
         height: 10,
       },
-      {
-        kind: BuildingKind.Saloon,
-        view: BuildingView.Profile,
-        x: 80,
-        y: 15,
-        width: 8,
-        height: 10,
-      },
-      {
-        kind: BuildingKind.Trailhead,
-        view: BuildingView.Rear,
-        x: 90,
-        y: 50,
-        width: 8,
-        height: 10,
-      },
+      { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 80, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
       {
         kind: BuildingKind.Telegraph,
         view: BuildingView.FrontOblique,
@@ -159,13 +129,8 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     player: { name: "Ruth", currentTownId: "t-town", health: 9 },
     world: {
       towns: [
-        {
-          id: "t-town",
-          name: "Tumbleweed",
-          services: 0,
-          layout: createLayout(),
-        },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed", layout: createLayout() },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -174,7 +139,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -191,7 +156,6 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 1, turn: 0, timeOfDay: "Morning" },
@@ -217,7 +181,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -241,8 +205,6 @@ function primeMocks(
   mockedGetTownStoreOffers.mockResolvedValue({
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   });
 }
@@ -266,20 +228,13 @@ function renderHub() {
 }
 
 describe("TownHubSurface Phaser integration", () => {
-  it("renders PhaserTownHubHost (creates a Phaser game) instead of the card grid", async () => {
+  it("creates the Phaser town-hub game", async () => {
     primeMocks();
     renderHub();
 
     await waitFor(() => {
       expect(mockState.games).toHaveLength(1);
     });
-
-    // The visible card grid is gone — replaced by the Phaser canvas.
-    // The old place cards with descriptions like "Buy supplies" are gone.
-    // (A visible keyboard fallback nav with building buttons exists beneath
-    // the canvas — those are tested in the accessibility fallback suite.)
-    expect(screen.queryByText(/buy supplies, food, and gear/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/look around, gather gossip/i)).not.toBeInTheDocument();
   });
 
   it("passes the current town's layout to the TownHubScene", async () => {
@@ -380,7 +335,6 @@ describe("TownHubSurface accessibility fallback", () => {
 
     const nav = screen.getByRole("navigation", { name: /town buildings/i });
     expect(nav).toBeInTheDocument();
-    // The nav is visible (not clipped to 1px) so sighted keyboard users can see focus.
     expect(nav).toBeVisible();
 
     // Available buildings have keyboard-accessible buttons.
@@ -420,7 +374,7 @@ describe("TownHubSurface accessibility fallback", () => {
     expect(mockState.navigate).toHaveBeenCalledWith({ to: "/town/store" });
   });
 
-  it("fallback buttons are keyboard-focusable with visible focus indication", async () => {
+  it("fallback buttons receive focus and Tab advances to the next building", async () => {
     primeMocks();
     renderHub();
 
@@ -435,9 +389,7 @@ describe("TownHubSurface accessibility fallback", () => {
 
     // Tab moves to the next building button.
     await user.tab();
-    const sheriffButton = screen.getByRole("button", {
-      name: /sheriff office/i,
-    });
+    const sheriffButton = screen.getByRole("button", { name: /sheriff office/i });
     expect(sheriffButton).toHaveFocus();
   });
 });
@@ -469,15 +421,10 @@ describe("TownHubSurface arrival notice", () => {
     mockState.search = { arrived: "1" };
     renderHub();
 
-    const dismissButton = await screen.findByRole("button", {
-      name: /dismiss arrival notice/i,
-    });
+    const dismissButton = await screen.findByRole("button", { name: /dismiss arrival notice/i });
     const user = userEvent.setup();
     await user.click(dismissButton);
 
-    expect(mockState.navigate).toHaveBeenCalledWith({
-      to: "/town",
-      search: {},
-    });
+    expect(mockState.navigate).toHaveBeenCalledWith({ to: "/town", search: {} });
   });
 });

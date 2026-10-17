@@ -66,7 +66,6 @@ public enum TravelDayEncounterCategory
     Lucky = 1,
     Unlucky = 2,
     Foe = 3,
-    Npc = 4,
     Environmental = 5,
     Resource = 6,
     HorseTrouble = 7

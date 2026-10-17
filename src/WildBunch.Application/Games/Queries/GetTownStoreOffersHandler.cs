@@ -10,14 +10,14 @@ namespace WildBunch.Application.Games.Queries;
 
 public sealed class GetTownStoreOffersHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionReadRepository _gameSessionReadRepository;
     private readonly TownStoreCatalogResolver _storeCatalogResolver;
 
     public GetTownStoreOffersHandler(
-        IGameSessionRepository gameSessionRepository,
+        IGameSessionReadRepository gameSessionReadRepository,
         TownStoreCatalogResolver storeCatalogResolver)
     {
-        _gameSessionRepository = gameSessionRepository;
+        _gameSessionReadRepository = gameSessionReadRepository;
         _storeCatalogResolver = storeCatalogResolver;
     }
 
@@ -28,7 +28,8 @@ public sealed class GetTownStoreOffersHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionReadRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+            ?? throw new GameSessionNotFoundException(sessionId);
 
         var townId = new TownId(query.TownId);
         if (!session.World.TryGetTown(townId, out var town))

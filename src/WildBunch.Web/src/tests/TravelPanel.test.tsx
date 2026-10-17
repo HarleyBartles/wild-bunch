@@ -3,22 +3,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TravelPanel } from "../components/TravelPanel";
-import {
-  acknowledgeTravelArrival,
-  advanceTravelDay,
-  getGame,
-  resolveTravelEncounter,
-} from "../api/wildBunchApi";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
+import { advanceTravelDay, getGame, resolveTravelEncounter } from "../api/wildBunchApi";
 import type { GameSessionDto, GameTurnResultDto } from "../api/types";
 
 vi.mock("../api/wildBunchApi", () => ({
-  acknowledgeTravelArrival: vi.fn(),
   advanceTravelDay: vi.fn(),
   getGame: vi.fn(),
   resolveTravelEncounter: vi.fn(),
 }));
 
-const mockedAcknowledgeTravelArrival = vi.mocked(acknowledgeTravelArrival);
 const mockedGetGame = vi.mocked(getGame);
 const mockedAdvanceTravelDay = vi.mocked(advanceTravelDay);
 const mockedResolveTravelEncounter = vi.mocked(resolveTravelEncounter);
@@ -42,8 +36,8 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -54,11 +48,7 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         statusText: "Still chasing leads.",
       },
       discoveredSuspects: [],
-      caseBoard: {
-        namedRecords: [],
-        looseLeads: [],
-        evidenceItems: [],
-      },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -86,7 +76,6 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },
@@ -139,6 +128,20 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
       },
     },
     travelDiary: {
+      journeyEntries: [
+        {
+          kind: 1,
+          message: "I set out for Dust Fork on a 3-day badlands trail by mounted travel.",
+          day: 1,
+          turn: 0,
+        },
+        {
+          kind: 1,
+          message: "The first light caught the dust behind us, and the road stayed open.",
+          day: 2,
+          turn: 0,
+        },
+      ],
       days: [
         {
           dayNumber: 1,
@@ -174,10 +177,6 @@ function createSession(overrides: Partial<GameSessionDto> = {}): GameSessionDto 
           currentCanteenCharges: 2,
           currentAmmo: 0,
           currentHeat: 1,
-          openingNarration: "I set out for Dust Fork on a 3-day badlands trail by mounted travel.",
-          journeyBeat: "I cross the open range with the horse moving steady under me.",
-          resourceBeat: null,
-          entries: ["The first light caught the dust behind us, and the road stayed open."],
           warnings: [],
         },
       ],
@@ -195,7 +194,7 @@ function createNoHorseSession(overrides: Partial<GameSessionDto> = {}): GameSess
   return {
     ...session,
     inventory: {
-      ...session.inventory,
+      ...session.inventory!,
       horseState: null,
     },
     journey: {
@@ -203,6 +202,7 @@ function createNoHorseSession(overrides: Partial<GameSessionDto> = {}): GameSess
       horseState: null,
     },
     travelDiary: {
+      journeyEntries: session.travelDiary!.journeyEntries,
       days: [
         {
           ...session.travelDiary!.days[0],
@@ -220,7 +220,7 @@ function createNoHorseSession(overrides: Partial<GameSessionDto> = {}): GameSess
   };
 }
 
-function renderTravelPanel(session: GameSessionDto, busy = false, onTurnResult = vi.fn()) {
+function renderTravelPanel(session: GameSessionDto, busy = false) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -234,11 +234,11 @@ function renderTravelPanel(session: GameSessionDto, busy = false, onTurnResult =
 
   render(
     <QueryClientProvider client={queryClient}>
-      <TravelPanel gameId={session.id} session={session} busy={busy} onTurnResult={onTurnResult} />
+      <TravelPanel gameId={session.id} session={session} busy={busy} />
     </QueryClientProvider>,
   );
 
-  return { queryClient, onTurnResult };
+  return { queryClient };
 }
 
 function deferred<T>() {
@@ -251,15 +251,34 @@ function deferred<T>() {
 }
 
 describe("TravelPanel", () => {
+  it("shows an authoritative session update made by another session reader", async () => {
+    const session = createSession();
+    mockedGetGame.mockResolvedValue(session);
+
+    const { queryClient } = renderTravelPanel(session);
+
+    expect(await screen.findByText("The ridge may blow up after dusk.")).toBeInTheDocument();
+
+    const refreshedSession: GameSessionDto = {
+      ...session,
+      journey: {
+        ...session.journey!,
+        warnings: ["Rain has washed out the crossing."],
+      },
+    };
+    queryClient.setQueryData(["session", session.id], refreshedSession);
+
+    expect(await screen.findByText("Rain has washed out the crossing.")).toBeInTheDocument();
+    expect(screen.queryByText("The ridge may blow up after dusk.")).not.toBeInTheDocument();
+  });
+
   it("renders backend travel diary entries and the advance action for an active journey", async () => {
     const session = createSession();
     mockedGetGame.mockResolvedValue(session);
 
     renderTravelPanel(session);
 
-    const diaryHeading = await screen.findByRole("heading", {
-      name: /travel diary/i,
-    });
+    const diaryHeading = await screen.findByRole("heading", { name: /travel diary/i });
     expect(screen.getByText(/^horse$/i)).toBeInTheDocument();
     expect(
       screen.getAllByText("I set out for Dust Fork on a 3-day badlands trail by mounted travel."),
@@ -269,9 +288,7 @@ describe("TravelPanel", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Health 9 \| Wallet 14\.00/i)).toBeInTheDocument();
     expect(screen.queryByText(/Ammo 0/i)).not.toBeInTheDocument();
-    const advanceButton = await screen.findByRole("button", {
-      name: /advance travel day/i,
-    });
+    const advanceButton = await screen.findByRole("button", { name: /advance travel day/i });
     expect(
       diaryHeading.compareDocumentPosition(advanceButton) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).not.toBe(0);
@@ -287,6 +304,7 @@ describe("TravelPanel", () => {
         warnings: ["Keep an eye on the ridge line."],
       },
       travelDiary: {
+        journeyEntries: [],
         days: [
           {
             ...createSession().travelDiary!.days[0],
@@ -307,6 +325,7 @@ describe("TravelPanel", () => {
   it("hides horse-only travel diary fields when the journey has no horse", async () => {
     const session = createNoHorseSession({
       travelDiary: {
+        journeyEntries: [],
         days: [
           {
             ...createSession().travelDiary!.days[0],
@@ -349,10 +368,9 @@ describe("TravelPanel", () => {
 
   it("submits a chosen bullet spend when resolving a fight encounter", async () => {
     const user = userEvent.setup();
-    const onTurnResult = vi.fn().mockResolvedValue(undefined);
     const session = createSession({
       inventory: {
-        ...createSession().inventory,
+        ...createSession().inventory!,
         items: [{ kind: 7, quantity: 4, horseState: null, canteenState: null }],
       },
       journey: {
@@ -374,13 +392,12 @@ describe("TravelPanel", () => {
       currentSession: session,
       journeyStatus: 0,
       journey: session.journey,
-      travelDiary: session.travelDiary,
     };
 
     mockedGetGame.mockResolvedValue(session);
     mockedResolveTravelEncounter.mockResolvedValue(result);
 
-    renderTravelPanel(session, false, onTurnResult);
+    renderTravelPanel(session);
 
     const fightBullets = await screen.findByLabelText(/^bullets$/i);
     fireEvent.change(fightBullets, { target: { value: "3" } });
@@ -392,13 +409,12 @@ describe("TravelPanel", () => {
         bulletSpend: 3,
         bribeAmount: null,
       });
-      expect(onTurnResult).toHaveBeenCalledWith(result);
     });
+    expect(await screen.findByText(result.message)).toBeInTheDocument();
   });
 
   it("submits a chosen bribe amount when resolving a bribe encounter", async () => {
     const user = userEvent.setup();
-    const onTurnResult = vi.fn().mockResolvedValue(undefined);
     const session = createSession({
       journey: {
         ...createSession().journey!,
@@ -419,13 +435,12 @@ describe("TravelPanel", () => {
       currentSession: session,
       journeyStatus: 0,
       journey: session.journey,
-      travelDiary: session.travelDiary,
     };
 
     mockedGetGame.mockResolvedValue(session);
     mockedResolveTravelEncounter.mockResolvedValue(result);
 
-    renderTravelPanel(session, false, onTurnResult);
+    renderTravelPanel(session);
 
     const bribeAmount = await screen.findByLabelText(/^bribe$/i);
     fireEvent.change(bribeAmount, { target: { value: "7.25" } });
@@ -437,81 +452,148 @@ describe("TravelPanel", () => {
         bulletSpend: null,
         bribeAmount: 7.25,
       });
-      expect(onTurnResult).toHaveBeenCalledWith(result);
     });
+    expect(await screen.findByText(result.message)).toBeInTheDocument();
   });
 
   it("calls the advance travel API path when advancing the journey", async () => {
     const user = userEvent.setup();
-    const onTurnResult = vi.fn().mockResolvedValue(undefined);
     const session = createSession();
+    const updatedSession = createSession({ clock: { day: 6, turn: 0, timeOfDay: "Morning" } });
     const result: GameTurnResultDto = {
-      success: true,
+      success: false,
       message: "Another day on the trail.",
-      currentSession: session,
+      currentSession: updatedSession,
       journeyStatus: 0,
-      journey: session.journey,
-      travelDiary: session.travelDiary,
+      journey: updatedSession.journey,
     };
 
-    mockedGetGame.mockResolvedValue(session);
+    mockedGetGame.mockResolvedValueOnce(session).mockResolvedValue(updatedSession);
     mockedAdvanceTravelDay.mockResolvedValue(result);
 
-    renderTravelPanel(session, false, onTurnResult);
+    const { queryClient } = renderTravelPanel(session);
 
     await user.click(screen.getByRole("button", { name: /advance travel day/i }));
 
     await waitFor(() => {
       expect(mockedAdvanceTravelDay).toHaveBeenCalledWith("game-1");
-      expect(onTurnResult).toHaveBeenCalledWith(result);
+    });
+    expect(await screen.findByText(result.message)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(updatedSession);
     });
   });
 
-  it("shows an arrival acknowledgement button when the journey is completed", async () => {
+  it("shows encounter feedback instead of the older advance-day message", async () => {
     const user = userEvent.setup();
-    const onTurnResult = vi.fn().mockResolvedValue(undefined);
-    const session = createSession({
+    const session = createSession();
+    const encounterSession = createSession({
       journey: {
-        ...createSession().journey!,
-        status: 2,
-        pendingEncounter: null,
+        ...session.journey!,
+        pendingEncounter: {
+          kind: "Road encounter",
+          message: "A rider blocks the road.",
+          choices: [{ id: "run", label: "Run" }],
+        },
       },
     });
-    const result: GameTurnResultDto = {
+    const resolvedSession = createSession({
+      journey: { ...session.journey!, daysTravelled: 1 },
+    });
+    mockedGetGame
+      .mockResolvedValueOnce(session)
+      .mockResolvedValueOnce(encounterSession)
+      .mockResolvedValue(resolvedSession);
+    mockedAdvanceTravelDay.mockResolvedValue({
       success: true,
-      message: "Arrival acknowledged.",
-      currentSession: {
-        ...session,
-        journey: null,
-      },
-      journeyStatus: null,
-      journey: null,
-      travelDiary: session.travelDiary,
-    };
+      message: "The day ended at the roadside.",
+      currentSession: encounterSession,
+      journeyStatus: 0,
+      journey: encounterSession.journey,
+    });
+    mockedResolveTravelEncounter.mockResolvedValue({
+      success: true,
+      message: "The rider lets me pass.",
+      currentSession: resolvedSession,
+      journeyStatus: 0,
+      journey: resolvedSession.journey,
+    });
 
+    renderTravelPanel(session);
+
+    await user.click(await screen.findByRole("button", { name: /advance travel day/i }));
+    expect(await screen.findByText("A rider blocks the road.")).toBeInTheDocument();
+    expect(await screen.findByText("The day ended at the roadside.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Run" }));
+
+    expect(await screen.findByText("The rider lets me pass.")).toBeInTheDocument();
+    expect(screen.queryByText("The day ended at the roadside.")).not.toBeInTheDocument();
+  });
+
+  it("shows a rejected travel command locally and leaves the session unchanged", async () => {
+    const user = userEvent.setup();
+    const session = createSession();
     mockedGetGame.mockResolvedValue(session);
-    mockedAcknowledgeTravelArrival.mockResolvedValue(result);
+    mockedAdvanceTravelDay.mockRejectedValue(new Error("Trail service unavailable."));
 
-    renderTravelPanel(session, false, onTurnResult);
+    const { queryClient } = renderTravelPanel(session);
+    await user.click(await screen.findByRole("button", { name: /advance travel day/i }));
 
-    const diaryParagraph = await screen.findByText(
-      "The first light caught the dust behind us, and the road stayed open.",
+    expect(await screen.findByText("Trail service unavailable.")).toBeInTheDocument();
+    expect(mockedAdvanceTravelDay).toHaveBeenCalledWith("game-1");
+    expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(session);
+  });
+
+  it("keeps a late command result and feedback with the game that submitted it", async () => {
+    const user = userEvent.setup();
+    const firstGame = createSession({ id: "game-1" });
+    const secondGame = createSession({
+      id: "game-2",
+      journey: { ...createSession().journey!, destinationTownName: "Red Mesa" },
+    });
+    const updatedFirstGame = createSession({
+      id: "game-1",
+      clock: { day: 6, turn: 0, timeOfDay: "Morning" },
+    });
+    const response = deferred<GameTurnResultDto>();
+    mockedGetGame.mockResolvedValueOnce(firstGame).mockResolvedValue(secondGame);
+    mockedAdvanceTravelDay.mockReturnValue(response.promise);
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    queryClient.setQueryData(gameSessionQueryKey(firstGame.id), firstGame);
+    queryClient.setQueryData(gameSessionQueryKey(secondGame.id), secondGame);
+    const renderPanel = (session: GameSessionDto) => (
+      <QueryClientProvider client={queryClient}>
+        <TravelPanel gameId={session.id} session={session} busy={false} />
+      </QueryClientProvider>
     );
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /enter town/i })).toBeEnabled();
-    });
-    expect(screen.queryByRole("button", { name: /advance travel day/i })).not.toBeInTheDocument();
-    expect(
-      diaryParagraph.compareDocumentPosition(screen.getByRole("button", { name: /enter town/i })) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).not.toBe(0);
+    const view = render(renderPanel(firstGame));
 
-    await user.click(screen.getByRole("button", { name: /enter town/i }));
+    await waitFor(() => expect(mockedGetGame).toHaveBeenCalledWith("game-1"));
+    await user.click(await screen.findByRole("button", { name: /advance travel day/i }));
+    expect(mockedAdvanceTravelDay).toHaveBeenCalledWith("game-1");
+    view.rerender(renderPanel(secondGame));
+    await waitFor(() => expect(mockedGetGame).toHaveBeenCalledWith("game-2"));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /advance travel day|advancing/i })).toBeEnabled();
+    });
+    response.resolve({
+      success: true,
+      message: "Another day on the trail.",
+      currentSession: updatedFirstGame,
+      journeyStatus: 0,
+      journey: updatedFirstGame.journey,
+    });
 
     await waitFor(() => {
-      expect(mockedAcknowledgeTravelArrival).toHaveBeenCalledWith("game-1");
-      expect(onTurnResult).toHaveBeenCalledWith(result);
+      expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(updatedFirstGame);
     });
+    expect(queryClient.getQueryData(gameSessionQueryKey("game-2"))).toEqual(secondGame);
+    expect(screen.queryByText("Another day on the trail.")).not.toBeInTheDocument();
+    expect(screen.getByText("Red Mesa")).toBeInTheDocument();
   });
 
   it("shows a refresh state while the travel session query is pending", async () => {
@@ -520,7 +602,7 @@ describe("TravelPanel", () => {
 
     mockedGetGame.mockReturnValue(loading.promise);
 
-    renderTravelPanel(travelSession, false, vi.fn().mockResolvedValue(undefined));
+    renderTravelPanel(travelSession);
 
     expect(await screen.findByText(/refreshing trail pages from the backend/i)).toBeInTheDocument();
 
@@ -556,9 +638,11 @@ describe("TravelPanel", () => {
     });
   });
 
-  it("renders encounter resolution prose without debug wording", async () => {
+  it("renders the recorded encounter message without inventing a fight outcome", async () => {
+    const recordedMessage = "I spent 3 round(s), but the rider kept coming.";
     const session = createSession({
       travelDiary: {
+        journeyEntries: [{ kind: 1, message: recordedMessage, day: 2, turn: 0 }],
         days: [
           {
             ...createSession().travelDiary!.days[0],
@@ -567,7 +651,7 @@ describe("TravelPanel", () => {
               choiceLabel: "Fight",
               healthDelta: -5,
               walletDelta: 0,
-              ammoSpent: 1,
+              ammoSpent: 3,
               heatIncrease: 1,
               horseExhaustionDelta: 0,
               continuedOnFoot: false,
@@ -581,7 +665,12 @@ describe("TravelPanel", () => {
 
     renderTravelPanel(session);
 
-    expect(await screen.findByText(/I stand and fight/i)).toBeInTheDocument();
+    expect(await screen.findByText(recordedMessage)).toBeInTheDocument();
+    expect(screen.getByText(/Ammo spent 3/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/one round to force the rider off the trail/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/I stand and fight/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Choice .* shifted/i)).not.toBeInTheDocument();
   });
 });

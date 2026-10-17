@@ -26,12 +26,7 @@ describe("formatClockBeat", () => {
   });
 
   it("falls back to day/timeOfDay when beatLabel is empty", () => {
-    const clock: GameClockDto = {
-      day: 2,
-      turn: 1,
-      timeOfDay: "Afternoon",
-      beatLabel: "",
-    };
+    const clock: GameClockDto = { day: 2, turn: 1, timeOfDay: "Afternoon", beatLabel: "" };
     expect(formatClockBeat(clock)).toBe("Day 2, Afternoon");
   });
 });
@@ -48,22 +43,12 @@ describe("formatClueWhen", () => {
   });
 
   it("falls back to day/turn when timeOfDayLabel is null", () => {
-    const anchor: ClueTimeAnchorDto = {
-      recency: 1,
-      day: 2,
-      turn: 1,
-      timeOfDayLabel: null,
-    };
+    const anchor: ClueTimeAnchorDto = { recency: 1, day: 2, turn: 1, timeOfDayLabel: null };
     expect(formatClueWhen(anchor)).toBe("day 2, turn 1");
   });
 
   it("returns empty string when all fields are null", () => {
-    const anchor: ClueTimeAnchorDto = {
-      recency: 0,
-      day: null,
-      turn: null,
-      timeOfDayLabel: null,
-    };
+    const anchor: ClueTimeAnchorDto = { recency: 0, day: null, turn: null, timeOfDayLabel: null };
     expect(formatClueWhen(anchor)).toBe("");
   });
 });

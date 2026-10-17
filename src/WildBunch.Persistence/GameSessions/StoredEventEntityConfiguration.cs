@@ -18,8 +18,6 @@ public sealed class StoredEventEntityConfiguration : IEntityTypeConfiguration<St
         builder.Property(e => e.SchemaVersion).IsRequired();
 
         builder.HasIndex(e => e.EventId).IsUnique();
-        builder.HasIndex(e => new { e.StreamId, e.Sequence }).IsUnique();
-
         builder.HasOne(e => e.Session)
             .WithMany(e => e.StoredEvents)
             .HasForeignKey(e => e.StreamId)

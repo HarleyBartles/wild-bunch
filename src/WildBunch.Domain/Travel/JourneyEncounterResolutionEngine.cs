@@ -132,7 +132,7 @@ internal static class JourneyEncounterResolutionEngine
     {
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var foeProfile = GetFoeProfile(encounter);
         var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
         var escapeBand = travelMode == TravelMode.Mounted && horseState is not null && !horseState.IsDeadFor(travelRulesProfile) && !horseState.IsLameFor(travelRulesProfile)
             ? 6 + Math.Max(0, 3 - horseState.Exhaustion)
@@ -149,6 +149,7 @@ internal static class JourneyEncounterResolutionEngine
             var healthDelta = travelMode == TravelMode.Foot
                 ? -Math.Max(1, travelRulesProfile.EncounterRunFootHealthLoss - Math.Max(0, escapeBand - foeProfile.Speed))
                 : 0;
+            healthDelta = BoundHealthDelta(playerHealth, healthDelta);
 
             var horseExhaustionDelta = travelMode == TravelMode.Mounted
                 ? Math.Max(1, travelRulesProfile.EncounterRunMountedHorseExhaustion)
@@ -171,6 +172,7 @@ internal static class JourneyEncounterResolutionEngine
         var failedHealthDelta = travelMode == TravelMode.Foot
             ? -Math.Max(travelRulesProfile.EncounterRunFootHealthLoss, travelRulesProfile.EncounterRunFootHealthLoss + foeProfile.Speed - escapeBand)
             : 0;
+        failedHealthDelta = BoundHealthDelta(playerHealth, failedHealthDelta);
 
         var failedHorseExhaustionDelta = travelMode == TravelMode.Mounted
             ? Math.Max(1, travelRulesProfile.EncounterRunMountedHorseExhaustion + 1)
@@ -203,7 +205,7 @@ internal static class JourneyEncounterResolutionEngine
     {
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var foeProfile = GetFoeProfile(encounter);
         var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
 
         var bulletSpend = availableAmmo <= 0
@@ -256,7 +258,7 @@ internal static class JourneyEncounterResolutionEngine
         return new JourneyEncounterResolutionPlan(
             success,
             message,
-            -healthLoss,
+            BoundHealthDelta(playerHealth, -healthLoss),
             0m,
             bulletSpend,
             0,
@@ -275,12 +277,11 @@ internal static class JourneyEncounterResolutionEngine
         int availableFood,
         int availableHorseFeed,
         int availableRevolverAmmo,
-        int availableRifleAmmo,
         ulong roll)
     {
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(travelRulesProfile);
-        var foeProfile = GetFoeProfile(encounter, travelRulesProfile);
+        var foeProfile = GetFoeProfile(encounter);
         var hiddenState = encounter.HiddenState ?? new JourneyEncounterHiddenState();
 
         var offer = requestedBribe ?? travelRulesProfile.EncounterBribeCash;
@@ -361,7 +362,7 @@ internal static class JourneyEncounterResolutionEngine
                 0,
                 -offer,
                 0,
-                1,
+                0,
                 0,
                 false,
                 null,
@@ -371,7 +372,7 @@ internal static class JourneyEncounterResolutionEngine
                     : updatedEncounter.WithHiddenState(updatedHiddenState));
         }
 
-        var stolenItem = SelectTheftItem(availableFood, availableHorseFeed, availableRevolverAmmo, availableRifleAmmo);
+        var stolenItem = SelectTheftItem(availableFood, availableHorseFeed, availableRevolverAmmo);
         var healthDelta = -Math.Max(2, foeProfile.FightStrength * 2);
         var walletDelta = stolenItem is null
             ? -Math.Min(playerCash - offer, Math.Max(1m, Math.Round(foeProfile.MinimumBribe / 2m, 0, MidpointRounding.AwayFromZero)))
@@ -383,7 +384,7 @@ internal static class JourneyEncounterResolutionEngine
             healthDelta,
             walletDelta - offer,
             0,
-            1,
+            0,
             0,
             false,
             stolenItem,
@@ -393,21 +394,17 @@ internal static class JourneyEncounterResolutionEngine
                 : updatedEncounter.WithHiddenState(updatedHiddenState));
     }
 
-    private static JourneyFoeProfile GetFoeProfile(JourneyEncounterState encounter, TravelRulesProfile travelRulesProfile)
+    private static JourneyFoeProfile GetFoeProfile(JourneyEncounterState encounter)
     {
-        if (encounter.FoeProfile is not null)
-        {
-            return encounter.FoeProfile;
-        }
-
-        return new JourneyFoeProfile(
-            Speed: 5,
-            FightStrength: 5,
-            MinimumBribe: Math.Max(1m, travelRulesProfile.EncounterBribeCash));
+        return encounter.FoeProfile
+            ?? throw new InvalidOperationException("A hostile encounter requires its recorded foe profile.");
     }
 
     private static int ClampChance(int chance)
         => Math.Clamp(chance, 8, 92);
+
+    private static int BoundHealthDelta(int playerHealth, int healthDelta)
+        => Math.Max(0, playerHealth + healthDelta) - Math.Max(0, playerHealth);
 
     private static int RollPercent(ulong roll)
         => (int)(roll % 100);
@@ -440,14 +437,12 @@ internal static class JourneyEncounterResolutionEngine
             attempts,
             context);
 
-    private static ItemKind? SelectTheftItem(int availableFood, int availableHorseFeed, int availableRevolverAmmo, int availableRifleAmmo)
+    private static ItemKind? SelectTheftItem(int availableFood, int availableHorseFeed, int availableRevolverAmmo)
         => availableFood > 0
             ? ItemKind.Food
             : availableHorseFeed > 0
                 ? ItemKind.HorseFeed
                 : availableRevolverAmmo > 0
                     ? ItemKind.RevolverAmmo
-                    : availableRifleAmmo > 0
-                        ? ItemKind.RifleAmmo
-                        : null;
+                    : null;
 }

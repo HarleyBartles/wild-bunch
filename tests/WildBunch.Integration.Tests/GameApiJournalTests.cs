@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using WildBunch.Api.Dev;
 using WildBunch.Api.Games;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
@@ -18,7 +19,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -68,22 +68,44 @@ public sealed class GameApiJournalTests
     }
 
     [Fact]
+    public async Task GetJournalAfterPersistedInvestigationIncludesInvestigationMessage()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.MountedTravelReady();
+        var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+
+        var investigateResponse = await client.PostAsync(
+            $"/api/games/{createdSession!.Id}/investigations/local-gossip/gather", content: null);
+        investigateResponse.EnsureSuccessStatusCode();
+
+        var journalResponse = await client.GetAsync($"/api/games/{createdSession.Id}/journal");
+        Assert.Equal(HttpStatusCode.OK, journalResponse.StatusCode);
+        var journal = await journalResponse.Content.ReadFromJsonAsync<JournalDto>();
+
+        Assert.NotNull(journal);
+        Assert.Contains(journal!.LogEntries, entry =>
+            entry.Kind == GameLogEntryKind.CaseUpdate &&
+            entry.Message.Contains("gossip", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task GetJournalAfterPurchaseIncludesPurchaseLogEntry()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         Assert.NotNull(createdSession);
 
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         var buyResponse = await client.PostAsJsonAsync(
             $"/api/games/{createdSession.Id}/towns/{createdSession.Player.CurrentTownId}/store/buy",
-            new BuyStoreItemRequest(WildBunch.Domain.Economy.StoreVendorType.GeneralStore, WildBunch.Domain.Inventory.ItemKind.Food, 2));
+            new BuyStoreItemRequest(WildBunch.Domain.Inventory.ItemKind.Food, 2));
         var buyResult = await buyResponse.Content.ReadFromJsonAsync<GameTurnResultDto>();
         Assert.NotNull(buyResult);
         Assert.True(buyResult!.Success);
@@ -105,7 +127,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -156,7 +177,6 @@ public sealed class GameApiJournalTests
         using var client = factory.CreateClient();
 
         var scenario = BoringScenarioBuilder.MountedTravelReady();
-        scenario.AssertReady();
 
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 

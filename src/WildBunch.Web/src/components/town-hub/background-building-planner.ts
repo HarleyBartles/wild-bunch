@@ -5,6 +5,13 @@ import {
   type BuildingPlacementDto,
   type TownLayoutDto,
 } from "../../api/types";
+import {
+  getTownTileCell,
+  logicalToTileCell,
+  TownTileColumns,
+  TownTileRows,
+} from "./town-hub-geometry";
+import { hashTownVisualSeed, townVisualCellSeed } from "./town-hub-seed";
 
 export interface BackgroundSlot {
   row: number;
@@ -35,50 +42,20 @@ interface SlotCandidate extends BackgroundSlot {
   score: number;
 }
 
-const TileGridWidth = 10;
-const TileGridHeight = 10;
-
 const ROAD_VIEWS = [BuildingView.Profile, BuildingView.FrontOblique] as const;
 const SPUR_ABOVE_VIEWS = [BuildingView.Front, BuildingView.FrontOblique] as const;
 const SPUR_BELOW_VIEWS = [BuildingView.Rear, BuildingView.RearOblique] as const;
-
-function hashString(value: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index++) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function seedForCell(seed: string, row: number, col: number, suffix: string): string {
-  return `${seed}:${suffix}:${row}:${col}`;
-}
-
-function logicalToTileCell(building: BuildingPlacementDto): {
-  row: number;
-  col: number;
-} {
-  return {
-    col: Math.floor(building.x / 10),
-    row: Math.floor(building.y / 10),
-  };
-}
 
 function getLayoutSeed(layout: TownLayoutDto): string {
   return layout.layoutSalts?.buildingsSalt ?? layout.resolverVersion ?? "town-hub-buildings";
 }
 
-function getCell(layout: TownLayoutDto, row: number, col: number): number {
-  return layout.tileGrid?.[row]?.[col] ?? 0;
-}
-
 function isInsideGrid(row: number, col: number): boolean {
-  return row >= 0 && row < TileGridHeight && col >= 0 && col < TileGridWidth;
+  return row >= 0 && row < TownTileRows && col >= 0 && col < TownTileColumns;
 }
 
 function isEmptyCell(layout: TownLayoutDto, row: number, col: number): boolean {
-  return isInsideGrid(row, col) && getCell(layout, row, col) === 0;
+  return isInsideGrid(row, col) && getTownTileCell(layout, row, col) === 0;
 }
 
 function getSlotKey(row: number, col: number): string {
@@ -91,19 +68,19 @@ function candidateScore(
   col: number,
   attachesTo: BackgroundSlot["attachesTo"],
 ): number {
-  return hashString(seedForCell(seed, row, col, attachesTo));
+  return hashTownVisualSeed(townVisualCellSeed(seed, row, col, attachesTo));
 }
 
 export function getTrailheadFootprintTiles(
   building: BuildingPlacementDto,
 ): Array<{ row: number; col: number }> {
   const left = Math.max(0, Math.floor((building.x - building.width / 2) / 10));
-  const right = Math.min(TileGridWidth - 1, Math.ceil((building.x + building.width / 2) / 10) - 1);
-  const top = Math.max(0, Math.floor((building.y - building.height / 2) / 10));
-  const bottom = Math.min(
-    TileGridHeight - 1,
-    Math.ceil((building.y + building.height / 2) / 10) - 1,
+  const right = Math.min(
+    TownTileColumns - 1,
+    Math.ceil((building.x + building.width / 2) / 10) - 1,
   );
+  const top = Math.max(0, Math.floor((building.y - building.height / 2) / 10));
+  const bottom = Math.min(TownTileRows - 1, Math.ceil((building.y + building.height / 2) / 10) - 1);
   const tiles: Array<{ row: number; col: number }> = [];
 
   for (let row = top; row <= bottom; row++) {
@@ -150,7 +127,7 @@ function pickBudgetCount(seed: string, prosperity: TownProsperity, eligibleCount
     return min;
   }
 
-  return min + (hashString(seedForCell(seed, min, max, "budget")) % (spread + 1));
+  return min + (hashTownVisualSeed(townVisualCellSeed(seed, min, max, "budget")) % (spread + 1));
 }
 
 function pickFamily(
@@ -159,7 +136,7 @@ function pickFamily(
   col: number,
   attachesTo: BackgroundSlot["attachesTo"],
 ): "background-house" | "background-shop" {
-  return hashString(seedForCell(seed, row, col, `${attachesTo}:family`)) % 2 === 0
+  return hashTownVisualSeed(townVisualCellSeed(seed, row, col, `${attachesTo}:family`)) % 2 === 0
     ? "background-house"
     : "background-shop";
 }
@@ -176,7 +153,9 @@ function pickView(
       : attachesTo === "spur-below"
         ? SPUR_BELOW_VIEWS
         : ROAD_VIEWS;
-  return pool[hashString(seedForCell(seed, row, col, `${attachesTo}:view`)) % pool.length];
+  return pool[
+    hashTownVisualSeed(townVisualCellSeed(seed, row, col, `${attachesTo}:view`)) % pool.length
+  ];
 }
 
 function pickFlipX(
@@ -191,7 +170,7 @@ function pickFlipX(
   return view === BuildingView.FrontOblique || view === BuildingView.RearOblique ? col < 5 : false;
 }
 
-function pickFlipY(_attachesTo: BackgroundSlot["attachesTo"]): boolean {
+function pickFlipY(): boolean {
   return false;
 }
 
@@ -202,7 +181,7 @@ export function collectForegroundOccupiedSlots(layout: TownLayoutDto): Set<strin
     const tiles =
       building.kind === BuildingKind.Trailhead
         ? getTrailheadFootprintTiles(building)
-        : [logicalToTileCell(building)];
+        : [logicalToTileCell(building.x, building.y)];
     for (const tile of tiles) {
       occupied.add(getSlotKey(tile.row, tile.col));
     }
@@ -223,7 +202,7 @@ function collectTrailheadExcludedSlots(layout: TownLayoutDto): Set<string> {
       if (tile.col - 1 >= 0) {
         excluded.add(getSlotKey(tile.row, tile.col - 1));
       }
-      if (tile.col + 1 < TileGridWidth) {
+      if (tile.col + 1 < TownTileColumns) {
         excluded.add(getSlotKey(tile.row, tile.col + 1));
       }
     }
@@ -259,9 +238,9 @@ export function collectEligibleBackgroundSlots(layout: TownLayoutDto): Backgroun
     }
   };
 
-  for (let row = 0; row < TileGridHeight; row++) {
+  for (let row = 0; row < TownTileRows; row++) {
     if (
-      getCell(layout, row, 4) === 1 &&
+      getTownTileCell(layout, row, 4) === 1 &&
       isEmptyCell(layout, row, 3) &&
       !occupied.has(getSlotKey(row, 3))
     ) {
@@ -269,7 +248,7 @@ export function collectEligibleBackgroundSlots(layout: TownLayoutDto): Backgroun
     }
 
     if (
-      getCell(layout, row, 5) === 1 &&
+      getTownTileCell(layout, row, 5) === 1 &&
       isEmptyCell(layout, row, 6) &&
       !occupied.has(getSlotKey(row, 6))
     ) {
@@ -277,9 +256,9 @@ export function collectEligibleBackgroundSlots(layout: TownLayoutDto): Backgroun
     }
   }
 
-  for (let row = 0; row < TileGridHeight; row++) {
-    for (let col = 0; col < TileGridWidth; col++) {
-      if (getCell(layout, row, col) !== 4) {
+  for (let row = 0; row < TownTileRows; row++) {
+    for (let col = 0; col < TownTileColumns; col++) {
+      if (getTownTileCell(layout, row, col) !== 4) {
         continue;
       }
 
@@ -341,7 +320,7 @@ export function planBackgroundBuildings(
       family,
       view,
       flipX: pickFlipX(slot.col, slot.attachesTo, view),
-      flipY: pickFlipY(slot.attachesTo),
+      flipY: pickFlipY(),
       side: slot.side,
       attachesTo: slot.attachesTo,
     });
@@ -369,9 +348,9 @@ export function planSpurCrossTiles(
 
   const crossings = new Map<string, { row: number; col: number; above: boolean; below: boolean }>();
 
-  for (let row = 0; row < TileGridHeight; row++) {
-    for (let col = 0; col < TileGridWidth; col++) {
-      if (getCell(layout, row, col) !== 4) {
+  for (let row = 0; row < TownTileRows; row++) {
+    for (let col = 0; col < TownTileColumns; col++) {
+      if (getTownTileCell(layout, row, col) !== 4) {
         continue;
       }
 

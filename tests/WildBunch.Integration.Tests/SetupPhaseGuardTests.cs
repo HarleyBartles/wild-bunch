@@ -22,8 +22,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         // Pick any destination town from the generated world.
@@ -42,8 +41,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         var townId = setupSession.World.Towns.First().Id;
@@ -51,26 +49,8 @@ public sealed class SetupPhaseGuardTests
         var response = await client.PostAsJsonAsync(
             $"/api/games/{setupSession.Id}/towns/{townId}/store/buy",
             new BuyStoreItemRequest(
-                StoreVendorType.GeneralStore,
                 ItemKind.Food,
                 1));
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task InvestigationActionDuringSetupPhaseReturnsConflict()
-    {
-        using var factory = new PostgreSqlApiFactory();
-        using var client = factory.CreateClient();
-
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
-        var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
-
-        var response = await client.PostAsync(
-            $"/api/games/{setupSession.Id}/investigations/notice-board/inspect",
-            content: null);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
@@ -84,8 +64,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         var destinationTown = setupSession.World.Towns.Last().Id;
@@ -108,8 +87,7 @@ public sealed class SetupPhaseGuardTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         var setupSession = await client.CreateSetupOnlyGameAsync(scenario);
 
         var response = await client.PostAsync(

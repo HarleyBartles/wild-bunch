@@ -43,8 +43,7 @@ internal sealed class InvestigationLoop
             context.CaseFile,
             context.CurrentTownSlotIndex,
             context.CurrentTownVisitCount,
-            context.SaltSource,
-            context.RetiredWarrantIds is { Count: > 0 } ? context.RetiredWarrantIds : null);
+            context.SaltSource);
         var clue = _clueSurfacingResolver.Resolve(
             context.CaseFile,
             InvestigationSourceKind.SheriffWarrants,
@@ -111,62 +110,6 @@ internal sealed class InvestigationLoop
     }
 
     /// <summary>
-    /// Follow telegraph leads decision logic. Resolves a clue from the clue surfacing
-    /// resolver for the TelegraphLead source kind. Returns the InvestigationPerformed event
-    /// and display message.
-    /// </summary>
-    internal InvestigationOutcome FollowTelegraphLeads(InvestigationContext context)
-    {
-        if (context.IsSourceSpent)
-        {
-            var msg = "You ask after telegraph leads again, but no new wire has come in.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.TelegraphLead,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var clue = _clueSurfacingResolver.Resolve(
-            context.CaseFile,
-            InvestigationSourceKind.TelegraphLead,
-            context.CurrentTownSlotIndex,
-            context.CurrentTownVisitCount,
-            context.SaltSource);
-        if (clue is not null && !IsPlayerKnownClue(clue))
-        {
-            clue = null;
-        }
-
-        if (clue is null)
-        {
-            var msg = "You follow the telegraph leads, but find nothing new.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.TelegraphLead,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var foundMsg = $"You follow the telegraph leads and uncover a public lead: {DescribeClueLead(clue.Description)}.";
-        return new InvestigationOutcome(
-            new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.TelegraphLead,
-                TownId = context.CurrentTownId,
-                Message = foundMsg,
-                ClueId = clue?.Id
-            },
-            "You follow the telegraph leads and uncover a public lead.");
-    }
-
-    /// <summary>
     /// Gather local gossip decision logic. Resolves a clue from the clue surfacing
     /// resolver for the LocalGossip source kind. Returns the InvestigationPerformed event
     /// and display message.
@@ -223,99 +166,6 @@ internal sealed class InvestigationLoop
     }
 
     /// <summary>
-    /// Inspect notice board decision logic. Peeks the next public clue for the NoticeBoard
-    /// source kind. Returns the InvestigationPerformed event and display message.
-    /// </summary>
-    internal InvestigationOutcome InspectNoticeBoard(InvestigationContext context)
-    {
-        if (context.IsSourceSpent)
-        {
-            var msg = "You inspect the notice board again, but nothing new has been posted.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.NoticeBoard,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var clue = context.CaseFile.PeekNextPublicClue(c => c.SourceKind == InvestigationSourceKind.NoticeBoard);
-
-        if (clue is null)
-        {
-            var msg = "You inspect the notice board, but find nothing new.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.NoticeBoard,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var foundMsg = $"You inspect the notice board and uncover a civic notice: {DescribeClueLead(clue.Description)}.";
-        return new InvestigationOutcome(
-            new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.NoticeBoard,
-                TownId = context.CurrentTownId,
-                Message = foundMsg,
-                ClueId = clue?.Id
-            },
-            "You inspect the notice board and uncover a civic notice.");
-    }
-
-    /// <summary>
-    /// Check sheriff records decision logic. Peeks the next public clue for the LocalRecords
-    /// source kind, filtered to player-known clues. Returns the InvestigationPerformed event
-    /// and display message.
-    /// </summary>
-    internal InvestigationOutcome CheckSheriffRecords(InvestigationContext context)
-    {
-        if (context.IsSourceSpent)
-        {
-            var msg = "You check the local records again, but find nothing new.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.LocalRecords,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var clue = context.CaseFile.PeekNextPublicClue(c => IsPlayerKnownClue(c) && c.SourceKind == InvestigationSourceKind.LocalRecords);
-
-        if (clue is null)
-        {
-            var msg = "You check the local records, but find nothing new.";
-            return new InvestigationOutcome(
-                new InvestigationPerformed
-                {
-                    SourceKind = InvestigationSourceKind.LocalRecords,
-                    TownId = context.CurrentTownId,
-                    Message = msg
-                },
-                msg);
-        }
-
-        var foundMsg = $"You check the local records and uncover a public lead: {DescribeClueLead(clue.Description)}.";
-        return new InvestigationOutcome(
-            new InvestigationPerformed
-            {
-                SourceKind = InvestigationSourceKind.LocalRecords,
-                TownId = context.CurrentTownId,
-                Message = foundMsg,
-                ClueId = clue?.Id
-            },
-            "You check the local records and uncover a public lead.");
-    }
-
-    /// <summary>
     /// Trims and strips trailing punctuation from a clue description for display in lead messages.
     /// </summary>
     internal static string DescribeClueLead(string description)
@@ -350,7 +200,6 @@ internal sealed record InvestigationContext(
     int CurrentTownSlotIndex,
     int CurrentTownVisitCount,
     SaltSource? SaltSource,  // null = boring mode (SaltSourceMode.Fixed)
-    IReadOnlySet<WarrantId>? RetiredWarrantIds,  // from BountyLoop.UnrelatedCriminalLedger
     TownId CurrentTownId,
     string CurrentTownName,
     string? BeatNarration,  // null for ReadWantedPosters (no beat narration in result)

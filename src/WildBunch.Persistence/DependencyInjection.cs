@@ -16,10 +16,8 @@ public static class DependencyInjection
         services.AddSingleton<GameSessionJsonSerializer>();
 
         // Event upcaster registry.
-        // When the first event shape change happens, write an IEventUpcaster and add it to
-        // CreateDefaultUpcasters() below. The build-time completeness test
-        // (UpcasterChainCompletenessTests) asserts every IEventUpcaster in the assembly
-        // is returned by CreateDefaultUpcasters().
+        // Event upcasters are registered below; the integration-test suite verifies every
+        // concrete IEventUpcaster in this assembly is returned by that method.
         services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry(CreateDefaultUpcasters()));
 
         services.AddSingleton<TravelDiaryDayProjector>();
@@ -39,13 +37,14 @@ public static class DependencyInjection
                 eventUpcasters,
                 serializer,
                 diaryDayProjector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         });
 
         services.AddSingleton<GameSessionReadStoreLoader>();
 
         services.AddDbContext<WildBunchDbContext>((_, options) => PersistenceDbContextOptions.Configure(options, configuration));
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
+        services.AddScoped<IGameSessionEventReadRepository, EfGameSessionEventReadRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         services.AddScoped<IGameSessionReadRepository, EfGameSessionReadRepository>();
         services.AddScoped<IGameJournalReadRepository, EfGameJournalReadRepository>();
@@ -64,14 +63,18 @@ public static class DependencyInjection
     /// <summary>
     /// Returns the list of upcasters that the DI registration uses to construct
     /// PayloadUpcasterRegistry. Extracted as a separate internal method so the
-    /// build-time completeness test (UpcasterChainCompletenessTests) can call it
+    /// integration-test completeness check (UpcasterChainCompletenessTests) can call it
     /// directly and verify every IEventUpcaster in the assembly is registered.
     /// When adding a new upcaster, add it to this method's list.
     /// </summary>
-    internal static IReadOnlyList<IPayloadUpcaster> CreateDefaultUpcasters()
+    internal static IReadOnlyList<IEventUpcaster> CreateDefaultUpcasters()
     {
-        var upcasters = new List<IPayloadUpcaster>();
+        var upcasters = new List<IEventUpcaster>();
         upcasters.Add(new WorldGeneratedV1ToV2Upcaster());
+        upcasters.Add(new WorldGeneratedV2ToV3Upcaster());
+        upcasters.Add(new CaseFileGeneratedV1ToV2Upcaster());
+        upcasters.Add(new CaseFileGeneratedV2ToV3Upcaster());
+        upcasters.Add(new StartingTownSelectedV1ToV2Upcaster());
         return upcasters;
     }
 }

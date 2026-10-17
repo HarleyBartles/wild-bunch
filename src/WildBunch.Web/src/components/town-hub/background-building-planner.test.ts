@@ -14,14 +14,7 @@ function createGrid(): number[][] {
 function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   return {
     buildings: [
-      {
-        kind: BuildingKind.Store,
-        view: BuildingView.Profile,
-        x: 13,
-        y: 13,
-        width: 8,
-        height: 10,
-      },
+      { kind: BuildingKind.Store, view: BuildingView.Profile, x: 13, y: 13, width: 8, height: 10 },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
@@ -61,12 +54,31 @@ describe("background building planner", () => {
     );
   });
 
+  it("maps logical coordinates on a ten-unit boundary to the next foreground cell", () => {
+    const layout = createLayout({
+      buildings: [
+        {
+          kind: BuildingKind.Store,
+          view: BuildingView.Profile,
+          x: 20,
+          y: 30,
+          width: 8,
+          height: 10,
+        },
+      ],
+    });
+
+    expect(collectForegroundOccupiedSlots(layout)).toEqual(new Set(["3:2"]));
+  });
+
   it("excludes the immediate east and west slots beside both trailheads from background placement", () => {
     const grid = createGrid();
     grid[0][4] = 1;
     grid[0][5] = 1;
     grid[9][4] = 1;
     grid[9][5] = 1;
+    grid[4][4] = 1;
+    grid[4][5] = 1;
 
     const layout = createLayout({
       tileGrid: grid,
@@ -92,18 +104,12 @@ describe("background building planner", () => {
 
     const slots = collectEligibleBackgroundSlots(layout);
 
-    expect(slots).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ row: 0, col: 3 }),
-        expect.objectContaining({ row: 0, col: 6 }),
-        expect.objectContaining({ row: 1, col: 3 }),
-        expect.objectContaining({ row: 1, col: 6 }),
-        expect.objectContaining({ row: 8, col: 3 }),
-        expect.objectContaining({ row: 8, col: 6 }),
-        expect.objectContaining({ row: 9, col: 3 }),
-        expect.objectContaining({ row: 9, col: 6 }),
-      ]),
-    );
+    const slotKeys = new Set(slots.map(({ row, col }) => `${row}:${col}`));
+    for (const key of ["0:3", "0:6", "9:3", "9:6"]) {
+      expect(slotKeys.has(key)).toBe(false);
+    }
+    expect(slotKeys.has("4:3")).toBe(true);
+    expect(slotKeys.has("4:6")).toBe(true);
   });
 
   it("keeps destitute coverage within the expected filler range", () => {
@@ -116,10 +122,16 @@ describe("background building planner", () => {
     const layout = createLayout({
       prosperity: TownProsperity.Destitute,
       tileGrid: grid,
+      layoutSalts: {
+        resolverVersion: "1.0.0",
+        buildingsSalt: "n56-destitute-13",
+        roadsSalt: "roads-salt",
+        dirtSalt: "dirt-salt",
+        propsSalt: "props-salt",
+      },
     });
 
     const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-    expect(placements.length).toBeGreaterThanOrEqual(0);
     expect(placements.length).toBeLessThanOrEqual(2);
   });
 
@@ -145,7 +157,7 @@ describe("background building planner", () => {
     expect(placements.length).toBeLessThanOrEqual(max);
   });
 
-  it("makes boomtown leave one or two empty eligible spaces", () => {
+  it("leaves at most two eligible spaces empty in boomtown", () => {
     const grid = createGrid();
     grid[1][4] = 1;
     grid[1][5] = 1;
@@ -157,11 +169,19 @@ describe("background building planner", () => {
     const layout = createLayout({
       prosperity: TownProsperity.Boomtown,
       tileGrid: grid,
+      layoutSalts: {
+        resolverVersion: "1.0.0",
+        buildingsSalt: "n56-boomtown-1",
+        roadsSalt: "roads-salt",
+        dirtSalt: "dirt-salt",
+        propsSalt: "props-salt",
+      },
     });
 
     const eligibleCount = collectEligibleBackgroundSlots(layout).length;
     const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-    expect(placements.length).toBeGreaterThanOrEqual(Math.max(0, eligibleCount - 2));
+    expect(eligibleCount).toBeGreaterThan(2);
+    expect(placements.length).toBeGreaterThanOrEqual(eligibleCount - 2);
     expect(placements.length).toBeLessThanOrEqual(eligibleCount);
   });
 
@@ -180,8 +200,6 @@ describe("background building planner", () => {
     ]);
 
     for (const [prosperity, range] of tierRanges) {
-      const observedCounts = new Set<number>();
-
       for (let seedIndex = 0; seedIndex < 64; seedIndex++) {
         const layout = createLayout({
           prosperity,
@@ -196,12 +214,9 @@ describe("background building planner", () => {
         });
 
         const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-        observedCounts.add(placements.length);
         expect(placements.length).toBeGreaterThanOrEqual(range.min);
         expect(placements.length).toBeLessThanOrEqual(range.max);
       }
-
-      expect(observedCounts.size).toBeGreaterThan(0);
     }
   });
 
@@ -270,10 +285,18 @@ describe("background building planner", () => {
     });
 
     const placements = planBackgroundBuildings(layout, collectForegroundOccupiedSlots(layout));
-    expect(placements).toHaveLength(1);
-    expect([BuildingView.Rear, BuildingView.RearOblique]).toContain(placements[0].view);
-    expect(placements[0].flipY).toBe(false);
-    expect(placements[0].attachesTo).toBe("spur-below");
+    expect(placements).toEqual([
+      {
+        row: 5,
+        col: 6,
+        family: "background-house",
+        view: BuildingView.RearOblique,
+        flipX: false,
+        flipY: false,
+        side: "east",
+        attachesTo: "spur-below",
+      },
+    ]);
   });
 
   it("produces spur cross tiles only when both sides of the same spur are occupied", () => {

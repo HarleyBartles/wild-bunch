@@ -1,17 +1,33 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import styled from "styled-components";
 import { Eyebrow, PanelSubtitle, Button } from "./ui/sharedStyled";
+import { wrapDialogTabNavigation } from "./dialogTabBoundary";
 
-const ModalBackdrop = styled.div`
+const ModalBackdrop = styled.dialog`
   position: fixed;
   inset: 0;
-  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(7, 8, 11, 0.78);
-  backdrop-filter: blur(8px);
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+
+  &:not([open]) {
+    display: none;
+  }
+
+  &::backdrop {
+    background: rgba(7, 8, 11, 0.78);
+    backdrop-filter: blur(8px);
+  }
 `;
 
 const Modal = styled.section`
@@ -65,57 +81,74 @@ export function CockpitOverlayFrame({
   onClose,
   children,
 }: CockpitOverlayFrameProps) {
+  const id = useId();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
 
-  useEffect(() => {
-    if (!open) {
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
       return;
     }
 
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!open) {
+      if (dialog.open) {
+        if (typeof dialog.close === "function") {
+          dialog.close();
+        } else {
+          dialog.removeAttribute("open");
+        }
+      }
+      return;
+    }
+
+    if (dialog.open) {
+      return;
+    }
+
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
     closeButtonRef.current?.focus();
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
+    return () => {
+      if (!dialog.open) {
+        return;
+      }
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
       }
     };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      previousFocusRef.current?.focus();
-    };
-  }, [open, onClose]);
-
-  if (!open) {
-    return null;
-  }
+  }, [open]);
 
   return (
     <ModalBackdrop
+      ref={dialogRef}
+      aria-modal="true"
+      aria-labelledby={`${id}-title`}
+      aria-describedby={description ? `${id}-description` : undefined}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onKeyDown={wrapDialogTabNavigation}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
         }
       }}
     >
-      <Modal
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cockpit-surface-title"
-        aria-describedby={description ? "cockpit-surface-description" : undefined}
-      >
+      <Modal>
         <ModalHeader>
           <div>
             <Eyebrow>{eyebrow}</Eyebrow>
-            <h2 id="cockpit-surface-title">{title}</h2>
+            <h2 id={`${id}-title`}>{title}</h2>
             {description ? (
-              <PanelSubtitle id="cockpit-surface-description" as="p">
+              <PanelSubtitle id={`${id}-description`} as="p">
                 {description}
               </PanelSubtitle>
             ) : null}

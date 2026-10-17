@@ -27,11 +27,12 @@ internal sealed record SaloonConfrontationContext(
     string? ActiveSaloonDescriptor,
     SaloonPersonOfInterestKind? ActiveSaloonPOIKind,
     string? ActiveSaloonCitizenRole,
-    WantedSuspectPresenceState? ActiveSaloonSuspectPresenceState,
+    bool CanConfrontInCurrentContext,
     IReadOnlyList<Suspect> Suspects,
     IReadOnlyList<Warrant> KnownWarrants,
+    IReadOnlyList<Warrant> PublicWarrants,
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates,
-    bool FirearmThreatAvailable,
+    bool HasRevolver,
     decimal PlayerCash,
     decimal CitizenDeclarationFine,
     bool IsJourneyModal,
@@ -62,14 +63,6 @@ internal sealed record SheriffTurnInContext(
     IReadOnlyList<Warrant> KnownWarrants,
     IReadOnlyDictionary<SuspectId, WantedSuspectConfrontationState> ConfrontationStates,
     IReadOnlyList<SheriffTurnInSettlementState> ExistingSettlements,
-    int ClockDay,
-    int ClockTurn);
-
-/// <summary>Read-only inputs for an unrelated-criminal turn-in decision.</summary>
-internal sealed record UnrelatedCriminalTurnInContext(
-    WarrantId WarrantId,
-    bool IsAlive,
-    IReadOnlyList<Warrant> KnownWarrants,
     int ClockDay,
     int ClockTurn);
 

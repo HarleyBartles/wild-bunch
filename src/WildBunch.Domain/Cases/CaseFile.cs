@@ -23,7 +23,6 @@ public sealed class CaseFile
     private readonly ReadOnlyCollection<SheriffTurnInSettlementState> _sheriffTurnInSettlementsView;
     private readonly List<SuspectTurfAssignment> _suspectTurfAssignments = [];
     private readonly ReadOnlyCollection<SuspectTurfAssignment> _suspectTurfAssignmentsView;
-    private int _killerReleaseProgress;
 
     public CaseFile(
         SuspectId? accusation,
@@ -57,8 +56,7 @@ public sealed class CaseFile
         IEnumerable<Clue> knownClues,
         IEnumerable<SuspectId>? discoveredSuspectIds = null,
         IEnumerable<Clue>? publicClues = null,
-        int killerReleaseThreshold = 2,
-        int killerReleaseProgress = 0,
+        int killerReleaseThreshold = 5,
         IEnumerable<Warrant>? knownWarrants = null,
         IEnumerable<Warrant>? publicWarrants = null,
         IEnumerable<SuspectTurfAssignment>? suspectTurfAssignments = null,
@@ -75,7 +73,6 @@ public sealed class CaseFile
         TrueCulpritId = trueCulpritId;
         OpeningLead = openingLead;
         KillerReleaseThreshold = Math.Max(1, killerReleaseThreshold);
-        _killerReleaseProgress = Math.Max(0, killerReleaseProgress);
 
         _discoveredSuspectIds.AddRange((discoveredSuspectIds ?? Array.Empty<SuspectId>()).DistinctBy(suspectId => suspectId.Value));
         _discoveredSuspectIdsView = _discoveredSuspectIds.AsReadOnly();
@@ -110,6 +107,8 @@ public sealed class CaseFile
             {
                 throw new ArgumentException("The sheriff turn-in settlement does not belong to this case.", nameof(sheriffTurnInSettlements));
             }
+
+            ApplySettlementToSuspect(settlement);
         }
 
         _sheriffTurnInSettlementsView = _sheriffTurnInSettlements.AsReadOnly();
@@ -138,11 +137,13 @@ public sealed class CaseFile
 
     public CaseOpeningLead OpeningLead { get; }
 
-    public KillerReleaseState KillerReleaseState => new(_killerReleaseProgress, KillerReleaseThreshold);
+    public KillerReleaseState KillerReleaseState => new(KillerReleaseProgress, KillerReleaseThreshold);
 
     public int KillerReleaseThreshold { get; }
 
-    public int KillerReleaseProgress => _killerReleaseProgress;
+    public int KillerReleaseProgress => Math.Min(
+        KillerReleaseThreshold,
+        _sheriffTurnInSettlements.Count(IsQualifyingKillerReleaseSettlement));
 
     public IReadOnlyList<Clue> KnownClues => _knownCluesView;
 
@@ -188,7 +189,7 @@ public sealed class CaseFile
     public void AddClue(Clue clue)
         => DiscoverClue(clue);
 
-    public bool DiscoverClue(Clue clue, bool advanceKillerReleaseProgress = false)
+    public bool DiscoverClue(Clue clue)
     {
         ArgumentNullException.ThrowIfNull(clue);
 
@@ -199,11 +200,6 @@ public sealed class CaseFile
 
         _knownClues.Add(clue);
         DiscoverSuspectsFromClue(clue);
-
-        if (advanceKillerReleaseProgress)
-        {
-            AdvanceKillerReleaseProgress();
-        }
 
         return true;
     }
@@ -282,9 +278,27 @@ public sealed class CaseFile
         }
 
         _sheriffTurnInSettlements.Add(settlementState);
+        ApplySettlementToSuspect(settlementState);
     }
 
-    public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null, bool advanceKillerReleaseProgress = false)
+    private void ApplySettlementToSuspect(SheriffTurnInSettlementState settlementState)
+    {
+        if (!settlementState.IsAlive)
+        {
+            return;
+        }
+
+        var suspectIndex = _suspects.FindIndex(suspect => suspect.Id.Equals(settlementState.SuspectId));
+        if (suspectIndex < 0)
+        {
+            throw new ArgumentException("The sheriff turn-in settlement does not belong to this case.", nameof(settlementState));
+        }
+
+        _suspects[suspectIndex] = _suspects[suspectIndex] with { Status = SuspectStatus.Captured };
+        DiscoverSuspect(settlementState.SuspectId);
+    }
+
+    public Clue? RevealNextPublicClue(InvestigationSourceKind? sourceKind = null)
     {
         for (var i = 0; i < _publicClues.Count; i++)
         {
@@ -303,7 +317,7 @@ public sealed class CaseFile
             }
 
             _publicClues.RemoveAt(i);
-            if (DiscoverClue(clue, advanceKillerReleaseProgress))
+            if (DiscoverClue(clue))
             {
                 return clue;
             }
@@ -312,7 +326,7 @@ public sealed class CaseFile
         return null;
     }
 
-    public Clue? RevealNextPublicClue(Func<Clue, bool> canReveal, bool advanceKillerReleaseProgress = false)
+    public Clue? RevealNextPublicClue(Func<Clue, bool> canReveal)
     {
         ArgumentNullException.ThrowIfNull(canReveal);
 
@@ -333,7 +347,7 @@ public sealed class CaseFile
             }
 
             _publicClues.RemoveAt(i);
-            if (DiscoverClue(clue, advanceKillerReleaseProgress))
+            if (DiscoverClue(clue))
             {
                 return clue;
             }
@@ -464,9 +478,17 @@ public sealed class CaseFile
         return false;
     }
 
-    private void AdvanceKillerReleaseProgress()
+    private bool IsQualifyingKillerReleaseSettlement(SheriffTurnInSettlementState settlement)
     {
-        _killerReleaseProgress = Math.Min(KillerReleaseThreshold, _killerReleaseProgress + 1);
+        if (settlement.SuspectId.Equals(TrueCulpritId))
+        {
+            return false;
+        }
+
+        return _knownWarrants.Concat(_publicWarrants).Any(warrant =>
+            warrant.TargetSuspectId?.Equals(settlement.SuspectId) == true
+            && warrant.Terms.TargetKind == InvestigationTargetKind.GangMember
+            && warrant.Terms.AdvancesGangPressureFor == OutlawGangIds.WildBunch);
     }
 
     private void DiscoverSuspectsFromClue(Clue clue)

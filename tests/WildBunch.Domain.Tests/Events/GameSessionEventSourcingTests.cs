@@ -97,6 +97,24 @@ public class GameSessionEventSourcingTests
             new[] { oldGameStarted });
 
         Assert.Null(rehydrated.SeedCode);
+        Assert.Equal(oldGameStarted.SaltSource, rehydrated.SaltSource);
+    }
+
+    [Fact]
+    public void RehydrateFromEvents_RejectsPlayerSetupWithoutWorldGenerated()
+    {
+        var setupCompleted = new PlayerSetupCompleted
+        {
+            PlayerName = "Ranger Vale",
+            GameDifficulty = GameDifficulty.Standard,
+            GameEntropy = GameEntropy.Classic,
+            SeedCode = "recorded-seed"
+        };
+
+        Assert.Throws<InvalidOperationException>(() => GameSession.RehydrateFromEvents(
+            GameSessionId.New(),
+            CreateWorld(),
+            new IDomainEvent[] { setupCompleted }));
     }
 
     [Fact]
@@ -114,7 +132,7 @@ public class GameSessionEventSourcingTests
 
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 3);
 
@@ -139,7 +157,7 @@ public class GameSessionEventSourcingTests
 
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 2);
 
@@ -190,7 +208,7 @@ public class GameSessionEventSourcingTests
         var session = CreateSession();
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
 
         session.Purchase(offer, 3);
         var events = session.UncommittedEvents.ToList();
@@ -214,9 +232,9 @@ public class GameSessionEventSourcingTests
         var commandSession = CreateSession();
         var resolver = new TownStoreCatalogResolver();
         var foodOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         var canteenOffer = resolver.Resolve(commandSession.World.GetTown(commandSession.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Canteen);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Canteen);
 
         commandSession.Purchase(foodOffer, 2);
         commandSession.Purchase(foodOffer, 1);
@@ -301,58 +319,31 @@ public class GameSessionEventSourcingTests
     [Fact]
     public void RehydrateFromEvents_Reconstructs_Investigation_State()
     {
-        // Create a session with a public clue. The factory calls MarkEventsCommitted(),
-        // so we need to get the GameStarted event by creating a fresh session for events.
-        // Approach: create the session, perform the investigation, collect ALL events
-        // (GameStarted + CaseFileGenerated + InvestigationPerformed) by creating a
-        // parallel session for events.
-        var session = TestSessionFactory.CreateWithPublicClue(
+        var session = TestSessionFactory.CreateUncommittedWithPublicClue(
             InvestigationSourceKind.LocalGossip, "A dusty boot print.");
+        var clueId = Assert.Single(session.CaseFile.PublicClues).Id;
+        Assert.Empty(session.CaseFile.KnownClues);
 
-        // Perform investigation (produces InvestigationPerformed event)
         session.GatherLocalGossip();
-        var investigationEvents = session.UncommittedEvents.ToList();
-        session.MarkEventsCommitted();
+        var allEvents = session.UncommittedEvents.ToList();
+        var setupCaseFile = Assert.Single(allEvents.OfType<CaseFileGenerated>());
+        Assert.Contains(setupCaseFile.CaseFile.PublicClues, clue => clue.Id == clueId.Value);
+        Assert.Empty(setupCaseFile.CaseFile.Clues);
+        var investigation = Assert.Single(allEvents.OfType<InvestigationPerformed>());
+        Assert.Equal(clueId, investigation.ClueId);
+        Assert.Contains(session.CaseFile.KnownClues, clue => clue.Id == clueId);
+        var commandDay = session.Clock.Day;
+        var commandTurn = session.Clock.Turn;
 
-        // Build the full event stream: GameStarted + CaseFileGenerated + InvestigationPerformed.
-        // We reconstruct the GameStarted event from the session's initial state.
-        // The CaseFileGenerated event carries the case file snapshot (including the
-        // now-known clue) so the case file can be reconstructed during replay without
-        // being passed in externally.
-        var gameStartedEvent = new GameStarted
-        {
-            PlayerName = session.Player.Name,
-            StartingTownId = session.Player.CurrentTownId!.Value,
-            StartingTownName = session.World.GetTown(session.Player.CurrentTownId!.Value).Name,
-            StartingHealth = session.Player.Health,
-            StartingWallet = 25m,
-            StartingInventoryItems = Array.Empty<InventoryItem>(),
-            GameDifficulty = session.GameDifficulty,
-            SaltSource = session.SaltSource,
-            GameEntropy = session.GameEntropy
-        };
-        var caseFileEvent = new CaseFileGenerated
-        {
-            CaseFile = CaseFileSnapshot.FromDomain(session.CaseFile)
-        };
-        var allEvents = new List<IDomainEvent> { gameStartedEvent, caseFileEvent };
-        allEvents.AddRange(investigationEvents);
+        var rehydrated = GameSession.RehydrateFromEvents(session.Id, session.World, allEvents);
 
-        // Replay from events — the CaseFile is now reconstructed from the
-        // CaseFileGenerated event in the stream, not passed in externally.
-        var rehydrated = GameSession.RehydrateFromEvents(
-            session.Id,
-            session.World,
-            allEvents);
-
-        // The replayed session must have discovered the clue from the event
-        Assert.Equal(session.CaseFile.KnownClues.Count, rehydrated.CaseFile.KnownClues.Count);
-        Assert.Equal(session.CaseFile.PublicClues.Count, rehydrated.CaseFile.PublicClues.Count);
-        var revealedClueId = investigationEvents.OfType<InvestigationPerformed>().Single().ClueId!.Value;
-        Assert.Contains(rehydrated.CaseFile.KnownClues, c => c.Id.Equals(revealedClueId));
-        Assert.DoesNotContain(rehydrated.CaseFile.PublicClues, c => c.Id.Equals(revealedClueId));
+        Assert.Contains(rehydrated.CaseFile.KnownClues, clue => clue.Id == clueId);
+        Assert.DoesNotContain(rehydrated.CaseFile.PublicClues, clue => clue.Id == clueId);
+        Assert.True(session.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
+        Assert.True(rehydrated.CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip));
+        Assert.Equal(commandDay, rehydrated.Clock.Day);
+        Assert.Equal(commandTurn, rehydrated.Clock.Turn);
     }
-
     [Fact]
     public void CanonicalStart_FullRoundTrip_Rehydrates_CompleteState_FromEvents()
     {
@@ -366,7 +357,7 @@ public class GameSessionEventSourcingTests
         // Perform an operation to prove post-start events also survive replay
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(session.World.GetTown(session.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         session.Purchase(offer, 1);
 
         // Collect ALL events (6 setup + operation events)
@@ -381,8 +372,8 @@ public class GameSessionEventSourcingTests
         var placeholderWorld = new DomainWorld(
             new[]
             {
-                new Town(new TownId("current"), "PLACEHOLDER Town", TownServices.None),
-                new Town(new TownId("connected"), "PLACEHOLDER Connected", TownServices.None)
+                new Town(new TownId("current"), "PLACEHOLDER Town"),
+                new Town(new TownId("connected"), "PLACEHOLDER Connected")
             },
             new[] { new Trail(new TrailId("trail-1"), new TownId("current"), new TownId("connected"), TrailRisk.Low) });
         var rehydrated = GameSession.RehydrateFromEvents(
@@ -537,8 +528,8 @@ public class GameSessionEventSourcingTests
     /// </summary>
     private static GameSession CreateSessionWithFullCaseFile()
     {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.Telegraph);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("current"), "Current Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -603,7 +594,6 @@ public class GameSessionEventSourcingTests
             discoveredSuspectIds: new[] { new SuspectId("suspect-1") },
             publicClues: new[] { publicClue },
             killerReleaseThreshold: 3,
-            killerReleaseProgress: 1,
             knownWarrants: new[] { knownWarrant },
             publicWarrants: new[] { publicWarrant },
             suspectTurfAssignments: new[] { new SuspectTurfAssignment(new SuspectId("suspect-1"), town.Id) },
@@ -671,8 +661,8 @@ public class GameSessionEventSourcingTests
 
     private static DomainWorld CreateWorld()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         return new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

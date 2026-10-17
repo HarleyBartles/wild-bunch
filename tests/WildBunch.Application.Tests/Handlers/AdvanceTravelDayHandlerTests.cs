@@ -1,3 +1,4 @@
+using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Games.Commands;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Projections;
@@ -23,18 +24,16 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateEasyLuckyFoodSession();
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
         Assert.True(result.Success || result.JourneyStatus == JourneyStatus.Interrupted);
-        if (result.TrailEvent is not null)
-        {
-            Assert.Contains("cache", result.TrailEvent.Title, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("I ", result.TrailEvent.Message, StringComparison.OrdinalIgnoreCase);
-        }
+        Assert.NotNull(result.TrailEvent);
+        Assert.False(string.IsNullOrWhiteSpace(result.TrailEvent!.Title));
+        Assert.Contains("I ", result.TrailEvent.Message, StringComparison.OrdinalIgnoreCase);
 
-        Assert.True(result.CurrentSession.Inventory.Items.First(item => item.Kind == ItemKind.Food).Quantity >= 2);
+        Assert.True(result.CurrentSession.Inventory!.Items.First(item => item.Kind == ItemKind.Food).Quantity >= 2);
     }
 
     [Fact]
@@ -44,14 +43,14 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateEasyLuckyFoodSession();
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
-        Assert.NotNull(result.TravelDiary);
-        var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.StartsWith("I ", StringComparison.Ordinal));
-        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you found", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(result.CurrentSession.TravelDiary);
+        var diaryDay = Assert.Single(result.CurrentSession.TravelDiary!.Days);
+        Assert.Contains(result.CurrentSession.TravelDiary!.JourneyEntries, entry => entry.Message.StartsWith("I ", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message.Contains("you found", StringComparison.OrdinalIgnoreCase));
         Assert.True(diaryDay.CurrentFood >= 2);
         Assert.Equal(0, diaryDay.CurrentAmmo);
         Assert.Equal(result.CurrentSession.Player.Health, diaryDay.CurrentHealth);
@@ -64,16 +63,15 @@ public sealed class AdvanceTravelDayHandlerTests
         var session = CreateHighRiskSession();
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Interrupted, result.JourneyStatus);
-        Assert.NotNull(result.TravelDiary);
-        var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Single(diaryDay.Entries, entry => entry.Contains("cuts across my path", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(result.CurrentSession.TravelDiary);
+        var diaryDay = Assert.Single(result.CurrentSession.TravelDiary!.Days);
+        Assert.Contains(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message == "A hard-eyed rider cuts across my path.");
+        Assert.DoesNotContain(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message.Contains("I could run, fight, or bribe", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -88,77 +86,59 @@ public sealed class AdvanceTravelDayHandlerTests
             GameDifficulty: GameDifficulty.Challenging);
         repository.Seed(session);
         var handler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
-        Assert.NotNull(result.TravelDiary);
-        var diaryDay = Assert.Single(result.TravelDiary!.Days);
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("went lame", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("I kept moving", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(diaryDay.Entries, entry => entry.Contains("lame", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(diaryDay.Entries, entry => entry.Contains("you ", StringComparison.OrdinalIgnoreCase));
+        Assert.NotNull(result.CurrentSession.TravelDiary);
+        var diaryDay = Assert.Single(result.CurrentSession.TravelDiary!.Days);
+        Assert.Single(result.CurrentSession.TravelDiary!.JourneyEntries, entry => entry.Message.Contains("Your horse went lame", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.CurrentSession.TravelDiary.JourneyEntries, entry => entry.Message.Contains("One trail day passes on foot", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public async Task HandleAsyncKeepsCompletedJourneyUntilArrivalIsAcknowledged()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateEasyLuckyFoodSession();
-        repository.Seed(session);
-
-        var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
-        var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
-
-        var secondAdvance = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
-        Assert.NotNull(secondAdvance.CurrentSession.Journey);
-        if (secondAdvance.JourneyStatus == JourneyStatus.Completed)
-        {
-            var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
-
-            Assert.True(acknowledged.Success);
-            Assert.Null(acknowledged.CurrentSession.Journey);
-            Assert.Equal("openpass", acknowledged.CurrentSession.Player.CurrentTownId);
-            Assert.NotNull(acknowledged.TravelDiary);
-        }
-    }
-
-    [Fact]
-    public async Task HandleAsyncCompletesSixFullTrailDaysBeforeArrival()
+    public async Task HandleAsyncCompletesSixFullTrailDaysBeforeArrivalAcknowledgement()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSixDayQuietSession();
         repository.Seed(session);
 
+        var forceTravelOverrideHandler = new ForceTravelOverrideHandler(repository, repository);
         var advanceHandler = new AdvanceTravelDayHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
         var acknowledgeHandler = new AcknowledgeJourneyArrivalHandler(repository, repository,
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
-        GameTurnResultDto? result = null;
         for (var day = 1; day <= 6; day++)
         {
-            result = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
+            await forceTravelOverrideHandler.HandleAsync(new ForceTravelOverrideCommand(
+                session.Id.Value,
+                TravelDayEncounterCategory.Quiet,
+                FoeSpeed: null,
+                FoeFightStrength: null,
+                FoeMinimumBribe: null,
+                EncounterMessage: null));
+            var result = await advanceHandler.HandleAsync(new AdvanceTravelDayCommand(session.Id.Value));
 
-            Assert.NotNull(result.CurrentSession.Journey);
+            Assert.True(result.Success);
+            Assert.Equal(day < 6 ? JourneyStatus.Active : JourneyStatus.Completed, result.JourneyStatus);
+            Assert.NotNull(result.Journey);
+            Assert.Equal(day < 6 ? "pinecross" : "sixmile", result.CurrentSession.Player.CurrentTownId);
+            Assert.Equal(Enumerable.Range(1, day), result.CurrentSession.TravelDiary!.Days.Select(entry => entry.DayNumber));
         }
 
-        if (result is not null && result.JourneyStatus == JourneyStatus.Completed)
-        {
-            var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
+        var acknowledged = await acknowledgeHandler.HandleAsync(new AcknowledgeJourneyArrivalCommand(session.Id.Value));
 
-            Assert.True(acknowledged.Success);
-            Assert.Null(acknowledged.CurrentSession.Journey);
-            Assert.NotNull(acknowledged.TravelDiary);
-        }
+        Assert.True(acknowledged.Success);
+        Assert.Null(acknowledged.CurrentSession.Journey);
+        Assert.Equal("sixmile", acknowledged.CurrentSession.Player.CurrentTownId);
+        Assert.Equal(Enumerable.Range(1, 6), acknowledged.CurrentSession.TravelDiary!.Days.Select(entry => entry.DayNumber));
     }
 
     private static GameSession CreateEasyLuckyFoodSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var openpass = new Town(new TownId("openpass"), "Open Pass", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var openpass = new Town(new TownId("openpass"), "Open Pass");
         var world = new DomainWorld(
             new[] { pinecross, openpass },
             new[]
@@ -188,8 +168,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
     private static GameSession CreateHighRiskSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -225,8 +205,8 @@ public sealed class AdvanceTravelDayHandlerTests
 
     private static GameSession CreateSixDayQuietSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var sixmile = new Town(new TownId("sixmile"), "Six Mile", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var sixmile = new Town(new TownId("sixmile"), "Six Mile");
         var world = new DomainWorld(
             new[] { pinecross, sixmile },
             new[]
@@ -261,8 +241,8 @@ public sealed class AdvanceTravelDayHandlerTests
         TrailRisk trailRisk = TrailRisk.Low,
         GameDifficulty GameDifficulty = GameDifficulty.Standard)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var midway = new Town(new TownId("midway"), "Midway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var midway = new Town(new TownId("midway"), "Midway");
         var world = new DomainWorld(
             new[] { pinecross, midway },
             new[]

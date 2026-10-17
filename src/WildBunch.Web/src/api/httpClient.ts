@@ -1,4 +1,14 @@
-const defaultApiBaseUrl = "http://localhost:5275";
+const defaultApiBaseUrl = "http://127.0.0.1:5275";
+
+export class HttpRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "HttpRequestError";
+  }
+}
 
 export function getApiBaseUrl() {
   const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
@@ -14,12 +24,12 @@ export function getApiBaseUrl() {
 }
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
+
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
     ...init,
+    headers,
   });
 
   const contentType = response.headers.get("content-type") ?? "";
@@ -29,7 +39,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
 
   if (!response.ok) {
     const message = extractErrorMessage(body) || `Request failed with status ${response.status}`;
-    throw new Error(message);
+    throw new HttpRequestError(message, response.status);
   }
 
   return body as T;

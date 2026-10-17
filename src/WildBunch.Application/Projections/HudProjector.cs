@@ -17,6 +17,10 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
     public HudProjection Project(IReadOnlyList<IDomainEvent> events)
     {
         ArgumentNullException.ThrowIfNull(events);
+        if (!events.OfType<GameStarted>().Any())
+        {
+            throw new InvalidOperationException("A HUD projection requires a GameStarted event.");
+        }
 
         Guid sessionId = Guid.Empty;
         GameStatus status = GameStatus.Active;
@@ -55,9 +59,6 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                     walletCash += st.BountyAmount;
                     break;
 
-                case UnrelatedCriminalTurnInSettled ut:
-                    walletCash += ut.BountyAmount;
-                    break;
 
                 case SaloonPersonOfInterestConfronted sc:
                     if (sc.WalletAfter is { } walletAfter)
@@ -96,6 +97,11 @@ public sealed class HudProjector : IDomainEventProjector<HudProjection>
                         inventory[kind] = Math.Max(0,
                             (inventory.TryGetValue(kind, out var stolen) ? stolen : 0) - jer.StolenItemQuantity);
                     }
+                    break;
+
+                case PlayerDied:
+                    status = GameStatus.Failed;
+                    health = 0;
                     break;
 
                 case JourneyCompleted jc:

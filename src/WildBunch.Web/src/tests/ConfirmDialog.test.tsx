@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -31,10 +31,7 @@ function renderDialog(props: Partial<ComponentProps<typeof ConfirmDialog>> = {})
 
 describe("ConfirmDialog", () => {
   it("renders the title and body when open", () => {
-    renderDialog({
-      title: "Discard progress?",
-      body: "This cannot be undone.",
-    });
+    renderDialog({ title: "Discard progress?", body: "This cannot be undone." });
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Discard progress?")).toBeInTheDocument();
@@ -45,6 +42,30 @@ describe("ConfirmDialog", () => {
     renderDialog({ open: false });
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("focuses the primary action when opened", () => {
+    const prototype = HTMLDialogElement.prototype;
+    const originalShowModal = Object.getOwnPropertyDescriptor(prototype, "showModal");
+    Object.defineProperty(prototype, "showModal", {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        this.setAttribute("open", "");
+        this.querySelector<HTMLElement>("button:not([disabled])")?.focus();
+      },
+    });
+
+    try {
+      renderDialog();
+      expect(screen.getByRole("button", { name: "Confirm" })).toHaveFocus();
+    } finally {
+      cleanup();
+      if (originalShowModal) {
+        Object.defineProperty(prototype, "showModal", originalShowModal);
+      } else {
+        Reflect.deleteProperty(prototype, "showModal");
+      }
+    }
   });
 
   it("calls onCancel and not onConfirm when Cancel is clicked", async () => {
@@ -67,14 +88,15 @@ describe("ConfirmDialog", () => {
     expect(onCancel).not.toHaveBeenCalled();
   });
 
-  it("calls onCancel when Escape is pressed", async () => {
-    const user = userEvent.setup();
+  it("requests cancellation when its native cancel event fires", () => {
     const { onCancel, onConfirm } = renderDialog();
+    const cancelEvent = new Event("cancel", { cancelable: true });
 
-    await user.keyboard("{Escape}");
+    fireEvent(screen.getByRole("dialog"), cancelEvent);
 
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
+    expect(cancelEvent.defaultPrevented).toBe(true);
   });
 
   it("disables both buttons when busy", () => {
@@ -84,37 +106,45 @@ describe("ConfirmDialog", () => {
     expect(screen.getByRole("button", { name: "Confirm" })).toBeDisabled();
   });
 
-  it("does not call onCancel on Escape while busy", async () => {
-    const user = userEvent.setup();
+  it("prevents a native cancel request while busy", () => {
     const { onCancel, onConfirm } = renderDialog({ busy: true });
+    const cancelEvent = new Event("cancel", { cancelable: true });
 
-    await user.keyboard("{Escape}");
+    fireEvent(screen.getByRole("dialog"), cancelEvent);
 
     expect(onCancel).not.toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
+    expect(cancelEvent.defaultPrevented).toBe(true);
   });
 
-  it("does not close on backdrop click while busy", async () => {
-    const user = userEvent.setup();
+  it("wraps Tab and Shift+Tab between its first and last controls", () => {
+    renderDialog();
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    const confirm = screen.getByRole("button", { name: "Confirm" });
+
+    cancel.focus();
+    fireEvent.keyDown(cancel, { key: "Tab", shiftKey: true });
+    expect(confirm).toHaveFocus();
+
+    confirm.focus();
+    fireEvent.keyDown(confirm, { key: "Tab" });
+    expect(cancel).toHaveFocus();
+  });
+
+  it("does not close on backdrop click while busy", () => {
     const { onCancel } = renderDialog({ busy: true });
 
-    // Click the backdrop (the parent element wrapping the dialog).
     const dialog = screen.getByRole("dialog");
-    const backdrop = dialog.parentElement;
-    expect(backdrop).not.toBeNull();
-    await user.click(backdrop!);
+    fireEvent.click(dialog);
 
     expect(onCancel).not.toHaveBeenCalled();
   });
 
-  it("closes on backdrop click when not busy", async () => {
-    const user = userEvent.setup();
+  it("closes on backdrop click when not busy", () => {
     const { onCancel } = renderDialog();
 
     const dialog = screen.getByRole("dialog");
-    const backdrop = dialog.parentElement;
-    expect(backdrop).not.toBeNull();
-    await user.click(backdrop!);
+    fireEvent.click(dialog);
 
     expect(onCancel).toHaveBeenCalledTimes(1);
   });

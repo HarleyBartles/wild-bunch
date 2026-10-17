@@ -16,12 +16,9 @@ namespace WildBunch.Domain.Cases;
 ///   <see cref="string.GetHashCode()"/>, which is randomized per process).</item>
 /// </list>
 /// Eligible warrants are all <see cref="CaseFile.PublicWarrants"/> not already in
-/// <see cref="CaseFile.KnownWarrants"/>, with the culprit warrant
-/// (<see cref="InvestigationTargetKind.TrueCulprit"/>) excluded unless
-/// <see cref="CaseFile.KillerReleaseState"/>.<see cref="KillerReleaseState.IsReleased"/>
-/// is true. Warrants whose IDs appear in <paramref name="retiredWarrantIds"/>
-/// (despawned unrelated criminals) are also excluded. Returns null when the
-/// eligible pool is exhausted.
+/// <see cref="CaseFile.KnownWarrants"/>. The culprit's identity may be publicly known
+/// before the release gate opens; the gate controls encounter eligibility only.
+/// Returns null when the eligible pool is exhausted.
 /// </remarks>
 public sealed class WantedPosterResolver
 {
@@ -29,16 +26,12 @@ public sealed class WantedPosterResolver
         CaseFile caseFile,
         int townSlotIndex,
         int visitCount,
-        SaltSource? salt,
-        IReadOnlySet<WarrantId>? retiredWarrantIds = null)
+        SaltSource? salt)
     {
         ArgumentNullException.ThrowIfNull(caseFile);
 
         var eligible = caseFile.PublicWarrants
             .Where(w => !caseFile.KnownWarrants.Any(k => k.Id.Equals(w.Id)))
-            .Where(w => w.Terms.TargetKind != InvestigationTargetKind.TrueCulprit
-                || caseFile.KillerReleaseState.IsReleased)
-            .Where(w => retiredWarrantIds is null || !retiredWarrantIds.Contains(w.Id))
             .ToArray();
 
         if (eligible.Length == 0)

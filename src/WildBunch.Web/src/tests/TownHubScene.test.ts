@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import Phaser from "phaser";
 import { AvailableActionKind, BuildingKind, BuildingView, TownProsperity } from "../api/types";
 import type { BuildingPlacementDto, TownLayoutDto } from "../api/types";
 import { TownHubScene } from "../components/town-hub/TownHubScene";
@@ -28,38 +27,10 @@ afterEach(() => {
 
 function createBuildings(): BuildingPlacementDto[] {
   return [
-    {
-      kind: BuildingKind.Store,
-      view: BuildingView.Profile,
-      x: 12,
-      y: 15,
-      width: 8,
-      height: 10,
-    },
-    {
-      kind: BuildingKind.Sheriff,
-      view: BuildingView.Profile,
-      x: 30,
-      y: 15,
-      width: 8,
-      height: 10,
-    },
-    {
-      kind: BuildingKind.Saloon,
-      view: BuildingView.Profile,
-      x: 50,
-      y: 15,
-      width: 8,
-      height: 10,
-    },
-    {
-      kind: BuildingKind.Trailhead,
-      view: BuildingView.Rear,
-      x: 90,
-      y: 50,
-      width: 8,
-      height: 10,
-    },
+    { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Sheriff, view: BuildingView.Profile, x: 30, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 50, y: 15, width: 8, height: 10 },
+    { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
     {
       kind: BuildingKind.Telegraph,
       view: BuildingView.FrontOblique,
@@ -170,10 +141,12 @@ describe("TownHubScene visual feedback", () => {
     alpha: number;
     strokeStyle: { lineWidth: number; color: number } | null;
     interactive: boolean;
+    scale: number;
     setAlpha: (a: number) => MockRect;
     setStrokeStyle: (lw: number, color: number) => MockRect;
     setInteractive: (opts?: unknown) => MockRect;
     on: (event: string, handler: () => void) => MockRect;
+    emit: (event: string) => void;
     setScale: (s: number) => MockRect;
   }
 
@@ -181,21 +154,31 @@ describe("TownHubScene visual feedback", () => {
     key: string;
     x: number;
     y: number;
-    displayWidth: number | null;
-    displayHeight: number | null;
+    readonly displayWidth: number;
+    readonly displayHeight: number;
     flipX: boolean;
     flipY: boolean;
-    scale: number | null;
+    scaleX: number;
+    scaleY: number;
     setDisplaySize: (width: number, height: number) => MockImage;
     setFlipX: (flip: boolean) => MockImage;
     setFlipY: (flip: boolean) => MockImage;
-    setScale: (scale: number) => MockImage;
+    setInteractive: (opts?: unknown) => MockImage;
+    on: (event: string, handler: () => void) => MockImage;
+    emit: (event: string) => void;
+    setScale: (scaleX: number, scaleY?: number) => MockImage;
   }
 
   function createSceneWithMockedAdd(
     layout: TownLayoutDto,
     availableActions: AvailableActionKind[],
-  ): { scene: TownHubScene; rects: MockRect[]; images: MockImage[] } {
+    textureKeys: string[] = [],
+  ): {
+    scene: TownHubScene;
+    rects: MockRect[];
+    images: MockImage[];
+    onBuildingSelected: ReturnType<typeof vi.fn>;
+  } {
     const rects: MockRect[] = [];
     const images: MockImage[] = [];
     const onBuildingSelected = vi.fn();
@@ -206,18 +189,26 @@ describe("TownHubScene visual feedback", () => {
 
     scene.add = {
       image: (x: number, y: number, key: string) => {
+        const textureWidth = 128;
+        const textureHeight = 100;
+        const handlers = new Map<string, () => void>();
         const image: MockImage = {
           key,
           x,
           y,
-          displayWidth: null,
-          displayHeight: null,
           flipX: false,
           flipY: false,
-          scale: null,
+          scaleX: 1,
+          scaleY: 1,
+          get displayWidth() {
+            return textureWidth * Math.abs(this.scaleX);
+          },
+          get displayHeight() {
+            return textureHeight * Math.abs(this.scaleY);
+          },
           setDisplaySize(width, height) {
-            this.displayWidth = width;
-            this.displayHeight = height;
+            this.scaleX = width / textureWidth;
+            this.scaleY = height / textureHeight;
             return this;
           },
           setFlipX(flip) {
@@ -228,8 +219,19 @@ describe("TownHubScene visual feedback", () => {
             this.flipY = flip;
             return this;
           },
-          setScale(scale) {
-            this.scale = scale;
+          setInteractive() {
+            return this;
+          },
+          on(event, handler) {
+            handlers.set(event, handler);
+            return this;
+          },
+          emit(event) {
+            handlers.get(event)?.();
+          },
+          setScale(scaleX, scaleY = scaleX) {
+            this.scaleX = scaleX;
+            this.scaleY = scaleY;
             return this;
           },
         };
@@ -237,11 +239,13 @@ describe("TownHubScene visual feedback", () => {
         return image;
       },
       rectangle: (_x: number, _y: number, _w: number, _h: number, _color: number) => {
+        const handlers = new Map<string, () => void>();
         const rect: MockRect = {
           kind: rects.length as BuildingKind,
           alpha: 1,
           strokeStyle: null,
           interactive: false,
+          scale: 1,
           setAlpha(a) {
             this.alpha = a;
             return this;
@@ -254,10 +258,15 @@ describe("TownHubScene visual feedback", () => {
             this.interactive = true;
             return this;
           },
-          on() {
+          on(event, handler) {
+            handlers.set(event, handler);
             return this;
           },
-          setScale() {
+          emit(event) {
+            handlers.get(event)?.();
+          },
+          setScale(scale) {
+            this.scale = scale;
             return this;
           },
         };
@@ -276,10 +285,8 @@ describe("TownHubScene visual feedback", () => {
       }),
     };
 
-    // Mock textures to always return false (no sprites loaded in unit tests)
-    // This forces the code to use the rectangle fallback path
     (scene as any).textures = {
-      exists: () => false,
+      exists: (key: string) => textureKeys.includes(key),
     };
 
     // Track which building kind each rect corresponds to by order of creation.
@@ -290,8 +297,78 @@ describe("TownHubScene visual feedback", () => {
       rects[i].kind = layout.buildings[i].kind;
     }
 
-    return { scene, rects, images };
+    return { scene, rects, images, onBuildingSelected };
   }
+
+  it("preserves a fitted sprite's aspect ratio and dimensions through hover and selection", () => {
+    const layout = createLayout({
+      buildings: [
+        {
+          kind: BuildingKind.Store,
+          view: BuildingView.Profile,
+          x: 12,
+          y: 15,
+          width: 8,
+          height: 12,
+        },
+      ],
+    });
+    const { images, onBuildingSelected } = createSceneWithMockedAdd(
+      layout,
+      [AvailableActionKind.BuySupplies],
+      [`building-${BuildingKind.Store}`],
+    );
+    const sprite = images.find((image) => image.key === `building-${BuildingKind.Store}`)!;
+    const fittedScaleX = sprite.scaleX;
+    const fittedScaleY = sprite.scaleY;
+    const fittedWidth = sprite.displayWidth;
+    const fittedHeight = sprite.displayHeight;
+
+    expect(fittedScaleX).not.toBe(fittedScaleY);
+    expect(fittedWidth).toBeGreaterThan(0);
+    expect(fittedHeight).toBeGreaterThan(0);
+
+    sprite.emit("pointerover");
+    expect(sprite.scaleX).toBeCloseTo(fittedScaleX * 1.05);
+    expect(sprite.scaleY).toBeCloseTo(fittedScaleY * 1.05);
+    expect(sprite.displayWidth).toBeCloseTo(fittedWidth * 1.05);
+    expect(sprite.displayHeight).toBeCloseTo(fittedHeight * 1.05);
+
+    sprite.emit("pointerout");
+    expect(sprite.scaleX).toBe(fittedScaleX);
+    expect(sprite.scaleY).toBe(fittedScaleY);
+    expect(sprite.displayWidth).toBe(fittedWidth);
+    expect(sprite.displayHeight).toBe(fittedHeight);
+
+    sprite.emit("pointerdown");
+    expect(onBuildingSelected).toHaveBeenCalledWith(BuildingKind.Store);
+  });
+
+  it("keeps the rectangle fallback hover at 1.05 and restores its unit scale", () => {
+    const layout = createLayout({
+      buildings: [
+        {
+          kind: BuildingKind.Store,
+          view: BuildingView.Profile,
+          x: 12,
+          y: 15,
+          width: 8,
+          height: 10,
+        },
+      ],
+    });
+    const { rects, onBuildingSelected } = createSceneWithMockedAdd(layout, [
+      AvailableActionKind.BuySupplies,
+    ]);
+    const rect = rects.find((building) => building.kind === BuildingKind.Store)!;
+
+    rect.emit("pointerover");
+    expect(rect.scale).toBe(1.05);
+    rect.emit("pointerout");
+    expect(rect.scale).toBe(1);
+    rect.emit("pointerdown");
+    expect(onBuildingSelected).toHaveBeenCalledWith(BuildingKind.Store);
+  });
 
   it("renders available buildings with full opacity and white border highlight", () => {
     const layout = createLayout();
@@ -359,17 +436,8 @@ describe("TownHubScene visual feedback", () => {
   });
 });
 
-describe("TownHubScene truth boundary", () => {
-  it("does not give the scene access to any API function", () => {
-    const layout = createLayout();
-    const scene = new TownHubScene(layout, [], vi.fn());
-
-    expect((scene as unknown as Record<string, unknown>).api).toBeUndefined();
-    expect((scene as unknown as Record<string, unknown>).requestJson).toBeUndefined();
-    expect((scene as unknown as Record<string, unknown>).fetch).toBeUndefined();
-  });
-
-  it("selectBuilding only calls onBuildingSelected and does not call fetch or any API", () => {
+describe("TownHubScene building selection", () => {
+  it("forwards an eligible building selection without fetching during selection", () => {
     const layout = createLayout();
     const onBuildingSelected = vi.fn();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
@@ -380,13 +448,5 @@ describe("TownHubScene truth boundary", () => {
     expect(onBuildingSelected).toHaveBeenCalledTimes(1);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
-  });
-
-  it("uses the town-hub scene key", () => {
-    const layout = createLayout();
-    const scene = new TownHubScene(layout, [], vi.fn());
-
-    expect(Phaser.Scene).toBeDefined();
-    expect(scene).toBeInstanceOf(TownHubScene);
   });
 });

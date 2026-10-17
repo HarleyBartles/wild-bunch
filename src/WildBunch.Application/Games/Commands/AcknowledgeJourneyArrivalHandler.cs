@@ -10,17 +10,14 @@ namespace WildBunch.Application.Games.Commands;
 public sealed class AcknowledgeJourneyArrivalHandler : GameSessionCommandHandler
 {
     private readonly HudProjector _hudProjector;
-    private readonly DiaryProjector _diaryProjector;
 
     public AcknowledgeJourneyArrivalHandler(
         IGameSessionRepository gameSessionRepository,
         IGameSessionUnitOfWork gameSessionUnitOfWork,
-        HudProjector hudProjector,
-        DiaryProjector diaryProjector)
+        HudProjector hudProjector)
         : base(gameSessionRepository, gameSessionUnitOfWork)
     {
         _hudProjector = hudProjector;
-        _diaryProjector = diaryProjector;
     }
 
     public async Task<GameTurnResultDto> HandleAsync(AcknowledgeJourneyArrivalCommand command, CancellationToken cancellationToken = default)
@@ -43,14 +40,12 @@ public sealed class AcknowledgeJourneyArrivalHandler : GameSessionCommandHandler
         var events = await GameSessionRepository.GetEventStreamAsync(sessionId, 0, cancellationToken)
             .ConfigureAwait(false);
         var hud = _hudProjector.Project(events) with { SessionId = command.GameSessionId };
-        var diary = _diaryProjector.Project(events) with { SessionId = command.GameSessionId };
 
         return result with
         {
             CurrentSession = result.CurrentSession with
             {
-                HudProjection = hud,
-                DiaryProjection = diary
+                HudProjection = hud
             }
         };
     }

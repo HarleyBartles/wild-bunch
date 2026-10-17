@@ -10,7 +10,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -73,7 +72,6 @@ public sealed class GetJournalHandlerTests
         var result = await handler.HandleAsync(new GetJournalQuery(session.Id.Value));
 
         Assert.Single(result.CaseFile.DiscoveredSuspects);
-        Assert.Equal("suspect-2", result.CaseFile.DiscoveredSuspects[0].Id);
         Assert.Equal("Mira Cline", result.CaseFile.DiscoveredSuspects[0].Name);
         Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
@@ -81,6 +79,7 @@ public sealed class GetJournalHandlerTests
         var payload = System.Text.Json.JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Jonah Pike", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-2", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("trueCulpritId", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -93,13 +92,13 @@ public sealed class GetJournalHandlerTests
         var session = CreateSession();
         session.ProduceEvent(new InvestigationPerformed
         {
-            SourceKind = InvestigationSourceKind.LocalRecords,
+            SourceKind = InvestigationSourceKind.LocalGossip,
             TownId = session.Player.CurrentTownId!.Value,
             Message = "Second entry"
         });
         session.ProduceEvent(new InvestigationPerformed
         {
-            SourceKind = InvestigationSourceKind.LocalRecords,
+            SourceKind = InvestigationSourceKind.LocalGossip,
             TownId = session.Player.CurrentTownId!.Value,
             Message = "Third entry"
         });
@@ -127,8 +126,8 @@ public sealed class GetJournalHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         var world = new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

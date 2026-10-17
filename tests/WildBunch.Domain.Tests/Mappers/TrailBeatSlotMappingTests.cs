@@ -12,7 +12,6 @@ public class TrailBeatSlotMappingTests
     [InlineData(TravelDayEncounterCategory.Resource, TrailBeatSlotType.Minor)]
     [InlineData(TravelDayEncounterCategory.HorseTrouble, TrailBeatSlotType.Minor)]
     [InlineData(TravelDayEncounterCategory.Foe, TrailBeatSlotType.Eventful)]
-    [InlineData(TravelDayEncounterCategory.Npc, TrailBeatSlotType.Eventful)]
     [InlineData(TravelDayEncounterCategory.Environmental, TrailBeatSlotType.Eventful)]
     public void ToSlotType_MapsCategoryToBeatSlot(TravelDayEncounterCategory category, TrailBeatSlotType expected)
     {

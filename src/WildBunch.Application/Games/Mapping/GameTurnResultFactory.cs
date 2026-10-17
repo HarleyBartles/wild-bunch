@@ -13,21 +13,14 @@ public static class GameTurnResultFactory
         JourneyStatus? journeyStatus = null,
         TravelJourneySnapshot? journey = null,
         JourneyTrailEventState? trailEvent = null)
-        => new(
+    {
+        var currentSession = GameSessionMapper.ToDto(session);
+        return new GameTurnResultDto(
             success,
             message,
-            GameSessionMapper.ToDto(session),
+            currentSession,
             journeyStatus,
             journey is null ? null : TravelMapper.ToDto(journey),
-            trailEvent is null ? null : TravelMapper.ToDto(trailEvent),
-            TravelDiaryMapper.ToDto(session.TravelDiaryDays, session.TravelRules));
-
-    public static GameTurnResultDto Create(
-        bool success,
-        string message,
-        GameSession session)
-        => new(
-            success,
-            message,
-            GameSessionMapper.ToDto(session));
+            trailEvent is null ? null : TravelMapper.ToDto(trailEvent));
+    }
 }

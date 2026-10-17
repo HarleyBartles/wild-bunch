@@ -61,21 +61,6 @@ function getViewFileName(view: number): string {
   }
 }
 
-function getBackgroundProsperityDirectoryName(prosperity: TownProsperity): string {
-  switch (prosperity) {
-    case TownProsperity.Boomtown:
-      return "boomtown";
-    case TownProsperity.Prosperous:
-      return "prosperous";
-    case TownProsperity.Poor:
-      return "poor";
-    case TownProsperity.Destitute:
-      return "destitute";
-    default:
-      return "prosperous";
-  }
-}
-
 export type BackgroundBuildingFamily = "background-house" | "background-shop";
 
 export function getBackgroundSpriteUrl(
@@ -83,7 +68,7 @@ export function getBackgroundSpriteUrl(
   view: number,
   prosperity: TownProsperity,
 ): string {
-  const prosperityDir = getBackgroundProsperityDirectoryName(prosperity);
+  const prosperityDir = getProsperityDirectoryName(prosperity);
   const viewFileName = getViewFileName(view);
   return `/assets/town-hub-buildings/${prosperityDir}/${family}/${viewFileName}.png`;
 }
@@ -93,7 +78,7 @@ export function getBackgroundSpriteKey(
   view: number,
   prosperity: TownProsperity,
 ): string {
-  const prosperityDir = getBackgroundProsperityDirectoryName(prosperity);
+  const prosperityDir = getProsperityDirectoryName(prosperity);
   const viewFileName = getViewFileName(view);
   return `${family}-${prosperityDir}-${viewFileName}`;
 }

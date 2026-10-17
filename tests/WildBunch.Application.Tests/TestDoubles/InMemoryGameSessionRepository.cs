@@ -2,17 +2,20 @@ using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Application.Projections;
+using WildBunch.Application.Games.Commands;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Journal;
 
 namespace WildBunch.Application.Tests.TestDoubles;
 
-public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGameSessionReadRepository, IGameJournalReadRepository, IGameSessionUnitOfWork
+public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGameSessionReadRepository, IGameSessionEventReadRepository, IGameJournalReadRepository, IGameSessionUnitOfWork
 {
     private readonly Dictionary<GameSessionId, GameSession> _sessions = new();
     private readonly Dictionary<GameSessionId, GameSession> _pendingSessions = new();
     private readonly Dictionary<GameSessionId, List<IDomainEvent>> _eventStreams = new();
+    private readonly Dictionary<Guid, StartupOperation> _startupOperations = new();
+    private readonly Dictionary<Guid, StartupOperation> _pendingStartupOperations = new();
 
     public int StoreCalls { get; private set; }
 
@@ -29,6 +32,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
     public void Seed(GameSession session)
     {
         _sessions[session.Id] = session;
+        _eventStreams[session.Id] = session.CommittedEvents.ToList();
     }
 
     public Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default)
@@ -47,6 +51,17 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.FromResult<IReadOnlyList<GameSession>>(matching);
     }
 
+    public Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken cancellationToken = default)
+    {
+        _startupOperations.TryGetValue(operationId, out var operation);
+        return Task.FromResult(operation);
+    }
+
+    public void StoreStartupOperation(StartupOperation operation)
+    {
+        _pendingStartupOperations.Add(operation.OperationId, operation);
+    }
+
     Task<GameSessionReadModel?> IGameSessionReadRepository.GetByIdAsync(GameSessionId id, CancellationToken cancellationToken)
     {
         _sessions.TryGetValue(id, out var session);
@@ -61,7 +76,7 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             session.CaseFile,
             session.Clock,
             session.PursuitState,
-            session.CurrentTownVisit,
+            session.Player.CurrentTownId is null ? null : session.CurrentTownVisit,
             session.Journey is null ? null : session.Journey.ToSnapshot(session.TravelRules),
             session.TravelDiaryDays.ToArray(),
             GameSessionLogProjection.Project(session).ToArray()));
@@ -112,6 +127,27 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
         return Task.FromResult<IReadOnlyList<IDomainEvent>>(stream.Skip((int)fromVersion).ToArray());
     }
 
+    Task<IReadOnlyList<IDomainEvent>?> IGameSessionEventReadRepository.GetEventStreamAsync(
+        GameSessionId id,
+        CancellationToken cancellationToken)
+    {
+        if (!_sessions.TryGetValue(id, out var session))
+        {
+            return Task.FromResult<IReadOnlyList<IDomainEvent>?>(null);
+        }
+
+        return Task.FromResult<IReadOnlyList<IDomainEvent>?>(session.AllEvents.ToArray());
+    }
+
+    public async Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default)
+    {
+        var events = await GetEventStreamAsync(id, fromVersion, cancellationToken).ConfigureAwait(false);
+        return events.Select((domainEvent, index) => new RecordedDomainEvent(
+            domainEvent,
+            fromVersion + index + 1,
+            DateTime.UnixEpoch)).ToArray();
+    }
+
     public Task CommitAsync(CancellationToken cancellationToken = default)
     {
         CommitCalls++;
@@ -120,7 +156,13 @@ public sealed class InMemoryGameSessionRepository : IGameSessionRepository, IGam
             _sessions[pending.Key] = pending.Value;
         }
 
+        foreach (var operation in _pendingStartupOperations)
+        {
+            _startupOperations[operation.Key] = operation.Value;
+        }
+
         _pendingSessions.Clear();
+        _pendingStartupOperations.Clear();
         return Task.CompletedTask;
     }
 

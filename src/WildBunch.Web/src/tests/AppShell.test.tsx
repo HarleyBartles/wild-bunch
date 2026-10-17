@@ -4,7 +4,9 @@ import { RouterProvider } from "@tanstack/react-router";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
+import type { AppProfile } from "../shell/appProfile";
 import { GameSessionProvider } from "../state/GameSessionProvider";
+import { HttpRequestError } from "../api/httpClient";
 import {
   AvailableActionKind,
   JourneyStatus,
@@ -19,10 +21,9 @@ import {
   getJournal,
   getTownStoreOffers,
   buyStoreItem,
-  checkLocalRecords,
-  followTelegraphLeads,
+  advanceTravelDay,
+  setupGame,
   gatherLocalGossip,
-  inspectNoticeBoard,
   confrontSaloonPersonOfInterest,
   lookAroundSaloon,
   readWantedPosters,
@@ -36,25 +37,20 @@ vi.mock("../api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
   advanceTravelDay: vi.fn(),
   resolveTravelEncounter: vi.fn(),
   getWorldMap: vi.fn(),
-  getStartingTownMap: vi.fn(),
   setupGame: vi.fn(),
   markPrologueViewed: vi.fn(),
   startGameWithTown: vi.fn(),
   archiveGame: vi.fn(),
   getPrologue: vi.fn(),
-  getStartingTowns: vi.fn(),
   previewTravel: vi.fn(),
 }));
 
@@ -63,19 +59,18 @@ vi.mock("../dev/devApi", () => ({
 }));
 
 const mockedGetGame = vi.mocked(getGame);
+const mockedSetupGame = vi.mocked(setupGame);
 const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
-const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
-const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
-const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 const mockedAcknowledgeTravelArrival = vi.mocked(acknowledgeTravelArrival);
+const mockedAdvanceTravelDay = vi.mocked(advanceTravelDay);
 const mockedGetSessionAudit = vi.mocked(getSessionAudit);
 
 afterEach(() => {
@@ -85,22 +80,25 @@ afterEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-function renderShell() {
+function renderShell(initialPath?: string, profile: AppProfile = "public") {
+  if (initialPath) {
+    window.history.replaceState({}, "", initialPath);
+  }
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   });
+  const router = createAppRouter(profile);
 
   render(
     <QueryClientProvider client={queryClient}>
       <GameSessionProvider>
-        <RouterProvider router={createAppRouter()} />
+        <RouterProvider router={router} />
       </GameSessionProvider>
     </QueryClientProvider>,
   );
-  return { queryClient };
 }
 
 function createSession(): GameSessionDto {
@@ -117,8 +115,8 @@ function createSession(): GameSessionDto {
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -127,7 +125,7 @@ function createSession(): GameSessionDto {
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -144,7 +142,6 @@ function createSession(): GameSessionDto {
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },
@@ -169,7 +166,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -182,8 +179,6 @@ function createStoreOffers(): TownStoreOffersDto {
   return {
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   };
 }
@@ -257,8 +252,8 @@ function createInTownSessionAtDestination(): GameSessionDto {
   const session = createSession();
   session.player.currentTownId = "dust-fork";
   session.world.towns = [
-    { id: "t-town", name: "Tumbleweed", services: 0 },
-    { id: "dust-fork", name: "Dust Fork", services: 0 },
+    { id: "t-town", name: "Tumbleweed" },
+    { id: "dust-fork", name: "Dust Fork" },
   ];
   return session;
 }
@@ -266,10 +261,7 @@ function createInTownSessionAtDestination(): GameSessionDto {
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    {
-      kind: AvailableActionKind.ReadWantedPosters,
-      label: "Read wanted posters",
-    },
+    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -280,28 +272,12 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedReadWantedPosters.mockResolvedValue({
     success: true,
     message: "Read wanted posters",
     currentJournal: createJournal(),
     wantedPosters: [],
-  });
-  mockedInspectNoticeBoard.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedCheckLocalRecords.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedFollowTelegraphLeads.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
   });
   mockedGatherLocalGossip.mockResolvedValue({
     success: true,
@@ -337,12 +313,70 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
 
 describe("AppShell", () => {
+  it("keeps a saved game out of setup when its initial read fails", async () => {
+    primeMocks();
+    mockedGetGame.mockRejectedValue(new TypeError("Failed to fetch"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/town");
+
+    renderShell();
+
+    expect(
+      await screen.findByRole("heading", { name: /couldn't open your saved game/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /set up your hunt/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("banner", { name: /game status/i })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+    expect(window.location.pathname).toBe("/town");
+    expect(mockedSetupGame).not.toHaveBeenCalled();
+  });
+
+  it("retries the saved session id and resumes its server-reported phase", async () => {
+    primeMocks();
+    mockedGetGame
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(createSession());
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/");
+
+    renderShell();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: /try again/i }));
+
+    expect(await screen.findByRole("banner", { name: /game status/i })).toBeInTheDocument();
+    expect(mockedGetGame).toHaveBeenNthCalledWith(1, "game-1");
+    expect(mockedGetGame).toHaveBeenNthCalledWith(2, "game-1");
+    await waitFor(() => expect(window.location.pathname).toBe("/town"));
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+  });
+
+  it("requires an explicit choice before leaving a confirmed missing saved game", async () => {
+    primeMocks();
+    mockedGetGame.mockRejectedValue(new HttpRequestError("Saved playthrough was not found.", 404));
+    window.localStorage.setItem("wild-bunch.current-game-id", "missing-game");
+    window.history.replaceState({}, "", "/");
+
+    renderShell();
+
+    expect(
+      await screen.findByRole("heading", { name: /saved playthrough wasn't found/i }),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("missing-game");
+    expect(screen.queryByRole("heading", { name: /set up your hunt/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("banner", { name: /game status/i })).not.toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /start a new game/i }));
+
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull();
+    expect(await screen.findByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+  });
+
   it("renders the persistent HUD with player name and clock once a session hydrates", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
@@ -352,6 +386,85 @@ describe("AppShell", () => {
     const hud = await screen.findByRole("banner", { name: /game status/i });
     expect(within(hud).getByText("Ruth")).toBeInTheDocument();
     expect(within(hud).getByText("Day 5, Morning")).toBeInTheDocument();
+  });
+
+  it("shows a travel mutation in both the HUD and trail summary while the session refresh is pending", async () => {
+    const initialSession = createOnTrailSession();
+    const updatedSession = createOnTrailSession();
+    updatedSession.clock.day = 6;
+    updatedSession.journey!.remainingRideDayDistance = 0.75;
+
+    let resolveSessionRefresh!: (session: GameSessionDto) => void;
+    const sessionRefresh = new Promise<GameSessionDto>((resolve) => {
+      resolveSessionRefresh = resolve;
+    });
+    let signalSessionRefreshStarted!: () => void;
+    const sessionRefreshStarted = new Promise<void>((resolve) => {
+      signalSessionRefreshStarted = resolve;
+    });
+
+    mockedGetGame.mockResolvedValue(initialSession);
+    mockedGetAvailableActions.mockResolvedValue([]);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    mockedAdvanceTravelDay.mockResolvedValue({
+      success: true,
+      message: "The road carries on.",
+      currentSession: updatedSession,
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+    });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+    window.history.replaceState({}, "", "/trail");
+
+    renderShell();
+    const user = userEvent.setup();
+
+    try {
+      const hud = await screen.findByRole("banner", { name: /game status/i });
+      expect(within(hud).getByText("Day 5, Morning")).toBeInTheDocument();
+      expect(await screen.findByText("Trail ledger")).toBeInTheDocument();
+      mockedGetGame.mockImplementationOnce(() => {
+        signalSessionRefreshStarted();
+        return sessionRefresh;
+      });
+
+      await user.click(await screen.findByRole("button", { name: /advance travel day/i }));
+      await sessionRefreshStarted;
+
+      expect(await within(hud).findByText("Day 6, Morning")).toBeInTheDocument();
+      expect(screen.getByText("0.75")).toBeInTheDocument();
+    } finally {
+      resolveSessionRefresh(updatedSession);
+    }
+
+    expect(await screen.findByText("0.75")).toBeInTheDocument();
+  });
+
+  it("keeps developer controls out of the public player shell", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    expect(await screen.findByRole("banner", { name: /game status/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^dev$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /developer overlay/i })).not.toBeInTheDocument();
+  });
+
+  it("recovers town services after the available-actions read fails", async () => {
+    primeMocks();
+    mockedGetAvailableActions
+      .mockRejectedValueOnce(new Error("Connection unavailable"))
+      .mockResolvedValueOnce([{ kind: AvailableActionKind.BuySupplies, label: "Buy supplies" }]);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not read town services/i);
+    await userEvent.setup().click(screen.getByRole("button", { name: /try again/i }));
+
+    expect(await screen.findByRole("button", { name: /^store$/i })).toBeInTheDocument();
   });
 
   it("defaults to the flow router and shows the pre-session surface", async () => {
@@ -364,6 +477,31 @@ describe("AppShell", () => {
     expect(screen.getByRole("button", { name: /ride on/i })).toBeInTheDocument();
   });
 
+  it.each([
+    ["/town/store", "Store"],
+    ["/town/sheriff", "Sheriff Office"],
+    ["/town/saloon", "Saloon"],
+    ["/town/trailhead", "Hit the trail"],
+  ])("renders the requested player place at %s", async (path, heading) => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell(path);
+
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Tumbleweed" })).not.toBeInTheDocument();
+  });
+
+  it("does not show an arrival notice for an unrecognized search value", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell("/town?arrived=unexpected");
+
+    expect(await screen.findByRole("heading", { name: "Tumbleweed" })).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("opens the Case file overlay and renders the case surface", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
@@ -374,16 +512,15 @@ describe("AppShell", () => {
     await waitFor(() => {
       expect(mockedGetJournal).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^case file$/i }));
 
     expect(await screen.findByRole("heading", { name: /^case file$/i })).toBeInTheDocument();
-    expect(
-      screen.getByText(/player-known facts and does not guess at hidden truth/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/opening lead:/i)).toBeInTheDocument();
   });
 
-  it("opens the Journal overlay and renders the journal surface", async () => {
+  it("keeps case-summary content separate from the journal when its overlay opens", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
@@ -398,9 +535,7 @@ describe("AppShell", () => {
 
     await user.click(within(hud).getByRole("button", { name: /journal/i }));
 
-    const journalDialog = await screen.findByRole("dialog", {
-      name: /journal/i,
-    });
+    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
     const journalScope = within(journalDialog);
     expect(journalScope.getByRole("heading", { level: 2, name: /^journal$/i })).toBeInTheDocument();
     expect(journalScope.getByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
@@ -409,16 +544,58 @@ describe("AppShell", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("recovers the journal when its query fails", async () => {
+    primeMocks();
+    mockedGetJournal.mockRejectedValue(new Error("Connection unavailable"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await userEvent.setup().click(within(hud).getByRole("button", { name: /journal/i }));
+    const journalDialog = await screen.findByRole("dialog", { name: /journal/i });
+    const journalScope = within(journalDialog);
+
+    expect(await journalScope.findByRole("alert")).toHaveTextContent(/could not read the journal/i);
+    mockedGetJournal.mockResolvedValue(createJournal());
+    await userEvent.setup().click(journalScope.getByRole("button", { name: /try again/i }));
+
+    expect(await journalScope.findByText("Day 5, Morning in Tumbleweed")).toBeInTheDocument();
+  });
+
+  it("keeps case-file recovery reachable after the journal query fails", async () => {
+    primeMocks();
+    mockedGetJournal.mockRejectedValue(new Error("Connection unavailable"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const caseFileButton = await screen.findByRole("button", { name: /^case file$/i });
+    expect(caseFileButton).toBeEnabled();
+    await userEvent.setup().click(caseFileButton);
+    const caseFileDialog = await screen.findByRole("dialog", { name: /case file/i });
+    const caseFileScope = within(caseFileDialog);
+
+    expect(await caseFileScope.findByRole("alert")).toHaveTextContent(
+      /could not read the journal/i,
+    );
+    mockedGetJournal.mockResolvedValue(createJournal());
+    await userEvent.setup().click(caseFileScope.getByRole("button", { name: /try again/i }));
+
+    expect(await caseFileScope.findByText(/opening lead:/i)).toBeInTheDocument();
+  });
+
   it("shows a Dev toggle button that opens the developer overlay drawer", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
 
@@ -429,17 +606,16 @@ describe("AppShell", () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
-    const drawer = await screen.findByRole("region", {
-      name: /developer overlay/i,
-    });
+    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
     expect(drawer).toBeInTheDocument();
 
     await user.keyboard("{Escape}");
@@ -450,12 +626,13 @@ describe("AppShell", () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
     expect(await screen.findByRole("region", { name: /developer overlay/i })).toBeInTheDocument();
@@ -470,7 +647,7 @@ describe("AppShell", () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
@@ -493,31 +670,25 @@ describe("AppShell", () => {
     mockedGetGame.mockResolvedValue(createOnTrailSession());
     mockedGetAvailableActions.mockResolvedValue([]);
     mockedGetJournal.mockResolvedValue(createJournal());
-    mockedGetSessionAudit.mockResolvedValue({
-      sessionId: "game-1",
-      entries: [],
-    });
+    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/trail");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
-    const drawer = await screen.findByRole("region", {
-      name: /developer overlay/i,
-    });
+    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
 
     // The "Travel dev" panel only appears for "trail" or "trailhead" surfaces.
     // Its presence as the default active tab proves useDevSurfaceSync set the
     // surface to "trail" through the real AppShell provider boundary.
-    const travelTab = within(drawer).getByRole("button", {
-      name: /travel dev/i,
-    });
+    const travelTab = within(drawer).getByRole("button", { name: /travel dev/i });
     expect(travelTab).toBeInTheDocument();
     expect(travelTab.getAttribute("aria-pressed")).toBe("true");
   });
@@ -529,24 +700,20 @@ describe("AppShell", () => {
     ]);
     mockedGetJournal.mockResolvedValue(createJournal());
     mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
-    mockedGetSessionAudit.mockResolvedValue({
-      sessionId: "game-1",
-      entries: [],
-    });
+    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/town/store");
 
-    renderShell();
+    renderShell(undefined, "playtest");
 
     const user = userEvent.setup();
     await waitFor(() => {
       expect(mockedGetGame).toHaveBeenCalledWith("game-1");
     });
+    await screen.findByRole("banner", { name: /game status/i });
 
     await user.click(screen.getByRole("button", { name: /^dev$/i }));
-    const drawer = await screen.findByRole("region", {
-      name: /developer overlay/i,
-    });
+    const drawer = await screen.findByRole("region", { name: /developer overlay/i });
 
     // "store" surface has no surface-owner panel, so only "Session audit" and
     // "Session dev" appear (no "Travel dev" or "Saloon dev"). This proves the
@@ -563,10 +730,7 @@ describe("AppShell", () => {
     mockedGetGame.mockResolvedValue(createInTownSessionAtDestination());
     mockedGetAvailableActions.mockResolvedValue([]);
     mockedGetJournal.mockResolvedValue(createJournal());
-    mockedGetSessionAudit.mockResolvedValue({
-      sessionId: "game-1",
-      entries: [],
-    });
+    mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
     mockedAcknowledgeTravelArrival.mockResolvedValue({
       success: true,
       message: "You step into town.",
@@ -574,7 +738,6 @@ describe("AppShell", () => {
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
     window.history.replaceState({}, "", "/trail");

@@ -23,14 +23,16 @@ public sealed class GameSessionEntityConfiguration : IEntityTypeConfiguration<Ga
             .IsRequired()
             .HasMaxLength(32);
 
+        builder.HasIndex(e => e.Status)
+            .IsUnique()
+            .HasFilter("\"Status\" = 'Active'")
+            .HasDatabaseName("UX_GameSessions_OneActive");
+
         builder.Property(e => e.GameDifficulty)
             .IsRequired();
 
         builder.Property(e => e.SeedCode)
             .HasMaxLength(36);
-
-        builder.Property(e => e.SchemaVersion)
-            .IsRequired();
 
         builder.Property(e => e.StreamVersion)
             .IsRequired();

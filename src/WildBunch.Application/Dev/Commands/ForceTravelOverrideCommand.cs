@@ -1,8 +1,10 @@
+using WildBunch.Domain.Travel;
+
 namespace WildBunch.Application.Dev.Commands;
 
 public sealed record ForceTravelOverrideCommand(
     Guid GameSessionId,
-    string ForcedCategory,
+    TravelDayEncounterCategory ForcedCategory,
     int? FoeSpeed,
     int? FoeFightStrength,
     decimal? FoeMinimumBribe,

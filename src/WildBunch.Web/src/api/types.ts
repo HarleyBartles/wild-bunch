@@ -28,25 +28,20 @@ export const TravelMode = {
   Foot: 1,
 } as const;
 
-export type AvailableActionKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+export type AvailableActionKind = 0 | 1 | 2 | 3 | 5 | 6 | 7 | 11 | 12;
 export const AvailableActionKind = {
   Travel: 0,
   ViewMap: 1,
   ViewJournal: 2,
   BuySupplies: 3,
-  SendTelegram: 4,
   ReadWantedPosters: 5,
   AdvanceTravelDay: 6,
   ResolveTravelEncounter: 7,
-  InspectNoticeBoard: 8,
-  CheckSheriffRecords: 9,
-  FollowTelegraphLeads: 10,
   GatherLocalGossip: 11,
   LookAroundSaloon: 12,
 } as const;
 
 export type TrailRisk = 1 | 2 | 3;
-export type TownServices = number;
 export type AliasKind = 0 | 1 | 2 | 3 | 4;
 export type ClueKind = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type SuspectStatus = 0 | 1 | 2;
@@ -57,10 +52,6 @@ export type WaterFeature = 0 | 1 | 2 | 3;
 export type ClueRecency = 0 | 1 | 2 | 3 | 4;
 export type JourneyTrailEventKind = 0 | 1;
 export type JourneyTrailEventId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-export type StoreVendorType = 0 | 1 | 2;
-export type StoreOfferAvailability = 0 | 1;
-export type CaseIdentityKind = 0 | 1 | 2 | 3 | 4;
-export type CaseIdentityStatus = 0 | 1 | 2 | 3;
 
 export interface SetupGameRequest {
   playerName: string;
@@ -114,7 +105,6 @@ export interface InventoryCapabilitiesDto {
   firearmThreatAvailable: boolean;
   gunfightCapable: boolean;
   revolverUsable: boolean;
-  rifleUsable: boolean;
 }
 
 export interface InventoryDto {
@@ -273,10 +263,6 @@ export interface TravelDiaryDayDto {
   currentCanteenCharges: number;
   currentAmmo: number;
   currentHeat: number;
-  openingNarration: string | null;
-  journeyBeat: string | null;
-  resourceBeat: string | null;
-  entries: string[];
   warnings: string[];
   beatSlots?: TrailBeatSlotDto[];
 }
@@ -298,13 +284,14 @@ export const TrailBeatSlotType = {
 } as const;
 
 export interface TravelDiaryDto {
+  journeyEntries: GameLogEntryDto[];
   days: TravelDiaryDayDto[];
 }
 
 export interface PlayerDto {
   name: string;
-  currentTownId: string;
-  health: number;
+  currentTownId: string | null;
+  health: number | null;
 }
 
 export type TownProsperity = 0 | 1 | 2 | 3;
@@ -371,7 +358,6 @@ export interface TownLayoutDto {
 export interface TownDto {
   id: string;
   name: string;
-  services: TownServices;
   layout?: TownLayoutDto | null;
 }
 
@@ -379,21 +365,15 @@ export interface StoreOfferDto {
   itemKind: ItemKind;
   displayName: string;
   price: number;
-  vendorType: StoreVendorType;
-  availability: StoreOfferAvailability;
-  sourceNote: string;
 }
 
 export interface TownStoreOffersDto {
   townId: string;
   townName: string;
-  available: boolean;
-  sourceNote: string;
   offers: StoreOfferDto[];
 }
 
 export interface BuyStoreItemRequest {
-  vendorType: StoreVendorType | null;
   itemKind: ItemKind | null;
   quantity: number;
 }
@@ -413,15 +393,13 @@ export interface WorldDto {
   trails: TrailDto[];
 }
 
-export type InvestigationSourceKind = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type InvestigationSourceKind = 0 | 1 | 3 | 4 | 5 | 6 | 7;
 export const InvestigationSourceKind = {
-  NoticeBoard: 0,
-  LocalRecords: 1,
-  TelegraphLead: 2,
   LocalGossip: 3,
   StableLedger: 4,
   SheriffWarrants: 5,
   SaloonLookAround: 6,
+  Prologue: 7,
 } as const;
 
 export interface ClueDto {
@@ -443,42 +421,42 @@ export interface WarrantDto {
 }
 
 export interface DiscoveredSuspectDto {
-  id: string;
   name: string;
   status: SuspectStatus;
 }
 
 export interface CaseBoardDto {
-  namedRecords: CaseIdentityHandleDto[];
-  looseLeads: CaseIdentityHandleDto[];
-  evidenceItems: CaseEvidenceItemDto[];
+  warrants: CaseWarrantRecordDto[];
+  clues: CaseClueDto[];
 }
 
-export interface CaseIdentityHandleDto {
+export interface CaseWarrantRecordDto {
   id: string;
-  displayName: string;
-  kind: CaseIdentityKind;
-  status: CaseIdentityStatus;
-  resolvedToDisplayName: string | null;
-  evidenceIds: string[];
-  summaryLines: string[];
-  relatedLabels: string[];
+  targetName: string;
+  disposition: number;
+  bountyAmount: number;
   knownAliases: string[];
-  distinguishingFeatures: string[];
-  warrantDisposition: number | null;
-  bountyAmount: number | null;
-  issuingAuthority: string | null;
-  crimeSummary: string | null;
+  knownFeatures: string[];
+  issuingSource: string;
+  summary: string;
+  settlement: SheriffTurnInSettlementDto | null;
 }
 
-export interface CaseEvidenceItemDto {
+export interface SheriffTurnInSettlementDto {
+  isAlive: boolean;
+  bountyAmount: number;
+  day: number;
+  turn: number;
+}
+
+export interface CaseClueDto {
   id: string;
-  kindLabel: string;
-  sourceLabel: string;
-  summary: string;
-  identityBearing: boolean;
+  kind: ClueKind;
+  description: string;
+  sourceKind: InvestigationSourceKind | null;
+  source: string | null;
+  context: string | null;
   anchors: ClueAnchorsDto;
-  handleIds: string[];
 }
 
 export interface CaseStateDto {
@@ -550,21 +528,6 @@ export interface HudInventoryItem {
   quantity: number;
 }
 
-export interface DiaryProjection {
-  sessionId: string;
-  day: number;
-  turn: number;
-  currentTownId: string;
-  currentTownName: string;
-  entries: DiaryEntry[];
-}
-
-export interface DiaryEntry {
-  day: number;
-  turn: number;
-  summary: string;
-}
-
 export interface JourneyTrailEventDto {
   id: JourneyTrailEventId;
   kind: JourneyTrailEventKind;
@@ -589,7 +552,7 @@ export interface GameSessionDto {
   player: PlayerDto;
   world: WorldDto;
   caseFile: CaseFileDto;
-  inventory: InventoryDto;
+  inventory: InventoryDto | null;
   clock: GameClockDto;
   pursuitState: PursuitStateDto;
   journey: TravelJourneyDto | null;
@@ -597,18 +560,12 @@ export interface GameSessionDto {
   logEntries: GameLogEntryDto[];
   activeSaloonPersonOfInterest: ActiveSaloonPersonOfInterestDto | null;
   wantedPosters: WantedPosterDto[];
-  activeSaloonWantedSuspect?: ActiveSaloonWantedSuspectDto | null;
   hudProjection?: HudProjection | null;
-  diaryProjection?: DiaryProjection | null;
 }
 
 export interface ActiveSaloonPersonOfInterestDto {
   descriptor: string;
   kind: SaloonPersonOfInterestKind;
-}
-
-export interface ActiveSaloonWantedSuspectDto {
-  descriptor: string;
 }
 
 export enum SaloonPersonOfInterestKind {
@@ -642,7 +599,7 @@ export interface JournalDto {
   id: string;
   status: GameStatus;
   clock: GameClockDto;
-  currentTown: JournalTownDto;
+  currentTown: JournalTownDto | null;
   caseFile: JournalCaseFileDto;
   logEntries: GameLogEntryDto[];
 }
@@ -715,7 +672,6 @@ export interface GameTurnResultDto {
   journeyStatus?: JourneyStatus | null;
   journey?: TravelJourneyDto | null;
   trailEvent?: JourneyTrailEventDto | null;
-  travelDiary?: TravelDiaryDto | null;
 }
 
 export interface SaloonPersonOfInterestConfrontationResultDto {
@@ -745,28 +701,21 @@ export interface PrologueDto {
   variantId: string;
 }
 
-export interface StartingTownDto {
+export interface WorldMapTownDto {
   id: string;
   name: string;
-  services: number;
-}
-
-export interface StartingTownMapTownDto {
-  id: string;
-  name: string;
-  services: number;
   x: number;
   y: number;
 }
 
-export interface StartingTownMapTrailDto {
+export interface WorldMapTrailDto {
   id: string;
   fromTownId: string;
   toTownId: string;
   rideDayDistance: number;
 }
 
-export interface StartingTownMapDto {
-  towns: StartingTownMapTownDto[];
-  trails: StartingTownMapTrailDto[];
+export interface WorldMapDto {
+  towns: WorldMapTownDto[];
+  trails: WorldMapTrailDto[];
 }

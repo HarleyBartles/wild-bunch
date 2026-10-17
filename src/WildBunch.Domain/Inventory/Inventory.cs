@@ -6,8 +6,7 @@ public sealed class Inventory
     [
         ItemKind.Food,
         ItemKind.HorseFeed,
-        ItemKind.RevolverAmmo,
-        ItemKind.RifleAmmo
+        ItemKind.RevolverAmmo
     ];
 
     private readonly List<InventoryItem> _items;
@@ -43,9 +42,6 @@ public sealed class Inventory
         return horse?.HorseState;
     }
 
-    public HorseTravelState? GetHorseStateOrNull()
-        => GetHorseState();
-
     public void SetHorseState(HorseTravelState horseState)
     {
         var index = _items.FindIndex(item => item.Kind == ItemKind.Horse);
@@ -65,19 +61,6 @@ public sealed class Inventory
     {
         ValidateAddItem(kind, quantity, horseState, canteenState);
         ApplyAddItem(kind, quantity, horseState, canteenState);
-    }
-
-    public bool CanAddItem(ItemKind kind, int quantity, HorseTravelState? horseState = null, CanteenState? canteenState = null)
-    {
-        try
-        {
-            ValidateAddItem(kind, quantity, horseState, canteenState);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
     }
 
     public void RemoveQuantity(ItemKind kind, int quantity)
@@ -132,21 +115,13 @@ public sealed class Inventory
         _items[index] = new InventoryItem(ItemKind.Canteen, canteen.Quantity, canteenState: canteenState);
     }
 
-    public HorseTravelState AdvanceHorseState(bool horseFed)
-    {
-        var horseState = GetHorseState();
-        if (horseState is null)
-        {
-            throw new InvalidOperationException("Horse is not present in inventory.");
-        }
-
-        var updatedHorseState = horseState.AdvanceTravelDay(horseFed);
-        SetHorseState(updatedHorseState);
-        return updatedHorseState;
-    }
-
     private static void ValidateAddItem(ItemKind kind, int quantity, HorseTravelState? horseState, CanteenState? canteenState)
     {
+        if (!Enum.IsDefined(kind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported item kind.");
+        }
+
         if (quantity < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity cannot be negative.");

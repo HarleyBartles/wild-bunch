@@ -16,16 +16,8 @@ public sealed class WantedPosterAcceptanceTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateAuthenticatedClient();
 
+        // The API test factory supplies a fixed SaltSource at player genesis.
         var createdSession = await factory.SeedCanonicalSessionAsync();
-
-        // BUNCH-107: Force a fixed salt so the wanted-poster resolver uses
-        // boring-mode selection (deterministic). With Classic entropy, the salt
-        // is Runtime (random), making warrant selection non-deterministic.
-        // In boring mode: (townSlotIndex + visitCount) % eligibleCount = (0 + 1) % 27 = 1
-        // → warrant at index 1 = "Sundance Kid" (a gang member warrant).
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/session/lock-rng",
-            new LockRngRequestDto(Salt: "test-salt-fixed"));
 
         var response = await client.PostAsync($"/api/games/{createdSession.Id}/wanted-posters/read", content: null);
 
@@ -36,7 +28,7 @@ public sealed class WantedPosterAcceptanceTests
         Assert.NotNull(result);
         Assert.True(result!.Success);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
-        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Equal(2, result.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(result.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
@@ -55,10 +47,11 @@ public sealed class WantedPosterAcceptanceTests
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"targetKind\"", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
 
         var persistedSession = await factory.LoadSessionAsync(createdSession.Id);
         Assert.Equal("The Wild Bunch trail is quiet.", persistedSession.CaseFile.CaseState.StatusText);
-        Assert.Single(persistedSession.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(persistedSession.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Contains(persistedSession.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
     }
 }

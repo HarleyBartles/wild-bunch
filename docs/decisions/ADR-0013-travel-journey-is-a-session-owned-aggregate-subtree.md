@@ -7,6 +7,7 @@
 ## Dated History
 
 - `2026-06-01` - Chose travel and journey as cohesive state within the `GameSession` command boundary.
+- `2026-10-08` - Editorial clarification: internal travel rules do not create an independent command root; ADR-0038 records the current child protocol.
 
 ## Decision Type
 
@@ -15,7 +16,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0002
-- `related to`: ADR-0028
+- `related to`: ADR-0028, ADR-0038
 
 ## Context
 

@@ -17,7 +17,7 @@
 
 - `depends on`: ADR-0007, ADR-0028, ADR-0030
 - `follows`: ADR-0031
-- `related to`: ADR-0036
+- `related to`: ADR-0036, ADR-0041
 
 ## Context
 
@@ -27,7 +27,7 @@ Playtesting saloon encounters needs controlled inspection and generation. The co
 
 Developer saloon controls may inspect deliberately scoped hidden truth and force the next saloon person of interest. Forcing, clearing, and consuming an override are event-backed facts. A forced suspect must satisfy the same availability rules as ordinary generation, including the culprit-release gate. The override is consumed once by the next saloon look-around. Citizen encounters remain a distinct ordinary outcome; a false identity is produced by the normal confrontation flow, not by a special forced false-lead type. Every town has a saloon and sheriff's office. `LookAroundSaloon` and `ReadWantedPosters` are baseline actions regardless of `TownServices` flags.
 
-Hidden truth may be returned only by a distinct, guarded developer surface. Player APIs and projections remain constrained by ADR-0007. These developer capabilities are limited to explicitly developer-enabled environments under ADR-0030.
+Hidden truth may be returned only by a distinct, guarded developer surface. Player APIs and projections remain constrained by ADR-0007. These developer capabilities are limited to explicitly developer-enabled environments under ADR-0041.
 
 ## Rationale and Alternatives
 

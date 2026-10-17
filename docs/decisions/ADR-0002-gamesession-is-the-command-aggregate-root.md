@@ -8,6 +8,7 @@
 
 - `2026-06-01` - Chose `GameSession` as the single top-level command root for live play, while allowing coherent session-owned substructures.
 - `2026-07-01` - Extracted focused child components under the root. This changed the internal organization without creating separate command roots.
+- `2026-10-08` - Editorial clarification: the root consistency and event-production protocol is recorded in ADR-0038; this record retains the top-level root decision.
 
 ## Decision Type
 
@@ -16,7 +17,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0001
-- `related to`: ADR-0005, ADR-0013
+- `related to`: ADR-0005, ADR-0013, ADR-0038
 
 ## Context
 

@@ -20,16 +20,11 @@ public enum TownProsperity
 public sealed record Town(
     TownId Id,
     string Name,
-    TownServices Services,
     TownProsperity Prosperity = TownProsperity.Prosperous,
-    TownSourceCatalog? SourceCatalog = null,
     int MapX = 0,
     int MapY = 0,
     bool IsOutlier = false,
-    TownLayout? Layout = null)
-{
-    public TownSourceCatalog Sources => SourceCatalog ?? TownSourceCatalog.Default;
-}
+    TownLayout? Layout = null);
 
 public enum TrailTerrain
 {
@@ -129,13 +124,6 @@ public sealed class World
     public IReadOnlyList<TownId> GetTownIds() => _towns.Keys.ToList();
 }
 
-[Flags]
-public enum TownServices
-{
-    None = 0,
-    Telegraph = 1
-}
-
 /// <summary>
 /// Catalog-defined prosperity palettes. The seed encodes a 3-bit palette
 /// index; the palette maps each town position to a <see cref="TownProsperity"/>.
@@ -153,25 +141,6 @@ public enum ProsperityPalette
     GoldRush = 5,
     Struggling = 6,
     MixedBag = 7
-}
-
-/// <summary>
-/// Catalog-defined services palettes. The seed encodes a 3-bit palette
-/// index; the palette maps each town position to a <see cref="TownServices"/>
-/// flags value. Adding new service flags means defining new palette entries
-/// that use them — zero additional bit cost. Only if more than 8 service
-/// patterns are needed would this expand to 4 bits.
-/// </summary>
-public enum ServicesPalette
-{
-    NoTelegraph = 0,
-    HubTelegraph = 1,
-    TwinTelegraph = 2,
-    RegionalTelegraph = 3,
-    FrontierTelegraph = 4,
-    TelegraphWeb = 5,
-    SparseTelegraph = 6,
-    AllTelegraph = 7
 }
 
 public enum TrailRisk

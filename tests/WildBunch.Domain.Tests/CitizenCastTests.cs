@@ -47,6 +47,24 @@ public sealed class CitizenCastTests
     }
 
     [Fact]
+    public void CitizenCast_Select_WhenRoleHashIsIntMinValueStillReturnsEncounter()
+    {
+        var encounter = CitizenCast.Select(new TownId("cinnabar"), 1, 1, 116839254, SampleFeatures);
+
+        Assert.Contains(encounter.Role, CitizenCast.Roles);
+        Assert.Contains(encounter.FeatureDescription, SampleFeatures);
+    }
+
+    [Fact]
+    public void CitizenCast_Select_WhenFeatureHashIsIntMinValueStillReturnsEncounter()
+    {
+        var encounter = CitizenCast.Select(new TownId("emberfall"), 1, 1, 1536863146, SampleFeatures);
+
+        Assert.Contains(encounter.Role, CitizenCast.Roles);
+        Assert.Contains(encounter.FeatureDescription, SampleFeatures);
+    }
+
+    [Fact]
     public void CitizenCast_SelectDifferentInputsProduceVariedEncounters()
     {
         var townId = new TownId("t-abelene");
@@ -146,21 +164,4 @@ public sealed class CitizenCastTests
         Assert.DoesNotContain(encounter.Role.ShortName, descriptor);
     }
 
-    [Fact]
-    public void CitizenCast_ResolveRevealName_ProducesRoleDisplayName()
-    {
-        var encounter = CitizenCast.SelectByRoleKey("butcher", SampleFeatures);
-        Assert.Equal("the town butcher", CitizenCast.ResolveRevealName(encounter));
-    }
-
-    [Fact]
-    public void CitizenCast_ResolveRevealNarration_ContainsRoleAndFine()
-    {
-        var encounter = CitizenCast.SelectByRoleKey("butcher", SampleFeatures);
-        var narration = CitizenCast.ResolveRevealNarration(encounter, 5.00m);
-
-        Assert.Contains("sheriff identifies them as the town butcher", narration);
-        Assert.Contains("$5.00", narration);
-        Assert.Contains("releases them", narration);
-    }
 }

@@ -8,14 +8,14 @@ namespace WildBunch.Application.Games.Queries;
 
 public sealed class GetAvailableActionsHandler
 {
-    private readonly IGameSessionRepository _gameSessionRepository;
+    private readonly IGameSessionReadRepository _gameSessionReadRepository;
     private readonly ActionAvailabilityResolver _actionAvailabilityResolver;
 
     public GetAvailableActionsHandler(
-        IGameSessionRepository gameSessionRepository,
+        IGameSessionReadRepository gameSessionReadRepository,
         ActionAvailabilityResolver actionAvailabilityResolver)
     {
-        _gameSessionRepository = gameSessionRepository;
+        _gameSessionReadRepository = gameSessionReadRepository;
         _actionAvailabilityResolver = actionAvailabilityResolver;
     }
 
@@ -26,9 +26,15 @@ public sealed class GetAvailableActionsHandler
         ArgumentNullException.ThrowIfNull(query);
 
         var sessionId = new WildBunch.Domain.Game.GameSessionId(query.GameSessionId);
-        var session = await _gameSessionRepository.LoadRequiredAsync(sessionId, cancellationToken).ConfigureAwait(false);
+        var session = await _gameSessionReadRepository.GetByIdAsync(sessionId, cancellationToken).ConfigureAwait(false)
+            ?? throw new WildBunch.Application.Games.Exceptions.GameSessionNotFoundException(sessionId);
 
-        var availableActions = _actionAvailabilityResolver.Resolve(session);
+        var context = new ActionAvailabilityContext(
+            session.StartFlowPhase,
+            session.World,
+            session.Player.CurrentTownId,
+            session.Journey);
+        var availableActions = _actionAvailabilityResolver.Resolve(context);
         return AvailableActionMapper.ToDto(availableActions);
     }
 }

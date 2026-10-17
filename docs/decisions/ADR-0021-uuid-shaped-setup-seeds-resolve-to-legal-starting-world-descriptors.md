@@ -1,116 +1,40 @@
-# ADR-0021 UUID-Shaped Setup Seeds Resolve to Legal Starting-World Descriptors
+# ADR-0021 UUID-Shaped Setup Seeds Resolve to Legal Starting Worlds
 
 ## Status
 
-live
+`partially superseded`
 
-## Dated Status History
+## Dated History
 
-- 2026-06-01 - live: setup seeds now resolve from UUID-shaped seed codes into validated starting-world descriptors.
+- `2026-06-01` - Chose a UUID-shaped player seed input that resolves deterministically to legal setup data while keeping hidden culprit truth private.
+- `2026-06-29` - The seed pipeline was refactored into `SeedWorld` in commit `a2a88e9`; the resolver now uses a versioned direct-bit codec rather than the labeled mixer described in this record. The commit establishes the implementation change; it does not establish a new decision to preserve the old mixer.
+- `2026-10-08` - ADR-0039 supersedes seed ownership of starting-town selection and the single bundled setup descriptor. ADR-0040 records current difficulty and randomness vocabulary.
 
 ## Decision Type
 
-architecture, gameplay, testing
+`gameplay`, `architecture`
 
 ## Related ADRs
 
-- `depends on`: ADR-0002, ADR-0007, ADR-0012, ADR-0013, ADR-0014
-- `informs`: ADR-0010
+- `depends on`: ADR-0007, ADR-0012
+- `partially superseded by`: ADR-0039, ADR-0040
 
 ## Context
 
-The old setup seed model used a WB1-prefixed mixed format that bundled explicit options with entropy. That shape was too close to a temporary codec and too far from the new setup architecture needed for deterministic scenario generation and future descriptor-driven work.
-
-Issue #42 requires a seed architecture that can be consumed by future scenario builders without exposing hidden culprit truth, while still allowing the starting world, starting loadout, and whole-adventure randomness posture to be resolved deterministically from a player-facing seed code.
+New-game setup needs a player-editable deterministic seed without exposing the hidden case solution. The initial decision described a broader descriptor than the settled flow requires.
 
 ## Decision
 
-Setup seeds are now UUID-shaped seed codes. The player-facing code is just a legal UUID string; it is not a WB1-format token and it is not an option bundle.
+The public seed input is UUID-shaped and resolves deterministically to legal world variation through a versioned, reversible codec. The codec's bit layout is not a stable contract. It does not expose culprit identity or hidden solution facts. Starting-town choice and the current setup sequence are governed by ADR-0039; difficulty and randomness are separate controls governed by ADR-0040.
 
-The code resolves into a hierarchical `StartingWorldDescriptor` that owns:
+## Rationale and Alternatives
 
-- travel difficulty
-- `GameEntropy`
-- world variant and starting-town selection key
-- starting player loadout posture
-- starting wallet and inventory counts
-- accusation index for setup-time case shaping
+The UUID-shaped input is convenient to edit and replay while keeping setup meaning out of a bespoke public token format. Hidden truth remains owned by case generation rather than encoded for the player to inspect.
 
-The resolver is deterministic for all valid UUIDs and the descriptor is validated before package generation. Invalid manual descriptor edits are rejected rather than normalized.
+## Consequences
 
-## Decision Drivers
+An identical seed and compatible game rules can reconstruct the same generated world facts. The seed does not choose the player's starting town, own difficulty, or collapse all setup choices into one descriptor. The codec remains versioned and reversible without freezing its bit layout. Historical mixer and codec details explain the original decision but are not current implementation guidance.
 
-- Keep the setup seed contract simple and future-friendly.
-- Make the seed shape suitable for future deterministic scenario construction.
-- Preserve hidden culprit truth boundaries.
-- Avoid a compatibility layer for the retired WB1 format.
-- Distinguish whole-adventure randomness from journey-only naming.
+## Successors and Surviving Scope
 
-## Decision Summary
-
-The new setup seed architecture is UUID-shaped, descriptor-driven, and validated. Legal UUIDs always resolve to legal descriptors, and the descriptor is the place where setup meaning lives.
-
-## Detailed Decision Breakdown
-
-The resolver canonicalizes the UUID-shaped seed code and feeds it through a stable labeled mixer keyed by resolver namespace, resolver version, and field labels. The mixer derives bounded descriptor choices without treating adjacent UUID bytes as semantic bitfields. Multiple UUIDs may resolve to the same descriptor, and the descriptor can later be turned into a representative seed code for tests or fixture setup.
-
-`GameEntropy` is a first-class descriptor concept with named bands, including `Boring`, `Standard`, `Adventurous`, and `Wild`. Wild mode is legal and high-variance, but it still stays inside domain invariants.
-
-The descriptor does not expose hidden culprit identity, hidden culprit markers, or internal solution truth. Those remain internal to the case-building path and the game/session surfaces that already own them.
-
-## Options Considered and Rejected
-
-- Keep the WB1 codec and translate it internally.
-- Use a boolean or journey-only randomness flag.
-- Treat player-facing setup codes as free-form entropy strings.
-
-## When a Rejected Option Would Have Been Better
-
-The old WB1 codec would only have been preferable if the repo needed live compatibility with existing player saves or a published external seed contract. This repo does not have that product constraint.
-
-## Benefits
-
-- Clear separation between seed code, descriptor, resolver, and validation.
-- Deterministic, legal setup resolution for every valid UUID-shaped seed.
-- Better support for future deterministic scenario builders.
-- More explicit adventure randomness semantics.
-
-## Accepted Tradeoffs
-
-- The old WB1 seed strings are no longer supported as product behavior.
-- The seed no longer encodes every tiny setup detail directly.
-- Some different UUIDs now intentionally collide onto the same legal descriptor.
-
-## Risks
-
-- The descriptor can become too broad if future setup fields are stuffed into it without care.
-- Wild semantics could drift if later runtime systems start ignoring the policy boundary.
-
-## Consequences for Future Work
-
-Future deterministic scenario builders can consume the descriptor directly instead of reverse-engineering a codec. Future gameplay work can branch on `GameEntropy` without pretending it is only about journeys.
-
-## Implementation Status or Plan
-
-Live.
-
-## Related Stable Source Surfaces
-
-- `src/WildBunch.GameContent/NewGame/GameSetupSeedCodec.cs`
-- `src/WildBunch.GameContent/NewGame/StartingWorldDescriptorSeedMixer.cs`
-- `src/WildBunch.GameContent/NewGame/GameSetupSeed.cs`
-- `src/WildBunch.GameContent/NewGame/GameSetupGenerationPlan.cs`
-- `src/WildBunch.GameContent/NewGame/SeededNewGameFactory.cs`
-- `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorResolverTests.cs`
-- `tests/WildBunch.GameContent.Tests/StartingWorldDescriptorSeedCodeFactory.cs`
-- `tests/WildBunch.Integration.Tests/TestInfrastructure/ScenarioSeedCatalog.cs`
-
-## Proof of Implementation or Explicit Non-Implementation
-
-The live implementation resolves UUID-shaped seed codes into validated starting-world descriptors, and the web start-game surface now emits and validates UUID-shaped replay keys instead of the retired WB1 seed codec. `GameEntropy` remains a descriptor-level concept, setup choices are derived through labeled hashing rather than raw UUID byte slicing, and the product no longer relies on the retired WB1 format.
-
-## Review Triggers
-
-- If setup needs additional first-class descriptor dimensions.
-- If a future feature requires a public compatibility surface for old seed strings.
-- If Wild mode starts bypassing hard domain invariants.
+ADR-0039 partially supersedes the seed-owned starting-town and bundled descriptor scope. ADR-0040 supersedes the original difficulty and randomness names. The UUID-shaped input and hidden-truth boundary survive.

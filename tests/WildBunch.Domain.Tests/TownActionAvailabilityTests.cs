@@ -7,7 +7,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -16,16 +15,12 @@ namespace WildBunch.Domain.Tests;
 public sealed class TownActionAvailabilityTests
 {
     /// <summary>
-    /// Creates a session in a town with TownServices.None - no NoticeBoard,
-    /// no Supplies, no Lodging, no Telegraph, no Doctor. This is the worst case
-    /// for action availability. The town uses the default source catalog (no
-    /// sabotaged definitions). Every town has a saloon and a sheriff's office,
-    /// so both ReadWantedPosters and LookAroundSaloon must be available here.
+    /// Creates a session in a generated-shape town with the shared core surface.
     /// </summary>
-    private static GameSession CreateSessionInNoServiceTown()
+    private static GameSession CreateSessionInTown()
     {
-        var town = new Town(new TownId("no-service"), "No Service Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var town = new Town(new TownId("town"), "Town");
+        var connected = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { town, connected },
             new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
@@ -53,63 +48,52 @@ public sealed class TownActionAvailabilityTests
     }
 
     [Fact]
-    public void ActionAvailabilityResolver_AlwaysIncludesReadWantedPosters_RegardlessOfTownServices()
+    public void ActionAvailabilityResolverIncludesWantedPostersInTown()
     {
-        var session = CreateSessionInNoServiceTown();
-
-        // Prove the precondition: the town has no NoticeBoard service.
-        // This makes the test falsifiable - if the town had NoticeBoard,
-        // the assertion would pass trivially even without the fix.
-        Assert.Equal(TownServices.None, session.CurrentTown.Services);
-        Assert.False((session.CurrentTown.Services & TownServices.None) != 0);
+        var session = CreateSessionInTown();
 
         var resolver = new ActionAvailabilityResolver();
-        var actions = resolver.Resolve(session);
+        var actions = resolver.Resolve(new ActionAvailabilityContext(
+            session.StartFlowPhase,
+            session.World,
+            session.Player.CurrentTownId,
+            session.Journey?.ToSnapshot(session.TravelRules)));
 
         Assert.Contains(actions, a => a.Kind == AvailableActionKind.ReadWantedPosters);
     }
 
     [Fact]
-    public void ActionAvailabilityResolver_AlwaysIncludesLookAroundSaloon_RegardlessOfTownServices()
+    public void ActionAvailabilityResolverIncludesSaloonLookAroundInTown()
     {
-        var session = CreateSessionInNoServiceTown();
-
-        // Prove the precondition: the town has no services at all.
-        Assert.Equal(TownServices.None, session.CurrentTown.Services);
+        var session = CreateSessionInTown();
 
         var resolver = new ActionAvailabilityResolver();
-        var actions = resolver.Resolve(session);
+        var actions = resolver.Resolve(new ActionAvailabilityContext(
+            session.StartFlowPhase,
+            session.World,
+            session.Player.CurrentTownId,
+            session.Journey?.ToSnapshot(session.TravelRules)));
 
         Assert.Contains(actions, a => a.Kind == AvailableActionKind.LookAroundSaloon);
     }
 
     [Fact]
-    public void ReadWantedPosters_Succeeds_EvenWhenTownHasNoNoticeBoardService()
+    public void ReadWantedPostersSucceedsInTown()
     {
-        var session = CreateSessionInNoServiceTown();
-
-        // Prove the precondition: no NoticeBoard service.
-        Assert.False((session.CurrentTown.Services & TownServices.None) != 0);
+        var session = CreateSessionInTown();
 
         var result = session.ReadWantedPosters();
 
-        // Should not fail with "no wanted posters here" - that check is removed.
-        // It may succeed with "nothing new" if no warrants/clues are available,
-        // but it must not fail with the availability message.
         Assert.True(result.Success);
     }
 
     [Fact]
-    public void LookAroundSaloon_Succeeds_EvenWhenTownHasNoServices()
+    public void LookAroundSaloonSucceedsInTown()
     {
-        var session = CreateSessionInNoServiceTown();
-
-        // Prove the precondition: no services at all.
-        Assert.Equal(TownServices.None, session.CurrentTown.Services);
+        var session = CreateSessionInTown();
 
         var result = session.LookAroundSaloon();
 
-        // Should not fail with "no saloon here" - that check is removed.
         Assert.True(result.Success);
     }
 }

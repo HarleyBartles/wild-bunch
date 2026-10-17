@@ -46,9 +46,8 @@ Tests that need deterministic game scenarios must follow these rules. Tests that
 ### Do
 
 - **Use the factory plus seed codec round-trip to resolve seed UUIDs/codes.** Build a `SeedWorld` (via `SeedWorldResolver.CreateCanonicalSeedWorld()` or `TravelTestSeedCatalog` entries), then derive the UUID via `SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorld)`. When the codec evolves, the same seed world still resolves to a valid UUID.
-- **Use `TravelTestSeedCatalog` for travel/journey tests.** It provides canonical seed world entries with difficulty/entropy combinations and helper methods (`CreateSession`, `FindRouteFromCurrentTown`, `ResolveDestination`) that handle the round-trip.
-- **Use dev controls to force the condition under test.** Dev routes are the explicit seams for isolating specific scenarios:
-  - `ForceDevSaltSource(SaltSource.CreateFixed(...))` — force a specific salt to isolate entropy weight effects from salt randomness
+- **Use `TravelTestSeedCatalog` for seeded setup behavior tests.** It provides Boring and Classic entries over the same canonical seed world and a `CreateSession` helper that reaches the production `SeededNewGameFactory` path. It does not own route selection or travel outcomes; use Domain session behavior tests for those.
+- **Set deterministic inputs at the boundary under test.** If a setup behavior test needs fixed salt, inject a test `ISaltSourceFactory` into `GameSetupResolver` or `SeededNewGameFactory`; the catalog's `CreateSession` deliberately uses the production runtime salt factory so entropy policy is exercised. Do not mutate an established session through a developer salt control. For a gameplay branch that has a supported developer setup command, use the existing control and prove its normal consumer:
   - `ForceDevTravelOverride(DevTravelOverride.ForCategory(...))` — force the next encounter category
   - `ForceDevTravelOverride(DevTravelOverride.ForFoe(...))` — force a specific foe profile
   - `SetDevEntropy(...)` — change entropy at runtime

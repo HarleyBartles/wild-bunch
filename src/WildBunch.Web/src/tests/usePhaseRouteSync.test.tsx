@@ -12,7 +12,6 @@ vi.mock("../api/wildBunchApi", () => ({
   getAvailableActions: vi.fn(),
   getJournal: vi.fn(),
   getWorldMap: vi.fn(),
-  getStartingTownMap: vi.fn(),
   setupGame: vi.fn(),
   markPrologueViewed: vi.fn(),
   startGameWithTown: vi.fn(),
@@ -20,15 +19,11 @@ vi.mock("../api/wildBunchApi", () => ({
   archiveGame: vi.fn(),
   getTownStoreOffers: vi.fn(),
   buyStoreItem: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   getPrologue: vi.fn(),
-  getStartingTowns: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
   previewTravel: vi.fn(),
   resolveTravelEncounter: vi.fn(),
@@ -52,7 +47,7 @@ function createInTownSession(): GameSessionDto {
     startFlowPhase: StartFlowPhase.GameStarted,
     player: { name: "Ruth", currentTownId: "t-town", health: 9 },
     world: {
-      towns: [{ id: "t-town", name: "Tumbleweed", services: 0 }],
+      towns: [{ id: "t-town", name: "Tumbleweed" }],
       trails: [],
     },
     caseFile: {
@@ -60,7 +55,7 @@ function createInTownSession(): GameSessionDto {
       openingLead: "",
       caseState: { statusText: "" },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -77,7 +72,6 @@ function createInTownSession(): GameSessionDto {
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },
@@ -102,7 +96,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "" },
       caseSummary: "",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -206,5 +200,19 @@ describe("usePhaseRouteSync", () => {
       expect(screen.getByTestId("sync-host")).toBeInTheDocument();
     });
     expect(window.location.pathname).toBe("/town/store");
+  });
+
+  it("does not redirect a saved-session deep link when its read fails", async () => {
+    mockedGetGame.mockRejectedValue(new TypeError("Failed to fetch"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    const { queryClient } = renderWithRouter("/town");
+
+    await waitFor(() => {
+      expect(queryClient.getQueryState(["session", "game-1"])?.status).toBe("error");
+    });
+
+    expect(window.location.pathname).toBe("/town");
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
   });
 });

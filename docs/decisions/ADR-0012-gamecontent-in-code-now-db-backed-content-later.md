@@ -16,7 +16,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0004
-- `related to`: ADR-0021
+- `related to`: ADR-0021, ADR-0039
 
 ## Context
 

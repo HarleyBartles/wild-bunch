@@ -141,7 +141,7 @@ public static class SaloonDevContextMapper
         var eligibleCount = session.CaseFile.Suspects.Count(s => session.IsEligibleSaloonPersonOfInterestCandidate(s));
         var citizenCount = CitizenCast.Roles.Count;
         parts.Add($"Saloon POI pool: {eligibleCount} suspect(s) + {citizenCount} citizen role(s) + nobody. " +
-                  "Any non-culprit suspect or citizen can appear in any saloon — no town presence or warrant gates.");
+                  "Any eligible suspect, including the culprit after the release gate opens, or citizen can appear in any saloon; there are no town presence or warrant gates.");
 
         return string.Join(" ", parts);
     }

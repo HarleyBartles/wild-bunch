@@ -5,45 +5,40 @@ import { JourneyDecision } from "./JourneyDecision";
 import styled from "styled-components";
 
 const revolverAmmoKind = 7;
-const rifleAmmoKind = 9;
 
 interface TravelActionsProps {
   session: GameSessionDto;
   busy: boolean;
   refreshing: boolean;
-  actionError: string | null;
-  onAdvanceTravelDay: () => Promise<void>;
-  onAcknowledgeTravelArrival: () => Promise<void>;
+  onAdvanceTravelDay: () => void;
   onResolveEncounter: (
     choiceId: string,
     options?: {
       bulletSpend?: number | null;
       bribeAmount?: number | null;
     },
-  ) => Promise<void>;
+  ) => void;
 }
 
 export function TravelActions({
   session,
   busy,
   refreshing,
-  actionError,
   onAdvanceTravelDay,
-  onAcknowledgeTravelArrival,
   onResolveEncounter,
 }: TravelActionsProps) {
   const journey = session.journey;
-  const firearmAmmo = session.inventory.items
-    .filter((item) => item.kind === revolverAmmoKind || item.kind === rifleAmmoKind)
-    .reduce((total, item) => total + item.quantity, 0);
 
-  if (!journey) {
+  if (!journey || session.inventory === null) {
     return null;
   }
 
+  const firearmAmmo = session.inventory.items
+    .filter((item) => item.kind === revolverAmmoKind)
+    .reduce((total, item) => total + item.quantity, 0);
+
   const disabled = busy || refreshing;
   const pendingEncounter = journey.pendingEncounter;
-  const arrivalPending = journey.status === JourneyStatus.Completed;
   const canAdvance = journey.status === JourneyStatus.Active && !pendingEncounter;
 
   return (
@@ -53,13 +48,11 @@ export function TravelActions({
         <span>
           {pendingEncounter
             ? "Encounter waiting"
-            : arrivalPending
-              ? "Arrival pending"
-              : "Ready to ride"}
+            : journey.status === JourneyStatus.Active
+              ? "Ready to ride"
+              : "Journey paused"}
         </span>
       </SectionHeader>
-
-      {actionError ? <InlineError>{actionError}</InlineError> : null}
 
       {pendingEncounter ? (
         <JourneyDecision
@@ -70,31 +63,13 @@ export function TravelActions({
           cash={session.inventory.wallet.cash}
           onResolveEncounter={onResolveEncounter}
         />
-      ) : arrivalPending ? (
-        <>
-          <ActionCopy>
-            The trail pages are still open. Acknowledge the arrival when you are ready to step into
-            town.
-          </ActionCopy>
-          <PrimaryButton
-            type="button"
-            onClick={() => void onAcknowledgeTravelArrival()}
-            disabled={disabled}
-          >
-            {busy ? "Entering town..." : "Enter town"}
-          </PrimaryButton>
-        </>
       ) : canAdvance ? (
         <>
           <ActionCopy>
             The notebook is ready for the next stretch of road. Advance the day when you want the
             trail to continue.
           </ActionCopy>
-          <PrimaryButton
-            type="button"
-            onClick={() => void onAdvanceTravelDay()}
-            disabled={disabled}
-          >
+          <PrimaryButton type="button" onClick={onAdvanceTravelDay} disabled={disabled}>
             {busy ? "Advancing..." : "Advance travel day"}
           </PrimaryButton>
         </>
@@ -128,14 +103,6 @@ const SectionHeader = styled.div`
 const ActionCopy = styled.p`
   margin: 0;
   color: color-mix(in srgb, var(--text) 74%, transparent);
-`;
-
-const InlineError = styled.div`
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--danger) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
-  color: var(--danger-text);
 `;
 
 const PrimaryButton = styled(ButtonBase)`

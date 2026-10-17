@@ -91,6 +91,7 @@ internal static class SeedCaseBuilder
         var publicWarrants = CreatePublicWarrants(
             source,
             roster,
+            suspects,
             trueCulpritIndex);
         var accusationId = suspects[accusationIndex].Id;
 
@@ -125,9 +126,9 @@ internal static class SeedCaseBuilder
                 CaseSuspectFeaturePool.BuildOpeningLead(culpritFeature),
                 trueCulpritId,
                 InvestigationTargetKind.TrueCulprit,
-                "trail witness",
+                "prologue",
                 "Opening lead",
-                InvestigationSourceKind.TelegraphLead,
+                InvestigationSourceKind.Prologue,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
@@ -158,45 +159,13 @@ internal static class SeedCaseBuilder
                 $"A poster links the alias {DescribePrimaryAlias(suspects[0])} to {DescribePersonWithFeature(features[0].PrimaryFeature, "a rider")}.",
                 suspects[0].Id,
                 InvestigationTargetKind.GangMember,
-                "notice board",
+                "sheriff office",
                 "Public wanted poster",
                 InvestigationSourceKind.SheriffWarrants,
                 anchors: new ClueAnchors(
                     subjects: new[]
                     {
                         new ClueSubjectAnchor(DescribePrimaryAlias(suspects[0]), Alias: DescribePrimaryAlias(suspects[0]), Feature: features[0].PrimaryFeature.Language.HasForm)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CasePublicClues,
-                2,
-                ClueKind.Record,
-                $"A public notice describes {DescribeUnnamedRider(features[1].PrimaryFeature)}.",
-                suspects[1].Id,
-                InvestigationTargetKind.Suspected,
-                "sheriff record",
-                "Public notice",
-                InvestigationSourceKind.LocalRecords,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor(features[1].PrimaryFeature.Language.HasForm, Feature: features[1].PrimaryFeature.Language.HasForm)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CasePublicClues,
-                3,
-                ClueKind.IdentityFact,
-                $"A telegraph clerk filed the alias {DescribePrimaryAlias(suspects[2])} alongside a note about {DescribePersonWithFeature(features[2].PrimaryFeature, "a rider")}.",
-                suspects[2].Id,
-                InvestigationTargetKind.Suspected,
-                "telegraph clerk",
-                "Telegraph lead",
-                InvestigationSourceKind.TelegraphLead,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor(DescribePrimaryAlias(suspects[2]), Alias: DescribePrimaryAlias(suspects[2]), Fact: features[2].PrimaryFeature.Language.HasForm)
                     })),
             CreateClue(
                 source,
@@ -225,26 +194,6 @@ internal static class SeedCaseBuilder
                     directions: new[]
                     {
                         new ClueDirectionAnchor("kept to the rail spur after dark", Movement: "kept to the rail spur after dark", Route: "rail spur", DestinationTownId: suspectTurfAssignments[4].TurfTownId)
-                    })),
-            CreateClue(
-                source,
-                GameSetupDeterministicLabels.CasePublicClues,
-                5,
-                ClueKind.IdentityFact,
-                $"A witness tied the rider to {DescribePersonWithFeature(culpritFeature, "a man")}.",
-                trueCulpritId,
-                InvestigationTargetKind.TrueCulprit,
-                "telegraph ledger",
-                "Identity match",
-                InvestigationSourceKind.TelegraphLead,
-                anchors: new ClueAnchors(
-                    subjects: new[]
-                    {
-                        new ClueSubjectAnchor(culpritFeature.Language.HasForm, Feature: culpritFeature.Language.HasForm, Fact: "identity match")
-                    },
-                    times: new[]
-                    {
-                        new ClueTimeAnchor(ClueRecency.Recent)
                     })),
             CreateClue(
                 source,
@@ -282,18 +231,22 @@ internal static class SeedCaseBuilder
     private static IReadOnlyList<Warrant> CreatePublicWarrants(
         GameSetupDeterministicSource source,
         IReadOnlyList<CaseCharacterProfile> roster,
+        IReadOnlyList<Suspect> suspects,
         int trueCulpritIndex)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(roster);
+        ArgumentNullException.ThrowIfNull(suspects);
+        if (roster.Count != suspects.Count)
+        {
+            throw new ArgumentException("Each public warrant must correspond to one generated suspect.", nameof(suspects));
+        }
 
         var publicWarrants = new List<Warrant>();
         var warrantIndex = 1;
 
-        // 7 gang member warrants: one per suspect. The true culprit's warrant
-        // carries InvestigationTargetKind.TrueCulprit; the rest are GangMember.
-        // The culprit warrant is gated behind the killer release gate at runtime
-        // (WantedPosterResolver), not at setup time, so it stays in the pool.
+        // 7 public warrants: one per suspect. The true culprit's public identity
+        // can surface before release; the encounter gate is enforced by saloon selection.
         for (var i = 0; i < roster.Count; i++)
         {
             var profile = i == trueCulpritIndex
@@ -305,19 +258,8 @@ internal static class SeedCaseBuilder
                 profile,
                 source,
                 "Wanted for Wild Bunch gang crimes.",
-                InvestigationSourceKind.SheriffWarrants));
-        }
-
-        // 21 unrelated criminal warrants from the shared pool.
-        foreach (var profile in CaseCharacterRoster.UnrelatedWantedCriminalPool)
-        {
-            publicWarrants.Add(CreateWarrant(
-                GameSetupDeterministicLabels.CasePublicWarrants,
-                warrantIndex++,
-                profile,
-                source,
-                "Wanted for unrelated territorial offenses.",
-                InvestigationSourceKind.SheriffWarrants));
+                InvestigationSourceKind.SheriffWarrants,
+                suspects[i].Id));
         }
 
         return publicWarrants;
@@ -361,7 +303,7 @@ internal static class SeedCaseBuilder
             .ToArray();
     }
 
-    private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "", InvestigationSourceKind? sourceKind = null)
+    private static Warrant CreateWarrant(string label, int warrantIndex, OutlawWarrantProfile profile, GameSetupDeterministicSource? source, string summary = "", InvestigationSourceKind? sourceKind = null, SuspectId? targetSuspectId = null)
     {
         ArgumentNullException.ThrowIfNull(profile);
 
@@ -382,7 +324,8 @@ internal static class SeedCaseBuilder
                 profile.GangAffiliations,
                 profile.AdvancesGangPressureFor,
                 sourceKind),
-            summary);
+            summary,
+            targetSuspectId);
     }
 
     private static Clue CreateClue(

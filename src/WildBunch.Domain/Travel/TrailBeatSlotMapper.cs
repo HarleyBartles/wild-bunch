@@ -21,7 +21,6 @@ public static class TrailBeatSlotMapper
             TravelDayEncounterCategory.Resource => TrailBeatSlotType.Minor,
             TravelDayEncounterCategory.HorseTrouble => TrailBeatSlotType.Minor,
             TravelDayEncounterCategory.Foe => TrailBeatSlotType.Eventful,
-            TravelDayEncounterCategory.Npc => TrailBeatSlotType.Eventful,
             TravelDayEncounterCategory.Environmental => TrailBeatSlotType.Eventful,
             _ => TrailBeatSlotType.Quiet
         };

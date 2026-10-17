@@ -1,4 +1,5 @@
 using System.Text.Json;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
@@ -22,13 +23,13 @@ public sealed class GetTownStoreOffersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new GetTownStoreOffersHandler(repository, new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "redmesa"));
 
-        Assert.True(result.Available);
         Assert.Equal("Red Mesa", result.TownName);
-        Assert.Contains(result.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith && offer.DisplayName == "Revolver ammo");
+        Assert.Contains(result.Offers, offer => offer.DisplayName == "Revolver ammo");
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
 
@@ -43,16 +44,14 @@ public sealed class GetTownStoreOffersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new GetTownStoreOffersHandler(repository, new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var result = await handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "dryfork"));
 
-        // Every town has a store (prosperity-driven). A Destitute town has only
-        // general store offers — no stable or gunsmith.
-        Assert.True(result.Available);
-        Assert.Contains(result.Offers, offer => offer.VendorType == StoreVendorType.GeneralStore);
-        Assert.DoesNotContain(result.Offers, offer => offer.VendorType == StoreVendorType.Stable);
-        Assert.DoesNotContain(result.Offers, offer => offer.VendorType == StoreVendorType.Gunsmith);
+        Assert.Equal(
+            new[] { WildBunch.Domain.Inventory.ItemKind.Food, WildBunch.Domain.Inventory.ItemKind.HorseFeed },
+            result.Offers.Select(offer => offer.ItemKind));
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
     }
@@ -63,7 +62,8 @@ public sealed class GetTownStoreOffersHandlerTests
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         repository.Seed(session);
-        var handler = new GetTownStoreOffersHandler(repository, new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var exception = await Assert.ThrowsAsync<TownNotFoundException>(
             () => handler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "missing")));
@@ -74,7 +74,8 @@ public sealed class GetTownStoreOffersHandlerTests
     [Fact]
     public async Task GetTownStoreOffersThrowsWhenGameMissing()
     {
-        var handler = new GetTownStoreOffersHandler(new InMemoryGameSessionRepository(), new TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = new InMemoryGameSessionRepository();
+        var handler = new GetTownStoreOffersHandler(readRepository, new TownStoreCatalogResolver());
 
         var exception = await Assert.ThrowsAsync<GameSessionNotFoundException>(
             () => handler.HandleAsync(new GetTownStoreOffersQuery(Guid.NewGuid(), "pinecross")));
@@ -84,9 +85,9 @@ public sealed class GetTownStoreOffersHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None, TownProsperity.Destitute);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownProsperity.Destitute);
         var world = new DomainWorld(
             new[] { pinecross, redmesa, dryfork },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });

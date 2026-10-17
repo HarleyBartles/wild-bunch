@@ -3,7 +3,6 @@ import { SessionAuditDevPanel } from "./panels/SessionAuditDevPanel";
 import { TravelDevPanel } from "./panels/TravelDevPanel";
 import { SaloonDevPanel } from "./panels/SaloonDevPanel";
 import { SessionDevPanel } from "./panels/SessionDevPanel";
-import { TownLayoutDevPanel } from "./panels/TownLayoutDevPanel";
 import type { DevSurface } from "./DevSurfaceContext";
 
 export interface DevPanelRenderProps {
@@ -57,13 +56,6 @@ export const devPanels: DevPanelDefinition[] = [
     label: "Saloon dev",
     render: ({ expanded }) => <SaloonDevPanel expanded={expanded} />,
     surfaces: ["saloon"],
-    isSurfaceOwner: true,
-  },
-  {
-    id: "town-layout",
-    label: "Town Layout",
-    render: ({ expanded }) => <TownLayoutDevPanel expanded={expanded} />,
-    surfaces: ["town"],
     isSurfaceOwner: true,
   },
 ];

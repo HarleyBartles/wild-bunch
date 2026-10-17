@@ -38,9 +38,6 @@ internal sealed class JourneyLoop
     internal int NextJourneySequence => _nextJourneySequence;
     internal DevTravelOverride? PendingDevTravelOverride => _pendingDevTravelOverride;
 
-    // Command methods — filled in by Tasks 3–7
-    // Apply methods — filled in by Task 8
-
     internal void Apply(JourneyStarted e)
     {
         _journey = TravelJourney.FromSnapshot(e.JourneySnapshot);
@@ -72,6 +69,14 @@ internal sealed class JourneyLoop
     {
         _completedJourneyHistory.Add(e.JourneySnapshot);
         _journey = null;
+    }
+
+    internal void MarkFailed()
+    {
+        if (_journey is not null && _journey.Status is JourneyStatus.Active or JourneyStatus.Interrupted)
+        {
+            _journey.MarkFailed();
+        }
     }
 
     internal void Apply(DevTravelOverrideForced e)
@@ -223,6 +228,28 @@ internal sealed class JourneyLoop
 
         var runtime = new AdvanceDayRuntime(context);
         var travelDay = PrepareTravelDayAdvance(context, runtime);
+        if (runtime.Health == 0)
+        {
+            _journey!.MarkFailed();
+            var failedSnapshot = _journey.ToSnapshot(context.TravelRules);
+            runtime.AddEvent(new TravelDayAdvanced
+            {
+                Day = travelDay.NewDay,
+                JourneySnapshot = failedSnapshot,
+                HealthDelta = runtime.Health - context.PlayerHealth,
+                PursuitHeat = travelDay.PursuitHeat,
+                DayOutcome = TravelDayOutcome.Failed,
+                DiaryMessage = string.Empty,
+                HorseLostMessage = travelDay.HorseLostMessage,
+                DayEntries = []
+            });
+            AppendTravelDiaryDay(context, runtime, failedSnapshot, travelDay.StartingState, entries: []);
+            const string deathMessage = "I died on the trail. My journey ends here.";
+            return new JourneyLoopResult<TravelJourneyStepResult>(
+                new TravelJourneyStepResult(false, JourneyStatus.Failed, deathMessage, deathMessage, 0, failedSnapshot),
+                runtime.Events);
+        }
+
         var dayEntries = new List<string>();
         var narrationMessages = new List<string>();
         JourneyTrailEventState? lastTrailEvent = null;
@@ -249,11 +276,10 @@ internal sealed class JourneyLoop
                 var trailEventApplication = ApplyTrailEvent(
                     context, runtime,
                     currentEncounter.TrailEvent,
-                    travelDay.HorseLostMessage,
-                    currentEncounter.Message);
+                    travelDay.HorseLostMessage);
                 var trailEventMessage = PrependHorseLossMessage(
                     CombineHorseLossMessage(travelDay.HorseLostMessage, trailEventApplication.HorseLossMessage),
-                    currentEncounter.Message);
+                    trailEventApplication.Message);
                 dayEntries.Add(trailEventMessage);
                 lastTrailEvent = currentEncounter.TrailEvent;
             }
@@ -311,12 +337,6 @@ internal sealed class JourneyLoop
             encounter = currentDayEncounter;
         }
 
-        if (encounter is not null && !ReferenceEquals(encounter, _journey.PendingEncounter))
-        {
-            _journey.UpdatePendingEncounter(encounter);
-        }
-
-        var startingState = RebuildCurrentTravelDiaryBaselineState();
         if (encounter is null)
         {
             return new JourneyLoopResult<JourneyEncounterResolutionResult>(
@@ -325,9 +345,16 @@ internal sealed class JourneyLoop
 
         if (encounter.Kind == "foe" && encounter.FoeProfile is null)
         {
-            encounter = RecoverFoeProfile(context, encounter);
+            return new JourneyLoopResult<JourneyEncounterResolutionResult>(
+                JourneyEncounterResolutionResult.Failed("This encounter cannot be resolved because its recorded foe details are unavailable.", _journey.Status, _journey.ToSnapshot(context.TravelRules)), []);
+        }
+
+        if (!ReferenceEquals(encounter, _journey.PendingEncounter))
+        {
             _journey.UpdatePendingEncounter(encounter);
         }
+
+        var startingState = RebuildCurrentTravelDiaryBaselineState();
 
         var resolvedChoiceId = context.ChoiceId.Trim().ToLowerInvariant();
         if (resolvedChoiceId == "bribe" && encounter.HiddenState?.BribeLockedOut == true)
@@ -362,7 +389,7 @@ internal sealed class JourneyLoop
                 _journey.RemainingDays,
                 runtime.Health,
                 runtime.WalletCash,
-                runtime.RevolverAmmo + runtime.RifleAmmo,
+                runtime.RevolverAmmo,
                 context.CurrentHeat));
         var roll = context.ForcedRoll ?? JourneyEncounterResolutionEngine.Roll(rollSeed, "resolution");
         var dayEntries = new List<string>();
@@ -407,7 +434,7 @@ internal sealed class JourneyLoop
 
         if (plan.HealthDelta != 0)
         {
-            runtime.Health += plan.HealthDelta;
+            runtime.Health = Math.Max(0, runtime.Health + plan.HealthDelta);
         }
 
         var horseLossMessage = plan.HorseExhaustionDelta > 0
@@ -416,6 +443,13 @@ internal sealed class JourneyLoop
 
         var runMessage = PrependHorseLossMessage(horseLossMessage, plan.Message);
         dayEntries.Add(plan.Message);
+
+        if (runtime.Health == 0)
+        {
+            return CompleteLethalEncounter(
+                baseContext, runtime, startingState, dayEntries, resolvedChoiceId, resolvedChoiceLabel,
+                plan.Resolved, 0, null, 0, plan.HorseExhaustionDelta, _journey.TravelMode == TravelMode.Foot, runMessage);
+        }
 
         if (!plan.Resolved)
         {
@@ -463,7 +497,7 @@ internal sealed class JourneyLoop
         TravelDiaryBaselineState startingState,
         List<string> dayEntries)
     {
-        var availableAmmo = runtime.RevolverAmmo + runtime.RifleAmmo;
+        var availableAmmo = runtime.RevolverAmmo;
         if (availableAmmo == 0 && !runtime.HasKnife)
         {
             return JourneyEncounterResolutionResult.Failed("You need a knife or firearm ammo to stand and fight.", _journey!.Status, _journey.ToSnapshot(baseContext.TravelRules));
@@ -486,10 +520,17 @@ internal sealed class JourneyLoop
 
         if (plan.HealthDelta != 0)
         {
-            runtime.Health += plan.HealthDelta;
+            runtime.Health = Math.Max(0, runtime.Health + plan.HealthDelta);
         }
 
         dayEntries.Add(plan.Message);
+
+        if (runtime.Health == 0)
+        {
+            return CompleteLethalEncounter(
+                baseContext, runtime, startingState, dayEntries, resolvedChoiceId, resolvedChoiceLabel,
+                plan.Resolved, plan.AmmoSpent, null, 0, plan.HorseExhaustionDelta, plan.ContinuedOnFoot, plan.Message);
+        }
 
         if (!plan.Resolved)
         {
@@ -556,7 +597,6 @@ internal sealed class JourneyLoop
             _journey!.FoodRemaining,
             _journey.HorseFeedRemaining,
             runtime.RevolverAmmo,
-            runtime.RifleAmmo,
             roll);
 
         if (plan.WalletDelta != 0m)
@@ -570,20 +610,32 @@ internal sealed class JourneyLoop
             {
                 runtime.RevolverAmmo = Math.Max(0, runtime.RevolverAmmo - plan.StolenItemQuantity);
             }
-            else if (plan.StolenItemKind == ItemKind.RifleAmmo)
+            else if (plan.StolenItemKind == ItemKind.Food)
             {
-                runtime.RifleAmmo = Math.Max(0, runtime.RifleAmmo - plan.StolenItemQuantity);
+                _journey!.RemoveAvailableFood(plan.StolenItemQuantity);
+            }
+            else if (plan.StolenItemKind == ItemKind.HorseFeed)
+            {
+                _journey!.ConsumeHorseFeed(plan.StolenItemQuantity);
             }
         }
 
         if (plan.HealthDelta != 0)
         {
-            runtime.Health += plan.HealthDelta;
+            runtime.Health = Math.Max(0, runtime.Health + plan.HealthDelta);
         }
 
         dayEntries.Add(plan.Message);
 
         var retaliated = !plan.Resolved && (plan.HealthDelta < 0 || plan.StolenItemKind is not null || plan.WalletDelta < -bribeOffer);
+        if (runtime.Health == 0)
+        {
+            return CompleteLethalEncounter(
+                baseContext, runtime, startingState, dayEntries, resolvedChoiceId, resolvedChoiceLabel,
+                plan.Resolved, 0, plan.StolenItemKind, plan.StolenItemQuantity, plan.HorseExhaustionDelta,
+                _journey.TravelMode == TravelMode.Foot, plan.Message);
+        }
+
         if (!plan.Resolved && !retaliated)
         {
             _journey!.UpdatePendingEncounter(plan.UpdatedEncounter);
@@ -655,6 +707,56 @@ internal sealed class JourneyLoop
         });
     }
 
+    private JourneyEncounterResolutionResult CompleteLethalEncounter(
+        AdvanceJourneyDayContext context,
+        AdvanceDayRuntime runtime,
+        TravelDiaryBaselineState startingState,
+        IReadOnlyList<string> dayEntries,
+        string choiceId,
+        string choiceLabel,
+        bool resolved,
+        int ammoSpent,
+        ItemKind? stolenItemKind,
+        int stolenItemQuantity,
+        int horseExhaustionDelta,
+        bool continuedOnFoot,
+        string diaryMessage)
+    {
+        _journey!.MarkFailed();
+        var failedSnapshot = _journey.ToSnapshot(context.TravelRules);
+        PersistLatestTravelDiaryDay(
+            context.TravelRules,
+            runtime,
+            startingState,
+            dayEntries,
+            journeySnapshot: failedSnapshot);
+        runtime.AddEvent(new JourneyEncounterResolved
+        {
+            ChoiceId = choiceId,
+            ChoiceLabel = choiceLabel,
+            Resolved = resolved,
+            PlayerHealth = runtime.Health,
+            WalletCash = runtime.WalletCash,
+            AmmoSpent = ammoSpent,
+            StolenItemKind = stolenItemKind,
+            StolenItemQuantity = stolenItemQuantity,
+            PursuitHeat = context.CurrentHeat,
+            HorseExhaustionDelta = horseExhaustionDelta,
+            ContinuedOnFoot = continuedOnFoot,
+            JourneySnapshot = failedSnapshot,
+            DiaryMessage = diaryMessage,
+            DayCompleted = false,
+            JourneyCompleted = false,
+            DayEntries = _travelDiaryDays.Count > 0 ? _travelDiaryDays[^1].Entries : dayEntries
+        });
+        return new JourneyEncounterResolutionResult(
+            false,
+            true,
+            JourneyStatus.Failed,
+            diaryMessage,
+            failedSnapshot);
+    }
+
     private JourneyEncounterResolutionResult ContinueCurrentDayAfterEncounterResolution(
         AdvanceJourneyDayContext baseContext,
         AdvanceDayRuntime runtime,
@@ -691,9 +793,8 @@ internal sealed class JourneyLoop
                 var trailEventApplication = ApplyTrailEvent(
                     baseContext, runtime,
                     currentEncounter.TrailEvent,
-                    prefixHorseLostMessage: string.Empty,
-                    currentEncounter.Message);
-                var encounterMessage = PrependHorseLossMessage(trailEventApplication.HorseLossMessage, currentEncounter.Message);
+                    prefixHorseLostMessage: string.Empty);
+                var encounterMessage = PrependHorseLossMessage(trailEventApplication.HorseLossMessage, trailEventApplication.Message);
                 dayEntries.Add(encounterMessage);
             }
             else if (!string.IsNullOrWhiteSpace(currentEncounter.Message))
@@ -754,6 +855,21 @@ internal sealed class JourneyLoop
         {
             _journey.ConsumeFood();
         }
+        else if (runtime.Health > 0)
+        {
+            runtime.Health -= Math.Min(25, runtime.Health);
+        }
+
+        var newDay = context.ClockDay;
+        if (runtime.Health == 0)
+        {
+            return new TravelDayAdvanceState(
+                startingState,
+                string.Empty,
+                new JourneyProgress(0m, false),
+                newDay,
+                context.CurrentHeat);
+        }
 
         var upkeep = JourneyUpkeepRules.ApplyDailyUpkeep(
             _journey.Preview.RouteProfile.Terrain,
@@ -789,7 +905,6 @@ internal sealed class JourneyLoop
             _journey.RecalculatePacing(TravelMode.Foot);
         }
 
-        var newDay = context.ClockDay;
         var progress = _journey.AdvanceOneDay();
 
         var pendingOverride = _pendingDevTravelOverride;
@@ -833,7 +948,7 @@ internal sealed class JourneyLoop
         {
             Day = travelDay.NewDay,
             JourneySnapshot = interruptedSnapshot,
-            HealthDelta = 0,
+            HealthDelta = runtime.Health - travelDay.StartingState.StartingResources.Health,
             PursuitHeat = travelDay.PursuitHeat,
             DayOutcome = TravelDayOutcome.Interrupted,
             DiaryMessage = encounterMessage,
@@ -880,7 +995,7 @@ internal sealed class JourneyLoop
         {
             Day = travelDay.NewDay,
             JourneySnapshot = completedSnapshot,
-            HealthDelta = 0,
+            HealthDelta = runtime.Health - travelDay.StartingState.StartingResources.Health,
             PursuitHeat = travelDay.PursuitHeat,
             DayOutcome = TravelDayOutcome.Completed,
             DiaryMessage = arrivalMessage,
@@ -930,7 +1045,7 @@ internal sealed class JourneyLoop
         {
             Day = travelDay.NewDay,
             JourneySnapshot = journeySnapshot,
-            HealthDelta = 0,
+            HealthDelta = runtime.Health - travelDay.StartingState.StartingResources.Health,
             PursuitHeat = travelDay.PursuitHeat,
             DayOutcome = TravelDayOutcome.Ongoing,
             DiaryMessage = ongoingMessage,
@@ -956,8 +1071,7 @@ internal sealed class JourneyLoop
         AdvanceJourneyDayContext context,
         AdvanceDayRuntime runtime,
         JourneyTrailEventState trailEvent,
-        string prefixHorseLostMessage,
-        string encounterMessage)
+        string prefixHorseLostMessage)
     {
         ArgumentNullException.ThrowIfNull(trailEvent);
 
@@ -966,13 +1080,20 @@ internal sealed class JourneyLoop
             runtime.WalletCash += trailEvent.WalletDelta;
         }
 
-        if (trailEvent.FoodDelta != 0)
+        var appliedFoodDelta = trailEvent.FoodDelta;
+        if (appliedFoodDelta < 0)
         {
-            _journey!.AdjustFood(trailEvent.FoodDelta);
+            appliedFoodDelta = -_journey!.RemoveAvailableFood(-appliedFoodDelta);
+        }
+        else if (appliedFoodDelta > 0)
+        {
+            _journey!.AdjustFood(appliedFoodDelta);
         }
 
+        var appliedCanteenChargeDelta = trailEvent.CanteenChargeDelta;
         if (trailEvent.CanteenChargeDelta != 0)
         {
+            var startingCharges = _journey!.AvailableCanteenCharges;
             var nextCharges = _journey!.AvailableCanteenCharges + trailEvent.CanteenChargeDelta;
             if (nextCharges < 0)
             {
@@ -983,7 +1104,10 @@ internal sealed class JourneyLoop
                 nextCharges = Math.Min(runtime.CanteenCapacity, nextCharges);
             }
             _journey.SetCanteenCharges(nextCharges);
+            appliedCanteenChargeDelta = nextCharges - startingCharges;
         }
+
+        var appliedMessage = BuildAppliedTrailEventMessage(trailEvent, appliedFoodDelta, appliedCanteenChargeDelta);
 
         if (trailEvent.HorseHungerDelta != 0 || trailEvent.HorseThirstDelta != 0 || trailEvent.HorseExhaustionDelta != 0)
         {
@@ -1009,7 +1133,7 @@ internal sealed class JourneyLoop
 
         var fullDiaryMessage = PrependHorseLossMessage(
             CombineHorseLossMessage(prefixHorseLostMessage, horseLossMessage),
-            encounterMessage);
+            appliedMessage);
 
         var postEventSnapshot = _journey.ToSnapshot(context.TravelRules);
         runtime.AddEvent(new TrailEventApplied
@@ -1018,11 +1142,11 @@ internal sealed class JourneyLoop
             TrailEventKind = trailEvent.Kind,
             TrailEventId = trailEvent.Id,
             Title = trailEvent.Title,
-            Message = trailEvent.Message,
+            Message = appliedMessage,
             WalletDelta = trailEvent.WalletDelta,
             WalletCash = runtime.WalletCash,
-            FoodDelta = trailEvent.FoodDelta,
-            CanteenChargeDelta = trailEvent.CanteenChargeDelta,
+            FoodDelta = appliedFoodDelta,
+            CanteenChargeDelta = appliedCanteenChargeDelta,
             HorseHungerDelta = trailEvent.HorseHungerDelta,
             HorseThirstDelta = trailEvent.HorseThirstDelta,
             HorseExhaustionDelta = trailEvent.HorseExhaustionDelta,
@@ -1034,7 +1158,31 @@ internal sealed class JourneyLoop
             HorseLostMessage = horseLossMessage
         });
 
-        return new TrailEventApplicationResult(horseLossMessage);
+        return new TrailEventApplicationResult(horseLossMessage, appliedMessage);
+    }
+
+    private static string BuildAppliedTrailEventMessage(
+        JourneyTrailEventState trailEvent,
+        int appliedFoodDelta,
+        int appliedCanteenChargeDelta)
+    {
+        if (appliedFoodDelta == trailEvent.FoodDelta && appliedCanteenChargeDelta == trailEvent.CanteenChargeDelta)
+        {
+            return trailEvent.Message;
+        }
+
+        return trailEvent.Id switch
+        {
+            JourneyTrailEventId.BadLuckFoodLoss when appliedFoodDelta == 0 && appliedCanteenChargeDelta == 0
+                => "A dust storm swept through, but I had no remaining food or canteen water for it to take.",
+            JourneyTrailEventId.BadLuckFoodLoss
+                => $"A dust storm stripped away {-appliedFoodDelta} food and {-appliedCanteenChargeDelta} canteen charge(s).",
+            JourneyTrailEventId.LuckyFoodCache
+                => $"I found a cache of jerky and trail biscuits and gained {appliedFoodDelta} food.",
+            JourneyTrailEventId.LuckyWaterSeep
+                => $"I found a seep under the rocks and topped off my canteen by {appliedCanteenChargeDelta} charge(s).",
+            _ => trailEvent.Message
+        };
     }
 
     private string ApplyEncounterHorsePressure(TravelRulesProfile travelRules, AdvanceDayRuntime runtime, int exhaustionIncrease)
@@ -1140,7 +1288,6 @@ internal sealed class JourneyLoop
             .Select(day => day.PendingEncounter?.Kind switch
             {
                 "foe" => TravelDayEncounterCategory.Foe,
-                "npc" => TravelDayEncounterCategory.Npc,
                 _ => (TravelDayEncounterCategory?)null
             })
             .Where(category => category is not null)
@@ -1208,32 +1355,6 @@ internal sealed class JourneyLoop
             startingResources);
     }
 
-    private JourneyEncounterState RecoverFoeProfile(AdvanceJourneyDayContext context, JourneyEncounterState encounter)
-    {
-        if (_journey is null)
-        {
-            throw new InvalidOperationException("A journey is required to recover foe profile data.");
-        }
-
-        var generationContext = CreateTravelDayGenerationContext(context, new AdvanceDayRuntime(context), TravelDayPlanGenerator.CurrentVersion);
-        var fallbackSeed = string.Join(
-            "|",
-            _journey.Preview.RouteProfile.TrailId,
-            _journey.DaysTravelled,
-            _journey.DelayDays,
-            _journey.TravelMode,
-            _journey.RemainingRideDayDistance,
-            _journey.RemainingDays,
-            context.PlayerHealth,
-            context.PlayerCash,
-            context.CurrentHeat,
-            context.Salt,
-            encounter.Message);
-
-        var foeProfile = JourneyEncounterResolutionEngine.CreateFoeProfile(generationContext, context.TravelRules, fallbackSeed);
-        return encounter with { FoeProfile = foeProfile };
-    }
-
     private TravelResourceSnapshot CaptureTravelResources(AdvanceJourneyDayContext context, AdvanceDayRuntime runtime)
         => new(
             _journey?.HorseState,
@@ -1241,7 +1362,7 @@ internal sealed class JourneyLoop
             _journey?.FoodRemaining ?? 0,
             _journey?.HorseFeedRemaining ?? 0,
             _journey?.AvailableCanteenCharges ?? 0,
-            runtime.RevolverAmmo + runtime.RifleAmmo,
+            runtime.RevolverAmmo,
             runtime.Health,
             context.CurrentHeat);
 
@@ -1293,7 +1414,7 @@ internal sealed class JourneyLoop
         currentResources ??= CaptureTravelResources(
             new AdvanceJourneyDayContext(
                 travelRules, runtime.Salt, runtime.SaltMode, runtime.GameEntropy, runtime.ClockDay, runtime.CurrentHeat,
-                new PlayerCapabilities(false, false), 0, 0, null, null, runtime.WalletCash, runtime.Health, runtime.RevolverAmmo + runtime.RifleAmmo),
+                new PlayerCapabilities(false, false), 0, 0, null, null, runtime.WalletCash, runtime.Health, runtime.RevolverAmmo),
             runtime);
         var combinedEntries = _travelDiaryDays[^1].Entries.Concat(newEntries).ToArray();
 
@@ -1394,7 +1515,7 @@ internal sealed class JourneyLoop
         return WalletBand.Flush;
     }
 
-    private sealed record TrailEventApplicationResult(string HorseLossMessage);
+    private sealed record TrailEventApplicationResult(string HorseLossMessage, string Message);
 
     private sealed record TravelDayAdvanceState(
         TravelDiaryBaselineState StartingState,
@@ -1408,7 +1529,6 @@ internal sealed class JourneyLoop
         public decimal WalletCash;
         public int Health;
         public int RevolverAmmo;
-        public int RifleAmmo;
         public bool HasKnife;
         public int CanteenCapacity;
         public string Salt;
@@ -1423,7 +1543,6 @@ internal sealed class JourneyLoop
             WalletCash = context.PlayerCash;
             Health = context.PlayerHealth;
             RevolverAmmo = context.AvailableAmmo;
-            RifleAmmo = 0;
             HasKnife = false;
             CanteenCapacity = context.CanteenState?.Capacity ?? 0;
             Salt = context.Salt;
@@ -1438,7 +1557,6 @@ internal sealed class JourneyLoop
             WalletCash = context.PlayerCash;
             Health = context.PlayerHealth;
             RevolverAmmo = context.AvailableRevolverAmmo;
-            RifleAmmo = context.AvailableRifleAmmo;
             HasKnife = context.HasKnife;
             CanteenCapacity = context.CanteenState?.Capacity ?? 0;
             Salt = context.Salt;
@@ -1452,10 +1570,7 @@ internal sealed class JourneyLoop
 
         public void SpendAmmo(int amount)
         {
-            var toSpend = Math.Min(amount, RevolverAmmo + RifleAmmo);
-            var fromRevolver = Math.Min(toSpend, RevolverAmmo);
-            RevolverAmmo -= fromRevolver;
-            RifleAmmo -= (toSpend - fromRevolver);
+            RevolverAmmo = Math.Max(0, RevolverAmmo - amount);
         }
     }
 

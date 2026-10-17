@@ -26,12 +26,11 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             2));
 
@@ -39,9 +38,9 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal("Purchased 2 Food for $6.00.", result.Message);
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
-        Assert.Equal(19m, result.CurrentSession.Inventory.Wallet.Cash);
-        Assert.Equal(2, result.CurrentSession.Inventory.Items.Count);
-        Assert.Equal(3, result.CurrentSession.Inventory.Items.Single(item => item.Kind == DomainItemKind.Food).Quantity);
+        Assert.Equal(19m, result.CurrentSession.Inventory!.Wallet.Cash);
+        Assert.Equal(2, result.CurrentSession.Inventory!.Items.Count);
+        Assert.Equal(3, result.CurrentSession.Inventory!.Items.Single(item => item.Kind == DomainItemKind.Food).Quantity);
         Assert.Equal(2, result.CurrentSession.LogEntries.Count);
     }
 
@@ -53,12 +52,11 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "redmesa",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             1));
 
@@ -67,7 +65,7 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Equal("pinecross", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Single(result.CurrentSession.LogEntries);
     }
 
@@ -79,22 +77,20 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
-        // Pinecross is Destitute — gunsmith offers are only available in
-        // Boomtown and Prosperous towns, so RifleAmmo is not available here.
+        // Former persisted item-kind values are not valid Store offers.
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.Gunsmith,
-            DomainItemKind.RifleAmmo,
+            (DomainItemKind)8,
             1));
 
         Assert.False(result.Success);
-        Assert.Equal("That store offer is not available in this town.", result.Message);
+        Assert.Equal("That item is not offered at this store.", result.Message);
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Single(result.CurrentSession.LogEntries);
     }
 
@@ -106,12 +102,11 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         await Assert.ThrowsAsync<TownNotFoundException>(() => handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "missing-town",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             1)));
 
@@ -130,12 +125,11 @@ public sealed class PurchaseStoreItemHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             1));
 
@@ -143,42 +137,38 @@ public sealed class PurchaseStoreItemHandlerTests
         Assert.Equal("Finish the current journey before taking that action.", result.Message);
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.NotNull(result.CurrentSession.Journey);
         Assert.Equal(JourneyStatus.Active, result.CurrentSession.Journey!.Status);
         Assert.Equal(2, result.CurrentSession.LogEntries.Count);
     }
 
     [Fact]
-    public async Task PurchaseReturnsDtoWithHudAndDiaryProjections()
+    public async Task PurchaseReturnsDtoWithHudProjection()
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new PurchaseStoreItemHandler(repository, repository, new TownStoreCatalogResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new PurchaseStoreItemCommand(
             session.Id.Value,
             "pinecross",
-            StoreVendorType.GeneralStore,
             DomainItemKind.Food,
             2));
 
         Assert.True(result.Success);
         Assert.NotNull(result.CurrentSession.HudProjection);
         Assert.Equal(19m, result.CurrentSession.HudProjection!.WalletCash);
-        Assert.NotNull(result.CurrentSession.DiaryProjection);
-        Assert.NotEmpty(result.CurrentSession.DiaryProjection!.Entries);
         Assert.Equal(session.Id.Value, result.CurrentSession.HudProjection.SessionId);
-        Assert.Equal(session.Id.Value, result.CurrentSession.DiaryProjection.SessionId);
     }
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None, TownProsperity.Destitute);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownProsperity.Destitute);
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         var world = new World(
             new[] { pinecross, redmesa },
             new[]

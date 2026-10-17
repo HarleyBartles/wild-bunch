@@ -25,19 +25,19 @@ public sealed class GetGameSessionHandlerTests
         Assert.Equal(session.Player.Name, result.Player.Name);
         Assert.Equal(session.Player.CurrentTownId!.Value.Value, result.Player.CurrentTownId);
         Assert.Equal(session.GameDifficulty, result.GameDifficulty);
-        Assert.Equal(session.Player.Wallet.Cash, result.Inventory.Wallet.Cash);
-        Assert.Equal(session.Player.Inventory.Items.Count, result.Inventory.Items.Count);
-        Assert.NotNull(result.Inventory.HorseState);
-        Assert.Equal(session.Player.Inventory.GetHorseState()!.Hunger, result.Inventory.HorseState!.Hunger);
-        Assert.Equal(session.Player.Inventory.GetHorseState()!.Thirst, result.Inventory.HorseState.Thirst);
-        Assert.Equal(session.Player.Inventory.GetHorseState()!.Exhaustion, result.Inventory.HorseState.Exhaustion);
-        Assert.NotNull(result.Inventory.CanteenState);
-        Assert.Equal(session.Player.Inventory.GetCanteenState()!.Charges, result.Inventory.CanteenState!.Charges);
-        Assert.Equal(session.Player.Inventory.GetCanteenState()!.Capacity, result.Inventory.CanteenState.Capacity);
+        Assert.Equal(session.Player.Wallet.Cash, result.Inventory!.Wallet.Cash);
+        Assert.Equal(session.Player.Inventory.Items.Count, result.Inventory!.Items.Count);
+        Assert.NotNull(result.Inventory!.HorseState);
+        Assert.Equal(session.Player.Inventory.GetHorseState()!.Hunger, result.Inventory!.HorseState!.Hunger);
+        Assert.Equal(session.Player.Inventory.GetHorseState()!.Thirst, result.Inventory!.HorseState!.Thirst);
+        Assert.Equal(session.Player.Inventory.GetHorseState()!.Exhaustion, result.Inventory!.HorseState!.Exhaustion);
+        Assert.NotNull(result.Inventory!.CanteenState);
+        Assert.Equal(session.Player.Inventory.GetCanteenState()!.Charges, result.Inventory!.CanteenState!.Charges);
+        Assert.Equal(session.Player.Inventory.GetCanteenState()!.Capacity, result.Inventory!.CanteenState!.Capacity);
         var capabilityResolver = new InventoryCapabilityResolver();
         var expectedCapabilities = capabilityResolver.Resolve(session.Player.Inventory);
-        Assert.Equal(expectedCapabilities.MountedTravelAvailable, result.Inventory.Capabilities.MountedTravelAvailable);
-        Assert.Equal(expectedCapabilities.GunfightCapable, result.Inventory.Capabilities.GunfightCapable);
+        Assert.Equal(expectedCapabilities.MountedTravelAvailable, result.Inventory!.Capabilities.MountedTravelAvailable);
+        Assert.Equal(expectedCapabilities.GunfightCapable, result.Inventory!.Capabilities.GunfightCapable);
         Assert.Equal(session.Clock.Day, result.Clock.Day);
         Assert.Equal(session.Clock.Turn, result.Clock.Turn);
         Assert.Equal(session.PursuitState.Heat, result.PursuitState.Heat);
@@ -64,22 +64,23 @@ public sealed class GetGameSessionHandlerTests
     {
         var repository = new InMemoryGameSessionRepository();
         var session = CreateSessionWithDiscoveredSuspect();
+        Assert.Equal(2, session.CaseFile.Suspects.Count);
+        Assert.Single(session.CaseFile.GetDiscoveredSuspects());
         repository.Seed(session);
         var handler = new GetGameSessionHandler(repository);
 
         var result = await handler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
 
-        Assert.Single(result.CaseFile.DiscoveredSuspects);
-        Assert.Equal("suspect-1", result.CaseFile.DiscoveredSuspects[0].Id);
-        Assert.Equal("Ira Flint", result.CaseFile.DiscoveredSuspects[0].Name);
-        Assert.Equal(SuspectStatus.AtLarge, result.CaseFile.DiscoveredSuspects[0].Status);
-        Assert.Single(session.CaseFile.Suspects);
+        var discoveredSuspect = Assert.Single(result.CaseFile.DiscoveredSuspects);
+        Assert.Equal("Ira Flint", discoveredSuspect.Name);
+        Assert.Equal(SuspectStatus.AtLarge, discoveredSuspect.Status);
         Assert.Equal("The Wild Bunch trail is quiet.", result.CaseFile.CaseState.StatusText);
 
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("suspect-2", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Mira Cline", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"linkedSuspectIds\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"killerReleaseState\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -127,15 +128,37 @@ public sealed class GetGameSessionHandlerTests
 
     private static GameSession CreateSessionWithDiscoveredSuspect()
     {
-        var session = new StubNewGameFactory().CreatedSession;
+        var pinecross = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("pinecross"), "Pinecross");
+        var redmesa = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("redmesa"), "Red Mesa");
+        var world = new WildBunch.Domain.World.World(
+            new[] { pinecross, redmesa },
+            new[]
+            {
+                new WildBunch.Domain.World.Trail(new WildBunch.Domain.World.TrailId("trail-1"), pinecross.Id, redmesa.Id, WildBunch.Domain.World.TrailRisk.Low)
+            });
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
+            new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects,
+            trueCulpritId: new SuspectId("suspect-2"),
+            openingLead: CaseOpeningLead.Create("Find the person who left the brass star mark."),
+            knownClues: Array.Empty<Clue>());
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        session.ViewPrologue("test-prologue-descriptor");
+        session.SelectStartingTown(pinecross.Id);
+        session.CompleteGameStart();
         session.CaseFile.DiscoverSuspect(new SuspectId("suspect-1"));
         return session;
     }
 
     private static GameSession CreateSessionWithAnchoredClue()
     {
-        var pinecross = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("pinecross"), "Pinecross", WildBunch.Domain.World.TownServices.None | WildBunch.Domain.World.TownServices.None);
-        var redmesa = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("redmesa"), "Red Mesa", WildBunch.Domain.World.TownServices.None | WildBunch.Domain.World.TownServices.Telegraph);
+        var pinecross = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("pinecross"), "Pinecross");
+        var redmesa = new WildBunch.Domain.World.Town(new WildBunch.Domain.World.TownId("redmesa"), "Red Mesa");
         var world = new WildBunch.Domain.World.World(
             new[] { pinecross, redmesa },
             new[]

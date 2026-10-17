@@ -18,8 +18,8 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -28,7 +28,7 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -45,7 +45,6 @@ export function createSession(overrides: Partial<GameSessionDto> = {}): GameSess
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Evening" },
@@ -74,7 +73,7 @@ export function createJournal(overrides: Partial<JournalDto> = {}): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -91,8 +90,6 @@ export function createStoreOffers(overrides: Partial<TownStoreOffersDto> = {}): 
   return {
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
     ...overrides,
   };

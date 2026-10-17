@@ -14,11 +14,13 @@ public sealed class GameSessionEntity
 
     public string? SeedCode { get; set; }
 
-    public int SchemaVersion { get; set; }
-
     public long StreamVersion { get; set; }
 
     public long? SnapshotVersion { get; set; }
+
+    public long? TravelDiaryProjectionStreamVersion { get; set; }
+
+    public int? TravelDiaryProjectionDayCount { get; set; }
 
     public ICollection<GameSessionComponentEntity> Components { get; set; } = [];
 

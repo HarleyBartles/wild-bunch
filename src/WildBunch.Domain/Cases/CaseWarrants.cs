@@ -7,8 +7,7 @@ public enum InvestigationTargetKind
     Unknown = 0,
     Suspected = 1,
     GangMember = 2,
-    TrueCulprit = 3,
-    UnrelatedWantedCriminal = 4
+    TrueCulprit = 3
 }
 
 public enum WarrantDisposition
@@ -34,6 +33,10 @@ public sealed record WarrantTerms
         ArgumentNullException.ThrowIfNull(knownFeatures);
         ArgumentNullException.ThrowIfNull(gangAffiliations);
         ArgumentException.ThrowIfNullOrWhiteSpace(issuingSource);
+        if (bountyAmount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bountyAmount), bountyAmount, "Bounty amount cannot be negative.");
+        }
 
         Disposition = disposition;
         BountyAmount = bountyAmount;
@@ -72,7 +75,7 @@ public sealed record Warrant
     {
     }
 
-    public Warrant(WarrantId id, string targetName, WarrantTerms terms, string summary)
+    public Warrant(WarrantId id, string targetName, WarrantTerms terms, string summary, SuspectId? targetSuspectId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetName);
         ArgumentNullException.ThrowIfNull(terms);
@@ -81,6 +84,7 @@ public sealed record Warrant
         TargetName = targetName.Trim();
         Terms = terms;
         Summary = summary?.Trim() ?? string.Empty;
+        TargetSuspectId = targetSuspectId;
     }
 
     public WarrantId Id { get; }
@@ -90,4 +94,6 @@ public sealed record Warrant
     public WarrantTerms Terms { get; }
 
     public string Summary { get; }
+
+    public SuspectId? TargetSuspectId { get; }
 }

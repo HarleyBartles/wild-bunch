@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
@@ -16,6 +18,244 @@ namespace WildBunch.Integration.Tests;
 
 public sealed class MigrationTests
 {
+    [Fact]
+    public async Task RetiringIntermediateSaloonPlaythroughsDeletesAllSessionDataAndCannotBeReversed()
+    {
+        const string priorMigration = "20261010202420_RetirePreAlphaRiflePlaythroughs";
+        using var database = new PostgreSqlTestDatabase();
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .Options;
+        const string emptyJson = "{}";
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync(priorMigration);
+            var session = CreateSession();
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(session);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "StartupOperations" ("OperationId", "Kind", "RequestFingerprint", "SessionId")
+                VALUES ({Guid.NewGuid()}, 0, '0123456789abcdef', {session.Id.Value});
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionTravelDiaryDays" ("SessionId", "Sequence", "PayloadJson", "RecordedAtUtc", "SchemaVersion")
+                VALUES ({session.Id.Value}, 1, CAST({emptyJson} AS jsonb), {DateTime.UtcNow}, 1);
+                """);
+
+            Assert.Single(await context.GameSessions.ToListAsync());
+            Assert.NotEmpty(await context.GameSessionComponents.ToListAsync());
+            Assert.NotEmpty(await context.StoredEvents.ToListAsync());
+            Assert.NotEmpty(await context.GameSessionDiaryDays.ToListAsync());
+            Assert.Single(await context.StartupOperations.ToListAsync());
+        }
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.MigrateAsync();
+
+            Assert.Empty(await context.GameSessions.ToListAsync());
+            Assert.Empty(await context.GameSessionComponents.ToListAsync());
+            Assert.Empty(await context.StoredEvents.ToListAsync());
+            Assert.Empty(await context.GameSessionDiaryDays.ToListAsync());
+            Assert.Empty(await context.StartupOperations.ToListAsync());
+            Assert.Contains(
+                await context.Database.GetAppliedMigrationsAsync(),
+                migration => migration.Contains("RetireIntermediateSaloonPlaythroughs", StringComparison.Ordinal));
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => context.GetService<IMigrator>().MigrateAsync(priorMigration));
+        }
+    }
+
+    [Fact]
+    public async Task RetiringRifleKindsDiscardsPreAlphaSessionsAndAllowsNewSessions()
+    {
+        const string priorMigration = "20261010184918_EnforceSingleActivePlaythrough";
+        using var database = new PostgreSqlTestDatabase();
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .Options;
+        var sessionId = Guid.NewGuid();
+        var operationId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+        const string componentJson = "{\"items\":[{\"kind\":9,\"quantity\":4}]}";
+        const string eventJson = "{\"itemKind\":9,\"quantity\":4}";
+        const string emptyJson = "{}";
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync(priorMigration);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessions" ("Id", "CreatedAtUtc", "UpdatedAtUtc", "Status", "GameDifficulty", "SeedCode", "StreamVersion", "SnapshotVersion", "TravelDiaryProjectionStreamVersion", "TravelDiaryProjectionDayCount")
+                VALUES ({sessionId}, {now}, {now}, 'InProgress', 0, NULL, 1, 1, 1, 1);
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionComponents" ("SessionId", "ComponentName", "PayloadJson", "ComponentVersion", "UpdatedAtUtc")
+                VALUES ({sessionId}, 'player', CAST({componentJson} AS jsonb), 1, {now});
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionStoredEvents" ("StreamId", "Sequence", "EventId", "OccurredAtUtc", "EventType", "PayloadJson", "CorrelationId", "CausationId", "SchemaVersion")
+                VALUES ({sessionId}, 1, {eventId}, {now}, 'StoreItemPurchased', CAST({eventJson} AS jsonb), NULL, NULL, 1);
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionTravelDiaryDays" ("SessionId", "Sequence", "PayloadJson", "RecordedAtUtc", "SchemaVersion")
+                VALUES ({sessionId}, 1, CAST({emptyJson} AS jsonb), {now}, 1);
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "StartupOperations" ("OperationId", "Kind", "RequestFingerprint", "SessionId")
+                VALUES ({operationId}, 0, '0123456789abcdef', {sessionId});
+                """);
+
+            Assert.Equal(1, await context.GameSessions.CountAsync());
+            Assert.Equal(1, await context.GameSessionComponents.CountAsync());
+            Assert.Equal(1, await context.StoredEvents.CountAsync());
+            Assert.Equal(1, await context.GameSessionDiaryDays.CountAsync());
+            Assert.Equal(1, await context.StartupOperations.CountAsync());
+        }
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.MigrateAsync();
+
+            Assert.True(await context.Database.CanConnectAsync());
+            Assert.Empty(await context.GameSessions.ToListAsync());
+            Assert.Empty(await context.GameSessionComponents.ToListAsync());
+            Assert.Empty(await context.StoredEvents.ToListAsync());
+            Assert.Empty(await context.GameSessionDiaryDays.ToListAsync());
+            Assert.Empty(await context.StartupOperations.ToListAsync());
+            Assert.Contains(
+                await context.Database.GetAppliedMigrationsAsync(),
+                migration => migration.Contains("RetirePreAlphaRiflePlaythroughs", StringComparison.Ordinal));
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => context.GetService<IMigrator>().MigrateAsync(priorMigration));
+
+            var session = CreateSession();
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(session);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+            var reloaded = await repository.GetByIdAsync(session.Id);
+
+            Assert.NotNull(reloaded);
+            Assert.Equal(session.Player.Name, reloaded!.Player.Name);
+            Assert.Single(await context.GameSessions.ToListAsync());
+            Assert.Contains(
+                await context.Database.GetAppliedMigrationsAsync(),
+                migration => migration.Contains("RetirePreAlphaRiflePlaythroughs", StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    public async Task PreAlphaPlaythroughsAreDiscardedByMigrationAndNewSessionCanBeStored()
+    {
+        const string priorMigration = "20260719061600_AddDiaryDaySchemaVersion";
+        const string discardMigration = "20261008180000_InvalidatePreAlphaPlaythroughs";
+        using var database = new PostgreSqlTestDatabase();
+
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .Options;
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync(priorMigration);
+        }
+
+        var preAlphaSessionId = Guid.NewGuid();
+        var preAlphaCreatedAt = DateTime.UtcNow;
+        const string emptyJson = "{}";
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessions" ("Id", "CreatedAtUtc", "UpdatedAtUtc", "Status", "GameDifficulty", "SeedCode", "SchemaVersion", "StreamVersion", "SnapshotVersion")
+                VALUES ({preAlphaSessionId}, {preAlphaCreatedAt}, {preAlphaCreatedAt}, 'InProgress', 0, NULL, 1, 1, 0);
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionComponents" ("SessionId", "ComponentName", "PayloadJson", "ComponentVersion", "UpdatedAtUtc")
+                VALUES ({preAlphaSessionId}, 'player', CAST({emptyJson} AS jsonb), 1, {preAlphaCreatedAt});
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionStoredEvents" ("StreamId", "Sequence", "EventId", "OccurredAtUtc", "EventType", "PayloadJson", "CorrelationId", "CausationId", "SchemaVersion")
+                VALUES ({preAlphaSessionId}, 1, {Guid.NewGuid()}, {preAlphaCreatedAt}, 'GameStarted', CAST({emptyJson} AS jsonb), NULL, NULL, 1);
+                """);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "GameSessionTravelDiaryDays" ("SessionId", "Sequence", "PayloadJson", "RecordedAtUtc", "SchemaVersion")
+                VALUES ({preAlphaSessionId}, 1, CAST({emptyJson} AS jsonb), {preAlphaCreatedAt}, 1);
+                """);
+
+            Assert.Equal(1, await context.GameSessions.CountAsync());
+            Assert.NotEmpty(await context.GameSessionComponents.ToListAsync());
+            Assert.NotEmpty(await context.StoredEvents.ToListAsync());
+            Assert.Equal(1, await context.GameSessionDiaryDays.CountAsync());
+        }
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.Database.MigrateAsync();
+        }
+
+        var newSession = CreateSession();
+        await using (var context = new WildBunchDbContext(options))
+        {
+            Assert.Equal(0, await context.GameSessions.CountAsync());
+            Assert.Equal(0, await context.GameSessionComponents.CountAsync());
+            Assert.Equal(0, await context.StoredEvents.CountAsync());
+            Assert.Equal(0, await context.GameSessionDiaryDays.CountAsync());
+
+            var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+            Assert.Contains(priorMigration, appliedMigrations);
+            Assert.Contains(discardMigration, appliedMigrations);
+            Assert.Contains("20261009001543_AddTravelDiaryProjectionWatermark", appliedMigrations);
+
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(newSession);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+            var reloaded = await repository.GetByIdAsync(newSession.Id);
+
+            Assert.NotNull(reloaded);
+            Assert.Equal(newSession.Player.Name, reloaded!.Player.Name);
+            Assert.Equal(1, await context.GameSessions.CountAsync());
+            var envelope = await context.GameSessions.AsNoTracking().SingleAsync(game => game.Id == newSession.Id.Value);
+            Assert.Equal(envelope.StreamVersion, envelope.TravelDiaryProjectionStreamVersion);
+            Assert.Equal(0, envelope.TravelDiaryProjectionDayCount);
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => context.GetService<IMigrator>().MigrateAsync(priorMigration));
+            Assert.Equal(1, await context.GameSessions.CountAsync());
+            Assert.Contains(discardMigration, await context.Database.GetAppliedMigrationsAsync());
+        }
+    }
+
     [Fact]
     public async Task MigrationsCreateGameSessionsTableAndRoundTripSession()
     {
@@ -41,7 +281,7 @@ public sealed class MigrationTests
             new PayloadUpcasterRegistry([]),
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         var repository = new EfGameSessionRepository(commandContext, serializer, new TravelDiaryDayProjector(), new PayloadUpcasterRegistry([]), payloadLoader);
         var unitOfWork = new EfGameSessionUnitOfWork(commandContext);
         var session = CreateSession();
@@ -58,9 +298,9 @@ public sealed class MigrationTests
         using (var verificationContext = new WildBunchDbContext(options))
         {
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
-            Assert.Equal(10, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(9, await verificationContext.GameSessionComponents.CountAsync());
             Assert.Equal(
-                new[] { "caseFile", "clock", "currentActionContext", "player", "pursuitState", "saltSource", "setup", "townVisitState", "unrelatedCriminalLedger", "world" },
+                new[] { "caseFile", "clock", "currentActionContext", "player", "pursuitState", "saltSource", "setup", "townVisitState", "world" },
                 await verificationContext.GameSessionComponents
                     .Where(component => component.SessionId == session.Id.Value)
                     .OrderBy(component => component.ComponentName)
@@ -90,8 +330,63 @@ public sealed class MigrationTests
         }
 
         Assert.DoesNotContain("StateJson", columns);
-        Assert.Contains("SchemaVersion", columns);
         Assert.Contains("GameDifficulty", columns);
+        Assert.Contains("TravelDiaryProjectionStreamVersion", columns);
+        Assert.Contains("TravelDiaryProjectionDayCount", columns);
+    }
+
+    [Fact]
+    public async Task RemovingUnusedSchemaArtifactsPreservesStoredSession()
+    {
+        const string priorMigration = "20261009001543_AddTravelDiaryProjectionWatermark";
+        using var database = new PostgreSqlTestDatabase();
+
+        var options = new DbContextOptionsBuilder<WildBunchDbContext>()
+            .UseNpgsql(database.ConnectionString)
+            .Options;
+        var session = CreateSession();
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync(priorMigration);
+
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+
+            await repository.StoreAsync(session);
+            await new EfGameSessionUnitOfWork(context).CommitAsync();
+        }
+
+        await using (var context = new WildBunchDbContext(options))
+        {
+            await context.GetService<IMigrator>().MigrateAsync("20261009225627_RetireUnusedSessionSchemaArtifacts");
+
+            var serializer = new GameSessionJsonSerializer();
+            var projector = new TravelDiaryDayProjector();
+            var upcasters = new PayloadUpcasterRegistry([]);
+            var payloadLoader = new PersistedPayloadLoader(
+                upcasters,
+                serializer,
+                projector,
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
+            var repository = new EfGameSessionRepository(context, serializer, projector, upcasters, payloadLoader);
+            var reloaded = await repository.GetByIdAsync(session.Id);
+
+            Assert.NotNull(reloaded);
+            Assert.Equal(session.Player.Name, reloaded!.Player.Name);
+            Assert.Equal(session.Player.CurrentTownId, reloaded.Player.CurrentTownId);
+            Assert.Equal(session.Version, reloaded.Version);
+            Assert.Equal(
+                session.AllEvents.Count,
+                await context.StoredEvents.CountAsync(storedEvent => storedEvent.StreamId == session.Id.Value));
+        }
     }
 
     private static async Task AssertJsonbColumnTypesAsync(NpgsqlConnection connection)
@@ -124,8 +419,8 @@ public sealed class MigrationTests
 
     private static GameSession CreateSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale");
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
 
         var world = new WildBunch.Domain.World.World(
             new[] { dustvale, silvercreek },

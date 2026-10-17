@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -15,7 +14,7 @@ namespace WildBunch.Domain.Tests;
 /// <summary>
 /// Tests for BUNCH-106 simplified saloon POI selection.
 /// Any non-culprit suspect can appear in any saloon — no town presence, warrant,
-/// or poster state gates. The true killer is gated until the killer-release gate opens.
+/// or poster state gates. The true killer is gated until five other gang members are settled.
 /// The pool includes suspects + citizens + nobody.
 /// </summary>
 public sealed class SaloonPoiSelectionTests
@@ -101,6 +100,18 @@ public sealed class SaloonPoiSelectionTests
     }
 
     [Fact]
+    public void LookAroundSaloon_RuntimeShapedSaltWhoseHashIsIntMinValueStillSelectsAndRecordsPoi()
+    {
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect("000000000000000000000000DEA475D9");
+        var result = session.LookAroundSaloon();
+
+        Assert.True(result.Success);
+        var spottedEvent = Assert.Single(session.UncommittedEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.Equal(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId, spottedEvent.SuspectId);
+        Assert.Equal(session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind, spottedEvent.PersonOfInterestKind);
+    }
+
+    [Fact]
     public void DevOverrideCanForceSuspectCitizenAndNobodyCleanly()
     {
         // Suspect
@@ -146,9 +157,7 @@ public sealed class SaloonPoiSelectionTests
 
         foreach (var salt in salts)
         {
-            var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
-            session.ForceDevSaltSource(SaltSource.CreateFixed(salt));
-            session.MarkEventsCommitted();
+            var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect(salt);
 
             var result = session.LookAroundSaloon();
             Assert.True(result.Success);

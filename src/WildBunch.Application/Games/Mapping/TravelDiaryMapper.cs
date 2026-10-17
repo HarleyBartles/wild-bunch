@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Game;
 using DomainTravelDiaryDayState = WildBunch.Domain.Travel.TravelDiaryDayState;
 using DomainTravelDiaryEncounterResolutionState = WildBunch.Domain.Travel.TravelDiaryEncounterResolutionState;
 using DomainTravelRulesProfile = WildBunch.Domain.Travel.TravelRulesProfile;
@@ -8,24 +9,38 @@ namespace WildBunch.Application.Games.Mapping;
 public static class TravelDiaryMapper
 {
     public static TravelDiaryDto? ToDto(IReadOnlyList<DomainTravelDiaryDayState> days, DomainTravelRulesProfile? travelRulesProfile = null)
+        => ToDto(days, Array.Empty<GameLogEntry>(), travelRulesProfile);
+
+    public static TravelDiaryDto? ToDto(
+        IReadOnlyList<DomainTravelDiaryDayState> days,
+        IReadOnlyList<GameLogEntry> logEntries,
+        DomainTravelRulesProfile? travelRulesProfile = null)
     {
         travelRulesProfile ??= DomainTravelRulesProfile.Default;
 
-        if (days.Count == 0)
+        var latestJourneySequence = logEntries
+            .Where(entry => entry.Kind == GameLogEntryKind.Travel && entry.JourneySequence.HasValue)
+            .Select(entry => entry.JourneySequence)
+            .Max();
+        var journeyEntries = latestJourneySequence.HasValue
+            ? logEntries
+                .Where(entry => entry.Kind == GameLogEntryKind.Travel && entry.JourneySequence == latestJourneySequence)
+                .Select(JournalMapper.ToEntryDto)
+                .ToArray()
+            : Array.Empty<GameLogEntryDto>();
+
+        if (days.Count == 0 && journeyEntries.Length == 0)
         {
             return null;
         }
 
-        var selectedFlavourIds = new HashSet<string>(StringComparer.Ordinal);
-        return new TravelDiaryDto(days.Select(day => ToDto(day, travelRulesProfile, selectedFlavourIds)).ToArray());
+        return new TravelDiaryDto(journeyEntries, days.Select(day => ToDto(day, travelRulesProfile)).ToArray());
     }
 
     private static TravelDiaryDayDto ToDto(
         DomainTravelDiaryDayState day,
-        DomainTravelRulesProfile travelRulesProfile,
-        ISet<string> selectedFlavourIds)
+        DomainTravelRulesProfile travelRulesProfile)
     {
-        var renderedDay = TravelDiaryTextRenderer.RenderDay(day, travelRulesProfile, selectedFlavourIds);
         var beatSlots = TrailBeatSlotProjection.FromDayState(day);
 
         return new TravelDiaryDayDto(
@@ -44,9 +59,6 @@ public static class TravelDiaryMapper
             day.TrailEvent is null ? null : TravelMapper.ToDto(day.TrailEvent),
             day.PendingEncounter is null ? null : TravelMapper.ToDto(day.PendingEncounter),
             day.EncounterResolution is null ? null : ToDto(day.EncounterResolution),
-            day.OpeningNarration,
-            renderedDay.JourneyBeat,
-            renderedDay.ResourceBeat,
             day.HealthDelta,
             day.WalletDelta,
             day.FoodDelta,
@@ -65,7 +77,6 @@ public static class TravelDiaryMapper
             day.CurrentCanteenCharges,
             day.CurrentAmmo,
             day.CurrentHeat,
-            renderedDay.Entries,
             day.Warnings,
             beatSlots);
     }

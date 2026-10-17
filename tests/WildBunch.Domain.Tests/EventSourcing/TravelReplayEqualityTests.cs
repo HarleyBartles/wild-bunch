@@ -16,10 +16,9 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_JourneyStarted_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
+        var (commandSession, preview) = TravelTestFactory.CreateEasyShortJourney();
         commandSession.StartJourney(preview);
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -39,11 +38,10 @@ public sealed class TravelReplayEqualityTests
     [Fact]
     public void Replay_AdvanceJourneyDay_MatchesCommandPath_ExactState()
     {
-        var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateEasyShortJourneyWithSetupEvents();
+        var (commandSession, preview) = TravelTestFactory.CreateEasyShortJourney();
         commandSession.StartJourney(preview);
         commandSession.AdvanceJourneyDay();
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
@@ -59,29 +57,64 @@ public sealed class TravelReplayEqualityTests
     }
 
     [Fact]
-    public void Replay_FullJourneyCycle_MatchesCommandPath_ExactState()
+    public void Replay_FullQuietJourneyCycle_ReconstructsCompletedArrival()
     {
-        var (commandSession, preview, setupEvents) =
-            TravelTestFactory.CreateSixDayQuietJourneyWithSetupEvents();
-        commandSession.StartJourney(preview);
+        var (commandSession, preview) = TravelTestFactory.CreateFourDayQuietJourney();
+        var originTownId = commandSession.Player.CurrentTownId;
+        var destinationTownId = preview.DestinationTownId;
+        var start = commandSession.StartJourney(preview);
+        Assert.True(start.Success, start.Message);
 
-        // Force quiet days through the dev-travel override seam so the journey
-        // completes without seed-dependent encounter interruptions. See BUNCH-87.
-        TravelJourneyStepResult result;
-        do
+        for (var day = 1; day <= 4; day++)
         {
             commandSession.ForceDevTravelOverride(DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
-            result = commandSession.AdvanceJourneyDay();
-        } while (result.Status == JourneyStatus.Active && result.Success);
-        commandSession.AcknowledgeJourneyArrival();
+            var result = commandSession.AdvanceJourneyDay();
 
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+            Assert.True(result.Success, result.Message);
+            Assert.NotNull(result.Journey);
+            var expectedStatus = day == 4 ? JourneyStatus.Completed : JourneyStatus.Active;
+            Assert.Equal(expectedStatus, result.Status);
+            Assert.Equal(day, result.Journey!.DaysTravelled);
 
+            if (day < 4)
+            {
+                Assert.Equal(originTownId, commandSession.Player.CurrentTownId);
+            }
+            else
+            {
+                Assert.Equal(destinationTownId, commandSession.Player.CurrentTownId);
+            }
+        }
+
+        Assert.NotNull(commandSession.Journey);
+        Assert.Equal(JourneyStatus.Completed, commandSession.Journey!.Status);
+        Assert.Equal(4, commandSession.Journey.DaysTravelled);
+        Assert.Equal(0m, commandSession.Journey.RemainingRideDayDistance);
+        Assert.Equal(5, commandSession.Clock.Day);
+        Assert.Equal(0, commandSession.Clock.Turn);
+
+        var completed = Assert.Single(commandSession.AllEvents.OfType<JourneyCompleted>());
+        Assert.Equal(destinationTownId, completed.DestinationTownId);
+        Assert.Equal(JourneyStatus.Completed, completed.JourneySnapshot.Status);
+        Assert.Equal(0m, completed.JourneySnapshot.RemainingRideDayDistance);
+
+        var acknowledgment = commandSession.AcknowledgeJourneyArrival();
+        Assert.True(acknowledgment.Success, acknowledgment.Message);
+        Assert.Null(commandSession.Journey);
+
+        var acknowledged = Assert.Single(commandSession.AllEvents.OfType<JourneyArrivalAcknowledged>());
+        var completedHistory = Assert.Single(commandSession.CompletedJourneyHistory);
+        Assert.Equal(destinationTownId, completedHistory.DestinationTownId);
+        Assert.Equal(TravelMode.Foot, completedHistory.TravelMode);
+        Assert.Equal(4, completedHistory.DaysTravelled);
+        Assert.Equal(completedHistory, acknowledged.JourneySnapshot);
+
+        var events = commandSession.AllEvents.ToArray();
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,
             events);
 
-        Assert.Equal(commandSession.Player.CurrentTownId, replayed.Player.CurrentTownId);
+        Assert.Equal(destinationTownId, replayed.Player.CurrentTownId);
         Assert.Equal(commandSession.Player.Health, replayed.Player.Health);
         Assert.Equal(commandSession.Player.Wallet.Cash, replayed.Player.Wallet.Cash);
         Assert.Equal(commandSession.Player.GetQuantity(ItemKind.Food),
@@ -89,7 +122,64 @@ public sealed class TravelReplayEqualityTests
         Assert.Equal(commandSession.Clock.Day, replayed.Clock.Day);
         Assert.Equal(commandSession.PursuitState.Heat, replayed.PursuitState.Heat);
         Assert.Null(replayed.Journey);
-        Assert.Equal(commandSession.CompletedJourneyHistory.Count, replayed.CompletedJourneyHistory.Count);
+        Assert.Equal(completedHistory, Assert.Single(replayed.CompletedJourneyHistory));
+        Assert.Equal(commandSession.Version, replayed.Version);
+    }
+
+    [Fact]
+    public void Replay_HorseLossFootTravel_PreservesDistanceUntilArrival()
+    {
+        var (commandSession, preview) = TravelTestFactory.CreateThreeUnitJourneyWithCriticalHorse();
+        var originTownId = commandSession.Player.CurrentTownId;
+        var destinationTownId = preview.DestinationTownId;
+        var start = commandSession.StartJourney(preview);
+        Assert.True(start.Success, start.Message);
+        Assert.Equal(TravelMode.Mounted, preview.TravelMode);
+
+        var expectedDistances = new[] { 2.5m, 2m, 1.5m, 1m, 0.5m, 0m };
+        var expectedRemainingDays = new[] { 5, 4, 3, 2, 1, 0 };
+        for (var dayIndex = 0; dayIndex < expectedDistances.Length; dayIndex++)
+        {
+            commandSession.ForceDevTravelOverride(
+                DevTravelOverride.ForCategory(TravelDayEncounterCategory.Quiet));
+            var step = commandSession.AdvanceJourneyDay();
+            Assert.True(step.Success, step.Message);
+            Assert.NotNull(step.Journey);
+            Assert.Equal(expectedDistances[dayIndex], step.Journey.RemainingRideDayDistance);
+            Assert.Equal(expectedRemainingDays[dayIndex], step.Journey.RemainingDays);
+
+            if (dayIndex < expectedDistances.Length - 1)
+            {
+                Assert.Equal(JourneyStatus.Active, step.Status);
+                Assert.Equal(originTownId, commandSession.Player.CurrentTownId);
+                Assert.DoesNotContain(
+                    commandSession.UncommittedEvents.OfType<JourneyCompleted>(),
+                    completed => completed.JourneySnapshot.RemainingRideDayDistance > 0);
+            }
+            else
+            {
+                Assert.Equal(JourneyStatus.Completed, step.Status);
+                Assert.Equal(destinationTownId, commandSession.Player.CurrentTownId);
+                Assert.Equal(0m, step.Journey.RemainingRideDayDistance);
+            }
+        }
+
+        Assert.Equal(6, commandSession.Journey!.DaysTravelled);
+        Assert.Single(commandSession.UncommittedEvents.OfType<JourneyCompleted>());
+        Assert.True(commandSession.AcknowledgeJourneyArrival().Success);
+        Assert.Null(commandSession.Journey);
+
+        var events = commandSession.AllEvents.ToArray();
+        var replayed = GameSession.RehydrateFromEvents(commandSession.Id, commandSession.World, events);
+
+        Assert.Equal(commandSession.Player.CurrentTownId, replayed.Player.CurrentTownId);
+        Assert.Null(replayed.Journey);
+        var completedJourney = Assert.Single(replayed.CompletedJourneyHistory);
+        Assert.Equal(destinationTownId, completedJourney.DestinationTownId);
+        Assert.Equal(TravelMode.Foot, completedJourney.TravelMode);
+        Assert.Equal(6, completedJourney.DaysTravelled);
+        Assert.Equal(0m, completedJourney.RemainingRideDayDistance);
+        Assert.Equal(0, completedJourney.RemainingDays);
         Assert.Equal(commandSession.Version, replayed.Version);
     }
 
@@ -97,7 +187,6 @@ public sealed class TravelReplayEqualityTests
     public void Replay_ResolveJourneyEncounter_MatchesCommandPath_ExactState()
     {
         var (commandSession, preview) = TravelTestFactory.CreateHighRiskJourney();
-        var setupEvents = TravelTestFactory.RecaptureSetupEventsForReplay(commandSession);
         commandSession.StartJourney(preview);
 
         // Force a foe encounter through the dev-travel override seam instead of
@@ -108,7 +197,7 @@ public sealed class TravelReplayEqualityTests
 
         var resolved = commandSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0);
         Assert.True(resolved.Success);
-        var events = setupEvents.Concat(commandSession.UncommittedEvents).ToList();
+        var events = commandSession.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             commandSession.Id, commandSession.World,

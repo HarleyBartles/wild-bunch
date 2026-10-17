@@ -1,13 +1,23 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using WildBunch.Api.Games;
+using WildBunch.Application.Abstractions;
+using WildBunch.Application.Games.Models;
+using WildBunch.Domain.Cases;
+using WildBunch.Domain.Game;
+using WildBunch.Domain.Travel;
+using WildBunch.GameContent.NewGame;
+using WildBunch.GameContent.Prologue;
 using WildBunch.Integration.Tests.TestInfrastructure;
+using WildBunch.Persistence;
 
 namespace WildBunch.Integration.Tests;
 
 /// <summary>
 /// Integration-level hidden-truth guard for the prologue endpoint. Hits the actual
-/// HTTP endpoint <c>GET /api/games/prologue</c> and asserts the response body exposes
+/// session-scoped HTTP endpoint and asserts the response body exposes
 /// no hidden culprit internals (<c>trueCulpritId</c>, <c>isTrueCulprit</c>,
 /// <c>linkedSuspectIds</c>, internal <c>suspect-</c> ids, or the unsubstituted
 /// <c>{trueCulpritMainIdentifier}</c> placeholder), and that the public-facing fields
@@ -29,12 +39,46 @@ public sealed class PrologueHiddenTruthTests
     ];
 
     [Fact]
-    public async Task PrologueEndpoint_DoesNotLeakHiddenCulpritInternals()
+    public async Task PrologueEndpoint_UsesSettledSessionCaseAndDoesNotLeakHiddenCulpritInternals()
     {
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/api/games/prologue");
+        var seedWorld = SeedWorldResolver.CreateCanonicalSeedWorld();
+        var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld).ToString("D");
+        var replacementSeed = SeedWorldResolver.CreateRepresentativeSeedCode(
+            seedWorld with { DefaultCulpritIndex = 0 }).ToString("D");
+        var setupResponse = await client.PostAsJsonWithStartupOperationAsync(
+            "/api/games/setup",
+            new SetupGameRequest(
+                "Ranger Vale",
+                GameDifficulty.Challenging,
+                seedCode,
+                GameEntropy.Wild));
+        Assert.Equal(HttpStatusCode.Created, setupResponse.StatusCode);
+        var sessionDto = await setupResponse.Content.ReadFromJsonAsync<GameSessionDto>();
+        Assert.NotNull(sessionDto);
+
+        GameSession session;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var repository = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            session = (await repository.GetByIdAsync(new GameSessionId(sessionDto!.Id)))!;
+        }
+
+        var culprit = session.CaseFile.Suspects.Single(suspect => suspect.Id == session.CaseFile.TrueCulpritId);
+        var establishedDescriptor = SaloonPersonOfInterestDescriptor.Describe(culprit, session.CaseFile);
+        var replacementDescriptor = PrologueDescriptorResolver.ResolveTrueCulpritDescriptor(
+            GameDifficulty.Standard,
+            replacementSeed,
+            GameEntropy.Classic);
+
+        Assert.Equal(GameDifficulty.Challenging, session.GameDifficulty);
+        Assert.Equal(GameEntropy.Wild, session.GameEntropy);
+        Assert.NotEqual(establishedDescriptor, replacementDescriptor);
+
+        var response = await client.GetAsync(
+            $"/api/games/{sessionDto!.Id}/prologue?seedCode={replacementSeed}&gameDifficulty=0&gameEntropy=1");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -80,6 +124,7 @@ public sealed class PrologueHiddenTruthTests
         // The prologue copy always references "the Wild Bunch", so its presence confirms
         // the variant body was emitted and not truncated to a bare descriptor.
         Assert.Contains("Wild Bunch", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(establishedDescriptor, body, StringComparison.Ordinal);
 
         // A GUID-shaped descriptor would indicate the placeholder was substituted with
         // an internal id rather than a public-safe SaloonPersonOfInterestDescriptor.

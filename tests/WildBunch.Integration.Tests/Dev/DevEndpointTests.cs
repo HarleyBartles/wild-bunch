@@ -1,8 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using WildBunch.Api.Games;
+using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
 using WildBunch.Integration.Tests.TestInfrastructure;
+using WildBunch.Persistence;
 
 namespace WildBunch.Integration.Tests.Dev;
 
@@ -14,8 +18,7 @@ public sealed class DevEndpointTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
@@ -28,13 +31,69 @@ public sealed class DevEndpointTests
     }
 
     [Fact]
+    public async Task GetSessionAudit_PreservesPersistedOccurrenceMetadataAcrossReads()
+    {
+        using var factory = new PostgreSqlApiFactory();
+        using var client = factory.CreateClient();
+
+        var scenario = BoringScenarioBuilder.StartingTownReady();
+
+        var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+        var route = $"/api/dev/sessions/{created.Id}/audit";
+        var occurrenceBase = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        Dictionary<long, DateTime> expectedOccurrences;
+        Dictionary<long, string> expectedEventTypes;
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+            var storedEvents = await dbContext.StoredEvents
+                .Where(storedEvent => storedEvent.StreamId == created.Id)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .ToArrayAsync();
+
+            Assert.NotEmpty(storedEvents);
+            Assert.True(storedEvents.Select(storedEvent => storedEvent.EventType).Distinct().Count() > 1);
+            foreach (var storedEvent in storedEvents)
+            {
+                storedEvent.OccurredAtUtc = occurrenceBase.AddMinutes(storedEvent.Sequence);
+            }
+
+            await dbContext.SaveChangesAsync();
+            expectedOccurrences = storedEvents.ToDictionary(
+                storedEvent => storedEvent.Sequence,
+                storedEvent => storedEvent.OccurredAtUtc);
+            expectedEventTypes = storedEvents.ToDictionary(
+                storedEvent => storedEvent.Sequence,
+                storedEvent => storedEvent.EventType);
+        }
+
+        var firstRead = await client.GetFromJsonAsync<SessionAuditDto>(route);
+        var secondRead = await client.GetFromJsonAsync<SessionAuditDto>(route);
+
+        Assert.NotNull(firstRead);
+        Assert.NotNull(secondRead);
+        Assert.NotEmpty(firstRead.Entries);
+        Assert.Equal(expectedOccurrences.Keys.Order(), firstRead.Entries.Select(entry => entry.Sequence));
+        foreach (var entry in firstRead.Entries)
+        {
+            Assert.Equal(expectedOccurrences[entry.Sequence], entry.OccurredAtUtc);
+            Assert.Equal(expectedEventTypes[entry.Sequence], entry.EventType);
+        }
+
+        Assert.Equal(firstRead.Entries, secondRead.Entries);
+    }
+
+    [Fact]
     public async Task GetSessionAudit_Returns403_InNonDevEnvironment()
     {
         using var factory = new NonDevApiFactory();
         using var client = factory.CreateClient();
 
-        // Even a valid session ID should be denied — the guard runs before the handler.
-        var auditResponse = await client.GetAsync($"/api/dev/sessions/{Guid.NewGuid()}/audit");
+        var scenario = BoringScenarioBuilder.StartingTownReady();
+        var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
+
+        var auditResponse = await client.GetAsync($"/api/dev/sessions/{created.Id}/audit");
         Assert.Equal(HttpStatusCode.Forbidden, auditResponse.StatusCode);
     }
 
@@ -54,8 +113,7 @@ public sealed class DevEndpointTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 

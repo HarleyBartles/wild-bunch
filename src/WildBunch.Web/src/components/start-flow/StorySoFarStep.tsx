@@ -1,26 +1,19 @@
 import styled from "styled-components";
 import type { FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { GameEntropy, GameDifficulty } from "../../api/types";
 import { Button } from "../ui/sharedStyled";
 import { getPrologue } from "../../api/wildBunchApi";
 
 interface StorySoFarStepProps {
   onContinue: () => void;
-  seedCode?: string | null;
-  gameDifficulty?: GameDifficulty;
-  gameEntropy?: GameEntropy;
+  sessionId: string;
 }
 
-export function StorySoFarStep({
-  onContinue,
-  seedCode,
-  gameDifficulty,
-  gameEntropy,
-}: StorySoFarStepProps) {
+export function StorySoFarStep({ onContinue, sessionId }: StorySoFarStepProps) {
   const prologueQuery = useQuery({
-    queryKey: ["prologue", seedCode ?? null, gameDifficulty ?? null, gameEntropy ?? null],
-    queryFn: () => getPrologue(seedCode, gameDifficulty, gameEntropy),
+    queryKey: ["prologue", sessionId],
+    queryFn: () => getPrologue(sessionId),
+    enabled: Boolean(sessionId),
     staleTime: Infinity,
     retry: false,
   });

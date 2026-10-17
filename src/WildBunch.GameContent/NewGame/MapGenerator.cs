@@ -18,7 +18,7 @@ internal static class MapGenerator
     private const int MapHeight = 500;
 
     public static World Generate(SeedWorld seedWorld, GameSetupDeterministicSource source,
-        GameEntropy entropy, SaltSource? saltSource, LayoutSalts? devLayoutSalts = null)
+        GameEntropy entropy, SaltSource? saltSource)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(source);
@@ -30,7 +30,7 @@ internal static class MapGenerator
             seedWorld.DefaultCulpritIndex,
             seedWorld.CashBonus,
             seedWorld.ProsperityPalette,
-            seedWorld.ServicesPalette);
+            seedWorld.ReservedTownNameDerivationBits);
 
         // Place base towns only — the outlier is added later as a purely additive step.
         var (towns, clusterAssignments) = ClusterPlacementGenerator.Place(seedWorld, source, entropy, saltSource);
@@ -62,7 +62,7 @@ internal static class MapGenerator
                 defaultCulpritIndex: 0,
                 cashBonus: 0,
                 prosperityPalette: seedWorld.ProsperityPalette,
-                servicesPalette: seedWorld.ServicesPalette);
+                reservedTownNameDerivationBits: seedWorld.ReservedTownNameDerivationBits);
             var outlierName = outlierPool.First(entry => !existingIds.Contains(entry.Id));
             var townNamesList = townNames.ToList();
             townNamesList.Add(outlierName);
@@ -90,7 +90,7 @@ internal static class MapGenerator
         var world = SeedWorldFactory.CreateWorld(
             seedWorld.WorldVariant,
             townNames,
-            seedWorld.ServicesPalette,
+            seedWorld.ReservedTownNameDerivationBits,
             seedWorld.ProsperityPalette,
             trails,
             townCoordinates: towns,
@@ -101,8 +101,7 @@ internal static class MapGenerator
 
         // Town is a sealed record — with-expressions produce new Town instances with layouts.
         // World is a sealed class (not a record) — construct a new World with the modified
-        // towns and the existing trails. Layouts are gameplay-only: the canonical start-screen
-        // world (CreateCanonicalWorld) does not go through MapGenerator and needs no layouts.
+        // towns and the existing trails. Layouts are gameplay-only and are attached to each generated session world.
         var entropyPolicy = EntropyPolicy.For(entropy);
         var townsWithLayouts = world.Towns.Select((town, index) =>
             {
@@ -110,26 +109,24 @@ internal static class MapGenerator
                     seedWorld,
                     entropyPolicy,
                     town.Id,
-                    index,
-                    devLayoutSalts);
+                    index);
 
                 var layoutSource = new LayoutDeterministicSource(
                     seedWorld.SeedCode.ToString(),
                     town.Id,
                     index,
-                    "1.0.0",
+                    TownLayout.CurrentResolverVersion,
                     derivedSalts);
 
                 return town with
                 {
                     Layout = TownLayoutGenerator.GenerateLayout(
-                    town.Services,
-                    town.Prosperity,
+                        town.Prosperity,
                     town.Id,
                     index,
                     layoutSource,
                     seedWorld.BuildingLayoutPalette,
-                    resolverVersion: "1.0.0")
+                    resolverVersion: layoutSource.ResolverVersion)
                 };
             }).ToArray();
 

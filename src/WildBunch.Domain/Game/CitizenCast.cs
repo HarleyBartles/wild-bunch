@@ -144,24 +144,6 @@ public static class CitizenCast
     }
 
     /// <summary>
-    /// Returns the role display name (e.g. "the town butcher") — used in contexts
-    /// where an encounter is already available. The confrontation reveal path uses
-    /// <see cref="GetRoleByKey"/> + <c>DisplayName</c> directly instead, since it
-    /// does not have or need an encounter.
-    /// </summary>
-    public static string ResolveRevealName(CitizenEncounter encounter)
-        => encounter.Role.DisplayName;
-
-    /// <summary>
-    /// Convenience helper: builds the full mistaken-arrest reveal narration for an
-    /// encounter. The actual confrontation path in <c>BountyLoopCoordinator</c> does
-    /// NOT use this method — it uses <see cref="GetRoleByKey"/> + the stored
-    /// concealment descriptor. This helper is for other contexts if needed.
-    /// </summary>
-    public static string ResolveRevealNarration(CitizenEncounter encounter, decimal fineAmount)
-        => $"You bring {ResolveDescriptor(encounter)} to the sheriff. The sheriff identifies them as {encounter.Role.DisplayName}, releases them, and fines you ${fineAmount:0.00}.";
-
-    /// <summary>
     /// Normalizes a feature description by stripping common prefixes ("has a",
     /// "wears a", "wearing a", etc.) down to "a"/"an". This is a local duplicate of
     /// the prefix-stripping that previously lived in
@@ -216,7 +198,7 @@ public static class CitizenCast
                 }
             }
 
-            return Math.Abs(hash);
+            return hash == int.MinValue ? int.MaxValue : Math.Abs(hash);
         }
     }
 }

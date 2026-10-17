@@ -20,5 +20,42 @@ public sealed record TownLayout(
     TownProsperity Prosperity,
     IReadOnlyList<PathSegment> Paths,
     int[][]? TileGrid = null,
-    string ResolverVersion = "1.0.0",
-    LayoutSalts? LayoutSalts = null);
+    string ResolverVersion = TownLayout.CurrentResolverVersion,
+    LayoutSalts? LayoutSalts = null)
+{
+    private const int MinCoordinate = 0;
+    private const int MaxCoordinate = 100;
+
+    private int _playerSpawnX = ValidateCoordinate(PlayerSpawnX, nameof(PlayerSpawnX));
+    private int _playerSpawnY = ValidateCoordinate(PlayerSpawnY, nameof(PlayerSpawnY));
+
+    public int PlayerSpawnX
+    {
+        get => _playerSpawnX;
+        init => _playerSpawnX = ValidateCoordinate(value, nameof(PlayerSpawnX));
+    }
+
+    public int PlayerSpawnY
+    {
+        get => _playerSpawnY;
+        init => _playerSpawnY = ValidateCoordinate(value, nameof(PlayerSpawnY));
+    }
+
+    /// <summary>
+    /// Identifies the current deterministic town-layout algorithm. Generated
+    /// layouts persist this value so rendering and replay retain its identity.
+    /// </summary>
+    public const string CurrentResolverVersion = "1.0.0";
+
+    private static int ValidateCoordinate(int value, string parameterName)
+    {
+        if (value is < MinCoordinate or > MaxCoordinate)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                $"Coordinates must be between {MinCoordinate} and {MaxCoordinate}");
+        }
+
+        return value;
+    }
+}

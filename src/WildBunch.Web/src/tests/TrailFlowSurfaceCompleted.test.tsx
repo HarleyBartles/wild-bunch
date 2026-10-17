@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TrailFlowSurface } from "../flow/TrailFlowSurface";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import { JourneyStatus, StartFlowPhase, type GameSessionDto, type JournalDto } from "../api/types";
 import {
@@ -35,22 +36,17 @@ vi.mock("../api/wildBunchApi", () => ({
   advanceTravelDay: vi.fn(),
   resolveTravelEncounter: vi.fn(),
   getWorldMap: vi.fn(),
-  getStartingTownMap: vi.fn(),
   setupGame: vi.fn(),
   markPrologueViewed: vi.fn(),
   startGameWithTown: vi.fn(),
   archiveGame: vi.fn(),
   getTownStoreOffers: vi.fn(),
   buyStoreItem: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   getPrologue: vi.fn(),
-  getStartingTowns: vi.fn(),
   previewTravel: vi.fn(),
 }));
 
@@ -73,8 +69,8 @@ function createCompletedJourneySession(): GameSessionDto {
     player: { name: "Ruth", currentTownId: "dust-fork", health: 9 },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [
         {
@@ -93,7 +89,7 @@ function createCompletedJourneySession(): GameSessionDto {
       openingLead: "",
       caseState: { statusText: "" },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -110,7 +106,6 @@ function createCompletedJourneySession(): GameSessionDto {
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 8, turn: 2, timeOfDay: "Morning" },
@@ -169,6 +164,15 @@ function createInTownSession(): GameSessionDto {
   return session;
 }
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+}
+
 function createJournal(): JournalDto {
   return {
     id: "game-1",
@@ -181,7 +185,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "" },
       caseSummary: "",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -206,16 +210,16 @@ function renderTrailFlow() {
 
 describe("TrailFlowSurface completed-journey view", () => {
   it("shows arrival heading when journey is Completed", async () => {
-    mockedGetGame.mockResolvedValue(createCompletedJourneySession());
+    const completedSession = createCompletedJourneySession();
+    const inTownSession = createInTownSession();
+    mockedGetGame.mockResolvedValueOnce(completedSession).mockResolvedValue(inTownSession);
     vi.mocked(getAvailableActions).mockResolvedValue([]);
     vi.mocked(getJournal).mockResolvedValue(createJournal());
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
     renderTrailFlow();
 
-    const heading = await screen.findByRole("heading", {
-      name: /you've arrived in dust fork/i,
-    });
+    const heading = await screen.findByRole("heading", { name: /you've arrived in dust fork/i });
     expect(heading).toBeInTheDocument();
   });
 
@@ -227,37 +231,113 @@ describe("TrailFlowSurface completed-journey view", () => {
 
     renderTrailFlow();
 
-    const button = await screen.findByRole("button", {
-      name: /step into town/i,
-    });
+    const button = await screen.findByRole("button", { name: /step into town/i });
     expect(button).toBeInTheDocument();
   });
 
   it("calls acknowledgeTravelArrival when 'Step into town' is clicked", async () => {
-    mockedGetGame.mockResolvedValue(createCompletedJourneySession());
+    const inTownSession = createInTownSession();
+    mockedGetGame
+      .mockResolvedValueOnce(createCompletedJourneySession())
+      .mockResolvedValue(inTownSession);
     vi.mocked(getAvailableActions).mockResolvedValue([]);
     vi.mocked(getJournal).mockResolvedValue(createJournal());
     mockedAcknowledgeTravelArrival.mockResolvedValue({
       success: true,
       message: "You step into town.",
-      currentSession: createInTownSession(),
+      currentSession: inTownSession,
       journeyStatus: null,
       journey: null,
       trailEvent: null,
-      travelDiary: null,
     });
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
 
     const user = userEvent.setup();
-    renderTrailFlow();
+    const { queryClient } = renderTrailFlow();
 
-    const button = await screen.findByRole("button", {
-      name: /step into town/i,
-    });
+    const button = await screen.findByRole("button", { name: /step into town/i });
     await user.click(button);
 
     await waitFor(() => {
       expect(mockedAcknowledgeTravelArrival).toHaveBeenCalledWith("game-1");
+      expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(inTownSession);
     });
+  });
+
+  it("shows an unsuccessful arrival result while retaining the completed journey", async () => {
+    const completedSession = createCompletedJourneySession();
+    mockedGetGame.mockResolvedValue(completedSession);
+    vi.mocked(getAvailableActions).mockResolvedValue([]);
+    vi.mocked(getJournal).mockResolvedValue(createJournal());
+    mockedAcknowledgeTravelArrival.mockResolvedValue({
+      success: false,
+      message: "The arrival cannot be acknowledged yet.",
+      currentSession: completedSession,
+      journeyStatus: JourneyStatus.Completed,
+      journey: completedSession.journey,
+      trailEvent: null,
+    });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    const user = userEvent.setup();
+    const { queryClient } = renderTrailFlow();
+    await user.click(await screen.findByRole("button", { name: /step into town/i }));
+
+    expect(await screen.findByText("The arrival cannot be acknowledged yet.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /you've arrived in dust fork/i }),
+    ).toBeInTheDocument();
+    expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(completedSession);
+  });
+
+  it("keeps arrival acknowledgement pending and prevents a duplicate submission", async () => {
+    const inTownSession = createInTownSession();
+    const response = deferred<Awaited<ReturnType<typeof acknowledgeTravelArrival>>>();
+    mockedGetGame
+      .mockResolvedValueOnce(createCompletedJourneySession())
+      .mockResolvedValue(inTownSession);
+    vi.mocked(getAvailableActions).mockResolvedValue([]);
+    vi.mocked(getJournal).mockResolvedValue(createJournal());
+    mockedAcknowledgeTravelArrival.mockReturnValue(response.promise);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    const user = userEvent.setup();
+    const { queryClient } = renderTrailFlow();
+    const button = await screen.findByRole("button", { name: /step into town/i });
+    await user.click(button);
+
+    expect(await screen.findByRole("button", { name: /stepping into town/i })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: /stepping into town/i }));
+    expect(mockedAcknowledgeTravelArrival).toHaveBeenCalledTimes(1);
+
+    response.resolve({
+      success: true,
+      message: "You step into town.",
+      currentSession: inTownSession,
+      journeyStatus: null,
+      journey: null,
+      trailEvent: null,
+    });
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(inTownSession);
+    });
+  });
+
+  it("shows an arrival request failure and leaves the completed journey available to retry", async () => {
+    const completedSession = createCompletedJourneySession();
+    mockedGetGame.mockResolvedValue(completedSession);
+    vi.mocked(getAvailableActions).mockResolvedValue([]);
+    vi.mocked(getJournal).mockResolvedValue(createJournal());
+    mockedAcknowledgeTravelArrival.mockRejectedValue(new Error("Arrival could not be confirmed."));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    const user = userEvent.setup();
+    const { queryClient } = renderTrailFlow();
+    await user.click(await screen.findByRole("button", { name: /step into town/i }));
+
+    expect(await screen.findByText("Arrival could not be confirmed.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /step into town/i })).toBeEnabled();
+    expect(queryClient.getQueryData(gameSessionQueryKey("game-1"))).toEqual(completedSession);
   });
 });

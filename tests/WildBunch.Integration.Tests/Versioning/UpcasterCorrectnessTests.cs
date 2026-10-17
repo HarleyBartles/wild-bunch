@@ -1,3 +1,8 @@
+using System.Text.Json.Nodes;
+using WildBunch.Domain.Cases;
+using WildBunch.Domain.Events;
+using WildBunch.Persistence;
+using WildBunch.Persistence.Serialization;
 using WildBunch.Persistence.Versioning;
 
 namespace WildBunch.Integration.Tests.Versioning;
@@ -43,6 +48,68 @@ public sealed class UpcasterCorrectnessTests
     }
 
     [Fact]
+    public void CaseFileGeneratedV2Payload_KeepsEqualNameWarrantsUnassociated()
+    {
+        var serializer = new GameSessionJsonSerializer();
+        var warrantTerms = new WarrantTerms(
+            WarrantDisposition.DeadOrAlive,
+            100m,
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            "Sheriff",
+            InvestigationTargetKind.GangMember,
+            Array.Empty<OutlawGangId>(),
+            null);
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: new[]
+            {
+                new Suspect(new SuspectId("suspect-1"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge),
+                new Suspect(new SuspectId("suspect-2"), "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            },
+            trueCulpritId: new SuspectId("suspect-1"),
+            openingLead: CaseOpeningLead.Create("Follow the public leads."),
+            knownClues: Array.Empty<Clue>(),
+            publicWarrants: new[]
+            {
+                new Warrant(new WarrantId("warrant-1"), "Mira Cline", warrantTerms),
+                new Warrant(new WarrantId("warrant-2"), "Mira Cline", warrantTerms)
+            });
+        var eventJson = serializer.SerializeEvent(new CaseFileGenerated
+        {
+            CaseFile = CaseFileSnapshot.FromDomain(caseFile)
+        });
+        var legacyPayload = JsonNode.Parse(eventJson)!.AsObject();
+        legacyPayload.Remove("occurredAt");
+        var legacyCaseFile = legacyPayload["caseFile"]!.AsObject();
+        foreach (var collectionName in new[] { "knownWarrants", "publicWarrants" })
+        {
+            foreach (var warrant in legacyCaseFile[collectionName]!.AsArray().Select(node => node!.AsObject()))
+            {
+                warrant.Remove("targetSuspectId");
+            }
+        }
+
+        var registry = new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters());
+        var upgradedJson = registry.Upcast("CaseFileGenerated", storedVersion: 2, legacyPayload.ToJsonString());
+        var upgradedWarrants = JsonNode.Parse(upgradedJson)!["caseFile"]!["publicWarrants"]!.AsArray();
+        Assert.All(upgradedWarrants, warrant =>
+        {
+            Assert.True(warrant!.AsObject().TryGetPropertyValue("targetSuspectId", out var targetSuspectId),
+                "The v2-to-v3 upcaster must explicitly add the unknown identity field.");
+            Assert.Null(targetSuspectId);
+        });
+
+        var upgradedEvent = Assert.IsType<CaseFileGenerated>(serializer.DeserializeEvent(nameof(CaseFileGenerated), upgradedJson));
+        var reconstructed = upgradedEvent.CaseFile.ToDomain();
+
+        Assert.Equal(2, reconstructed.PublicWarrants.Count);
+        Assert.Equal("Mira Cline", reconstructed.PublicWarrants[0].TargetName);
+        Assert.Equal("Mira Cline", reconstructed.PublicWarrants[1].TargetName);
+        Assert.All(reconstructed.PublicWarrants, warrant => Assert.Null(warrant.TargetSuspectId));
+    }
+
+    [Fact]
     public void CurrentVersion_WithOneUpcaster_Returns2()
     {
         var registry = new PayloadUpcasterRegistry([new TestEventV1ToV2Upcaster()]);
@@ -62,11 +129,21 @@ public sealed class UpcasterCorrectnessTests
     [Fact]
     public void Registry_NonContiguousChain_ThrowsAtConstruction()
     {
-        // An upcaster that starts at v2 (skipping v1) — non-contiguous
-        var badUpcaster = new TestEventV2ToV3Upcaster();
-
         Assert.Throws<InvalidOperationException>(() =>
-            new PayloadUpcasterRegistry([badUpcaster]));
+            new PayloadUpcasterRegistry([
+                new TestEventV1ToV2Upcaster(),
+                new TestEventV3ToV4Upcaster()
+            ]));
+    }
+
+    [Fact]
+    public void Registry_DuplicateTransition_ThrowsAtConstruction()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            new PayloadUpcasterRegistry([
+                new TestEventV1ToV2Upcaster(),
+                new DuplicateTestEventV1ToV2Upcaster()
+            ]));
     }
 
     [Fact]
@@ -103,41 +180,18 @@ public sealed class UpcasterCorrectnessTests
             => payloadJson.Replace("}", ",\"anotherField\":\"added\"}");
     }
 
-    /// <summary>
-    /// Verifies the runtime guard in Upcast() (line 100-104) is defense-in-depth
-    /// behind the construction-time contiguous chain validation. The construction
-    /// check makes the runtime guard unreachable for event upcasters — if someone
-    /// removes the construction check, this test documents that the runtime guard
-    /// is still present and tested.
-    /// We bypass the construction check via reflection to reach the runtime guard.
-    /// </summary>
-    [Fact]
-    public void Upcast_MissingUpcasterInChain_ThrowsAtRuntime()
-    {
-        // Build a valid registry with v1->v2, then use reflection to add a
-        // v3 upcaster without a v2->v3, creating a gap the construction check
-        // would normally reject. This lets us reach the runtime guard.
-        var registry = new PayloadUpcasterRegistry([new TestEventV1ToV2Upcaster()]);
-
-        // Use reflection to inject a v3 FromVersion upcaster (skipping v2->v3),
-        // bypassing the construction-time contiguous chain validation.
-        var upcastersField = typeof(PayloadUpcasterRegistry)
-            .GetField("_upcasters", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        var upcasters = (System.Collections.Generic.Dictionary<(PayloadKind, string), SortedDictionary<int, IPayloadUpcaster>>)upcastersField.GetValue(registry)!;
-        var chain = upcasters[(PayloadKind.Event, "TestEvent")];
-        chain[3] = new TestEventV3ToV4Upcaster();  // gap: v3 present, v2 missing
-
-        // CurrentVersion is now 4 (max FromVersion + 1 = 3 + 1).
-        // Upcast from v1 should run v1->v2, then fail at v2 (no upcaster for v2->v3).
-        Assert.Throws<InvalidOperationException>(() =>
-            registry.Upcast("TestEvent", storedVersion: 1, """{"existingField":"value"}"""));
-    }
-
     private sealed class TestEventV3ToV4Upcaster : IEventUpcaster
     {
         public string PayloadType => "TestEvent";
         public int FromVersion => 3;
         public string Upcast(string payloadJson)
             => payloadJson.Replace("}", ",\"v4Field\":\"added\"}");
+    }
+
+    private sealed class DuplicateTestEventV1ToV2Upcaster : IEventUpcaster
+    {
+        public string PayloadType => "TestEvent";
+        public int FromVersion => 1;
+        public string Upcast(string payloadJson) => payloadJson;
     }
 }

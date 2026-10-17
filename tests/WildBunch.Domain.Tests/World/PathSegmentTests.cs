@@ -72,4 +72,38 @@ public sealed class PathSegmentTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => PathSegment.Create(50, 50, 50, 101));
     }
+
+    [Theory]
+    [InlineData(-1, 50, 50, 50)]
+    [InlineData(101, 50, 50, 50)]
+    [InlineData(50, -1, 50, 50)]
+    [InlineData(50, 101, 50, 50)]
+    [InlineData(50, 50, -1, 50)]
+    [InlineData(50, 50, 101, 50)]
+    [InlineData(50, 50, 50, -1)]
+    [InlineData(50, 50, 50, 101)]
+    public void PathSegment_DirectConstructionRejectsCoordinatesOutsideLogicalSurface(
+        int startX, int startY, int endX, int endY)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PathSegment(startX, startY, endX, endY));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void PathSegment_WithUpdateRejectsCoordinateOutsideLogicalSurface(int coordinate)
+    {
+        var segment = new PathSegment(10, 20, 30, 40);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => coordinate switch
+        {
+            0 => segment with { StartX = 101 },
+            1 => segment with { StartY = 101 },
+            2 => segment with { EndX = 101 },
+            3 => segment with { EndY = 101 },
+            _ => throw new ArgumentOutOfRangeException(nameof(coordinate))
+        });
+    }
 }

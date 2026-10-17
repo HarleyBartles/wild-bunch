@@ -13,11 +13,33 @@ public sealed class TerrainAssignerTests
         Dictionary<int, (int X, int Y)> towns,
         Dictionary<int, int> clusters,
         SeedWorldVariant variant,
-        IReadOnlyList<string> townIds)
+        IReadOnlyList<string> townIds,
+        string? seedCode = null,
+        string salt = "test")
         => TerrainAssigner.Assign(edges, towns, clusters, variant, townIds,
-            new GameSetupDeterministicSource(SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode())),
-            SaltSource.CreateFixed("test"),
+            new GameSetupDeterministicSource(seedCode ?? SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode())),
+            SaltSource.CreateFixed(salt),
             outlierSlot: null);
+
+    [Fact]
+    public void Assign_IntraClusterBaseTerrain_UsesVariantForSameRoll()
+    {
+        var towns = new Dictionary<int, (int X, int Y)>
+        {
+            { 0, (100, 100) }, { 1, (130, 100) }
+        };
+        var clusters = new Dictionary<int, int> { { 0, 0 }, { 1, 0 } };
+        var edges = new List<TrailEdge> { new(0, 1, 30) };
+        var townIds = new[] { "t0", "t1" };
+
+        var canonical = Assign(edges, towns, clusters, SeedWorldVariant.Canonical, townIds,
+            "variant-test-seed", "variant-2").Single();
+        var frontier = Assign(edges, towns, clusters, SeedWorldVariant.Frontier, townIds,
+            "variant-test-seed", "variant-2").Single();
+
+        Assert.Equal(TrailTerrain.OpenRange, canonical.Terrain);
+        Assert.Equal(TrailTerrain.Hills, frontier.Terrain);
+    }
 
     [Fact]
     public void Assign_NormalTrails_AreIn2To8DayRange()
@@ -40,7 +62,7 @@ public sealed class TerrainAssignerTests
     }
 
     [Fact]
-    public void Assign_IntraClusterEdge_GetsEasierOrEqualTerrainThanInterCluster()
+    public void Assign_IntraClusterEdge_GetsLowerOrEqualRiskThanInterCluster()
     {
         var towns = new Dictionary<int, (int X, int Y)>
         {

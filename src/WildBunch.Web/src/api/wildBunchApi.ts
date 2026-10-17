@@ -1,5 +1,4 @@
 import type {
-  GameEntropy,
   AvailableActionDto,
   BuyStoreItemRequest,
   InvestigationActionResultDto,
@@ -10,21 +9,19 @@ import type {
   ResolveJourneyEncounterRequest,
   SetupGameRequest,
   StartGameWithTownRequest,
-  StartingTownDto,
-  StartingTownMapDto,
+  WorldMapDto,
   TownStoreOffersDto,
-  GameDifficulty,
   TravelRequest,
   TravelPreviewResultDto,
   SaloonPersonOfInterestConfrontationResultDto,
   WantedPostersResultDto,
-  WantedSuspectConfrontationResultDto,
 } from "./types";
 import { requestJson } from "./httpClient";
 
-export function setupGame(request: SetupGameRequest) {
+export function setupGame(request: SetupGameRequest, operationId: string) {
   return requestJson<GameSessionDto>("/api/games/setup", {
     method: "POST",
+    headers: { "Idempotency-Key": operationId },
     body: JSON.stringify(request satisfies SetupGameRequest),
   });
 }
@@ -35,9 +32,14 @@ export function markPrologueViewed(gameId: string) {
   });
 }
 
-export function startGameWithTown(gameId: string, request: StartGameWithTownRequest) {
+export function startGameWithTown(
+  gameId: string,
+  request: StartGameWithTownRequest,
+  operationId: string,
+) {
   return requestJson<GameSessionDto>(`/api/games/${gameId}/start`, {
     method: "POST",
+    headers: { "Idempotency-Key": operationId },
     body: JSON.stringify(request satisfies StartGameWithTownRequest),
   });
 }
@@ -118,33 +120,6 @@ export function readWantedPosters(gameId: string) {
   });
 }
 
-export function inspectNoticeBoard(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(
-    `/api/games/${gameId}/investigations/notice-board/inspect`,
-    {
-      method: "POST",
-    },
-  );
-}
-
-export function checkLocalRecords(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(
-    `/api/games/${gameId}/investigations/local-records/check`,
-    {
-      method: "POST",
-    },
-  );
-}
-
-export function followTelegraphLeads(gameId: string) {
-  return requestJson<InvestigationActionResultDto>(
-    `/api/games/${gameId}/investigations/telegraph-leads/follow`,
-    {
-      method: "POST",
-    },
-  );
-}
-
 export function gatherLocalGossip(gameId: string) {
   return requestJson<InvestigationActionResultDto>(
     `/api/games/${gameId}/investigations/local-gossip/gather`,
@@ -178,40 +153,14 @@ export function confrontSaloonPersonOfInterest(
   );
 }
 
-export function confrontSaloonWantedSuspect(
-  gameId: string,
-  declaredWantedIdentityHandle: string,
-): Promise<WantedSuspectConfrontationResultDto> {
+export function confrontSaloonWantedSuspect(gameId: string, declaredWantedIdentityHandle: string) {
   return confrontSaloonPersonOfInterest(gameId, declaredWantedIdentityHandle);
 }
 
-export function getPrologue(
-  seedCode?: string | null,
-  gameDifficulty?: GameDifficulty,
-  gameEntropy?: GameEntropy,
-) {
-  const params = new URLSearchParams();
-  if (seedCode) {
-    params.set("seedCode", seedCode);
-  }
-  if (gameDifficulty != null) {
-    params.set("gameDifficulty", String(gameDifficulty));
-  }
-  if (gameEntropy != null) {
-    params.set("gameEntropy", String(gameEntropy));
-  }
-  const query = params.toString();
-  return requestJson<PrologueDto>(`/api/games/prologue${query ? `?${query}` : ""}`);
-}
-
-export function getStartingTowns() {
-  return requestJson<StartingTownDto[]>("/api/games/starting-towns");
-}
-
-export function getStartingTownMap(sessionId: string) {
-  return requestJson<StartingTownMapDto>(`/api/games/${sessionId}/starting-town-map`);
+export function getPrologue(sessionId: string) {
+  return requestJson<PrologueDto>(`/api/games/${sessionId}/prologue`);
 }
 
 export function getWorldMap(sessionId: string) {
-  return requestJson<StartingTownMapDto>(`/api/games/${sessionId}/world-map`);
+  return requestJson<WorldMapDto>(`/api/games/${sessionId}/world-map`);
 }

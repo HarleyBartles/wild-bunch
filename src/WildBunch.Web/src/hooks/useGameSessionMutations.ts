@@ -1,58 +1,54 @@
 import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  acknowledgeTravelArrival,
   archiveGame,
-  checkLocalRecords,
-  confrontSaloonPersonOfInterest,
-  followTelegraphLeads,
-  gatherLocalGossip,
-  inspectNoticeBoard,
-  lookAroundSaloon,
+  getGame,
   markPrologueViewed,
-  readWantedPosters,
   setupGame,
   startGameWithTown,
-  travel,
 } from "../api/wildBunchApi";
-import type { SetupGameRequest, WantedPosterDto } from "../api/types";
-import { formatMoney, storageKey } from "../utils/formatting";
-import { formatInvestigationNotice } from "../ui/beatFormatters";
+import { GameStatus } from "../api/types";
+import { storageKey } from "../utils/formatting";
+import { HttpRequestError } from "../api/httpClient";
+import {
+  clearPendingFirstArrivalOperation,
+  clearPendingSetupOperation,
+  type PendingSetupOperation,
+} from "../utils/startupOperationStorage";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
+import { refreshGameResources } from "../state/gameResourceQueries";
+import { gameResourceQueryKeys } from "../state/gameResourceQueries";
 
 type UseGameSessionMutationsArgs = {
   gameId: string | null;
-  declaredWantedIdentityHandle: string;
   setStoredGameId: (id: string | null) => void;
-  setWantedPosters: (posters: WantedPosterDto[]) => void;
-  setDeclaredWantedIdentityHandle: (handle: string) => void;
+  resetSetupDraft: () => void;
+  setPendingSetup: (pending: PendingSetupOperation | null) => void;
   setNotice: (notice: string) => void;
   setError: (error: string) => void;
 };
 
 export function useGameSessionMutations({
   gameId,
-  declaredWantedIdentityHandle,
   setStoredGameId,
-  setWantedPosters,
-  setDeclaredWantedIdentityHandle,
+  resetSetupDraft,
+  setPendingSetup,
   setNotice,
   setError,
 }: UseGameSessionMutationsArgs) {
   const queryClient = useQueryClient();
 
   const invalidateGameQueries = useCallback(
-    (activeGameId: string) =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["session", activeGameId] }),
-        queryClient.invalidateQueries({ queryKey: ["actions", activeGameId] }),
-        queryClient.invalidateQueries({ queryKey: ["journal", activeGameId] }),
-      ]),
+    (activeGameId: string) => refreshGameResources(queryClient, activeGameId),
     [queryClient],
   );
 
   const setupGameMutation = useMutation({
-    mutationFn: (request: SetupGameRequest) => setupGame(request),
+    mutationFn: (operation: PendingSetupOperation) =>
+      setupGame(operation.request, operation.operationId),
     onSuccess: async (createdSession) => {
+      clearPendingSetupOperation();
+      setPendingSetup(null);
       window.localStorage.setItem(storageKey, createdSession.id);
       setStoredGameId(createdSession.id);
       setNotice("");
@@ -60,6 +56,14 @@ export function useGameSessionMutations({
       await invalidateGameQueries(createdSession.id);
     },
     onError: (exception: unknown) => {
+      if (
+        exception instanceof HttpRequestError &&
+        exception.status >= 400 &&
+        exception.status < 500
+      ) {
+        clearPendingSetupOperation();
+        setPendingSetup(null);
+      }
       setError(exception instanceof Error ? exception.message : "Unable to complete setup.");
     },
   });
@@ -67,7 +71,8 @@ export function useGameSessionMutations({
   const markPrologueViewedMutation = useMutation({
     mutationFn: (activeGameId: string) => markPrologueViewed(activeGameId),
     onSuccess: async (updatedSession) => {
-      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      queryClient.setQueryData(gameSessionQueryKey(updatedSession.id), updatedSession);
+      setError("");
       await invalidateGameQueries(updatedSession.id);
     },
     onError: (exception: unknown) => {
@@ -78,10 +83,32 @@ export function useGameSessionMutations({
   });
 
   const startGameWithTownMutation = useMutation({
-    mutationFn: ({ activeGameId, townId }: { activeGameId: string; townId: string }) =>
-      startGameWithTown(activeGameId, { startingTownId: townId }),
+    mutationFn: async ({
+      activeGameId,
+      townId,
+      operationId,
+    }: {
+      activeGameId: string;
+      townId: string;
+      operationId: string;
+    }) => {
+      try {
+        return await startGameWithTown(activeGameId, { startingTownId: townId }, operationId);
+      } catch (exception) {
+        if (
+          exception instanceof HttpRequestError &&
+          exception.status >= 400 &&
+          exception.status < 500
+        ) {
+          clearPendingFirstArrivalOperation(activeGameId);
+        }
+        throw exception;
+      }
+    },
     onSuccess: async (updatedSession) => {
-      queryClient.setQueryData(["session", updatedSession.id], updatedSession);
+      clearPendingFirstArrivalOperation(updatedSession.id);
+      queryClient.setQueryData(gameSessionQueryKey(updatedSession.id), updatedSession);
+      setError("");
       await invalidateGameQueries(updatedSession.id);
       setNotice(`New game started for ${updatedSession.player.name}.`);
     },
@@ -91,174 +118,46 @@ export function useGameSessionMutations({
   });
 
   const archivePlaythroughMutation = useMutation({
-    mutationFn: () => archiveGame(gameId as string),
+    mutationFn: async () => {
+      const archivedGameId = gameId as string;
+      try {
+        await archiveGame(archivedGameId);
+      } catch {
+        let currentSession;
+        try {
+          currentSession = await getGame(archivedGameId);
+        } catch {
+          throw new Error(
+            "Unable to confirm whether this playthrough was archived. Your saved game remains available. Try Start Over again.",
+          );
+        }
+
+        if (currentSession?.status !== GameStatus.Archived) {
+          throw new Error(
+            "The playthrough is still active. Start Over did not complete. Try again.",
+          );
+        }
+      }
+    },
+    onMutate: () => {
+      setError("");
+    },
     onSuccess: async () => {
       const archivedGameId = gameId;
       window.localStorage.removeItem(storageKey);
       setStoredGameId(null);
-      setWantedPosters([]);
-      setDeclaredWantedIdentityHandle("");
+      resetSetupDraft();
       setError("");
       if (archivedGameId) {
-        queryClient.removeQueries({ queryKey: ["session", archivedGameId] });
-        queryClient.removeQueries({ queryKey: ["actions", archivedGameId] });
-        queryClient.removeQueries({ queryKey: ["journal", archivedGameId] });
+        queryClient.removeQueries({ queryKey: gameSessionQueryKey(archivedGameId) });
+        queryClient.removeQueries({ queryKey: gameResourceQueryKeys.actions(archivedGameId) });
+        queryClient.removeQueries({ queryKey: gameResourceQueryKeys.journal(archivedGameId) });
       }
       setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
     },
     onError: (exception: unknown) => {
-      // If the session is already archived (409 Conflict), clear local state
-      // and return to setup instead of stranding the player on a dead session.
       const message = exception instanceof Error ? exception.message : "";
-      if (message.includes("already archived") || message.includes("409")) {
-        const archivedGameId = gameId;
-        window.localStorage.removeItem(storageKey);
-        setStoredGameId(null);
-        setWantedPosters([]);
-        setDeclaredWantedIdentityHandle("");
-        setError("");
-        if (archivedGameId) {
-          queryClient.removeQueries({ queryKey: ["session", archivedGameId] });
-          queryClient.removeQueries({ queryKey: ["actions", archivedGameId] });
-          queryClient.removeQueries({ queryKey: ["journal", archivedGameId] });
-        }
-        setNotice("Your old playthrough has been archived. Start a new one when you are ready.");
-      } else {
-        setError(message || "Unable to archive the playthrough.");
-      }
-    },
-  });
-
-  const travelMutation = useMutation({
-    mutationFn: (destinationTownId: string) => travel(gameId as string, destinationTownId),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["session", gameId], result.currentSession);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to travel.");
-    },
-  });
-
-  const acknowledgeArrivalMutation = useMutation({
-    mutationFn: () => acknowledgeTravelArrival(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["session", gameId], result.currentSession);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to acknowledge arrival.");
-    },
-  });
-
-  const readWantedPostersMutation = useMutation({
-    mutationFn: () => readWantedPosters(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      setWantedPosters(result.wantedPosters);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to read wanted posters.");
-    },
-  });
-
-  const inspectNoticeBoardMutation = useMutation({
-    mutationFn: () => inspectNoticeBoard(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error ? exception.message : "Unable to inspect the notice board.",
-      );
-    },
-  });
-
-  const checkLocalRecordsMutation = useMutation({
-    mutationFn: () => checkLocalRecords(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to check local records.");
-    },
-  });
-
-  const followTelegraphLeadsMutation = useMutation({
-    mutationFn: () => followTelegraphLeads(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(formatInvestigationNotice(result.beatNarration ?? null, result.message));
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error ? exception.message : "Unable to follow telegraph leads.",
-      );
-    },
-  });
-
-  const gatherLocalGossipMutation = useMutation({
-    mutationFn: () => gatherLocalGossip(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(exception instanceof Error ? exception.message : "Unable to gather local gossip.");
-    },
-  });
-
-  const lookAroundSaloonMutation = useMutation({
-    mutationFn: () => lookAroundSaloon(gameId as string),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["journal", gameId], result.currentJournal);
-      await invalidateGameQueries(gameId as string);
-      setNotice(result.message);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error ? exception.message : "Unable to look around the saloon.",
-      );
-    },
-  });
-
-  const confrontSaloonMutation = useMutation({
-    mutationFn: () =>
-      confrontSaloonPersonOfInterest(gameId as string, declaredWantedIdentityHandle),
-    onSuccess: async (result) => {
-      queryClient.setQueryData(["session", gameId], result.currentSession);
-      await invalidateGameQueries(gameId as string);
-      const noticeText =
-        result.fineAmount !== null && result.walletBefore !== null && result.walletAfter !== null
-          ? `${result.message} Wallet ${formatMoney(result.walletBefore)} -> ${formatMoney(result.walletAfter)}.`
-          : result.message;
-      setNotice(noticeText);
-      setError("");
-    },
-    onError: (exception: unknown) => {
-      setError(
-        exception instanceof Error
-          ? exception.message
-          : "Unable to confront the person in the saloon.",
-      );
+      setError(message || "Unable to archive the playthrough.");
     },
   });
 
@@ -267,15 +166,6 @@ export function useGameSessionMutations({
     markPrologueViewedMutation,
     startGameWithTownMutation,
     archivePlaythroughMutation,
-    travelMutation,
-    acknowledgeArrivalMutation,
-    readWantedPostersMutation,
-    inspectNoticeBoardMutation,
-    checkLocalRecordsMutation,
-    followTelegraphLeadsMutation,
-    gatherLocalGossipMutation,
-    lookAroundSaloonMutation,
-    confrontSaloonMutation,
     invalidateGameQueries,
   };
 }

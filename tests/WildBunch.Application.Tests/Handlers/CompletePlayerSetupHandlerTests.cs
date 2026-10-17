@@ -1,5 +1,4 @@
 using WildBunch.Application.Games.Commands;
-using WildBunch.Application.Projections;
 using WildBunch.Application.Tests.TestDoubles;
 
 namespace WildBunch.Application.Tests.Handlers;
@@ -17,11 +16,11 @@ public sealed class CompletePlayerSetupHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository);
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
             SeedCode = "00000000-0000-0000-0000-000000000000",
@@ -42,11 +41,11 @@ public sealed class CompletePlayerSetupHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository);
 
         await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Easy,
             SeedCode = "00000000-0000-0000-0000-000000000000",
@@ -61,11 +60,11 @@ public sealed class CompletePlayerSetupHandlerTests
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository);
 
         await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
             SeedCode = "00000000-0000-0000-0000-000000000000",
@@ -76,26 +75,27 @@ public sealed class CompletePlayerSetupHandlerTests
     }
 
     [Fact]
-    public async Task SetupReturnsDtoWithHudAndDiaryProjections()
+    public async Task SetupReturnsKnownSetupFactsWithoutGameplayResourcesOrHud()
     {
         var factory = new StubNewGameFactory();
         var repository = new InMemoryGameSessionRepository();
-        var handler = new CompletePlayerSetupHandler(factory, repository, repository,
-            new HudProjector(), new DiaryProjector());
+        var handler = new CompletePlayerSetupHandler(factory, repository, repository);
 
         var result = await handler.HandleAsync(new CompletePlayerSetupCommand
         {
+            OperationId = Guid.NewGuid(),
             PlayerName = "Ranger Vale",
             GameDifficulty = WildBunch.Domain.Travel.GameDifficulty.Standard,
             SeedCode = "00000000-0000-0000-0000-000000000000",
             GameEntropy = WildBunch.Domain.Travel.GameEntropy.Classic,
         });
 
-        // HUD/diary projections are returned, but the HUD player name
-        // is only populated after GameStarted (not during setup phase).
-        Assert.NotNull(result.HudProjection);
-        Assert.NotNull(result.DiaryProjection);
-        Assert.Equal(result.Id, result.HudProjection!.SessionId);
-        Assert.Equal(result.Id, result.DiaryProjection!.SessionId);
+        Assert.Equal("Ranger Vale", result.Player.Name);
+        Assert.Null(result.Player.CurrentTownId);
+        Assert.Equal(WildBunch.Domain.Game.StartFlowPhase.SetupComplete, result.StartFlowPhase);
+        Assert.NotEmpty(result.World.Towns);
+        Assert.Null(result.Player.Health);
+        Assert.Null(result.Inventory);
+        Assert.Null(result.HudProjection);
     }
 }

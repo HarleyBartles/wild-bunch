@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { useGamePhase } from "../hooks/useGamePhase";
 import { useGameSession } from "../state/useGameSession";
 import { useStartFlow } from "../hooks/useStartFlow";
-import { encodeGameSetupSeed } from "../ui/gameSetupSeedCodec";
 import { FlowSurface, FlowNotice, FlowError } from "../components/ui/sharedStyled";
 import { SetupHuntStep } from "../components/start-flow/SetupHuntStep";
 import { StorySoFarStep } from "../components/start-flow/StorySoFarStep";
@@ -34,6 +33,7 @@ export function PreSessionSurface() {
   const {
     session,
     loading,
+    pendingSetup,
     resetToken,
     notice,
     error,
@@ -48,26 +48,41 @@ export function PreSessionSurface() {
   const effectiveStep = deriveEffectiveStep(phase, flow.step);
 
   async function handleSetupComplete() {
-    const seedCode = await encodeGameSetupSeed(flow.seedState);
+    const seedCode = await flow.validateSeedDraft();
+    if (!seedCode) {
+      return;
+    }
     const trimmedName = flow.playerName.trim();
-    await handleSetupGame({
-      playerName: trimmedName,
-      gameDifficulty: flow.gameDifficulty,
-      seedCode,
-      gameEntropy: flow.gameEntropy,
-    });
+    try {
+      await handleSetupGame({
+        playerName: trimmedName,
+        gameDifficulty: flow.gameDifficulty,
+        seedCode,
+        gameEntropy: flow.gameEntropy,
+      });
+    } catch {
+      return;
+    }
     flow.advance();
   }
 
   async function handlePrologueViewed() {
-    await handleMarkPrologueViewed();
+    try {
+      await handleMarkPrologueViewed();
+    } catch {
+      return;
+    }
     flow.advance();
   }
 
   async function handleStartWithTown(townId: string) {
     flow.setSelectedTownId(townId);
     flow.goToStep("creating");
-    await handleStartGameWithTown(townId);
+    try {
+      await handleStartGameWithTown(townId);
+    } catch {
+      flow.goToStep("town");
+    }
   }
 
   return (
@@ -86,7 +101,6 @@ export function PreSessionSurface() {
           gameDifficulty={flow.gameDifficulty}
           gameEntropy={flow.gameEntropy}
           seedDraft={flow.seedDraft}
-          seedDirty={flow.seedDirty}
           decodeError={flow.decodeError}
           onPlayerNameChange={flow.setPlayerName}
           onGameDifficultyChange={flow.setGameDifficulty}
@@ -94,16 +108,13 @@ export function PreSessionSurface() {
           onSeedDraftChange={flow.setSeedDraft}
           onRandomizeSeed={flow.randomizeSeed}
           onContinue={handleSetupComplete}
+          pendingOperation={Boolean(pendingSetup)}
+          busy={loading}
         />
       )}
 
       {effectiveStep === "story" && (
-        <StorySoFarStep
-          onContinue={handlePrologueViewed}
-          seedCode={flow.seedState.seedCode}
-          gameDifficulty={flow.gameDifficulty}
-          gameEntropy={flow.gameEntropy}
-        />
+        <StorySoFarStep onContinue={handlePrologueViewed} sessionId={session?.id ?? ""} />
       )}
 
       {effectiveStep === "town" && (

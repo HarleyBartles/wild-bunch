@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainTown = WildBunch.Domain.World.Town;
-using DomainTownServices = WildBunch.Domain.World.TownServices;
 using DomainTrail = WildBunch.Domain.World.Trail;
 using DomainTownId = WildBunch.Domain.World.TownId;
 using TownId = WildBunch.Domain.World.TownId;
@@ -62,9 +61,9 @@ public sealed class GameSessionJourneyHistoryTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new DomainTown(new DomainTownId("pinecross"), "Pinecross", DomainTownServices.None);
-        var openpass = new DomainTown(new DomainTownId("openpass"), "Open Pass", DomainTownServices.None);
-        var dryfork = new DomainTown(new DomainTownId("dryfork"), "Dry Fork", DomainTownServices.None);
+        var pinecross = new DomainTown(new DomainTownId("pinecross"), "Pinecross");
+        var openpass = new DomainTown(new DomainTownId("openpass"), "Open Pass");
+        var dryfork = new DomainTown(new DomainTownId("dryfork"), "Dry Fork");
 
         var world = new DomainWorld(
             new[] { pinecross, openpass, dryfork },

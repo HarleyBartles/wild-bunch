@@ -16,14 +16,28 @@ interface GlobalOverlaysProps {
 }
 
 export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysProps) {
-  const { journal, wantedPosters, loading, error, archivePlaythrough, archiving } =
-    useGameSession();
+  const {
+    journal,
+    journalLoading,
+    journalRefreshing,
+    journalError,
+    retryJournal,
+    wantedPosters,
+    error,
+    setError,
+    archivePlaythrough,
+    archiving,
+  } = useGameSession();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <>
       <OverlayButtons role="toolbar" aria-label="Reference overlays">
-        <OverlayButton type="button" onClick={() => onOpenOverlay("case-file")} disabled={!journal}>
+        <OverlayButton
+          type="button"
+          onClick={() => onOpenOverlay("case-file")}
+          disabled={!journal && !journalError}
+        >
           Case file
         </OverlayButton>
         <OverlayButton
@@ -42,14 +56,21 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         description="Clues, suspects, and evidence."
         onClose={() => onOpenOverlay(null)}
       >
-        <CaseFileSurface journal={journal} loading={loading} error={error} />
+        <CaseFileSurface
+          journal={journal}
+          loading={journalLoading}
+          refreshing={journalRefreshing}
+          error={error}
+          readError={journalError}
+          onRetry={retryJournal}
+        />
       </CockpitOverlayFrame>
 
       <CockpitOverlayFrame
         open={openOverlay === "wanted"}
         eyebrow="Sheriff Office"
         title="Wanted posters"
-        description="Posters read from town notice boards."
+        description="Posters read from the sheriff's office."
         onClose={() => onOpenOverlay(null)}
       >
         <WantedPosterSurface wantedPosters={wantedPosters} />
@@ -63,8 +84,11 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
       >
         <JournalSurface
           journal={journal}
-          loading={loading}
+          loading={journalLoading}
+          refreshing={journalRefreshing}
           error={error}
+          readError={journalError}
+          onRetry={retryJournal}
           sessionLogEntries={journal?.logEntries ?? []}
         />
       </CockpitOverlayFrame>
@@ -85,7 +109,14 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
               <strong>Start Over</strong>
               <p>Archive this playthrough and begin again from the start.</p>
             </SettingsCopy>
-            <Button type="button" $variant="secondary" onClick={() => setConfirmOpen(true)}>
+            <Button
+              type="button"
+              $variant="secondary"
+              onClick={() => {
+                setError("");
+                setConfirmOpen(true);
+              }}
+            >
               Start Over
             </Button>
           </SettingsRow>
@@ -99,8 +130,10 @@ export function GlobalOverlays({ openOverlay, onOpenOverlay }: GlobalOverlaysPro
         confirmLabel="Archive and start over"
         cancelLabel="Keep riding"
         busy={archiving}
+        errorMessage={error}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {
+          setError("");
           void archivePlaythrough()
             .then(() => {
               setConfirmOpen(false);

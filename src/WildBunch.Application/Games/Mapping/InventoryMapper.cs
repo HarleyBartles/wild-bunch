@@ -57,6 +57,5 @@ public static class InventoryMapper
             capabilities.CloseThreatAvailable,
             capabilities.FirearmThreatAvailable,
             capabilities.GunfightCapable,
-            capabilities.RevolverUsable,
-            capabilities.RifleUsable);
+            capabilities.RevolverUsable);
 }

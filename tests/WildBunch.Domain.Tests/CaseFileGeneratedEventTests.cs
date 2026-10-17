@@ -151,22 +151,46 @@ public sealed class CaseFileGeneratedEventTests
     }
 
     [Fact]
-    public void CaseFileSnapshot_RoundTrip_Preserves_KillerReleaseGate()
+    public void CaseFileSnapshot_RoundTrip_DerivesReleaseProgressFromSettlements()
     {
+        var gangSuspectId = new SuspectId("suspect-2");
+        var warrant = new Warrant(
+            new WarrantId("warrant-gang-member"),
+            "Mira Cline",
+            new WarrantTerms(
+                WarrantDisposition.DeadOrAlive,
+                250m,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                "Dodge City Sheriff",
+                InvestigationTargetKind.GangMember,
+                new[] { OutlawGangIds.WildBunch },
+                OutlawGangIds.WildBunch,
+                InvestigationSourceKind.SheriffWarrants),
+            "Wanted for Wild Bunch crimes.",
+            gangSuspectId);
         var caseFile = new CaseFile(
             accusation: null,
-            suspects: new[] { new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge) },
+            suspects: new[]
+            {
+                new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.Empty, SuspectStatus.AtLarge),
+                new Suspect(gangSuspectId, "Mira Cline", SuspectTraits.Empty, SuspectStatus.AtLarge)
+            },
             trueCulpritId: new SuspectId("suspect-1"),
             openingLead: CaseOpeningLead.Create("Follow the trail."),
             knownClues: Array.Empty<Clue>(),
-            killerReleaseThreshold: 3,
-            killerReleaseProgress: 2);
+            killerReleaseThreshold: 1,
+            knownWarrants: new[] { warrant },
+            sheriffTurnInSettlements: new[]
+            {
+                new SheriffTurnInSettlementState(gangSuspectId, "Mira Cline", WarrantDisposition.DeadOrAlive, IsAlive: false, 250m, 1, 4)
+            });
 
         var snapshot = CaseFileSnapshot.FromDomain(caseFile);
         var restored = snapshot.ToDomain();
 
-        Assert.Equal(3, restored.KillerReleaseThreshold);
-        Assert.Equal(2, restored.KillerReleaseProgress);
+        Assert.Equal(1, restored.KillerReleaseThreshold);
+        Assert.Equal(1, restored.KillerReleaseProgress);
     }
 
     [Fact]

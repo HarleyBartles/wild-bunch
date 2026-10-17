@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Exceptions;
@@ -76,7 +78,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         Assert.NotNull(loaded);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 2);
 
         await repo.StoreAsync(loaded);
@@ -92,6 +94,20 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         Assert.Equal("TownActionContextEntered", storedEvents[6].EventType);
         Assert.Equal("StoreItemPurchased", storedEvents[7].EventType);
         Assert.Equal(8, storedEvents[7].Sequence);
+
+        using var purchasePayload = JsonDocument.Parse(storedEvents[7].PayloadJson);
+        var payloadPropertyNames = purchasePayload.RootElement
+            .EnumerateObject()
+            .Select(property => property.Name)
+            .ToArray();
+        Assert.Equal(2, purchasePayload.RootElement.GetProperty("quantity").GetInt32());
+        Assert.DoesNotContain("eventId", payloadPropertyNames);
+        Assert.DoesNotContain("sequence", payloadPropertyNames);
+        Assert.DoesNotContain("occurredAtUtc", payloadPropertyNames);
+        Assert.DoesNotContain("schemaVersion", payloadPropertyNames);
+        Assert.DoesNotContain("correlationId", payloadPropertyNames);
+        Assert.DoesNotContain("causationId", payloadPropertyNames);
+        Assert.DoesNotContain("streamId", payloadPropertyNames);
     }
 
     [Fact]
@@ -115,7 +131,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         // First copy purchases
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(copy1!.World.GetTown(copy1.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         copy1.Purchase(offer, 1);
         await repo.StoreAsync(copy1);
         await uow.CommitAsync();
@@ -123,7 +139,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
         // Second copy tries to purchase — should get ConcurrencyException
         var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         copy2.Purchase(offer2, 1);
 
         await Assert.ThrowsAsync<ConcurrencyException>(() => repo.StoreAsync(copy2));
@@ -146,7 +162,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var loaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 3);
         await repo.StoreAsync(loaded);
         await uow.CommitAsync();
@@ -178,7 +194,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var loaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 1);
         await repo.StoreAsync(loaded);
         await uow.CommitAsync();
@@ -310,6 +326,28 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var reloaded = await repo.GetByIdAsync(session.Id);
         Assert.NotNull(reloaded);
         Assert.Equal(TownActionContext.Saloon, reloaded!.CurrentActionContext);
+
+        var clockBeforeRetry = (reloaded.Clock.Day, reloaded.Clock.Turn);
+        var streamVersionBeforeRetry = reloaded.Version;
+        Assert.False(reloaded.EnterActionContext(TownActionContext.Saloon));
+        Assert.Equal(clockBeforeRetry, (reloaded.Clock.Day, reloaded.Clock.Turn));
+        Assert.Equal(streamVersionBeforeRetry, reloaded.Version);
+
+        var offer = new TownStoreCatalogResolver()
+            .Resolve(reloaded.World.GetTown(reloaded.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(reloaded.Purchase(offer, 1).Success);
+        Assert.Equal(streamVersionBeforeRetry + 2, reloaded.Version);
+        await repo.StoreAsync(reloaded);
+        await uow.CommitAsync();
+
+        var fresh = await repo.GetByIdAsync(session.Id);
+        Assert.NotNull(fresh);
+        Assert.Single(fresh!.AllEvents.OfType<StoreItemPurchased>());
+        Assert.Equal(streamVersionBeforeRetry + 2, fresh.Version);
+        Assert.Equal(
+            new[] { nameof(TownActionContextEntered), nameof(StoreItemPurchased) },
+            fresh.AllEvents.TakeLast(2).Select(domainEvent => domainEvent.GetType().Name));
     }
 
     [Fact]
@@ -329,7 +367,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
         var loaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         loaded.Purchase(offer, 3);
         await repo.StoreAsync(loaded);
         await uow.CommitAsync();
@@ -418,9 +456,9 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             // Both produce a purchase event → both try to append at sequence 7.
             var resolver = new TownStoreCatalogResolver();
             var offer1 = resolver.Resolve(copy1.World.GetTown(copy1.Player.CurrentTownId!.Value))
-                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+                .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
             var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId!.Value))
-                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+                .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
             copy1.Purchase(offer1, 1);
             copy2.Purchase(offer2, 1);
 
@@ -434,30 +472,161 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             await uow1.CommitAsync();
             copy1.MarkEventsCommitted();
 
+            var dbContext1 = scope1.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+            var winningEnvelope = await dbContext1.GameSessions.AsNoTracking().SingleAsync(entity => entity.Id == sessionId.Value);
+            var winningComponents = await dbContext1.GameSessionComponents.AsNoTracking()
+                .Where(component => component.SessionId == sessionId.Value)
+                .OrderBy(component => component.ComponentName)
+                .Select(component => new { component.ComponentName, component.ComponentVersion, component.PayloadJson })
+                .ToArrayAsync();
+            var winningDiaryDays = await dbContext1.GameSessionDiaryDays.AsNoTracking()
+                .Where(day => day.SessionId == sessionId.Value)
+                .OrderBy(day => day.Sequence)
+                .Select(day => new { day.Sequence, day.SchemaVersion, day.PayloadJson })
+                .ToArrayAsync();
+            var winningEvents = await dbContext1.StoredEvents.AsNoTracking()
+                .Where(storedEvent => storedEvent.StreamId == sessionId.Value)
+                .OrderBy(storedEvent => storedEvent.Sequence)
+                .Select(storedEvent => new { storedEvent.Sequence, storedEvent.EventId, storedEvent.EventType, storedEvent.PayloadJson })
+                .ToArrayAsync();
+
             // Second request's commit fails at the unique index on (StreamId, Sequence)
             // because sequence 7 already exists. The UoW must translate this
             // DbUpdateException to ConcurrencyException so the handler can retry.
             var thrown = await Assert.ThrowsAsync<ConcurrencyException>(() => uow2.CommitAsync());
             Assert.Contains("Concurrency conflict", thrown.Message, StringComparison.Ordinal);
+
+            using (var verificationScope = services.CreateScope())
+            {
+                var verificationDb = verificationScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+                var verificationRepository = verificationScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+                var envelopeAfterConflict = await verificationDb.GameSessions.AsNoTracking().SingleAsync(entity => entity.Id == sessionId.Value);
+                Assert.Equal(winningEnvelope.StreamVersion, envelopeAfterConflict.StreamVersion);
+                Assert.Equal(winningEnvelope.SnapshotVersion, envelopeAfterConflict.SnapshotVersion);
+                Assert.Equal(winningEnvelope.UpdatedAtUtc, envelopeAfterConflict.UpdatedAtUtc);
+
+                var componentsAfterConflict = await verificationDb.GameSessionComponents.AsNoTracking()
+                    .Where(component => component.SessionId == sessionId.Value)
+                    .OrderBy(component => component.ComponentName)
+                    .Select(component => new { component.ComponentName, component.ComponentVersion, component.PayloadJson })
+                    .ToArrayAsync();
+                Assert.Equal(winningComponents, componentsAfterConflict);
+
+                var diaryAfterConflict = await verificationDb.GameSessionDiaryDays.AsNoTracking()
+                    .Where(day => day.SessionId == sessionId.Value)
+                    .OrderBy(day => day.Sequence)
+                    .Select(day => new { day.Sequence, day.SchemaVersion, day.PayloadJson })
+                    .ToArrayAsync();
+                Assert.Equal(winningDiaryDays, diaryAfterConflict);
+
+                var eventsAfterConflict = await verificationDb.StoredEvents.AsNoTracking()
+                    .Where(storedEvent => storedEvent.StreamId == sessionId.Value)
+                    .OrderBy(storedEvent => storedEvent.Sequence)
+                    .Select(storedEvent => new { storedEvent.Sequence, storedEvent.EventId, storedEvent.EventType, storedEvent.PayloadJson })
+                    .ToArrayAsync();
+                Assert.Equal(winningEvents, eventsAfterConflict);
+                var persistedPurchases = eventsAfterConflict.Where(storedEvent => storedEvent.EventType == nameof(StoreItemPurchased)).ToArray();
+                Assert.Single(persistedPurchases);
+
+                var winningState = await verificationRepository.GetByIdAsync(sessionId);
+                Assert.NotNull(winningState);
+                Assert.Equal(copy1.Player.GetQuantity(DomainItemKind.Food), winningState!.Player.GetQuantity(DomainItemKind.Food));
+                Assert.Equal(copy1.Player.Wallet.Cash, winningState.Player.Wallet.Cash);
+            }
+
+            using (var retryScope = services.CreateScope())
+            {
+                var retryRepository = retryScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+                var retryUnitOfWork = retryScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+                var retry = await retryRepository.GetByIdAsync(sessionId);
+                Assert.NotNull(retry);
+                var retryOffer = resolver.Resolve(retry!.World.GetTown(retry.Player.CurrentTownId!.Value))
+                    .Offers.Single(offer => offer.ItemKind == DomainItemKind.Food);
+                retry.Purchase(retryOffer, 1);
+                await retryRepository.StoreAsync(retry);
+                await retryUnitOfWork.CommitAsync();
+
+                var retriedState = await retryRepository.GetByIdAsync(sessionId);
+                Assert.NotNull(retriedState);
+                Assert.Equal(retry.Player.GetQuantity(DomainItemKind.Food), retriedState!.Player.GetQuantity(DomainItemKind.Food));
+                Assert.Equal(retry.Player.Wallet.Cash, retriedState.Player.Wallet.Cash);
+
+                var eventsAfterRetry = await retryScope.ServiceProvider.GetRequiredService<WildBunchDbContext>().StoredEvents.AsNoTracking()
+                    .Where(storedEvent => storedEvent.StreamId == sessionId.Value)
+                    .OrderBy(storedEvent => storedEvent.Sequence)
+                    .ToArrayAsync();
+                Assert.Equal(
+                    Enumerable.Range(1, eventsAfterRetry.Length).Select(sequence => (long)sequence),
+                    eventsAfterRetry.Select(storedEvent => storedEvent.Sequence));
+                var purchasesAfterRetry = eventsAfterRetry.Where(storedEvent => storedEvent.EventType == nameof(StoreItemPurchased)).ToArray();
+                Assert.Equal(2, purchasesAfterRetry.Length);
+                Assert.Equal(purchasesAfterRetry.Length, purchasesAfterRetry.Select(storedEvent => storedEvent.Sequence).Distinct().Count());
+            }
         }
     }
 
+    [Fact]
+    public async Task CommitAsync_PreservesEventIdUniqueViolationAsIntegrityFailure()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        var first = CreateSession();
+        var second = CreateSession();
+        second.ArchivePlaythrough("test-second-session");
+
+        using (var seedScope = services.CreateScope())
+        {
+            var repository = seedScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+            var unitOfWork = seedScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+            await repository.StoreAsync(first);
+            await repository.StoreAsync(second);
+            await unitOfWork.CommitAsync();
+        }
+
+        using var scope = services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
+        var unitOfWorkForInvalidRows = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+        var duplicateEventId = Guid.NewGuid();
+        dbContext.StoredEvents.AddRange(
+            new StoredEventEntity
+            {
+                StreamId = first.Id.Value,
+                Sequence = first.Version + 1,
+                EventId = duplicateEventId,
+                OccurredAtUtc = DateTime.UtcNow,
+                EventType = "TestEvent",
+                PayloadJson = "{}",
+                SchemaVersion = 1
+            },
+            new StoredEventEntity
+            {
+                StreamId = second.Id.Value,
+                Sequence = second.Version + 1,
+                EventId = duplicateEventId,
+                OccurredAtUtc = DateTime.UtcNow,
+                EventType = "TestEvent",
+                PayloadJson = "{}",
+                SchemaVersion = 1
+            });
+
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(() => unitOfWorkForInvalidRows.CommitAsync());
+        var providerException = Assert.IsType<PostgresException>(exception.InnerException);
+        Assert.Equal(PostgresErrorCodes.UniqueViolation, providerException.SqlState);
+        Assert.Equal("IX_GameSessionStoredEvents_EventId", providerException.ConstraintName);
+    }
+
     /// <summary>
-    /// Proves the snapshot + replay load path sets the aggregate version correctly
-    /// when the snapshot lags behind the stream version. The repository must set the
-    /// aggregate version to SnapshotVersion before replaying post-snapshot events,
-    /// so that after replay Version == StreamVersion (not StreamVersion + replayedCount).
+    /// Ensures stale snapshot metadata cannot corrupt current cached player state or
+    /// the aggregate stream position, then verifies that the player can continue.
     /// See ADR-0028 §8 (Snapshots as cache) and §7 (Optimistic concurrency).
-    ///
-    /// Without the fix (setting version to SnapshotVersion before replay), the loaded
-    /// aggregate would have Version = StreamVersion + postSnapshotEventCount, which
-    /// corrupts the next optimistic concurrency check.
     /// </summary>
     [Fact]
-    public async Task GetByIdAsync_WithLaggingSnapshot_LoadsAggregateWithVersionEqualToStreamVersion()
+    public async Task GetByIdAsync_WithStaleSnapshotRecoversCurrentCacheAndAllowsNextCommand()
     {
         using var database = new PostgreSqlTestDatabase();
         var services = CreateServices(database.ConnectionString);
+        decimal expectedCash;
+        int expectedFoodQuantity;
 
         // Seed: create + commit (v6), then reload + purchase + commit (v8).
         // After this, SnapshotVersion == StreamVersion == 8 in the DB.
@@ -475,102 +644,57 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
             var loaded = await seedRepo.GetByIdAsync(sessionId);
             var resolver = new TownStoreCatalogResolver();
             var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
-                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+                .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
             loaded.Purchase(offer, 1);
             await seedRepo.StoreAsync(loaded);
             await seedUow.CommitAsync();
+            expectedCash = loaded.Player.Wallet.Cash;
+            expectedFoodQuantity = loaded.Player.Inventory.GetQuantity(DomainItemKind.Food);
         }
 
         // Force a lagging snapshot: set SnapshotVersion back to 6 while
         // StreamVersion stays at 8. This simulates a snapshot that was not
         // refreshed after the last event append.
+        long streamVersion;
         using (var adminScope = services.CreateScope())
         {
             var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
             var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
             entity.SnapshotVersion = 6;
+            streamVersion = entity.StreamVersion;
             await adminDb.SaveChangesAsync();
         }
 
-        // Load through the repository. The snapshot is at version 6, the stream
-        // is at version 8, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
-        // replayed. The loaded aggregate's Version must equal StreamVersion (8),
-        // not StreamVersion + 1 (9) which would be the bug.
+        // The player component already includes the committed purchase although
+        // the snapshot metadata is stale. Recovery must not apply those effects twice.
         using var loadScope = services.CreateScope();
         var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var loadUow = loadScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
         var loaded2 = await loadRepo.GetByIdAsync(sessionId);
         Assert.NotNull(loaded2);
-        Assert.Equal(8, loaded2!.Version);
-    }
+        Assert.Equal((int)streamVersion, loaded2!.Version);
+        Assert.Equal(expectedCash, loaded2.Player.Wallet.Cash);
+        Assert.Equal(expectedFoodQuantity, loaded2.Player.Inventory.GetQuantity(DomainItemKind.Food));
 
-    /// <summary>
-    /// Proves the snapshot + replay load path does not duplicate aggregate LogEntries
-    /// when the snapshot lags behind the stream version. The repository must project
-    /// only the snapshot-prefix events for aggregate LogEntries rehydration, then let
-    /// post-snapshot replay append the rest via Apply(...). If the repository projected
-    /// the full stream and then replayed post-snapshot events, the post-snapshot log
-    /// entries would be duplicated. See BUNCH-86.
-    /// </summary>
-    [Fact]
-    public async Task GetByIdAsync_WithLaggingSnapshot_DoesNotDuplicateAggregateLogEntries()
-    {
-        using var database = new PostgreSqlTestDatabase();
-        var services = CreateServices(database.ConnectionString);
+        var eventCountBeforeContinuation = (await loadRepo.GetEventStreamAsync(sessionId)).Count;
+        var nextResolver = new TownStoreCatalogResolver();
+        var nextOffer = nextResolver.Resolve(loaded2.World.GetTown(loaded2.Player.CurrentTownId!.Value))
+            .Offers.Single(candidate => candidate.ItemKind == DomainItemKind.Food);
+        Assert.True(loaded2.Purchase(nextOffer, 1).Success);
+        expectedCash = loaded2.Player.Wallet.Cash;
+        expectedFoodQuantity = loaded2.Player.Inventory.GetQuantity(DomainItemKind.Food);
+        await loadRepo.StoreAsync(loaded2);
+        await loadUow.CommitAsync();
 
-        // Seed: create + commit (v6), then reload + purchase + commit (v8).
-        // After this, SnapshotVersion == StreamVersion == 8 in the DB.
-        // The start flow produces 6 events but only GameStarted yields a log entry (opening).
-        // v7,v8 produce TownActionContextEntered + StoreItemPurchased (1 log entry: purchase).
-        // Full-stream projection = 2 log entries.
-        GameSessionId sessionId;
-        using (var seedScope = services.CreateScope())
-        {
-            var seedRepo = seedScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
-            var seedUow = seedScope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
-            var session = CreateSession();
-            sessionId = session.Id;
-            await seedRepo.StoreAsync(session);
-            await seedUow.CommitAsync();
-            session.MarkEventsCommitted();
-
-            var loaded = await seedRepo.GetByIdAsync(sessionId);
-            var resolver = new TownStoreCatalogResolver();
-            var offer = resolver.Resolve(loaded!.World.GetTown(loaded.Player.CurrentTownId!.Value))
-                .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
-            loaded.Purchase(offer, 1);
-            await seedRepo.StoreAsync(loaded);
-            await seedUow.CommitAsync();
-        }
-
-        // Force a lagging snapshot: set SnapshotVersion back to 6 while
-        // StreamVersion stays at 8. This simulates a snapshot that was not
-        // refreshed after the last event append.
-        using (var adminScope = services.CreateScope())
-        {
-            var adminDb = adminScope.ServiceProvider.GetRequiredService<WildBunchDbContext>();
-            var entity = await adminDb.GameSessions.SingleAsync(e => e.Id == sessionId.Value);
-            entity.SnapshotVersion = 6;
-            await adminDb.SaveChangesAsync();
-        }
-
-        // Load through the repository. The snapshot is at version 6, the stream
-        // is at version 8, so two post-snapshot events (TownActionContextEntered + StoreItemPurchased) must be
-        // replayed via ApplyCommittedEvents. The aggregate's LogEntries must
-        // contain exactly 2 entries (opening + purchase), not 3 (which would
-        // indicate the purchase entry was duplicated by full-stream projection
-        // followed by post-snapshot replay).
-        using var loadScope = services.CreateScope();
-        var loadRepo = loadScope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
-        var loaded2 = await loadRepo.GetByIdAsync(sessionId);
-        Assert.NotNull(loaded2);
-
-        // The full event stream has 8 events (6 start flow + TownActionContextEntered + StoreItemPurchased).
-        // The projector produces 2 log entries (opening + purchase).
-        // The aggregate's LogEntries must match — no duplication from
-        // snapshot-prefix projection + post-snapshot replay.
-        Assert.Equal(2, GameSessionLogProjection.Project(loaded2!).Count);
-        Assert.Equal(GameLogEntryKind.Opening, GameSessionLogProjection.Project(loaded2)[0].Kind);
-        Assert.Equal(GameLogEntryKind.Purchase, GameSessionLogProjection.Project(loaded2)[1].Kind);
+        var fresh = await loadRepo.GetByIdAsync(sessionId);
+        Assert.NotNull(fresh);
+        Assert.Equal(expectedCash, fresh!.Player.Wallet.Cash);
+        Assert.Equal(expectedFoodQuantity, fresh.Player.Inventory.GetQuantity(DomainItemKind.Food));
+        var eventsAfterContinuation = await loadRepo.GetEventStreamAsync(sessionId);
+        Assert.Equal(eventCountBeforeContinuation + 1, eventsAfterContinuation.Count);
+        Assert.Equal((int)eventsAfterContinuation.Count, fresh.Version);
+        Assert.Equal(2, eventsAfterContinuation.OfType<StoreItemPurchased>().Count());
+        Assert.IsType<StoreItemPurchased>(eventsAfterContinuation[^1]);
     }
 
     private static ServiceProvider CreateServices(string connectionString)
@@ -589,7 +713,7 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
                 eventUpcasters,
                 serializer,
                 diaryDayProjector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         });
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
@@ -607,8 +731,8 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite");
         var world = new DomainWorld(
             new[] { pinecross, quartzsite },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, quartzsite.Id, TrailRisk.Low) });
@@ -635,8 +759,8 @@ public sealed class EventStorePersistenceTests : IClassFixture<PostgreSqlPersist
 
     private static GameSession CreateSessionWithWarrantedSaloonSuspect()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite");
         var world = new DomainWorld(
             new[] { pinecross, quartzsite },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, quartzsite.Id, TrailRisk.Low) });

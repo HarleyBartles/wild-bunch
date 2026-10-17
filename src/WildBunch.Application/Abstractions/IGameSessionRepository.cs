@@ -1,5 +1,6 @@
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
+using WildBunch.Application.Games.Commands;
 
 namespace WildBunch.Application.Abstractions;
 
@@ -8,6 +9,10 @@ public interface IGameSessionRepository
     Task<GameSession?> GetByIdAsync(GameSessionId id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<GameSession>> GetByStatusAsync(GameStatus status, CancellationToken cancellationToken = default);
+
+    Task<StartupOperation?> GetStartupOperationAsync(Guid operationId, CancellationToken cancellationToken = default);
+
+    void StoreStartupOperation(StartupOperation operation);
 
     /// <summary>
     /// Stages the snapshot upsert and event append on the DbContext.
@@ -21,4 +26,9 @@ public interface IGameSessionRepository
     /// Used for replay-from-events and for loading events after a snapshot.
     /// </summary>
     Task<IReadOnlyList<IDomainEvent>> GetEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads typed events with their persisted stream sequence and occurrence metadata for audit queries.
+    /// </summary>
+    Task<IReadOnlyList<RecordedDomainEvent>> GetRecordedEventStreamAsync(GameSessionId id, long fromVersion = 0, CancellationToken cancellationToken = default);
 }

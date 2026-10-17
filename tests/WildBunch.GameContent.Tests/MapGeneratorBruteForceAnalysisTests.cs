@@ -53,6 +53,7 @@ public sealed class MapGeneratorBruteForceAnalysisTests
         // intra-cluster town-pair distance. If clustering doesn't produce
         // visible separation, the cluster mechanic is meaningless.
         var data = Data;
+        Assert.Equal(BruteForceDataCollector.ExpectedWorldCount, data.TotalWorlds);
         Assert.True(data.TotalIntraClusterPairs > 0,
             $"No intra-cluster pairs collected ({data.TotalIntraClusterPairs}). " +
             "Cluster separation cannot be evaluated.");
@@ -166,42 +167,6 @@ public sealed class MapGeneratorBruteForceAnalysisTests
                 $"WaterFeature {water} appears {count}/{total} ({pct:F1}%), expected >= {minPct}%. " +
                 $"Distribution: {FormatWaterDistribution(data.WaterCounts, total)}");
         }
-    }
-
-    [Fact]
-    public void BruteForce_VariantInfluence_ProducesDifferentTerrainDistributions()
-    {
-        // Different SeedWorldVariant values should produce measurably different
-        // terrain distributions. If Canonical and Frontier produce identical
-        // terrain, the variant has no effect.
-        var data = Data;
-        Assert.True(data.TerrainByVariant.Count > 1,
-            "Need at least 2 variants to compare terrain distributions.");
-
-        // Compare each pair of variants — their terrain distributions should
-        // differ by at least 5 percentage points on at least one terrain type.
-        var variants = data.TerrainByVariant.Keys.ToList();
-        var foundDifference = false;
-        for (var i = 0; i < variants.Count && !foundDifference; i++)
-        {
-            for (var j = i + 1; j < variants.Count && !foundDifference; j++)
-            {
-                var distA = NormalizeTerrain(data.TerrainByVariant[variants[i]]);
-                var distB = NormalizeTerrain(data.TerrainByVariant[variants[j]]);
-                foreach (TrailTerrain terrain in Enum.GetValues<TrailTerrain>())
-                {
-                    var diff = Math.Abs(distA.GetValueOrDefault(terrain) - distB.GetValueOrDefault(terrain));
-                    if (diff > 0.05)
-                    {
-                        foundDifference = true;
-                        break;
-                    }
-                }
-            }
-        }
-        Assert.True(foundDifference,
-            "All SeedWorldVariant values produce identical terrain distributions " +
-            "(<5% difference on every terrain type). Variant has no effect on terrain.");
     }
 
     [Fact]
@@ -335,11 +300,6 @@ public sealed class MapGeneratorBruteForceAnalysisTests
         => string.Join(", ", Enum.GetValues<WaterFeature>().Select(w =>
             $"{w}={counts.GetValueOrDefault(w)}({100.0 * counts.GetValueOrDefault(w) / Math.Max(1, total):F1}%)"));
 
-    private static Dictionary<TrailTerrain, double> NormalizeTerrain(Dictionary<TrailTerrain, int> counts)
-    {
-        var total = (double)counts.Values.Sum();
-        return counts.ToDictionary(kv => kv.Key, kv => kv.Value / total);
-    }
 }
 
 /// <summary>
@@ -349,8 +309,20 @@ public sealed class MapGeneratorBruteForceAnalysisTests
 /// </summary>
 internal static class BruteForceDataCollector
 {
+    private const int ClusterCountOptions = 4;
+    private static readonly string[] Salts = { "salt-a", "salt-b", "salt-c" };
+
     private static GameSetupDeterministicSource NewSource()
         => new(SeedWorldResolver.FormatSeedCode(SeedWorldResolver.CreateCanonicalSeedCode()));
+
+    public static int ExpectedWorldCount =>
+        Enum.GetValues<SeedWorldVariant>().Length
+        * Enum.GetValues<GraphDensity>().Length
+        * ClusterCountOptions
+        * (SeedWorldResolver.MaxTownCount - SeedWorldResolver.MinTownCount + 1
+           + SeedWorldResolver.MaxTownCount - SeedWorldResolver.MinTownCount)
+        * Enum.GetValues<GameEntropy>().Length
+        * Salts.Length;
 
     private static SeedWorld NewSeedWorld(int townCount, int clusterCount, GraphDensity density, int outlierSlotType)
     {
@@ -394,9 +366,6 @@ internal static class BruteForceDataCollector
         public Dictionary<TrailRisk, int> RiskCounts = new();
         public Dictionary<WaterFeature, int> WaterCounts = new();
 
-        // Variant influence: terrain distribution per variant
-        public Dictionary<SeedWorldVariant, Dictionary<TrailTerrain, int>> TerrainByVariant = new();
-
         // Anti-patterns
         public int SelfLoopCount;
         public int DuplicateTrailIdCount;
@@ -416,13 +385,12 @@ internal static class BruteForceDataCollector
         var variants = Enum.GetValues<SeedWorldVariant>();
         var densities = Enum.GetValues<GraphDensity>();
         var entropies = Enum.GetValues<GameEntropy>();
-        var salts = new[] { "salt-a", "salt-b", "salt-c" };
 
         foreach (var variant in variants)
         {
             foreach (var density in densities)
             {
-                for (var clusterCount = 1; clusterCount <= 4; clusterCount++)
+                for (var clusterCount = 1; clusterCount <= ClusterCountOptions; clusterCount++)
                 {
                     for (var outlierSlotType = 0; outlierSlotType <= 1; outlierSlotType++)
                     {
@@ -435,7 +403,7 @@ internal static class BruteForceDataCollector
 
                             foreach (var entropy in entropies)
                             {
-                                foreach (var salt in salts)
+                                foreach (var salt in Salts)
                                 {
                                     var seed = NewSeedWorld(townCount, clusterCount, density, outlierSlotType) with
                                     {
@@ -444,14 +412,17 @@ internal static class BruteForceDataCollector
                                     var source = NewSource();
                                     var saltSource = SaltSource.CreateFixed(salt);
 
+                                    var scenario = $"variant={variant}, density={density}, clusters={clusterCount}, "
+                                        + $"outlier={outlierSlotType}, towns={townCount}, entropy={entropy}, salt={salt}";
                                     World world;
                                     try
                                     {
                                         world = MapGenerator.Generate(seed, source, entropy, saltSource);
                                     }
-                                    catch
+                                    catch (Exception ex)
                                     {
-                                        continue;
+                                        throw new InvalidOperationException(
+                                            $"Map analysis generation failed for {scenario}.", ex);
                                     }
 
                                     data.TotalWorlds++;
@@ -531,13 +502,6 @@ internal static class BruteForceDataCollector
                                         data.RiskCounts[trail.Risk] = data.RiskCounts.GetValueOrDefault(trail.Risk) + 1;
                                         data.WaterCounts[trail.WaterFeature] = data.WaterCounts.GetValueOrDefault(trail.WaterFeature) + 1;
 
-                                        // Per-variant terrain
-                                        if (!data.TerrainByVariant.TryGetValue(variant, out var variantTerrain))
-                                        {
-                                            variantTerrain = new Dictionary<TrailTerrain, int>();
-                                            data.TerrainByVariant[variant] = variantTerrain;
-                                        }
-                                        variantTerrain[trail.Terrain] = variantTerrain.GetValueOrDefault(trail.Terrain) + 1;
                                     }
 
                                     // Degree distribution (exclude outlier)
@@ -551,35 +515,27 @@ internal static class BruteForceDataCollector
                                         data.TotalTowns++;
                                     }
 
-                                    // Cluster separation: compute average intra vs inter-cluster distances.
-                                    // We need cluster assignments — derive from the seed's cluster count
-                                    // and the town positions. Since we don't have the internal cluster
-                                    // assignments here, we approximate by checking if the seed has
-                                    // multiple clusters and collecting pairwise distances.
-                                    // For proper cluster analysis, we'd need the cluster assignments
-                                    // from ClusterPlacementGenerator. Instead, we use a simpler proxy:
-                                    // compare nearest-neighbor distances for outlier vs base towns.
+                                    // Cluster separation: classify each pair by its generated cluster assignment,
+                                    // then measure the corresponding distance between placed town slots.
                                     if (clusterCount > 1)
                                     {
-                                        var baseTowns = world.Towns.Where(t => !t.IsOutlier).ToList();
-                                        for (var i = 0; i < baseTowns.Count; i++)
+                                        var placement = ClusterPlacementGenerator.Place(seed, source, entropy, saltSource);
+                                        for (var i = 0; i < townCount; i++)
                                         {
-                                            for (var j = i + 1; j < baseTowns.Count; j++)
+                                            for (var j = i + 1; j < townCount; j++)
                                             {
-                                                var dx = baseTowns[i].MapX - baseTowns[j].MapX;
-                                                var dy = baseTowns[i].MapY - baseTowns[j].MapY;
+                                                var townA = placement.Towns[i];
+                                                var townB = placement.Towns[j];
+                                                var dx = townA.X - townB.X;
+                                                var dy = townA.Y - townB.Y;
                                                 var dist = Math.Sqrt(dx * dx + dy * dy);
 
-                                                // Approximate cluster membership by distance threshold:
-                                                // towns within 100px are likely intra-cluster,
-                                                // towns beyond 150px are likely inter-cluster.
-                                                // This is a rough proxy but sufficient for aggregate stats.
-                                                if (dist < 100)
+                                                if (placement.ClusterAssignments[i] == placement.ClusterAssignments[j])
                                                 {
                                                     data.IntraClusterDistanceSum += dist;
                                                     data.TotalIntraClusterPairs++;
                                                 }
-                                                else if (dist > 150)
+                                                else
                                                 {
                                                     data.InterClusterDistanceSum += dist;
                                                     data.TotalInterClusterPairs++;

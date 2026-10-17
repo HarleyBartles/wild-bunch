@@ -10,7 +10,6 @@ using WildBunch.Domain.WantedPosters;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -22,7 +21,7 @@ public sealed class ReadWantedPostersHandlerTests
     public async Task ReadWantedPostersLoadsSessionSavesSuccessfulMutationAndReturnsExpectedResult()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
 
@@ -33,7 +32,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(1, result.CurrentJournal.Clock.Turn);
         Assert.Equal(2, result.CurrentJournal.LogEntries.Count);
-        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Ira Flint");
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
         Assert.Single(result.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Single(result.WantedPosters);
@@ -46,7 +45,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal("The Wild Bunch trail is quiet.", result.CurrentJournal.CaseFile.CaseState.StatusText);
         var payload = JsonSerializer.Serialize(result);
         Assert.Contains("\"discoveredSuspects\"", payload, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", payload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"wantedPosters\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", payload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", payload, StringComparison.OrdinalIgnoreCase);
@@ -56,13 +55,13 @@ public sealed class ReadWantedPostersHandlerTests
     }
 
     [Fact]
-    public async Task ReadWantedPostersSucceedsEvenWithoutNoticeBoardService()
+    public async Task ReadWantedPostersSucceedsForAValidSession()
     {
         // Every town has a sheriff's office. ReadWantedPosters is always available,
-        // even in a town with TownServices.None. The action should succeed and
-        // reveal warrants/clues just like in a town with NoticeBoard.
+        // regardless of which town is current. The action should succeed and
+        // reveal the warrant and one poster clue in the Sheriff Office.
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new ReadWantedPostersHandler(repository, repository, new JournalResolver());
@@ -73,7 +72,7 @@ public sealed class ReadWantedPostersHandlerTests
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Single(result.CurrentJournal.CaseFile.KnownClues);
-        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(result.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Ira Flint");
         Assert.Single(result.WantedPosters);
         Assert.Equal("warrant-public-1", result.WantedPosters[0].PosterId);
         Assert.Equal("Mira Cline", result.WantedPosters[0].TargetDisplayName);
@@ -91,7 +90,7 @@ public sealed class ReadWantedPostersHandlerTests
     public async Task ReadWantedPostersWhileJourneyAwaitingAcknowledgementReturnsFailureWithoutSaving()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         StartJourney(session);
         session.Journey!.MarkCompleted();
         session.MarkEventsCommitted();
@@ -119,10 +118,10 @@ public sealed class ReadWantedPostersHandlerTests
             () => handler.HandleAsync(new ReadWantedPostersCommand(Guid.NewGuid())));
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices)
+    private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -151,7 +150,7 @@ public sealed class ReadWantedPostersHandlerTests
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.Suspected,
                     InvestigationSourceKind.SheriffWarrants,
-                    source: "notice board",
+                    source: "sheriff office",
                     context: "Public wanted poster",
                     anchors: new ClueAnchors(
                         subjects: new[]

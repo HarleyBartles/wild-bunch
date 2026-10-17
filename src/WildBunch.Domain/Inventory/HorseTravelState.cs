@@ -58,11 +58,6 @@ public sealed record HorseTravelState
         return travelRulesProfile.CanProvideMountedTravel(this);
     }
 
-    public HorseTravelState AdvanceTravelDay(bool horseFed)
-        => horseFed
-            ? new HorseTravelState(Hunger, Thirst, Exhaustion + 1)
-            : new HorseTravelState(Hunger + 1, Thirst, Exhaustion + 1);
-
     public HorseTravelState IncreaseHunger(int amount = 1)
         => Increase(Hunger, amount, hunger => new HorseTravelState(hunger, Thirst, Exhaustion));
 

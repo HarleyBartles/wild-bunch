@@ -77,43 +77,57 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             {
                 _currentTown.EnterTown(world.GetTown(player.CurrentTownId.Value));
             }
-            _currentTown.PrimeCurrentTown();
         }
 
-        // BUNCH-107: unrelated criminal parity ledger. Built from the case file's
-        // unrelated-criminal warrants (the 21-strong pool) and the gang roster size.
-        // The active pool starts at gang parity; gang take-ins (replayed via
-        // SheriffTurnInSettled) drop the parity target and despawn excess. The
-        // unrelated-criminal turn-in flow (SettleUnrelatedCriminalTurnIn /
-        // UnrelatedCriminalTurnInSettled) records take-ins and spawns replacements;
-        // the ledger itself is the parity source of truth.
-        // During prepped phase (StartPrepped), caseFile is null; use a no-op ledger.
-        var unrelatedCriminalLedger = caseFile is not null
-            ? BuildUnrelatedCriminalLedger(caseFile)
-            : new UnrelatedCriminalLedger(gangMemberCount: 0, poolSize: 0);
-
-        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries, unrelatedCriminalLedger);
+        _bountyLoop = new BountyLoop(wantedSuspectPresenceEntries);
 
         _journeyLoop = new JourneyLoop(journey, completedJourneyHistory);
     }
 
+    internal static GameSession RestoreFromSnapshot(
+        GameSessionId id,
+        Player player,
+        DomainWorld world,
+        CaseFile caseFile,
+        PursuitState pursuitState,
+        GameClock clock,
+        GameStatus status,
+        TravelJourney? journey,
+        GameDifficulty gameDifficulty,
+        SaltSource saltSource,
+        GameEntropy gameEntropy,
+        TownVisitState? currentTownVisit,
+        IReadOnlyList<TravelJourneySnapshot>? completedJourneyHistory,
+        IReadOnlyList<WantedSuspectPresenceEntry>? wantedSuspectPresenceEntries)
+        => new(
+            id,
+            player,
+            world,
+            caseFile,
+            pursuitState,
+            clock,
+            status,
+            journey,
+            gameDifficulty,
+            saltSource,
+            gameEntropy,
+            currentTownVisit,
+            completedJourneyHistory,
+            wantedSuspectPresenceEntries);
+
+    internal void RestoreVersion(int version) => _version = version;
+
+    internal void RestoreSeedCode(string? seedCode) => SeedCode = seedCode;
+
+    internal void RestoreStartFlowPhase(StartFlowPhase phase) => StartFlowPhase = phase;
+
     public GameSessionId Id { get; }
 
     /// <summary>
-    /// Restores BountyLoop-owned state from a persisted snapshot. Called by the
-    /// rehydration path after the constructor builds a fresh BountyLoop. The
-    /// presence ledger is already constructed from constructor inputs; this
-    /// restores the unrelated-criminal ledger and pending dev saloon override.
-    /// See BUNCH-112.
+    /// Restores BountyLoop-owned state from a persisted snapshot.
     /// </summary>
-    internal void RestoreBountyLoopState(
-        WildBunch.Domain.Cases.UnrelatedCriminalLedger? unrelatedCriminalLedger,
-        DevSaloonOverride? pendingDevSaloonOverride)
+    internal void RestoreBountyLoopState(DevSaloonOverride? pendingDevSaloonOverride)
     {
-        if (unrelatedCriminalLedger is not null)
-        {
-            _bountyLoop.RestoreUnrelatedCriminalLedger(unrelatedCriminalLedger);
-        }
         if (pendingDevSaloonOverride is not null)
         {
             _bountyLoop.RestorePendingDevSaloonOverride(pendingDevSaloonOverride);
@@ -137,17 +151,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void RestoreActionContextState(TownActionContext context, TownId? townId)
     {
         _actionContextTracker.RestoreState(context, townId);
-    }
-
-    /// <summary>
-    /// Restores dev layout salts during snapshot rehydration.
-    /// The salts are reconstructed from event replay via Apply(DevLayoutSaltsForced).
-    /// Both paths (snapshot load + event replay) must produce the same values.
-    /// See BUNCH-147.
-    /// </summary>
-    internal void RestoreDevLayoutSalts(WildBunch.Domain.World.LayoutSalts layoutSalts)
-    {
-        DevLayoutSalts = layoutSalts;
     }
 
     public GameStatus Status { get; private set; }
@@ -178,13 +181,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public SaltSource SaltSource { get; private set; }
 
     public string? SeedCode { get; private set; }
-
-    /// <summary>
-    /// Dev-controlled layout salts for town hub layout generation.
-    /// When set, these salts override the derived layout salts for reproducible
-    /// layout generation. Dev-only state. See BUNCH-147.
-    /// </summary>
-    public LayoutSalts? DevLayoutSalts { get; private set; }
 
     public TownAggregate CurrentTown => _currentTown
         ?? throw new InvalidOperationException("No town has been selected yet. The current town is only available after GameStarted.");
@@ -218,15 +214,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     public IReadOnlyList<TravelJourneySnapshot> CompletedJourneyHistory => _journeyLoop.CompletedJourneyHistory;
 
     public IReadOnlyList<WantedSuspectPresenceEntry> WantedSuspectPresenceEntries => _bountyLoop.PresenceEntries;
-
-    /// <summary>
-    /// Unrelated criminal parity ledger (BUNCH-107). Tracks the active pool of
-    /// unrelated wanted criminals and keeps it at parity with the number of gang
-    /// members still available to surface. Read-only view; mutations flow through
-    /// <see cref="Apply(SheriffTurnInSettled)"/> (gang take-ins) and
-    /// <see cref="Apply(UnrelatedCriminalTurnInSettled)"/> (unrelated-criminal take-ins).
-    /// </summary>
-    public UnrelatedCriminalLedger UnrelatedCriminalLedger => _bountyLoop.UnrelatedCriminalLedger;
 
     /// <summary>
     /// Events produced by command methods but not yet committed to the event stream.
@@ -359,106 +346,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     internal void ProduceEvent<T>(T e) where T : IDomainEvent
     {
-        ApplyProducedEvent(e);
-        _uncommittedEvents.Add(e);
-    }
-
-    /// <summary>
-    /// Dispatches a produced event to the appropriate Apply overload. Mirrors the replay
-    /// dispatcher in <see cref="GameSessionEventReplay.ApplyEvent"/> so command-path and
-    /// replay-path mutation stay identical. Throws for unknown event types.
-    /// </summary>
-    private void ApplyProducedEvent(IDomainEvent e)
-    {
-        switch (e)
+        if (Status == GameStatus.Failed && e is not PlaythroughArchived)
         {
-            case GameStarted gs:
-                Apply(gs);
-                break;
-            case PlaythroughArchived pa:
-                Apply(pa);
-                break;
-            case StoreItemPurchased p:
-                Apply(p);
-                break;
-            case InvestigationPerformed ip:
-                Apply(ip);
-                break;
-            case TownActionContextEntered tc:
-                Apply(tc);
-                break;
-            case SaloonPersonOfInterestSpotted sp:
-                Apply(sp);
-                break;
-            case WantedSuspectConfronted wc:
-                Apply(wc);
-                break;
-            case SheriffTurnInSettled ts:
-                Apply(ts);
-                break;
-            case UnrelatedCriminalTurnInSettled ucts:
-                Apply(ucts);
-                break;
-            case SaloonPersonOfInterestConfronted sc:
-                Apply(sc);
-                break;
-            case JourneyStarted js:
-                Apply(js);
-                break;
-            case TravelDayAdvanced tda:
-                Apply(tda);
-                break;
-            case TrailEventApplied tea:
-                Apply(tea);
-                break;
-            case JourneyEncounterResolved jer:
-                Apply(jer);
-                break;
-            case JourneyCompleted jc:
-                Apply(jc);
-                break;
-            case JourneyArrivalAcknowledged jaa:
-                Apply(jaa);
-                break;
-            case DevTravelOverrideForced dtf:
-                Apply(dtf);
-                break;
-            case DevTravelOverrideCleared dtc:
-                Apply(dtc);
-                break;
-            case DevTravelOverrideConsumed dtc2:
-                Apply(dtc2);
-                break;
-            case DevSaloonOverrideForced dsf:
-                Apply(dsf);
-                break;
-            case DevSaloonOverrideCleared dsc:
-                Apply(dsc);
-                break;
-            case DevSaloonOverrideConsumed dsc2:
-                Apply(dsc2);
-                break;
-            case DevSaltSourceForced dsf:
-                Apply(dsf);
-                break;
-            case DevSaltSourceCleared dsc:
-                Apply(dsc);
-                break;
-            case DevLayoutSaltsForced dlsf:
-                Apply(dlsf);
-                break;
-            case DevDifficultyForced ddf:
-                Apply(ddf);
-                break;
-            case DevEntropyChanged dec:
-                Apply(dec);
-                break;
-            case WorldGenerated wg:
-                Apply(wg);
-                break;
-            default:
-                throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
+            throw new InvalidOperationException("This playthrough has ended.");
         }
+
+        ApplyEvent(e);
+        _uncommittedEvents.Add(e);
     }
 
     /// <summary>
@@ -536,32 +430,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     /// </summary>
     private void Apply(SheriffTurnInSettled e)
     {
-        Player.AdjustCash(e.BountyAmount);
-
         var settlementState = new SheriffTurnInSettlementState(
             e.TargetSuspectId, e.TargetName, e.Disposition,
             e.IsAlive, e.BountyAmount, e.Day, e.Turn);
-        CaseFile.RecordSheriffTurnInSettlementState(settlementState);
 
-        // BUNCH-107: a gang member taken in reduces the unrelated-criminal parity
-        // target. The ledger despawns excess unrelated criminals (preferring ones
-        // the player has not collected a warrant for) to maintain parity. The
-        // despawned warrants are retired from the surfacing pool.
-        _bountyLoop.Apply(e);
-
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies an <see cref="UnrelatedCriminalTurnInSettled"/> event to mutate session state.
-    /// Pays the bounty, records the take-in on the ledger (which may spawn a replacement),
-    /// and marks the warrant as collected. See BUNCH-107.
-    /// </summary>
-    private void Apply(UnrelatedCriminalTurnInSettled e)
-    {
         Player.AdjustCash(e.BountyAmount);
-
-        _bountyLoop.Apply(e);
+        CaseFile.RecordSheriffTurnInSettlementState(settlementState);
 
         _version++;
     }
@@ -578,9 +452,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     {
         CurrentTownVisit.CurrentTownState.ClearActiveSaloonPersonOfInterest();
 
-        if (e.FineAmount is { } fine && fine > 0m)
+        if (e.WalletAfter is { } walletAfter)
         {
-            Player.AdjustCash(-fine);
+            Player.SetCash(walletAfter);
         }
 
         _version++;
@@ -647,8 +521,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 Player.RemoveQuantity(ItemKind.HorseFeed, -horseFeedDelta);
         }
 
-        if (snapshot.HorseState is { } horseState)
-            Player.SetHorseState(horseState);
+        if (snapshot.HorseState is { } horseState && Player.HasItem(ItemKind.Horse))
+        {
+            if (horseState.IsDeadFor(TravelRules))
+                Player.RemoveQuantity(ItemKind.Horse, 1);
+            else
+                Player.SetHorseState(horseState);
+        }
     }
 
     /// <summary>
@@ -681,8 +560,8 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         Player.SetCash(e.WalletCash);
         if (e.AmmoSpent > 0)
             SpendFirearmAmmo(e.AmmoSpent);
-        if (e.StolenItemKind is { } kind && e.StolenItemQuantity > 0)
-            Player.RemoveQuantity(kind, e.StolenItemQuantity);
+        if (e.StolenItemKind == ItemKind.RevolverAmmo && e.StolenItemQuantity > 0)
+            Player.RemoveQuantity(ItemKind.RevolverAmmo, e.StolenItemQuantity);
         PursuitState.SetHeat(e.PursuitHeat);
         SyncPlayerFromJourneySnapshot(e.JourneySnapshot);
         _version++;
@@ -776,39 +655,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal void Apply(DevSaloonOverrideConsumed e)
     {
         _bountyLoop.Apply(e);
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies a DevSaltSourceForced event. Replaces the RNG salt posture with the
-    /// forced fixed salt source. Dev-only event — does not affect gameplay state
-    /// directly. The salt source is persisted in the session snapshot, so
-    /// rehydration after a salt change requires no new persistence shape.
-    /// See BUNCH-101.
-    /// </summary>
-    internal void Apply(DevSaltSourceForced e)
-    {
-        SaltSource = e.ForcedSaltSource;
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies a DevSaltSourceCleared event. Restores runtime RNG.
-    /// Dev-only event. See BUNCH-101.
-    /// </summary>
-    internal void Apply(DevSaltSourceCleared e)
-    {
-        SaltSource = SaltSource.CreateRuntime();
-        _version++;
-    }
-
-    /// <summary>
-    /// Applies a DevLayoutSaltsForced event. Sets the dev layout salts for town layout generation.
-    /// Dev-only event. See BUNCH-147.
-    /// </summary>
-    internal void Apply(DevLayoutSaltsForced e)
-    {
-        DevLayoutSalts = e.DevLayoutSalts;
         _version++;
     }
 
@@ -920,58 +766,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Array.Empty<TravelJourneySnapshot>(),
             Array.Empty<WantedSuspectPresenceEntry>());
 
-        session.Apply(setupEvent);
-        session._uncommittedEvents.Add(setupEvent);
-        session.Apply(worldEvent);
-        session._uncommittedEvents.Add(worldEvent);
+        session.ProduceEvent(setupEvent);
+        session.ProduceEvent(worldEvent);
 
         var caseFileEvent = new CaseFileGenerated
         {
             CaseFile = CaseFileSnapshot.FromDomain(caseFile)
         };
 
-        session.Apply(caseFileEvent);
-        session._uncommittedEvents.Add(caseFileEvent);
-
-        return session;
-    }
-
-    /// <summary>
-    /// Creates a minimal game session in the prepped phase (before world generation).
-    /// The session has seed, difficulty, and entropy but no world yet.
-    /// Used for the multi-phase setup flow where dev injections happen before world generation.
-    /// </summary>
-    public static GameSession StartPrepped(
-        string seedCode,
-        GameDifficulty gameDifficulty,
-        GameEntropy gameEntropy)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCode);
-
-        var placeholderPlayer = new Player(
-            "Prepped",
-            currentTownId: null,
-            health: 1000,
-            WildBunch.Domain.Economy.Wallet.Starting(0m),
-            DomainInventory.Empty());
-
-        var session = new GameSession(
-            GameSessionId.New(),
-            placeholderPlayer,
-            world: null,
-            caseFile: null,
-            new PursuitState(),
-            new GameClock(),
-            GameStatus.Prepped,
-            journey: null,
-            gameDifficulty,
-            SaltSource.CreateRuntime(),
-            gameEntropy,
-            currentTownVisit: null,
-            Array.Empty<TravelJourneySnapshot>(),
-            Array.Empty<WantedSuspectPresenceEntry>());
-
-        session.SeedCode = seedCode;
+        session.ProduceEvent(caseFileEvent);
 
         return session;
     }
@@ -997,8 +800,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             StartingTownId = startingTownId
         };
 
-        Apply(e);
-        _uncommittedEvents.Add(e);
+        ProduceEvent(e);
     }
 
     /// <summary>
@@ -1037,8 +839,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             SeedCode = SeedCode
         };
 
-        Apply(e);
-        _uncommittedEvents.Add(e);
+        ProduceEvent(e);
     }
 
     /// <summary>
@@ -1069,8 +870,7 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             RevealedSuspectIdentifier = revealedSuspectIdentifier
         };
 
-        Apply(e);
-        _uncommittedEvents.Add(e);
+        ProduceEvent(e);
     }
 
     /// <summary>
@@ -1141,7 +941,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         if (_currentTown is null)
         {
             _currentTown = new TownAggregate(World.GetTown(e.StartingTownId), new TownVisitState(e.StartingTownId));
-            _currentTown.PrimeCurrentTown();
         }
         else if (!_currentTown.TownId.Equals(e.StartingTownId))
         {
@@ -1185,6 +984,21 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     private void Apply(CaseFileGenerated e)
     {
+        if (e.CaseFile.DiscoveredSuspectIds is null)
+        {
+            throw new InvalidOperationException("Cannot apply CaseFileGenerated without recorded discovered suspect ids.");
+        }
+
+        if (e.CaseFile.PublicClues is null)
+        {
+            throw new InvalidOperationException("Cannot apply CaseFileGenerated without recorded public clues.");
+        }
+
+        if (e.CaseFile.OpeningLead is null || string.IsNullOrWhiteSpace(e.CaseFile.OpeningLead.Description))
+        {
+            throw new InvalidOperationException("Cannot apply CaseFileGenerated without a recorded opening lead.");
+        }
+
         CaseFile = e.CaseFile.ToDomain();
         _version++;
     }
@@ -1217,6 +1031,23 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private void Apply(PlaythroughArchived e)
     {
         Status = GameStatus.Archived;
+        _version++;
+    }
+
+    internal void Apply(PlayerDied e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+        if (Player.Health != 0)
+        {
+            throw new InvalidOperationException("PlayerDied requires zero player health.");
+        }
+        if (Status != GameStatus.Active)
+        {
+            throw new InvalidOperationException("PlayerDied can only end an active playthrough.");
+        }
+
+        Status = GameStatus.Failed;
+        _journeyLoop.MarkFailed();
         _version++;
     }
 
@@ -1270,13 +1101,20 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         => _bountyLoop.TryGetWantedSuspectPresenceState(suspectId, out state);
 
     public void SetWantedSuspectPresenceState(SuspectId suspectId, WantedSuspectPresenceState state)
-        => _bountyLoop.SetWantedSuspectPresenceState(suspectId, state);
+    {
+        if (IsGameplayTerminal)
+        {
+            throw new InvalidOperationException(GameplayBlockMessage);
+        }
+
+        _bountyLoop.SetWantedSuspectPresenceState(suspectId, state);
+    }
 
     public TravelJourneyStepResult StartJourney(TravelPreview preview)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+            return TravelJourneyStepResult.Failed(GameplayBlockMessage);
         }
 
         ArgumentNullException.ThrowIfNull(preview);
@@ -1292,9 +1130,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public TravelJourneyStepResult AdvanceJourneyDay()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return TravelJourneyStepResult.Failed(ArchivedBlockMessage);
+            return TravelJourneyStepResult.Failed(GameplayBlockMessage);
         }
 
         // Advance clock only when the journey will actually advance (not blocked
@@ -1321,14 +1159,27 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             Player.GetHorseState(),
             Player.Wallet.Cash,
             Player.Health,
-            Player.GetQuantity(ItemKind.RevolverAmmo) + Player.GetQuantity(ItemKind.RifleAmmo));
+            Player.GetQuantity(ItemKind.RevolverAmmo));
 
         var result = _journeyLoop.AdvanceJourneyDay(context);
         foreach (var e in result.Events)
         {
             ProduceEvent(e);
         }
+        RecordPlayerDeathIfNeeded();
         return result.Result;
+    }
+
+    private void RecordPlayerDeathIfNeeded()
+    {
+        if (Player.Health == 0 && Status == GameStatus.Active)
+        {
+            ProduceEvent(new PlayerDied
+            {
+                JourneySequence = Journey?.JourneySequence,
+                DiaryMessage = "I died on the trail. My journey ends here."
+            });
+        }
     }
 
     /// <summary>
@@ -1407,33 +1258,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     }
 
     /// <summary>
-    /// Dev command: locks the RNG to a fixed salt for reproducible playtesting.
-    /// Sets up reproducibility state; does not force any encounter outcome.
-    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-101.
-    /// </summary>
-    public void ForceDevSaltSource(SaltSource saltSource)
-    {
-        ArgumentNullException.ThrowIfNull(saltSource);
-        if (saltSource.Mode != SaltSourceMode.Fixed)
-        {
-            throw new ArgumentException("ForceDevSaltSource requires a Fixed salt source.", nameof(saltSource));
-        }
-
-        ProduceEvent(new DevSaltSourceForced
-        {
-            ForcedSaltSource = saltSource
-        });
-    }
-
-    /// <summary>
-    /// Dev command: restores runtime RNG. See BUNCH-101.
-    /// </summary>
-    public void ClearDevSaltSource()
-    {
-        ProduceEvent(new DevSaltSourceCleared());
-    }
-
-    /// <summary>
     /// Dev command: forces the session difficulty to a new value for playtesting.
     /// Changes the travel rules profile going forward. Does not retroactively
     /// change starting health/cash (those were set at game start).
@@ -1469,56 +1293,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             NewEntropy = entropy
         });
-    }
-
-    /// <summary>
-    /// Dev command: forces layout salts for town hub layout generation.
-    /// Stores dev-controlled layout salts for reproducible layout generation.
-    /// Per dev-overlay doctrine §1 (state/action boundary). See BUNCH-147.
-    /// </summary>
-    public void SetDevLayoutSalts(LayoutSalts layoutSalts)
-    {
-        ArgumentNullException.ThrowIfNull(layoutSalts);
-        ProduceEvent(new DevLayoutSaltsForced(layoutSalts));
-    }
-
-    /// <summary>
-    /// Transitions a prepped session to active phase by generating the world
-    /// with the provided world, case file, and salt source. Used by the three-phase
-    /// dev-enabled action pattern (prep → inject dev salts → start). See BUNCH-147.
-    /// </summary>
-    public void StartFromPrepped(
-        DomainWorld world,
-        CaseFile caseFile,
-        string seedCodeText,
-        SaltSource saltSource)
-    {
-        ArgumentNullException.ThrowIfNull(world);
-        ArgumentNullException.ThrowIfNull(caseFile);
-        ArgumentException.ThrowIfNullOrWhiteSpace(seedCodeText);
-        ArgumentNullException.ThrowIfNull(saltSource);
-
-        if (Status != GameStatus.Prepped)
-        {
-            throw new InvalidOperationException("Session must be in Prepped status to start from prepped.");
-        }
-
-        World = world;
-        CaseFile = caseFile;
-        SeedCode = seedCodeText;
-        SaltSource = saltSource;
-        Status = GameStatus.Active;
-
-        var caseFileSnapshot = WildBunch.Domain.Cases.CaseFileSnapshot.FromDomain(caseFile);
-        var worldEvent = new WorldGenerated
-        {
-            SeedCode = seedCodeText,
-            SaltSource = saltSource,
-            GameEntropy = GameEntropy,
-            World = WorldSnapshot.FromDomain(world),
-            CaseFile = caseFileSnapshot
-        };
-        ProduceEvent(worldEvent);
     }
 
     private void RefreshTownVisit(TownId townId)
@@ -1560,9 +1334,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public JourneyArrivalAcknowledgementResult AcknowledgeJourneyArrival()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return JourneyArrivalAcknowledgementResult.Failed(ArchivedBlockMessage);
+            return JourneyArrivalAcknowledgementResult.Failed(GameplayBlockMessage);
         }
 
         var context = new AcknowledgeJourneyArrivalContext(TravelRules);
@@ -1603,7 +1377,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             .Select(day => day.PendingEncounter?.Kind switch
             {
                 "foe" => TravelDayEncounterCategory.Foe,
-                "npc" => TravelDayEncounterCategory.Npc,
                 _ => (TravelDayEncounterCategory?)null
             })
             .Where(category => category is not null)
@@ -1800,9 +1573,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         decimal? bribeAmount,
         ulong? forcedRoll)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return JourneyEncounterResolutionResult.Failed(ArchivedBlockMessage, JourneyStatus.Failed);
+            return JourneyEncounterResolutionResult.Failed(GameplayBlockMessage, JourneyStatus.Failed);
         }
 
         var caps = Player.GetCapabilities(TravelRules);
@@ -1825,7 +1598,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             bribeAmount,
             forcedRoll,
             Player.GetQuantity(ItemKind.RevolverAmmo),
-            Player.GetQuantity(ItemKind.RifleAmmo),
             Player.HasItem(ItemKind.Knife));
 
         var result = _journeyLoop.ResolveJourneyEncounter(context);
@@ -1833,56 +1605,15 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         {
             ProduceEvent(e);
         }
+        RecordPlayerDeathIfNeeded();
         return result.Result;
-    }
-
-    /// <summary>
-    /// Builds the <see cref="UnrelatedCriminalLedger"/> from the case file's
-    /// unrelated-criminal warrants and gang roster size, then replays gang take-ins
-    /// already recorded on the case file (as <see cref="CaseFile.SheriffTurnInSettlements"/>)
-    /// so the ledger's gang-side parity matches the persisted state on snapshot load.
-    /// Returns a degenerate empty ledger (gang count 0) when the case file has no
-    /// unrelated warrants or when the roster does not satisfy the 3x redundancy
-    /// invariant, so the parity system is a safe no-op for test/seed case files
-    /// that omit the full unrelated pool. See BUNCH-107.
-    /// </summary>
-    private static UnrelatedCriminalLedger BuildUnrelatedCriminalLedger(CaseFile caseFile)
-    {
-        ArgumentNullException.ThrowIfNull(caseFile);
-
-        var unrelatedWarrantIds = caseFile.PublicWarrants
-            .Where(warrant => warrant.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal)
-            .Select(warrant => warrant.Id)
-            .ToArray();
-
-        var gangMemberCount = caseFile.Suspects.Count;
-
-        // The parity system only activates when the full unrelated roster is present
-        // (at least 3x gang size). Partial test fixtures fall back to a no-op ledger.
-        if (gangMemberCount == 0 || unrelatedWarrantIds.Length < gangMemberCount * 3)
-        {
-            return new UnrelatedCriminalLedger(gangMemberCount: 0, poolSize: 0);
-        }
-
-        var ledger = new UnrelatedCriminalLedger(gangMemberCount, unrelatedWarrantIds);
-
-        // Replay gang take-ins already persisted on the case file so the ledger's
-        // gang-side parity matches the snapshot. Post-snapshot SheriffTurnInSettled
-        // events are replayed separately via Apply(SheriffTurnInSettled).
-        var persistedGangTakeIns = Math.Min(caseFile.SheriffTurnInSettlements.Count, gangMemberCount);
-        for (var i = 0; i < persistedGangTakeIns; i++)
-        {
-            ledger.RecordGangMemberTakenIn();
-        }
-
-        return ledger;
     }
 
     public StorePurchaseResult Purchase(StoreOffer offer, int quantity)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return StorePurchaseResult.Failed(ArchivedBlockMessage);
+            return StorePurchaseResult.Failed(GameplayBlockMessage);
         }
 
         ArgumentNullException.ThrowIfNull(offer);
@@ -1913,9 +1644,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public ReadWantedPostersResult ReadWantedPosters()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return ReadWantedPostersResult.Failed(ArchivedBlockMessage);
+            return ReadWantedPostersResult.Failed(GameplayBlockMessage);
         }
 
         if (IsJourneyModal())
@@ -1931,7 +1662,6 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             boringSalt,
-            RetiredWarrantIds,
             CurrentTown.TownId,
             CurrentTown.TownName,
             BeatNarration: null,
@@ -1944,9 +1674,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public CaseInvestigationResult LookAroundSaloon()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+            return CaseInvestigationResult.Failed(GameplayBlockMessage);
         }
 
         if (IsJourneyModal())
@@ -1987,9 +1717,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public SaloonPersonOfInterestConfrontationResult ConfrontSaloonPersonOfInterest(string? declaredWantedIdentityHandle = null)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return SaloonPersonOfInterestConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+            return SaloonPersonOfInterestConfrontationResult.Rejected(GameplayBlockMessage, declaredWantedIdentityHandle);
         }
 
         var context = new SaloonConfrontationContext(
@@ -1997,13 +1727,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestDescriptor,
             CurrentTownVisit.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
             CurrentTownVisit.CurrentTownState.ActiveSaloonCitizenRole,
-            CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId is { } poiId
-                ? GetWantedSuspectPresenceState(poiId)
-                : null,
+            _actionContextTracker.IsInCurrentTownContext(TownActionContext.Saloon, CurrentTown.TownId),
             CaseFile.Suspects,
             CaseFile.KnownWarrants,
+            CaseFile.PublicWarrants,
             CaseFile.WantedSuspectConfrontations.ToDictionary(s => s.SuspectId),
-            Player.GetCapabilities(TravelRules).FirearmThreatAvailable,
+            Player.HasItem(ItemKind.Revolver),
             Player.Wallet.Cash,
             CitizenDeclarationFine,
             IsJourneyModal(),
@@ -2056,64 +1785,14 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
                 IsAlive = true,
                 IsSecured = true
             });
-            return SaloonPersonOfInterestConfrontationResult.FromWantedSuspectResult(
-                WantedSuspectConfrontationResult.Surrendered(
-                    request.DeclaredWantedIdentityHandle,
-                    request.WarrantTargetName,
-                    settlementResult.Disposition ?? WarrantDisposition.AliveOnly,
-                    request.ArmedWantedMessage)) with
-            {
-                Message = settlementMessage
-            };
+            return SaloonPersonOfInterestConfrontationResult.Surrendered(
+                request.DeclaredWantedIdentityHandle,
+                request.WarrantTargetName,
+                settlementResult.Disposition ?? WarrantDisposition.AliveOnly,
+                settlementMessage);
         }
 
         return outcome.Result;
-    }
-
-    public WantedSuspectConfrontationResult ConfrontSaloonWantedSuspect(string? declaredWantedIdentityHandle = null)
-    {
-        if (IsArchived)
-        {
-            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
-        }
-
-        var activeSaloonSuspectId = CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
-        if (activeSaloonSuspectId is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                "There is no wanted suspect waiting in the saloon.",
-                declaredWantedIdentityHandle);
-        }
-
-        var targetSuspect = CaseFile.Suspects.FirstOrDefault(s => s.Id.Equals(activeSaloonSuspectId));
-        if (targetSuspect is null)
-        {
-            return WantedSuspectConfrontationResult.Rejected(
-                "That person is not part of this case.",
-                declaredWantedIdentityHandle);
-        }
-
-        if (!TryGetKnownWarrantForSuspect(targetSuspect.Id, out _))
-        {
-            ProduceEvent(new SaloonPersonOfInterestConfronted
-            {
-                Message = $"There is no wanted notice for {targetSuspect.Name}.",
-                DeclaredWantedIdentityHandle = declaredWantedIdentityHandle,
-                TargetSuspectId = targetSuspect.Id,
-                TargetName = targetSuspect.Name,
-                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
-                Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
-            });
-            return WantedSuspectConfrontationResult.Rejected(
-                $"There is no wanted notice for {targetSuspect.Name}.",
-                declaredWantedIdentityHandle,
-                targetSuspect.Name,
-                sessionChanged: true);
-        }
-
-        // Delegate to ConfrontSaloonPersonOfInterest which now orchestrates through _bountyLoop.
-        return ResolveSaloonPersonOfInterestCompatibilityResult(
-            ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle));
     }
 
     public WantedSuspectConfrontationResult ResolveWantedSuspectConfrontation(
@@ -2121,9 +1800,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         WantedSuspectConfrontationChoice choice,
         string? declaredWantedIdentityHandle = null)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return WantedSuspectConfrontationResult.Rejected(ArchivedBlockMessage, declaredWantedIdentityHandle);
+            return WantedSuspectConfrontationResult.Rejected(GameplayBlockMessage, declaredWantedIdentityHandle);
         }
 
         var context = new WantedSuspectConfrontationContext(
@@ -2147,9 +1826,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public SheriffTurnInResult AssessSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+            return SheriffTurnInResult.Rejected(GameplayBlockMessage);
         }
 
         var context = new SheriffTurnInContext(
@@ -2169,9 +1848,9 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
 
     public SheriffTurnInResult SettleSheriffTurnIn(SuspectId targetSuspectId, bool isAlive)
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
+            return SheriffTurnInResult.Rejected(GameplayBlockMessage);
         }
 
         // Enter SheriffOffice context BEFORE assessment. This emits a TownActionContextEntered
@@ -2221,124 +1900,11 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         return assessment with { SessionChanged = true };
     }
 
-    /// <summary>
-    /// Settles the turn-in of an unrelated wanted criminal to the sheriff. The player
-    /// declares the warrant (collected from a wanted poster). If the criminal is active
-    /// in the <see cref="UnrelatedCriminalLedger"/>, the sheriff pays the bounty, the
-    /// ledger records the take-in (spawning a replacement when parity allows), and the
-    /// warrant is marked as collected. No confrontation step is required — the player
-    /// brings the criminal in directly. See BUNCH-107.
-    /// </summary>
-    public SheriffTurnInResult SettleUnrelatedCriminalTurnIn(WarrantId warrantId, bool isAlive)
-    {
-        if (IsArchived)
-        {
-            return SheriffTurnInResult.Rejected(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return SheriffTurnInResult.Rejected(JourneyModalBlockMessage);
-        }
-
-        var contextChanged = EnterActionContext(TownActionContext.SheriffOffice);
-
-        var warrant = CaseFile.KnownWarrants.FirstOrDefault(w => w.Id.Equals(warrantId));
-        if (warrant is null)
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"You don't have a wanted notice for that person.").WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"You don't have a wanted notice for that person.");
-        }
-
-        if (warrant.Terms.TargetKind != InvestigationTargetKind.UnrelatedWantedCriminal)
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.").WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"{warrant.TargetName} is not an unrelated criminal.");
-        }
-
-        if (!_bountyLoop.UnrelatedCriminalLedger.IsSurfacingEligible(warrantId))
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.").WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"{warrant.TargetName} is no longer an active criminal.");
-        }
-
-        if (!isAlive && warrant.Terms.Disposition == WarrantDisposition.AliveOnly)
-        {
-            return contextChanged
-                ? SheriffTurnInResult.Rejected($"The warrant for {warrant.TargetName} requires an alive turn-in.", warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount).WithSessionChanged()
-                : SheriffTurnInResult.Rejected($"The warrant for {warrant.TargetName} requires an alive turn-in.", warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount);
-        }
-
-        var message = isAlive
-            ? $"You bring in {warrant.TargetName} alive under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant."
-            : $"You turn in the body of {warrant.TargetName} under a {DescribeWarrantDisposition(warrant.Terms.Disposition)} warrant.";
-
-        var settledEvent = new UnrelatedCriminalTurnInSettled
-        {
-            WarrantId = warrantId,
-            TargetName = warrant.TargetName,
-            Disposition = warrant.Terms.Disposition,
-            IsAlive = isAlive,
-            BountyAmount = warrant.Terms.BountyAmount,
-            Message = message,
-            Day = Clock.Day,
-            Turn = Clock.Turn
-        };
-        ProduceEvent(settledEvent);
-
-        var result = isAlive
-            ? SheriffTurnInResult.AcceptedAlive(warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount, message)
-            : SheriffTurnInResult.AcceptedDead(warrant.TargetName, warrant.Terms.Disposition, warrant.Terms.BountyAmount, message);
-
-        return result with { SessionChanged = true };
-    }
-
-    public CaseInvestigationResult FollowTelegraphLeads()
-    {
-        if (IsArchived)
-        {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
-        }
-
-        if (!CurrentTown.IsAvailable(InvestigationSourceKind.TelegraphLead))
-        {
-            return CaseInvestigationResult.Failed("There is no telegraph office here.");
-        }
-
-        var beatSpent = Clock.TimeOfDay;
-        EnterActionContext(TownActionContext.TelegraphOffice);
-        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TelegraphOffice, CurrentTown.TownName);
-
-        var boringSalt = SaltSource.Mode == SaltSourceMode.Fixed ? null : SaltSource;
-        var context = new InvestigationContext(
-            CaseFile,
-            CurrentTownSlotIndex,
-            CurrentTownVisitCount,
-            boringSalt,
-            RetiredWarrantIds,
-            CurrentTown.TownId,
-            CurrentTown.TownName,
-            beatNarration,
-            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.TelegraphLead),
-            IsSourceAvailable: true);
-        var outcome = _investigationLoop.FollowTelegraphLeads(context);
-        ProduceEvent(outcome.Event);
-        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
-    }
-
     public CaseInvestigationResult GatherLocalGossip()
     {
-        if (IsArchived)
+        if (IsGameplayTerminal)
         {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
+            return CaseInvestigationResult.Failed(GameplayBlockMessage);
         }
 
         if (IsJourneyModal())
@@ -2356,77 +1922,12 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
             CurrentTownSlotIndex,
             CurrentTownVisitCount,
             boringSalt,
-            RetiredWarrantIds,
             CurrentTown.TownId,
             CurrentTown.TownName,
             beatNarration,
             IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalGossip),
             IsSourceAvailable: true);
         var outcome = _investigationLoop.GatherLocalGossip(context);
-        ProduceEvent(outcome.Event);
-        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
-    }
-
-    public CaseInvestigationResult InspectNoticeBoard()
-    {
-        if (IsArchived)
-        {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
-        }
-
-        var beatSpent = Clock.TimeOfDay;
-        EnterActionContext(TownActionContext.TownSquare);
-        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.TownSquare, CurrentTown.TownName);
-
-        var context = new InvestigationContext(
-            CaseFile,
-            CurrentTownSlotIndex,
-            CurrentTownVisitCount,
-            SaltSource: null,
-            RetiredWarrantIds,
-            CurrentTown.TownId,
-            CurrentTown.TownName,
-            beatNarration,
-            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.NoticeBoard),
-            IsSourceAvailable: true);
-        var outcome = _investigationLoop.InspectNoticeBoard(context);
-        ProduceEvent(outcome.Event);
-        return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
-    }
-
-    public CaseInvestigationResult CheckSheriffRecords()
-    {
-        if (IsArchived)
-        {
-            return CaseInvestigationResult.Failed(ArchivedBlockMessage);
-        }
-
-        if (IsJourneyModal())
-        {
-            return CaseInvestigationResult.Failed(JourneyModalBlockMessage);
-        }
-
-        var beatSpent = Clock.TimeOfDay;
-        EnterActionContext(TownActionContext.SheriffOffice);
-        var beatNarration = BeatNarration.Render(beatSpent, TownActionContext.SheriffOffice, CurrentTown.TownName);
-
-        var context = new InvestigationContext(
-            CaseFile,
-            CurrentTownSlotIndex,
-            CurrentTownVisitCount,
-            SaltSource: null,
-            RetiredWarrantIds,
-            CurrentTown.TownId,
-            CurrentTown.TownName,
-            beatNarration,
-            IsSourceSpent: CurrentTownVisit.IsSpent(InvestigationSourceKind.LocalRecords),
-            IsSourceAvailable: true);
-        var outcome = _investigationLoop.CheckSheriffRecords(context);
         ProduceEvent(outcome.Event);
         return CaseInvestigationResult.Succeeded(outcome.DisplayMessage, sessionChanged: true, beatNarration: beatNarration);
     }
@@ -2546,20 +2047,10 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     private int CurrentTownVisitCount => CurrentTownVisit.CurrentTownState.VisitNumber;
 
     /// <summary>
-    /// The set of retired and taken-in warrant IDs from the BountyLoop's unrelated-criminal
-    /// ledger. Passed to InvestigationLoop via the context record so the wanted-poster
-    /// resolver can skip already-resolved warrants. See BUNCH-120.
-    /// </summary>
-    private IReadOnlySet<WarrantId> RetiredWarrantIds
-        => _bountyLoop.UnrelatedCriminalLedger.RetiredWarrantIds
-            .Concat(_bountyLoop.UnrelatedCriminalLedger.TakenInCriminalIds)
-            .ToHashSet();
-
-    /// <summary>
     /// A suspect is eligible as a saloon POI candidate if they are not the unreleased
     /// true killer. Any non-culprit suspect can walk into any saloon — no town presence,
-    /// warrant, or poster state gates. The true killer is gated out until the killer-release
-    /// gate opens. See BUNCH-106 realignment.
+    /// warrant, or poster state gates. The true killer is gated out until five other gang
+    /// members are settled. See BUNCH-106 realignment.
     /// </summary>
     internal bool IsEligibleSaloonPersonOfInterestCandidate(Suspect suspect)
         => _bountyLoop.IsEligibleSaloonPersonOfInterestCandidate(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
@@ -2572,13 +2063,13 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
     internal string? GetSaloonPoiIneligibilityReason(Suspect suspect)
         => _bountyLoop.GetSaloonPoiIneligibilityReason(suspect, CaseFile.TrueCulpritId, CaseFile.KillerReleaseState);
 
-    private static WantedSuspectConfrontationResult ResolveSaloonPersonOfInterestCompatibilityResult(SaloonPersonOfInterestConfrontationResult result)
-        => result.ToWantedSuspectResult();
-
     private bool IsJourneyModal()
         => Journey is not null;
 
-    private bool IsArchived => Status == GameStatus.Archived;
+    private bool IsGameplayTerminal => Status is GameStatus.Archived or GameStatus.Failed;
+    private string GameplayBlockMessage => Status == GameStatus.Failed
+        ? "This playthrough has ended."
+        : ArchivedBlockMessage;
 
     /// <summary>
     /// True when the session has not yet reached GameStarted. Gameplay commands
@@ -2597,25 +2088,17 @@ public sealed partial class GameSession : WildBunch.Domain.IAggregateRoot
         }
 
         var availableRevolverAmmo = Player.GetQuantity(ItemKind.RevolverAmmo);
-        var availableRifleAmmo = Player.GetQuantity(ItemKind.RifleAmmo);
-        var availableAmmo = availableRevolverAmmo + availableRifleAmmo;
-        if (availableAmmo <= 0)
+        if (availableRevolverAmmo <= 0)
         {
             return 0;
         }
 
-        var bulletsToSpend = Math.Min(Math.Clamp(requestedBullets, 1, 6), availableAmmo);
+        var bulletsToSpend = Math.Min(Math.Clamp(requestedBullets, 1, 6), availableRevolverAmmo);
         var spent = 0;
 
         while (spent < bulletsToSpend && Player.GetQuantity(ItemKind.RevolverAmmo) > 0)
         {
             Player.RemoveQuantity(ItemKind.RevolverAmmo, 1);
-            spent++;
-        }
-
-        while (spent < bulletsToSpend && Player.GetQuantity(ItemKind.RifleAmmo) > 0)
-        {
-            Player.RemoveQuantity(ItemKind.RifleAmmo, 1);
             spent++;
         }
 

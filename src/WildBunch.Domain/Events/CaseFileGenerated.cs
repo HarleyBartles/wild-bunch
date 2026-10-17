@@ -13,5 +13,4 @@ namespace WildBunch.Domain.Events;
 public sealed record CaseFileGenerated : IDomainEvent
 {
     public required CaseFileSnapshot CaseFile { get; init; }
-    public DateTimeOffset OccurredAt => DateTimeOffset.UtcNow;
 }

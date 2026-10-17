@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SaloonDevPanel } from "../dev/panels/SaloonDevPanel";
-import { GameSessionProvider } from "../state/GameSessionProvider";
+import { GameSessionContext } from "../state/GameSessionProvider";
 import { clearSaloonOverride, forceSaloonOverride, getSaloonDevContext } from "../dev/devApi";
 import type { SaloonDevContextDto, SaloonSuspectDevDto } from "../dev/types";
 
@@ -23,12 +23,9 @@ vi.mock("../api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
@@ -51,13 +48,23 @@ function renderPanel() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  render(
+  const renderForCurrentGame = () => (
     <QueryClientProvider client={queryClient}>
-      <GameSessionProvider>
+      <GameSessionContext.Provider
+        value={{ gameId: window.localStorage.getItem("wild-bunch.current-game-id") } as never}
+      >
         <SaloonDevPanel />
-      </GameSessionProvider>
-    </QueryClientProvider>,
+      </GameSessionContext.Provider>
+    </QueryClientProvider>
   );
+  const result = render(renderForCurrentGame());
+  return {
+    ...result,
+    switchGame(id: string) {
+      seedGameId(id);
+      result.rerender(renderForCurrentGame());
+    },
+  };
 }
 
 function seedGameId(id: string) {
@@ -314,11 +321,7 @@ describe("SaloonDevPanel", () => {
       makeContext({
         sessionId: "test-game-force",
         suspects: [
-          makeSuspect({
-            suspectId: "suspect-1",
-            name: "Mira Cline",
-            isEligibleSaloonPoi: true,
-          }),
+          makeSuspect({ suspectId: "suspect-1", name: "Mira Cline", isEligibleSaloonPoi: true }),
         ],
       }),
     );
@@ -443,13 +446,78 @@ describe("SaloonDevPanel", () => {
     });
   });
 
+  it("keeps the saloon override absent after rejection and shows the selected suspect after retry", async () => {
+    seedGameId("saloon-force-retry-game");
+    const suspect = makeSuspect({ suspectId: "suspect-retry", name: "Mira Cline" });
+    mockedGetContext
+      .mockResolvedValueOnce(
+        makeContext({ sessionId: "saloon-force-retry-game", suspects: [suspect] }),
+      )
+      .mockResolvedValueOnce(
+        makeContext({
+          sessionId: "saloon-force-retry-game",
+          pendingDevOverride: {
+            forcedKind: "Suspect",
+            forcedSuspectId: "suspect-retry",
+            forcedSuspectName: "Mira Cline",
+            forcedCitizenRoleKey: null,
+          },
+          suspects: [suspect],
+        }),
+      );
+    let rejectCommand!: (reason: Error) => void;
+    mockedForce
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((_resolve, reject) => {
+            rejectCommand = reject;
+          }),
+      )
+      .mockResolvedValueOnce(undefined);
+
+    renderPanel();
+    const user = userEvent.setup();
+    const force = await screen.findByRole("button", { name: /force next poi/i });
+    const clear = screen.getByRole("button", { name: /clear override/i });
+    await user.selectOptions(screen.getByTestId("force-suspect-select"), "suspect-retry");
+    await user.click(force);
+
+    expect(force).toBeDisabled();
+    expect(clear).toBeDisabled();
+    await act(async () => {
+      rejectCommand(new Error("Saloon override failed."));
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText("Saloon override failed.")).toBeInTheDocument();
+    const overrideSection = screen.getByText("Pending dev override").closest("section");
+    expect(overrideSection).toHaveTextContent("None pending.");
+    expect(force).toBeEnabled();
+    expect(clear).toBeEnabled();
+
+    await user.click(force);
+
+    await waitFor(() => {
+      expect(overrideSection).toHaveTextContent("Mira Cline");
+      expect(screen.queryByText("Saloon override failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedForce).toHaveBeenCalledTimes(2);
+    expect(mockedForce).toHaveBeenNthCalledWith(
+      1,
+      "saloon-force-retry-game",
+      expect.objectContaining({ forcedKind: "Suspect", forcedSuspectId: "suspect-retry" }),
+    );
+    expect(mockedForce).toHaveBeenNthCalledWith(
+      2,
+      "saloon-force-retry-game",
+      expect.objectContaining({ forcedKind: "Suspect", forcedSuspectId: "suspect-retry" }),
+    );
+  });
+
   it("sends forcedCitizenRoleKey when a citizen role is selected and Force is clicked", async () => {
     seedGameId("test-game-citizen-role-force");
     mockedGetContext.mockResolvedValue(
-      makeContext({
-        sessionId: "test-game-citizen-role-force",
-        hiddenTruth: null,
-      }),
+      makeContext({ sessionId: "test-game-citizen-role-force", hiddenTruth: null }),
     );
     mockedForce.mockResolvedValue(undefined);
 
@@ -510,6 +578,63 @@ describe("SaloonDevPanel", () => {
     });
   });
 
+  it("does not submit a saloon draft from the previous playthrough", async () => {
+    seedGameId("test-game-a");
+    mockedGetContext.mockResolvedValue(makeContext({ hiddenTruth: null }));
+    mockedForce.mockResolvedValue(undefined);
+
+    const panel = renderPanel();
+    const user = userEvent.setup();
+    await waitFor(() => expect(screen.getByTestId("force-kind-select")).toBeInTheDocument());
+    await user.selectOptions(screen.getByTestId("force-kind-select"), "Citizen");
+    await user.selectOptions(screen.getByTestId("force-citizen-role-select"), "butcher");
+
+    panel.switchGame("test-game-b");
+    await waitFor(() => expect(screen.getByTestId("force-kind-select")).toHaveValue("Suspect"));
+    await user.click(screen.getByRole("button", { name: /force next poi/i }));
+
+    await waitFor(() => {
+      expect(mockedForce).toHaveBeenCalledWith(
+        "test-game-b",
+        expect.objectContaining({
+          forcedKind: "Suspect",
+          forcedSuspectId: null,
+          forcedCitizenRoleKey: null,
+        }),
+      );
+    });
+  });
+
+  it("keeps a late command failure with the playthrough that started it", async () => {
+    seedGameId("test-game-a");
+    mockedGetContext.mockResolvedValue(makeContext({ hiddenTruth: null }));
+    let rejectCommand!: (reason: Error) => void;
+    mockedForce.mockImplementation(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectCommand = reject;
+        }),
+    );
+
+    const panel = renderPanel();
+    const user = userEvent.setup();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /force next poi/i })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: /force next poi/i }));
+    panel.switchGame("test-game-b");
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /force next poi/i })).toBeEnabled(),
+    );
+
+    await act(async () => {
+      rejectCommand(new Error("Game A failed"));
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText("Game A failed")).not.toBeInTheDocument();
+  });
+
   it("calls clearSaloonOverride when Clear override button is clicked", async () => {
     seedGameId("test-game-4");
     mockedGetContext.mockResolvedValue(
@@ -540,6 +665,54 @@ describe("SaloonDevPanel", () => {
     await waitFor(() => {
       expect(mockedClear).toHaveBeenCalledWith("test-game-4");
     });
+  });
+
+  it("preserves the saloon override after a rejected clear and shows its removal after retry", async () => {
+    seedGameId("saloon-clear-retry-game");
+    const pendingOverride = {
+      forcedKind: "Suspect" as const,
+      forcedSuspectId: "suspect-clear",
+      forcedSuspectName: "Mira Cline",
+      forcedCitizenRoleKey: null,
+    };
+    mockedGetContext
+      .mockResolvedValueOnce(
+        makeContext({
+          sessionId: "saloon-clear-retry-game",
+          hiddenTruth: null,
+          pendingDevOverride: pendingOverride,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeContext({ sessionId: "saloon-clear-retry-game", hiddenTruth: null }),
+      );
+    mockedClear
+      .mockRejectedValueOnce(new Error("Saloon override clear failed."))
+      .mockResolvedValueOnce(undefined);
+
+    renderPanel();
+    const user = userEvent.setup();
+    const force = await screen.findByRole("button", { name: /force next poi/i });
+    const clear = screen.getByRole("button", { name: /clear override/i });
+    const overrideSection = screen.getByText("Pending dev override").closest("section");
+    expect(overrideSection).toHaveTextContent("Mira Cline");
+
+    await user.click(clear);
+
+    expect(await screen.findByText("Saloon override clear failed.")).toBeInTheDocument();
+    expect(overrideSection).toHaveTextContent("Mira Cline");
+    expect(force).toBeEnabled();
+    expect(clear).toBeEnabled();
+
+    await user.click(clear);
+
+    await waitFor(() => {
+      expect(overrideSection).toHaveTextContent("None pending.");
+      expect(screen.queryByText("Saloon override clear failed.")).not.toBeInTheDocument();
+    });
+    expect(mockedClear).toHaveBeenCalledTimes(2);
+    expect(mockedClear).toHaveBeenNthCalledWith(1, "saloon-clear-retry-game");
+    expect(mockedClear).toHaveBeenNthCalledWith(2, "saloon-clear-retry-game");
   });
 
   it("shows warrant facts in suspect descriptors", async () => {

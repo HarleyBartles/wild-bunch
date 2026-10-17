@@ -49,7 +49,6 @@ public sealed record CaseFileSnapshot(
             discoveredSuspectIds: DiscoveredSuspectIds.Select(id => new SuspectId(id)),
             publicClues: PublicClues.Select<ClueSnapshot, Clue>(c => c.ToDomain()).ToArray(),
             killerReleaseThreshold: KillerReleaseThreshold,
-            killerReleaseProgress: KillerReleaseProgress,
             knownWarrants: KnownWarrants.Select<WarrantSnapshot, Warrant>(w => w.ToDomain()),
             publicWarrants: PublicWarrants.Select<WarrantSnapshot, Warrant>(w => w.ToDomain()),
             suspectTurfAssignments: SuspectTurfAssignments.Select<SuspectTurfAssignmentSnapshot, SuspectTurfAssignment>(s => s.ToDomain()),
@@ -216,21 +215,24 @@ public sealed record WarrantSnapshot(
     string Id,
     string TargetName,
     WarrantTermsSnapshot Terms,
-    string Summary)
+    string Summary,
+    string? TargetSuspectId = null)
 {
     public static WarrantSnapshot FromDomain(Warrant warrant)
         => new(
             warrant.Id.Value,
             warrant.TargetName,
             WarrantTermsSnapshot.FromDomain(warrant.Terms),
-            warrant.Summary);
+            warrant.Summary,
+            warrant.TargetSuspectId?.Value);
 
     public Warrant ToDomain()
         => new(
             new WarrantId(Id),
             TargetName,
             Terms.ToDomain(),
-            Summary);
+            Summary,
+            TargetSuspectId is null ? null : new SuspectId(TargetSuspectId));
 }
 
 public sealed record WarrantTermsSnapshot(

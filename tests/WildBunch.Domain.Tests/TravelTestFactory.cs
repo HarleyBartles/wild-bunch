@@ -1,6 +1,5 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
-using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -8,7 +7,6 @@ using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -23,6 +21,13 @@ namespace WildBunch.Domain.Tests;
 /// </summary>
 internal static class TravelTestFactory
 {
+    internal static void ForceNextEncounterToFoe(GameSession session)
+    {
+        session.ForceDevTravelOverride(DevTravelOverride.ForFoe(
+            new JourneyFoeProfile(Speed: 3, FightStrength: 3, MinimumBribe: 5m),
+            "A hard-eyed rider blocks the trail."));
+    }
+
     /// <summary>
     /// Creates a session with a short low-risk journey from Current Town to Connected Town.
     /// Inventory: 4 Food, 1 Canteen (full 10), 1 Horse (Healthy), 1 Saddle.
@@ -36,50 +41,50 @@ internal static class TravelTestFactory
         return (session, preview);
     }
 
-    /// <summary>
-    /// Creates an EasyShortJourney session and captures the full setup event stream
-    /// before it is committed. Used by replay-equality tests that need the full event stream.
-    /// </summary>
-    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateEasyShortJourneyWithSetupEvents()
+    internal static (GameSession session, TravelPreview preview)
+        CreateThreeUnitJourneyWithCriticalHorse()
     {
-        var (session, preview) = CreateEasyShortJourney();
-        var setupEvents = RecaptureSetupEventsForReplay(session);
-        return (session, preview, setupEvents);
-    }
+        var origin = new Town(new TownId("horse-origin"), "Pinecross");
+        var destination = new Town(new TownId("horse-destination"), "Midway");
+        var world = new DomainWorld(
+            new[] { origin, destination },
+            new[]
+            {
+                new Trail(
+                    new TrailId("trail-critical-horse"),
+                    origin.Id,
+                    destination.Id,
+                    TrailRisk.Moderate,
+                    TrailTerrain.Badlands,
+                    WaterFeature.River,
+                    rideDayDistance: 3m)
+            });
+        var inventory = new DomainInventory(new[]
+        {
+            new InventoryItem(ItemKind.Food, 8),
+            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(10)),
+            new InventoryItem(ItemKind.Horse, 1, new HorseTravelState(2, 0, 0)),
+            new InventoryItem(ItemKind.Saddle, 1),
+            new InventoryItem(ItemKind.Knife, 1)
+        });
+        var caseFile = new CaseFile(
+            accusation: null,
+            suspects: Array.Empty<Suspect>(),
+            trueCulpritId: new SuspectId("suspect-1"),
+            knownClues: Array.Empty<Clue>());
+        var session = TestSessionFactory.StartGameCanonical(
+            "Ranger Vale",
+            world,
+            caseFile,
+            origin.Id,
+            Wallet.Starting(25m),
+            inventory,
+            GameDifficulty.Standard,
+            SaltSource.CreateFixed(string.Empty));
+        session.MarkEventsCommitted();
 
-    /// <summary>
-    /// Creates a SixDayQuietJourney session and captures the full setup event stream
-    /// before it is committed. Used by replay-equality tests that need the full event stream.
-    /// </summary>
-    internal static (GameSession session, TravelPreview preview, IReadOnlyList<IDomainEvent> setupEvents)
-        CreateSixDayQuietJourneyWithSetupEvents()
-    {
-        var (session, preview) = CreateSixDayQuietJourney();
-        var setupEvents = RecaptureSetupEventsForReplay(session);
-        return (session, preview, setupEvents);
-    }
-
-    /// <summary>
-    /// Recaptures the full setup event stream for a session by re-running the canonical
-    /// start flow (<see cref="TestSessionFactory.StartGameCanonical"/>) with the same
-    /// world/case-file/inventory seed. The factory sessions already commit their setup
-    /// events, so replay tests must prepend this stream to the journey event stream
-    /// manually. Returns all 6 canonical setup events so the replayed session starts at
-    /// the same version as the command session.
-    /// </summary>
-    internal static IReadOnlyList<IDomainEvent> RecaptureSetupEventsForReplay(GameSession session)
-    {
-        var seed = TestSessionFactory.StartGameCanonical(
-            session.Player.Name,
-            session.World,
-            TestSessionFactory.CreateBaselineCaseFileFor(session),
-            session.Player.CurrentTownId!.Value,
-            session.Player.Wallet,
-            session.Player.Inventory,
-            session.GameDifficulty,
-            session.SaltSource);
-        return seed.UncommittedEvents;
+        var preview = ResolvePreview(session, destination.Id);
+        return (session, preview);
     }
 
     /// <summary>
@@ -87,13 +92,16 @@ internal static class TravelTestFactory
     /// Uses TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, distance 6m.
     /// Inventory: 3 Food, 1 Canteen (full 2), 1 Horse (Healthy), 1 Saddle, 1 Knife.
     /// </summary>
-    internal static (GameSession session, TravelPreview preview) CreateHighRiskJourney()
+    internal static (GameSession session, TravelPreview preview) CreateHighRiskJourney(
+        int startingFood = 3,
+        bool includeHorse = true,
+        int startingHorseFeed = 0,
+        SaltSource? saltSource = null)
     {
         // Mirror the CreateHighRiskSession pattern from AdvanceTravelDayHandlerTests
         // but in the Domain test project (no handler, just session + preview).
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross",
-            TownServices.Telegraph);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -102,14 +110,23 @@ internal static class TravelTestFactory
                     TrailRisk.High, TrailTerrain.Badlands, WaterFeature.None, rideDayDistance: 6m)
             });
 
-        var inventory = new DomainInventory(new[]
+        var inventoryItems = new List<InventoryItem>
         {
-            new InventoryItem(ItemKind.Food, 3),
-            new InventoryItem(ItemKind.Canteen, 1, canteenState: CanteenState.Full(2)),
-            new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy),
-            new InventoryItem(ItemKind.Saddle, 1),
-            new InventoryItem(ItemKind.Knife, 1),
-        });
+            new(ItemKind.Food, startingFood),
+            new(ItemKind.Canteen, 1, canteenState: CanteenState.Full(2))
+        };
+        if (includeHorse)
+        {
+            inventoryItems.Add(new InventoryItem(ItemKind.Horse, 1, HorseTravelState.Healthy));
+            inventoryItems.Add(new InventoryItem(ItemKind.Saddle, 1));
+            inventoryItems.Add(new InventoryItem(ItemKind.Knife, 1));
+        }
+        if (startingHorseFeed > 0)
+        {
+            inventoryItems.Add(new InventoryItem(ItemKind.HorseFeed, startingHorseFeed));
+        }
+
+        var inventory = new DomainInventory(inventoryItems);
 
         var caseFile = new CaseFile(
             accusation: null,
@@ -120,7 +137,7 @@ internal static class TravelTestFactory
         var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile,
             pinecross.Id, Wallet.Starting(25m), inventory,
             GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
+            saltSource ?? SaltSource.CreateFixed(string.Empty));
         session.MarkEventsCommitted();
 
         var preview = ResolvePreview(session, dryfork.Id);
@@ -135,14 +152,13 @@ internal static class TravelTestFactory
     /// for this exact combination of trail id, town ids, terrain and difficulty, so the
     /// journey reliably reaches <see cref="JourneyStatus.Completed"/>.
     /// </summary>
-    internal static (GameSession session, TravelPreview preview) CreateSixDayQuietJourney()
+    internal static (GameSession session, TravelPreview preview) CreateFourDayQuietJourney()
     {
         // The trail id, town ids, terrain and difficulty are tuned together so the
-        // deterministic TravelDayPlanGenerator produces no Foe/Npc encounters across
+        // deterministic TravelDayPlanGenerator produces no hostile encounters across
         // the whole journey. Changing any of these values may reintroduce interruptions.
-        var origin = new Town(new TownId("o2"), "Pinecross",
-            TownServices.None);
-        var destination = new Town(new TownId("d2"), "Six Mile", TownServices.None);
+        var origin = new Town(new TownId("o2"), "Pinecross");
+        var destination = new Town(new TownId("d2"), "Six Mile");
         var world = new DomainWorld(
             new[] { origin, destination },
             new[]
@@ -179,6 +195,9 @@ internal static class TravelTestFactory
     /// current town to <paramref name="destinationId"/>. Throws if the preview cannot be resolved
     /// so test setup fails fast with a clear message rather than producing a null preview.
     /// </summary>
+    internal static TravelPreview ResolvePreviewFor(GameSession session, TownId destinationId)
+        => ResolvePreview(session, destinationId);
+
     private static TravelPreview ResolvePreview(GameSession session, TownId destinationId)
     {
         var resolver = new TravelResolver();

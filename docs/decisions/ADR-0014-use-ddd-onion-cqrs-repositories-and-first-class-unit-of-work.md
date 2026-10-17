@@ -16,7 +16,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0002
-- `related to`: ADR-0015, ADR-0017, ADR-0018, ADR-0019, ADR-0028
+- `related to`: ADR-0015, ADR-0017, ADR-0018, ADR-0019, ADR-0028, ADR-0038
 
 ## Context
 
@@ -32,4 +32,4 @@ Putting persistence concerns in the domain would couple gameplay rules to infras
 
 ## Consequences
 
-Domain and application code do not depend on EF Core or persistence implementations. Command writes stage aggregate changes through the Unit of Work; queries use read models without mutation authority.
+Domain and application code do not depend on EF Core or persistence implementations. Command writes stage aggregate changes through the Unit of Work; queries use read models without mutation authority. The session consistency boundary is further specified by ADR-0038.

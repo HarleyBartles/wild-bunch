@@ -8,7 +8,6 @@ namespace WildBunch.GameContent.NewGame;
 /// <summary>
 /// Derives layout salts for town hub layout generation from seed + entropy policy.
 /// Salts are deterministic: same seed + same entropy policy + same townId + same townSlotIndex = same salts.
-/// If devLayoutSalts is provided (from GameSession.DevLayoutSalts), uses those instead of deriving.
 /// </summary>
 internal static class LayoutSaltDeriver
 {
@@ -16,17 +15,10 @@ internal static class LayoutSaltDeriver
         SeedWorld seedWorld,
         EntropyPolicy entropyPolicy,
         TownId townId,
-        int townSlotIndex,
-        LayoutSalts? devLayoutSalts)
+        int townSlotIndex)
     {
         ArgumentNullException.ThrowIfNull(seedWorld);
         ArgumentNullException.ThrowIfNull(entropyPolicy);
-
-        // If dev salts are set, use them directly (dev control overrides derivation)
-        if (devLayoutSalts is not null)
-        {
-            return devLayoutSalts;
-        }
 
         var seedCode = SeedWorldResolver.CreateRepresentativeSeedCode(seedWorld);
 

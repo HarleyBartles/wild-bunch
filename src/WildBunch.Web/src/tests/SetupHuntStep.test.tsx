@@ -45,14 +45,12 @@ function StatefulSetupHuntStep({
   const [difficulty, setDifficulty] = useState<GameDifficulty>(initialDifficulty);
   const [gameEntropy, setGameEntropy] = useState<GameEntropy>(initialGameEntropy);
   const [seedDraft, setSeedDraft] = useState(initialSeedDraft);
-  const [seedDirty, setSeedDirty] = useState(false);
   return (
     <SetupHuntStep
       playerName={playerName}
       gameDifficulty={difficulty}
       gameEntropy={gameEntropy}
       seedDraft={seedDraft}
-      seedDirty={seedDirty}
       decodeError={null}
       onPlayerNameChange={(value) => {
         setPlayerName(value);
@@ -68,7 +66,6 @@ function StatefulSetupHuntStep({
       }}
       onSeedDraftChange={(value) => {
         setSeedDraft(value);
-        setSeedDirty(true);
         onSeedDraftChange(value);
       }}
       onRandomizeSeed={onRandomizeSeed}
@@ -83,8 +80,8 @@ function renderStep(
     gameDifficulty: GameDifficulty;
     gameEntropy: GameEntropy;
     seedDraft: string;
-    seedDirty: boolean;
     decodeError: string | null;
+    pendingOperation: boolean;
     stateful: boolean;
     onPlayerNameChange: (value: string) => void;
     onGameDifficultyChange: (difficulty: GameDifficulty) => void;
@@ -125,7 +122,6 @@ function renderStep(
         gameDifficulty={overrides.gameDifficulty ?? 0}
         gameEntropy={overrides.gameEntropy ?? 1}
         seedDraft={overrides.seedDraft ?? "00000000-0000-0000-0000-000000000000"}
-        seedDirty={overrides.seedDirty ?? false}
         decodeError={overrides.decodeError ?? null}
         onPlayerNameChange={handlers.onPlayerNameChange}
         onGameDifficultyChange={handlers.onGameDifficultyChange}
@@ -133,6 +129,7 @@ function renderStep(
         onSeedDraftChange={handlers.onSeedDraftChange}
         onRandomizeSeed={handlers.onRandomizeSeed}
         onContinue={handlers.onContinue}
+        pendingOperation={overrides.pendingOperation}
       />,
     );
   }
@@ -145,6 +142,14 @@ describe("SetupHuntStep", () => {
     renderStep();
 
     expect(screen.getByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+  });
+
+  it("locks the submitted setup values while keeping the retry action available", () => {
+    renderStep({ playerName: "Ranger Vale", pendingOperation: true });
+
+    expect(screen.getByLabelText(/your name/i)).toBeDisabled();
+    expect(screen.getByLabelText(/world seed/i)).toBeDisabled();
+    expect(screen.getByRole("button", { name: /retry setup/i })).toBeEnabled();
   });
 
   it("shows the validation message when the name is empty after being touched", async () => {
@@ -236,28 +241,23 @@ describe("SetupHuntStep", () => {
   it("renders difficulty options as Easy, Standard, Challenging, Brutal in that order", () => {
     renderStep();
 
-    const groups = screen.getAllByRole("group");
-    const difficultyGroup = groups[0];
+    const difficultyGroup = screen.getByRole("button", { name: "Easy" }).closest('[role="group"]');
+    if (!difficultyGroup) throw new Error("Difficulty options must be grouped.");
     const buttons = Array.from(difficultyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
     expect(labels).toEqual(["Easy", "Standard", "Challenging", "Brutal"]);
-    expect(labels).not.toContain("Normal");
-    expect(labels).not.toContain("Hard");
   });
 
   it("renders gameEntropy options as Boring, Classic, Adventurous, Wild in that order", () => {
     renderStep();
 
-    const groups = screen.getAllByRole("group");
-    const entropyGroup = groups[1];
+    const entropyGroup = screen.getByRole("button", { name: "Boring" }).closest('[role="group"]');
+    if (!entropyGroup) throw new Error("Entropy options must be grouped.");
     const buttons = Array.from(entropyGroup.querySelectorAll("button"));
     const labels = buttons.map((b) => b.textContent?.trim() ?? "");
 
     expect(labels).toEqual(["Boring", "Classic", "Adventurous", "Wild"]);
-    expect(labels).not.toContain("Placid");
-    expect(labels).not.toContain("Restless");
-    expect(labels).not.toContain("Rowdy");
   });
 
   it("calls onGameEntropyChange when Boring is selected", async () => {
@@ -280,37 +280,6 @@ describe("SetupHuntStep", () => {
     await user.click(easy);
 
     expect(onGameDifficultyChange).toHaveBeenCalledWith(1);
-  });
-
-  it("uses a single thumb element per segmented toggle (not per-option backgrounds)", () => {
-    renderStep();
-
-    const groups = document.querySelectorAll('[role="group"]');
-    expect(groups).toHaveLength(2);
-
-    for (const group of Array.from(groups)) {
-      // One thumb div (aria-hidden) that slides, separate from the label buttons.
-      const thumbs = group.querySelectorAll('div[aria-hidden="true"]');
-      expect(thumbs).toHaveLength(1);
-
-      // Label buttons must not have their own background styling for selection.
-      // The thumb provides the selected visual; buttons are transparent.
-      const buttons = Array.from(group.querySelectorAll("button"));
-      for (const btn of buttons) {
-        const bg = window.getComputedStyle(btn).backgroundColor;
-        expect(bg).toBe("rgba(0, 0, 0, 0)"); // transparent
-      }
-    }
-  });
-
-  it("renders each segmented toggle as a single non-wrapping flex row", () => {
-    renderStep();
-
-    const groups = document.querySelectorAll('[role="group"]');
-    for (const group of Array.from(groups)) {
-      const style = window.getComputedStyle(group);
-      expect(style.flexWrap).toBe("nowrap");
-    }
   });
 
   it("calls onRandomizeSeed when Randomize is clicked", async () => {

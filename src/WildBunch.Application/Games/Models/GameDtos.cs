@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using WildBunch.Application.Projections;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
@@ -17,7 +16,7 @@ public sealed record GameSessionDto(
     PlayerDto Player,
     WorldDto World,
     CaseFileDto CaseFile,
-    InventoryDto Inventory,
+    InventoryDto? Inventory,
     GameClockDto Clock,
     PursuitStateDto PursuitState,
     TravelJourneyDto? Journey,
@@ -25,27 +24,16 @@ public sealed record GameSessionDto(
     IReadOnlyList<GameLogEntryDto> LogEntries,
     ActiveSaloonPersonOfInterestDto? ActiveSaloonPersonOfInterest,
     IReadOnlyList<WantedPosterDto> WantedPosters,
-    HudProjection? HudProjection = null,
-    DiaryProjection? DiaryProjection = null)
-{
-    [JsonIgnore]
-    public ActiveSaloonWantedSuspectDto? ActiveSaloonWantedSuspect
-        => ActiveSaloonPersonOfInterest is null || ActiveSaloonPersonOfInterest.Kind != SaloonPersonOfInterestKind.WantedSuspect
-            ? null
-            : new ActiveSaloonWantedSuspectDto(ActiveSaloonPersonOfInterest.Descriptor);
-}
+    HudProjection? HudProjection = null);
 
 public sealed record ActiveSaloonPersonOfInterestDto(
     string Descriptor,
     SaloonPersonOfInterestKind Kind);
 
-public sealed record ActiveSaloonWantedSuspectDto(
-    string Descriptor);
-
 public sealed record PlayerDto(
     string Name,
     string? CurrentTownId,
-    int Health);
+    int? Health);
 
 public sealed record InventoryDto(
     WalletDto Wallet,
@@ -83,8 +71,7 @@ public sealed record InventoryCapabilitiesDto(
     bool CloseThreatAvailable,
     bool FirearmThreatAvailable,
     bool GunfightCapable,
-    bool RevolverUsable,
-    bool RifleUsable);
+    bool RevolverUsable);
 
 public sealed record WorldDto(
     IReadOnlyList<TownDto> Towns,
@@ -93,7 +80,6 @@ public sealed record WorldDto(
 public sealed record TownDto(
     string Id,
     string Name,
-    TownServices Services,
     int MapX = 0,
     int MapY = 0,
     TownLayoutDto? Layout = null);
@@ -115,7 +101,6 @@ public sealed record CaseFileDto(
     IReadOnlyList<ClueDto> KnownClues);
 
 public sealed record DiscoveredSuspectDto(
-    string Id,
     string Name,
     SuspectStatus Status);
 
@@ -141,8 +126,7 @@ public sealed record GameTurnResultDto(
     GameSessionDto CurrentSession,
     JourneyStatus? JourneyStatus = null,
     TravelJourneyDto? Journey = null,
-    JourneyTrailEventDto? TrailEvent = null,
-    TravelDiaryDto? TravelDiary = null);
+    JourneyTrailEventDto? TrailEvent = null);
 
 public sealed record TravelPreviewDto(
     string OriginTownId,
@@ -241,6 +225,7 @@ public sealed record JourneyTrailEventDto(
     int HeatIncrease);
 
 public sealed record TravelDiaryDto(
+    IReadOnlyList<GameLogEntryDto> JourneyEntries,
     IReadOnlyList<TravelDiaryDayDto> Days);
 
 public sealed record TrailBeatSlotDto(
@@ -266,9 +251,6 @@ public sealed record TravelDiaryDayDto(
     JourneyTrailEventDto? TrailEvent,
     JourneyEncounterDto? PendingEncounter,
     TravelDiaryEncounterResolutionDto? EncounterResolution,
-    string? OpeningNarration,
-    string? JourneyBeat,
-    string? ResourceBeat,
     int HealthDelta,
     decimal WalletDelta,
     int FoodDelta,
@@ -287,7 +269,6 @@ public sealed record TravelDiaryDayDto(
     int CurrentCanteenCharges,
     int CurrentAmmo,
     int CurrentHeat,
-    IReadOnlyList<string> Entries,
     IReadOnlyList<string> Warnings,
     IReadOnlyList<TrailBeatSlotDto> BeatSlots);
 

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using WildBunch.Api.Dev;
 using WildBunch.Api.Games;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
@@ -17,21 +18,12 @@ public sealed class GameApiWantedPostersTests
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
+        // The API test factory supplies a fixed SaltSource at player genesis, and this scenario selects Boring entropy.
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
-
-        // BUNCH-107: Force a fixed salt so the wanted-poster resolver uses
-        // boring-mode selection (deterministic). With Classic entropy, the salt
-        // is Runtime (random), making warrant selection non-deterministic.
-        // In boring mode: (townSlotIndex + visitCount) % eligibleCount = (0 + 1) % 27 = 1
-        // → warrant at index 1 = "Sundance Kid" (a gang member warrant).
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/session/lock-rng",
-            new LockRngRequestDto(Salt: "test-salt-fixed"));
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         var actionResponse = await client.PostAsync($"/api/games/{createdSession!.Id}/wanted-posters/read", content: null);
 
@@ -43,7 +35,7 @@ public sealed class GameApiWantedPostersTests
         Assert.True(actionResult!.Success);
         Assert.Equal(1, actionResult.CurrentJournal.Clock.Turn);
         Assert.Equal(2, actionResult.CurrentJournal.LogEntries.Count);
-        Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(actionResult.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Equal(2, actionResult.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Contains(actionResult.CurrentJournal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Single(actionResult.CurrentJournal.CaseFile.KnownWarrants);
@@ -58,7 +50,7 @@ public sealed class GameApiWantedPostersTests
 
         var actionPayload = await actionResponse.Content.ReadAsStringAsync();
         Assert.Contains("\"discoveredSuspects\"", actionPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("suspect-1", actionPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"wantedPosters\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", actionPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", actionPayload, StringComparison.OrdinalIgnoreCase);
@@ -77,14 +69,14 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(2, journal!.CaseFile.KnownClues.Count);
         Assert.Contains(journal.CaseFile.KnownClues, clue => clue.Kind == ClueKind.Alias);
         Assert.Equal("The Wild Bunch trail is quiet.", journal.CaseFile.CaseState.StatusText);
-        Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Single(journal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Single(journal.CaseFile.WantedPosters);
         Assert.Equal("Sundance Kid", journal.CaseFile.WantedPosters[0].TargetDisplayName);
         Assert.Contains(journal.LogEntries, entry => entry.Kind == GameLogEntryKind.CaseUpdate);
 
         var journalPayload = await journalResponse.Content.ReadAsStringAsync();
         Assert.Contains("\"discoveredSuspects\"", journalPayload, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("suspect-1", journalPayload, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("suspect-1", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"wantedPosters\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"trueCulpritId\"", journalPayload, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"isTrueCulprit\"", journalPayload, StringComparison.OrdinalIgnoreCase);
@@ -102,7 +94,7 @@ public sealed class GameApiWantedPostersTests
         Assert.Equal(2, secondRead.CurrentJournal.CaseFile.KnownClues.Count);
         Assert.Single(secondRead.CurrentJournal.CaseFile.KnownWarrants);
         Assert.Single(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects);
-        Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Id == "suspect-1");
+        Assert.Contains(secondRead.CurrentJournal.CaseFile.DiscoveredSuspects, suspect => suspect.Name == "Butch Cassidy");
         Assert.Single(secondRead.WantedPosters);
         Assert.Equal("Sundance Kid", secondRead.WantedPosters[0].TargetDisplayName);
 
@@ -132,24 +124,18 @@ public sealed class GameApiWantedPostersTests
     [Fact]
     public async Task PostReadWantedPostersSucceedsAfterTravelingToAnotherTown()
     {
-        // BUNCH-107: Every town now has a notice board always. The resolver-based
-        // selection (town slot + visit count + salt) determines which warrant
-        // surfaces. This test verifies that reading wanted posters succeeds
+        // Every town has a Sheriff Office. The resolver-based selection
+        // (town slot + visit count + salt) determines which warrant surfaces.
+        // This test verifies that reading wanted posters succeeds
         // after traveling to a different town.
         using var factory = new PostgreSqlApiFactory();
         using var client = factory.CreateClient();
 
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
         var createdSession = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
 
         Assert.NotNull(createdSession);
-        await scenario.Fixture.AssertStartingTownServices(client, createdSession!.Id, createdSession!);
-
-        // Force a fixed salt for deterministic warrant selection.
-        await client.PostAsJsonAsync(
-            $"/api/dev/sessions/{createdSession.Id}/session/lock-rng",
-            new LockRngRequestDto(Salt: "test-salt-fixed"));
+        await scenario.Fixture.AssertStartingTownReady(client, createdSession!.Id, createdSession!);
 
         // Discover a connected town dynamically — no hardcoded town names.
         var destinationTownId = createdSession.World.Trails

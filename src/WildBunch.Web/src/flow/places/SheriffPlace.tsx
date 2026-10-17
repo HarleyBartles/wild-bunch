@@ -1,9 +1,12 @@
 import styled from "styled-components";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { readWantedPosters } from "../../api/wildBunchApi";
+import type { WantedPostersResultDto } from "../../api/types";
 import { useGameSession } from "../../state/useGameSession";
+import { gameResourceQueryKeys, refreshGameResources } from "../../state/gameResourceQueries";
+import { actionIsWantedPosters } from "../../utils/actionTypePredicates";
 import { WantedPosterSurface } from "../../components/WantedPosterSurface";
-import { InvestigationSourceKind } from "../../api/types";
-import type { ClueDto } from "../../api/types";
 import {
   FlowSurface,
   FlowNotice,
@@ -11,10 +14,10 @@ import {
   BackButton,
   Panel,
   PanelHead,
+  PanelHeading,
   Stack,
   Button,
   Muted,
-  ItemCard,
 } from "../../components/ui/sharedStyled";
 
 const PlaceHeader = styled.header`
@@ -32,35 +35,28 @@ const PlaceBody = styled.div`
   gap: 20px;
 `;
 
-const LeadMeta = styled.p`
-  margin: 4px 0 0;
-  font-size: 0.85rem;
-  color: var(--muted);
-`;
-
 export function SheriffPlace() {
   const navigate = useNavigate();
-  const {
-    session,
-    journal,
-    wantedPosters,
-    loading,
-    busyMode,
-    canReadWantedPosters,
-    canCheckLocalRecords,
-    handleReadWantedPosters,
-    handleCheckLocalRecords,
-    notice,
-    error,
-  } = useGameSession();
+  const queryClient = useQueryClient();
+  const { session, wantedPosters, gameId, actions, loading } = useGameSession();
+  const canReadWantedPosters = actions.some(actionIsWantedPosters);
+  const readMutation = useMutation<WantedPostersResultDto, Error, { gameId: string }>({
+    mutationFn: ({ gameId: submittedGameId }) => readWantedPosters(submittedGameId),
+    onSuccess: async (result) => {
+      queryClient.setQueryData(
+        gameResourceQueryKeys.journal(result.currentJournal.id),
+        result.currentJournal,
+      );
+      await refreshGameResources(queryClient, result.currentJournal.id);
+    },
+  });
 
   if (!session) {
     return null;
   }
 
-  const sheriffLeads: ClueDto[] = (journal?.caseFile.knownClues ?? []).filter(
-    (clue) => clue.sourceKind === InvestigationSourceKind.LocalRecords,
-  );
+  const notice = readMutation.data?.message ?? "";
+  const error = readMutation.error?.message ?? "";
 
   return (
     <FlowSurface $variant="place">
@@ -73,46 +69,22 @@ export function SheriffPlace() {
       <PlaceBody>
         <Panel>
           <PanelHead>
-            <h2>Wanted posters</h2>
+            <PanelHeading>Wanted posters</PanelHeading>
           </PanelHead>
           <Stack>
             <Button
               type="button"
-              onClick={handleReadWantedPosters}
-              disabled={loading || !canReadWantedPosters}
+              onClick={() => {
+                if (gameId && canReadWantedPosters) readMutation.mutate({ gameId });
+              }}
+              disabled={loading || readMutation.isPending || !canReadWantedPosters}
             >
-              {busyMode === "reading" ? "Reading..." : "Read wanted posters"}
+              {readMutation.isPending ? "Reading..." : "Read wanted posters"}
             </Button>
             {wantedPosters.length > 0 ? (
               <WantedPosterSurface wantedPosters={wantedPosters} />
             ) : (
               <Muted>No wanted posters read yet.</Muted>
-            )}
-          </Stack>
-        </Panel>
-        <Panel>
-          <PanelHead>
-            <h2>Local records</h2>
-          </PanelHead>
-          <Stack>
-            <Button
-              type="button"
-              onClick={handleCheckLocalRecords}
-              disabled={loading || !canCheckLocalRecords}
-            >
-              {busyMode === "investigating" ? "Checking..." : "Check local records"}
-            </Button>
-            {sheriffLeads.length > 0 ? (
-              <Stack>
-                {sheriffLeads.map((clue) => (
-                  <ItemCard key={clue.id}>
-                    <strong>{clue.description}</strong>
-                    {clue.sourceLabel ? <LeadMeta>Source: {clue.sourceLabel}</LeadMeta> : null}
-                  </ItemCard>
-                ))}
-              </Stack>
-            ) : (
-              <Muted>No leads from local records yet.</Muted>
             )}
           </Stack>
         </Panel>

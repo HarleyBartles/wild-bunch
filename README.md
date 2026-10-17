@@ -7,6 +7,7 @@ A C#/.NET Western adventure game with a React/Vite web play surface, Onion/DDD/C
 - `AGENTS.md` — auto-injected agent law and routing to repo doctrine. Start here if you are an agent or a contributor working alongside one.
 - [Repository command bus](tools/README.md) - discover supported build, test and validation targets.
 - [Decision records](docs/decisions/README.md) — architecture decisions and their status history.
+- [Feature matrix](docs/features.md) - current player capabilities, supporting requirements and cross-feature dependencies.
 
 ## Run the pre-alpha locally
 

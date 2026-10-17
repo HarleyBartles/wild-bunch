@@ -15,7 +15,7 @@ public sealed class SeedWorldResolverTests
 
         Assert.Equal(seedWorld.WorldVariant, resolved.WorldVariant);
         Assert.Equal(seedWorld.TownCount, resolved.TownCount);
-        Assert.Equal(seedWorld.ServicesPalette, resolved.ServicesPalette);
+        Assert.Equal(seedWorld.ReservedTownNameDerivationBits, resolved.ReservedTownNameDerivationBits);
         Assert.Equal(seedWorld.ProsperityPalette, resolved.ProsperityPalette);
         Assert.Equal(seedWorld.ClusterCount, resolved.ClusterCount);
         Assert.Equal(seedWorld.GraphDensity, resolved.GraphDensity);
@@ -30,18 +30,17 @@ public sealed class SeedWorldResolverTests
     [Fact]
     public void MultipleUuidSeedsCanResolveToTheSameSeedWorld()
     {
-        var seedA = CreateSeedCode(0, 1, 3, 0, tail: 1);
-        var seedB = CreateSeedCode(0, 1, 3, 0, tail: 2);
+        var seedA = CreateSeedCode(0, 1, 3, 0, highBits: 1);
+        var seedB = CreateSeedCode(0, 1, 3, 0, highBits: 2);
+
+        Assert.NotEqual(seedA, seedB);
 
         var seedWorldA = SeedWorldResolver.Resolve(seedA);
         var seedWorldB = SeedWorldResolver.Resolve(seedB);
 
-        Assert.Equal(seedWorldA.WorldVariant, seedWorldB.WorldVariant);
-        Assert.Equal(seedWorldA.TownCount, seedWorldB.TownCount);
-        Assert.Equal(seedWorldA.GetSelectedTownIds(), seedWorldB.GetSelectedTownIds());
-        Assert.Equal(seedWorldA.AccusationIndex, seedWorldB.AccusationIndex);
-        Assert.Equal(seedWorldA.DefaultCulpritIndex, seedWorldB.DefaultCulpritIndex);
-        Assert.Equal(seedWorldA.CashBonus, seedWorldB.CashBonus);
+        Assert.Equal(seedA, seedWorldA.SeedCode);
+        Assert.Equal(seedB, seedWorldB.SeedCode);
+        Assert.Equal(seedWorldA with { SeedCode = Guid.Empty }, seedWorldB with { SeedCode = Guid.Empty });
     }
 
     [Fact]
@@ -84,7 +83,7 @@ public sealed class SeedWorldResolverTests
         var invalidCashBonus = valid with { CashBonus = 42 };
         var invalidTownCount = valid with { TownCount = 99 };
         var invalidProsperity = valid with { ProsperityPalette = (ProsperityPalette)99 };
-        var invalidServices = valid with { ServicesPalette = (ServicesPalette)99 };
+        var invalidTownNameBits = valid with { ReservedTownNameDerivationBits = 99 };
         var invalidClusterCount = valid with { ClusterCount = 99 };
         var invalidGraphDensity = valid with { GraphDensity = (GraphDensity)99 };
 
@@ -93,7 +92,7 @@ public sealed class SeedWorldResolverTests
         Assert.False(SeedWorldResolver.Validate(invalidCashBonus).Success);
         Assert.False(SeedWorldResolver.Validate(invalidTownCount).Success);
         Assert.False(SeedWorldResolver.Validate(invalidProsperity).Success);
-        Assert.False(SeedWorldResolver.Validate(invalidServices).Success);
+        Assert.False(SeedWorldResolver.Validate(invalidTownNameBits).Success);
         Assert.False(SeedWorldResolver.Validate(invalidClusterCount).Success);
         Assert.False(SeedWorldResolver.Validate(invalidGraphDensity).Success);
     }
@@ -109,7 +108,7 @@ public sealed class SeedWorldResolverTests
                 {
                     for (var cash = 0; cash <= 8; cash++)
                     {
-                        var seed = CreateSeedCode((byte)variant, (byte)accusation, (byte)culprit, (byte)cash, tail: 0);
+                        var seed = CreateSeedCode((byte)variant, (byte)accusation, (byte)culprit, (byte)cash, highBits: 0);
                         var seedWorld = SeedWorldResolver.Resolve(seed);
                         var validation = SeedWorldResolver.Validate(seedWorld);
 
@@ -123,6 +122,28 @@ public sealed class SeedWorldResolverTests
                 }
             }
         }
+    }
+
+    [Fact]
+    public void AnyEncodedCashTownCountAndOutlierCombinationResolvesToALegalWorld()
+    {
+        for (var cashBonus = 0; cashBonus < 16; cashBonus++)
+            for (var townCount = 0; townCount < 16; townCount++)
+                for (var outlierSlotType = 0; outlierSlotType < 4; outlierSlotType++)
+                {
+                    var bytes = Guid.Empty.ToByteArray();
+                    var low = ((ulong)cashBonus << 10) | ((ulong)townCount << 14) | ((ulong)outlierSlotType << 27);
+                    BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
+
+                    var seedWorld = SeedWorldResolver.Resolve(new Guid(bytes));
+
+                    Assert.True(SeedWorldResolver.Validate(seedWorld).Success);
+                    Assert.Equal(Math.Min(cashBonus, 8), seedWorld.CashBonus);
+                    var expectedOutlierSlotType = seedWorld.TownCount == SeedWorldResolver.MaxTownCount
+                        ? 0
+                        : Math.Min(outlierSlotType, 1);
+                    Assert.Equal(expectedOutlierSlotType, seedWorld.OutlierSlotType);
+                }
     }
 
     [Fact]
@@ -170,14 +191,14 @@ public sealed class SeedWorldResolverTests
         var prosperityWorld = SeedWorldResolver.Resolve(new Guid(prosperityBytes));
         Assert.Equal(ProsperityPalette.Dustbowl, prosperityWorld.ProsperityPalette);
 
-        // Change servicesPalette (bits 21-23): set to AllTelegraph.
-        var newServices = ServicesPalette.AllTelegraph;
-        var servicesLow = (low & ~(0x7UL << 21)) | ((ulong)newServices << 21);
-        var servicesBytes = new byte[16];
-        BitConverter.TryWriteBytes(servicesBytes.AsSpan(0), servicesLow);
-        BitConverter.TryWriteBytes(servicesBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
-        var servicesWorld = SeedWorldResolver.Resolve(new Guid(servicesBytes));
-        Assert.Equal(ServicesPalette.AllTelegraph, servicesWorld.ServicesPalette);
+        // Bits 21-23 remain reserved input to the historical town-name shuffle.
+        var townNameBits = 7;
+        var townNamesLow = (low & ~(0x7UL << 21)) | ((ulong)townNameBits << 21);
+        var townNamesBytes = new byte[16];
+        BitConverter.TryWriteBytes(townNamesBytes.AsSpan(0), townNamesLow);
+        BitConverter.TryWriteBytes(townNamesBytes.AsSpan(8), BitConverter.ToUInt64(bytes, 8));
+        var townNamesWorld = SeedWorldResolver.Resolve(new Guid(townNamesBytes));
+        Assert.Equal(townNameBits, townNamesWorld.ReservedTownNameDerivationBits);
     }
 
     [Fact]
@@ -203,8 +224,8 @@ public sealed class SeedWorldResolverTests
     {
         // Different cash bonus values change the derivation seed, producing
         // different name shuffles.
-        var seedA = CreateSeedCode(0, 1, 3, 0, tail: 0);
-        var seedB = CreateSeedCode(0, 1, 3, 3, tail: 0);
+        var seedA = CreateSeedCode(0, 1, 3, 0, highBits: 0);
+        var seedB = CreateSeedCode(0, 1, 3, 3, highBits: 0);
 
         var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).GetSelectedTownIds().OrderBy(id => id));
         var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).GetSelectedTownIds().OrderBy(id => id));
@@ -244,16 +265,16 @@ public sealed class SeedWorldResolverTests
         var defaultCulpritIndex = 3;
         var cashBonus = 0;
         var prosperity = ProsperityPalette.UniformProsperous;
-        var services = ServicesPalette.HubTelegraph;
+        const int reservedTownNameDerivationBits = 1;
         var clusterCount = 1;
         var graphDensity = GraphDensity.Sparse;
 
         return SeedWorldResolver.CreateRepresentativeSeedCode(new SeedWorld(
-            Guid.Empty, variant, townCount, services, prosperity, clusterCount, graphDensity,
+            Guid.Empty, variant, townCount, reservedTownNameDerivationBits, prosperity, clusterCount, graphDensity,
             accusationIndex, defaultCulpritIndex, cashBonus,
             OutlierSlotType: 0));
     }
 
-    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, highBits);
 }

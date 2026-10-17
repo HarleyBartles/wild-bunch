@@ -16,7 +16,7 @@ This document defines the identity rules for the sheriff office family.
 - Emphasize law-enforcement function over retail or entertainment.
 - Keep the facade plain enough to feel official.
 - Keep the architecture compact and grounded rather than ceremonial.
-- A star, badge plaque, notice board, or jail-bar hint can carry the read if
+- A star, badge plaque, wanted poster, or jail-bar hint can carry the read if
   they stay small and controlled.
 
 ## Prosperity notes

@@ -4,6 +4,7 @@ using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
+using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainInventory = WildBunch.Domain.Inventory.Inventory;
 using DomainInventoryItem = WildBunch.Domain.Inventory.InventoryItem;
@@ -12,6 +13,30 @@ using DomainCanteenState = WildBunch.Domain.Inventory.CanteenState;
 using DomainHorseTravelState = WildBunch.Domain.Inventory.HorseTravelState;
 
 namespace WildBunch.Persistence.Serialization;
+
+internal class InvalidComponentCacheShapeException : InvalidOperationException
+{
+    public InvalidComponentCacheShapeException(string componentName, string message, Exception? innerException = null)
+        : base(message, innerException)
+    {
+        ComponentName = componentName;
+    }
+
+    public string ComponentName { get; }
+}
+
+internal sealed class InvalidRequiredComponentCacheShapeException : InvalidComponentCacheShapeException
+{
+    public InvalidRequiredComponentCacheShapeException(string componentName, string message)
+        : base(componentName, $"Required '{componentName}' component cache is invalid: {message}")
+    {
+    }
+
+    public InvalidRequiredComponentCacheShapeException(string componentName, Exception innerException)
+        : base(componentName, $"Required '{componentName}' component cache could not be decoded.", innerException)
+    {
+    }
+}
 
 public sealed partial class GameSessionJsonSerializer
 {
@@ -22,11 +47,18 @@ public sealed partial class GameSessionJsonSerializer
     }
 
     internal Player DeserializePlayer(string json)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<PlayerSnapshot>(json);
-        return PlayerSnapshot.ToDomain(snapshot);
-    }
+        => DeserializeRequiredComponent("player", json, () =>
+        {
+            var snapshot = Deserialize<PlayerSnapshot>(json);
+            if (snapshot.Wallet is null || snapshot.Inventory is null || snapshot.Inventory.Items is null)
+            {
+                throw new InvalidRequiredComponentCacheShapeException(
+                    "player",
+                    "wallet, inventory, and inventory items are required.");
+            }
+
+            return PlayerSnapshot.ToDomain(snapshot);
+        });
 
     public string SerializeWorld(World world)
     {
@@ -35,11 +67,16 @@ public sealed partial class GameSessionJsonSerializer
     }
 
     internal World DeserializeWorld(string json)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<global::WildBunch.Domain.World.WorldSnapshot>(json);
-        return snapshot.ToDomain();
-    }
+        => DeserializeRequiredComponent("world", json, () =>
+        {
+            var snapshot = Deserialize<global::WildBunch.Domain.World.WorldSnapshot>(json);
+            if (snapshot.Towns is null || snapshot.Trails is null)
+            {
+                throw new InvalidRequiredComponentCacheShapeException("world", "towns and trails are required.");
+            }
+
+            return snapshot.ToDomain();
+        });
 
     public string SerializeCaseFile(CaseFile caseFile)
     {
@@ -48,11 +85,23 @@ public sealed partial class GameSessionJsonSerializer
     }
 
     internal CaseFile DeserializeCaseFile(string json)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<CaseFileSnapshot>(json);
-        return CaseFileSnapshot.ToDomain(snapshot);
-    }
+        => DeserializeRequiredComponent("caseFile", json, () =>
+        {
+            var snapshot = Deserialize<CaseFileSnapshot>(json);
+            if (snapshot.Suspects is null
+                || snapshot.DiscoveredSuspectIds is null
+                || snapshot.KnownClues is null
+                || snapshot.PublicClues is null
+                || string.IsNullOrWhiteSpace(snapshot.TrueCulpritId)
+                || string.IsNullOrWhiteSpace(snapshot.OpeningLead))
+            {
+                throw new InvalidRequiredComponentCacheShapeException(
+                    "caseFile",
+                    "suspects, discovered suspect ids, known clues, public clues, the true culprit id, and the opening lead are required.");
+            }
+
+            return CaseFileSnapshot.ToDomain(snapshot);
+        });
 
     public string SerializeClock(GameClock clock)
     {
@@ -61,11 +110,16 @@ public sealed partial class GameSessionJsonSerializer
     }
 
     internal GameClock DeserializeClock(string json)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<GameClockSnapshot>(json);
-        return GameClockSnapshot.ToDomain(snapshot);
-    }
+        => DeserializeRequiredComponent("clock", json, () =>
+        {
+            var snapshot = Deserialize<GameClockSnapshot>(json);
+            if (snapshot.Day is null or < 1 || snapshot.Turn is null or < 0 or > 3)
+            {
+                throw new InvalidRequiredComponentCacheShapeException("clock", "day and turn are outside their legal range.");
+            }
+
+            return GameClockSnapshot.ToDomain(snapshot);
+        });
 
     public string SerializePursuitState(PursuitState pursuitState)
     {
@@ -74,11 +128,16 @@ public sealed partial class GameSessionJsonSerializer
     }
 
     internal PursuitState DeserializePursuitState(string json)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<PursuitStateSnapshot>(json);
-        return PursuitStateSnapshot.ToDomain(snapshot);
-    }
+        => DeserializeRequiredComponent("pursuitState", json, () =>
+        {
+            var snapshot = Deserialize<PursuitStateSnapshot>(json);
+            if (snapshot.Heat is null or < 0)
+            {
+                throw new InvalidRequiredComponentCacheShapeException("pursuitState", "heat cannot be negative.");
+            }
+
+            return PursuitStateSnapshot.ToDomain(snapshot);
+        });
 
     public string SerializeSaltSource(SaltSource saltSource)
     {
@@ -87,10 +146,32 @@ public sealed partial class GameSessionJsonSerializer
     }
 
     internal SaltSource DeserializeSaltSource(string json)
+        => DeserializeRequiredComponent("saltSource", json, () =>
+        {
+            var snapshot = Deserialize<SaltSourceSnapshot>(json);
+            if (snapshot.Salt is null || snapshot.Mode is null || !Enum.IsDefined(snapshot.Mode.Value))
+            {
+                throw new InvalidRequiredComponentCacheShapeException("saltSource", "salt and a supported mode are required.");
+            }
+
+            return snapshot.ToDomain();
+        });
+
+    private static T DeserializeRequiredComponent<T>(string componentName, string json, Func<T> decode)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<SaltSourceSnapshot>(json);
-        return snapshot.ToDomain();
+        try
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(json);
+            return decode();
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidRequiredComponentCacheShapeException(componentName, exception);
+        }
     }
 
     public string SerializeTownVisitState(TownVisitState townVisitState)
@@ -101,9 +182,24 @@ public sealed partial class GameSessionJsonSerializer
 
     internal TownVisitState DeserializeTownVisitState(string json)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<TownVisitStateSnapshot>(json);
-        return snapshot.ToDomain();
+        try
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(json);
+            var snapshot = Deserialize<TownVisitStateSnapshot>(json)
+                ?? throw new InvalidOperationException("TownVisitState cache root cannot be null.");
+            return snapshot.ToDomain();
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "townVisitState",
+                "TownVisitState component cache could not be decoded.",
+                exception);
+        }
     }
 
     public string SerializeCurrentActionContext(TownActionContext context, TownId? townId)
@@ -111,47 +207,81 @@ public sealed partial class GameSessionJsonSerializer
 
     internal (TownActionContext context, TownId? townId) DeserializeCurrentActionContext(string json)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var snapshot = Deserialize<CurrentActionContextSnapshot>(json);
-        TownId? townId = snapshot.TownId is null ? null : new TownId(snapshot.TownId);
-        return (snapshot.Context, townId);
+        try
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(json);
+            var snapshot = Deserialize<CurrentActionContextSnapshot>(json);
+            TownId? townId = snapshot.TownId is null ? null : new TownId(snapshot.TownId);
+            return (snapshot.Context, townId);
+        }
+        catch (InvalidComponentCacheShapeException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+        {
+            throw new InvalidComponentCacheShapeException(
+                "currentActionContext",
+                "CurrentActionContext component cache could not be decoded.",
+                exception);
+        }
     }
 
     private sealed record CurrentActionContextSnapshot(TownActionContext Context, string? TownId);
 
     public string? SerializePendingDevTravelOverride(DevTravelOverride? overrideValue)
-        => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
+        => overrideValue is null
+            ? null
+            : JsonSerializer.Serialize(PendingDevTravelOverrideSnapshot.FromDomain(overrideValue), Options);
 
     internal DevTravelOverride? DeserializePendingDevTravelOverride(string? json)
-        => json is null ? null : Deserialize<DevTravelOverride>(json);
+        => json is null ? null : Deserialize<PendingDevTravelOverrideSnapshot>(json).ToDomain();
 
     public string? SerializePendingDevSaloonOverride(DevSaloonOverride? overrideValue)
-        => overrideValue is null ? null : JsonSerializer.Serialize(overrideValue, Options);
+        => overrideValue is null
+            ? null
+            : JsonSerializer.Serialize(PendingDevSaloonOverrideSnapshot.FromDomain(overrideValue), Options);
 
     internal DevSaloonOverride? DeserializePendingDevSaloonOverride(string? json)
-        => json is null ? null : Deserialize<DevSaloonOverride>(json);
+        => json is null ? null : Deserialize<PendingDevSaloonOverrideSnapshot>(json).ToDomain();
 
-    public string? SerializeDevLayoutSalts(LayoutSalts? layoutSalts)
-        => layoutSalts is null ? null : JsonSerializer.Serialize(LayoutSaltsSnapshot.FromDomain(layoutSalts), Options);
-
-    internal LayoutSalts? DeserializeDevLayoutSalts(string? json)
-        => json is null ? null : Deserialize<LayoutSaltsSnapshot>(json)?.ToDomain();
-
-    private sealed record LayoutSaltsSnapshot(
-        string BuildingsSalt,
-        string RoadsSalt,
-        string DirtSalt,
-        string PropsSalt)
+    private sealed record PendingDevTravelOverrideSnapshot(
+        TravelDayEncounterCategory ForcedCategory,
+        JourneyFoeProfileSnapshot? FoeProfile,
+        string? EncounterMessage)
     {
-        public static LayoutSaltsSnapshot FromDomain(LayoutSalts layoutSalts)
+        public static PendingDevTravelOverrideSnapshot FromDomain(DevTravelOverride value)
             => new(
-                layoutSalts.BuildingsSalt,
-                layoutSalts.RoadsSalt,
-                layoutSalts.DirtSalt,
-                layoutSalts.PropsSalt);
+                value.ForcedCategory,
+                value.FoeProfile is null ? null : JourneyFoeProfileSnapshot.FromDomain(value.FoeProfile),
+                value.EncounterMessage);
 
-        public LayoutSalts ToDomain()
-            => new(BuildingsSalt, RoadsSalt, DirtSalt, PropsSalt);
+        public DevTravelOverride ToDomain()
+            => new(ForcedCategory, FoeProfile?.ToDomain(), EncounterMessage);
+    }
+
+    private sealed record PendingDevSaloonOverrideSnapshot(
+        DevSaloonPoiKind ForcedKind,
+        SuspectIdSnapshot? ForcedSuspectId,
+        string? ForcedCitizenRoleKey)
+    {
+        public static PendingDevSaloonOverrideSnapshot FromDomain(DevSaloonOverride value)
+            => new(
+                value.ForcedKind,
+                value.ForcedSuspectId is null ? null : SuspectIdSnapshot.FromDomain(value.ForcedSuspectId.Value),
+                value.ForcedCitizenRoleKey);
+
+        public DevSaloonOverride ToDomain()
+            => new(ForcedKind, ForcedSuspectId?.ToDomain(), ForcedCitizenRoleKey);
+    }
+
+    private sealed record SuspectIdSnapshot(string Value)
+    {
+        public static SuspectIdSnapshot FromDomain(SuspectId value)
+            => new(value.Value);
+
+        public SuspectId ToDomain()
+            => new(Value);
     }
 
     private sealed record PlayerSnapshot(
@@ -185,7 +315,7 @@ public sealed partial class GameSessionJsonSerializer
 
         public static Wallet ToDomain(WalletSnapshot? snapshot)
             => snapshot is null
-                ? throw new InvalidOperationException("Unable to deserialize player wallet.")
+                ? throw new InvalidRequiredComponentCacheShapeException("player", "wallet is required.")
                 : new Wallet(snapshot.Cash);
     }
 
@@ -196,7 +326,9 @@ public sealed partial class GameSessionJsonSerializer
 
         public static DomainInventory ToDomain(InventorySnapshot? snapshot)
             => snapshot is null
-                ? DomainInventory.Empty()
+                ? throw new InvalidRequiredComponentCacheShapeException("player", "inventory is required.")
+                : snapshot.Items is null
+                    ? throw new InvalidRequiredComponentCacheShapeException("player", "inventory items are required.")
                 : new DomainInventory(snapshot.Items.Select(InventoryItemSnapshot.ToDomain));
     }
 
@@ -254,12 +386,11 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.AccusationId is null ? null : new SuspectId(snapshot.AccusationId),
                 snapshot.Suspects.Select(SuspectSnapshot.ToDomain),
                 new SuspectId(snapshot.TrueCulpritId),
-                CaseOpeningLead.Create(snapshot.OpeningLead ?? "Follow the public leads and look for a signature mark."),
+                CaseOpeningLead.Create(snapshot.OpeningLead!),
                 snapshot.KnownClues.Select(ClueSnapshot.ToDomain),
                 (snapshot.DiscoveredSuspectIds ?? Array.Empty<string>()).Select(suspectId => new SuspectId(suspectId)),
                 snapshot.PublicClues?.Select(ClueSnapshot.ToDomain),
                 snapshot.KillerReleaseThreshold,
-                snapshot.KillerReleaseProgress,
                 (snapshot.KnownWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
                 (snapshot.PublicWarrants ?? Array.Empty<WarrantSnapshot>()).Select(WarrantSnapshot.ToDomain),
                 suspectTurfAssignments: (snapshot.SuspectTurfAssignments ?? Array.Empty<SuspectTurfAssignmentSnapshot>()).Select(SuspectTurfAssignmentSnapshot.ToDomain),
@@ -568,21 +699,24 @@ public sealed partial class GameSessionJsonSerializer
         string Id,
         string TargetName,
         WarrantTermsSnapshot Terms,
-        string Summary)
+        string Summary,
+        string? TargetSuspectId = null)
     {
         public static WarrantSnapshot FromDomain(Warrant warrant)
             => new(
                 warrant.Id.Value,
                 warrant.TargetName,
                 WarrantTermsSnapshot.FromDomain(warrant.Terms),
-                warrant.Summary);
+                warrant.Summary,
+                warrant.TargetSuspectId?.Value);
 
         public static Warrant ToDomain(WarrantSnapshot snapshot)
             => new(
                 new WarrantId(snapshot.Id),
                 snapshot.TargetName,
                 WarrantTermsSnapshot.ToDomain(snapshot.Terms),
-                snapshot.Summary);
+                snapshot.Summary,
+                snapshot.TargetSuspectId is null ? null : new SuspectId(snapshot.TargetSuspectId));
     }
 
     private sealed record WarrantTermsSnapshot(
@@ -625,7 +759,7 @@ public sealed partial class GameSessionJsonSerializer
                 snapshot.SourceKind);
     }
 
-    private sealed record PursuitStateSnapshot(int Heat)
+    private sealed record PursuitStateSnapshot(int? Heat)
     {
         public static PursuitStateSnapshot FromDomain(PursuitState pursuitState)
             => new(pursuitState.Heat);
@@ -633,12 +767,12 @@ public sealed partial class GameSessionJsonSerializer
         public static PursuitState ToDomain(PursuitStateSnapshot snapshot)
         {
             var pursuitState = new PursuitState();
-            GameSessionRehydrator.SetBackingField(pursuitState, "<Heat>k__BackingField", snapshot.Heat);
+            pursuitState.SetHeat(snapshot.Heat!.Value);
             return pursuitState;
         }
     }
 
-    private sealed record GameClockSnapshot(int Day, int Turn)
+    private sealed record GameClockSnapshot(int? Day, int? Turn)
     {
         public static GameClockSnapshot FromDomain(GameClock clock)
             => new(clock.Day, clock.Turn);
@@ -646,19 +780,18 @@ public sealed partial class GameSessionJsonSerializer
         public static GameClock ToDomain(GameClockSnapshot snapshot)
         {
             var clock = new GameClock();
-            GameSessionRehydrator.SetBackingField(clock, "<Day>k__BackingField", snapshot.Day);
-            GameSessionRehydrator.SetBackingField(clock, "<Turn>k__BackingField", snapshot.Turn);
+            clock.Set(snapshot.Day!.Value, snapshot.Turn!.Value);
             return clock;
         }
     }
 
-    private sealed record SaltSourceSnapshot(SaltSourceMode Mode, string Salt)
+    private sealed record SaltSourceSnapshot(SaltSourceMode? Mode, string? Salt)
     {
         public static SaltSourceSnapshot FromDomain(SaltSource saltSource)
             => new(saltSource.Mode, saltSource.Salt);
 
         public SaltSource ToDomain()
-            => new(Mode, Salt);
+            => new(Mode!.Value, Salt!);
     }
 
     private sealed record TownVisitStateSnapshot(
@@ -718,7 +851,15 @@ public sealed partial class GameSessionJsonSerializer
                 townState.ActiveSaloonCitizenRole);
 
         public TownVisitTownState ToDomain()
-            => new(
+        {
+            if (ActiveSaloonPersonOfInterestKind == SaloonPersonOfInterestKind.WantedSuspect
+                && ActiveSaloonPersonOfInterestId is null)
+            {
+                throw new InvalidOperationException(
+                    "A wanted saloon person of interest must have a suspect ID.");
+            }
+
+            return new TownVisitTownState(
                 new TownId(TownId),
                 VisitNumber,
                 SourceStates?.Select(snapshot => snapshot.ToDomain()),
@@ -727,29 +868,24 @@ public sealed partial class GameSessionJsonSerializer
                 activeSaloonPersonOfInterestDescriptor: ActiveSaloonPersonOfInterestDescriptor,
                 activeSaloonPersonOfInterestKind: ActiveSaloonPersonOfInterestKind,
                 activeSaloonCitizenRole: ActiveSaloonCitizenRole);
+        }
     }
 
     private sealed record TownSourceVisitStateSnapshot(
         string TownId,
         InvestigationSourceKind SourceKind,
-        TownSourceRefreshPolicy RefreshPolicy,
-        int LastRefreshedVisitNumber,
         int LastCheckedVisitNumber)
     {
         public static TownSourceVisitStateSnapshot FromDomain(TownSourceVisitState sourceState)
             => new(
                 sourceState.TownId.Value,
                 sourceState.SourceKind,
-                sourceState.RefreshPolicy,
-                sourceState.LastRefreshedVisitNumber,
                 sourceState.LastCheckedVisitNumber);
 
         public TownSourceVisitState ToDomain()
             => new(
                 new TownId(TownId),
                 SourceKind,
-                RefreshPolicy,
-                LastRefreshedVisitNumber,
                 LastCheckedVisitNumber);
     }
 }

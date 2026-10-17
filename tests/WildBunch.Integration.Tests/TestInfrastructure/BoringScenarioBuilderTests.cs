@@ -12,8 +12,6 @@ public sealed class BoringScenarioBuilderTests
     {
         var scenario = BoringScenarioBuilder.MountedTravelReady();
 
-        scenario.AssertReady();
-
         var session = scenario.CreateSession();
         var sessionDto = GameSessionMapper.ToDto(session);
         var preview = scenario.CreateTravelPreview(session);
@@ -22,9 +20,7 @@ public sealed class BoringScenarioBuilderTests
 
         scenario.Fixture.AssertCreatedSession(sessionDto);
 
-        Assert.Equal("MountedTravelReady", scenario.ScenarioName);
-        Assert.Equal(scenario.Fixture.SeedCode, scenario.SeedCode);
-        Assert.Equal(GameDifficulty.Standard, scenario.GameDifficulty);
+        Assert.Equal(GameDifficulty.Standard, session.GameDifficulty);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Equal(HorseTravelState.Healthy, session.Player.Inventory.GetHorseState());
@@ -34,15 +30,9 @@ public sealed class BoringScenarioBuilderTests
     }
 
     [Fact]
-    public void NoHorseFootTravelReadyCreatesDeterministicSessionWithTransitionalDefaults()
+    public void EasyDifficultyScenarioStartsMountedAndPreviewsMountedTravel()
     {
-        // BUNCH-107 transitional: NoHorseLightEasy now gets horse+saddle (transitional defaults).
-        // This test was renamed from ...FootSession to ...TransitionalDefaults to reflect
-        // that horse/saddle/loadout are now difficulty-owned, not seed-owned.
-        // BUNCH-94 will restore no-horse variety via difficulty-owned envelopes.
-        var scenario = BoringScenarioBuilder.NoHorseFootTravelReady();
-
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.EasyDifficultyMountedTravelReady();
 
         var session = scenario.CreateSession();
         var sessionDto = GameSessionMapper.ToDto(session);
@@ -52,10 +42,8 @@ public sealed class BoringScenarioBuilderTests
 
         scenario.Fixture.AssertCreatedSession(sessionDto);
 
-        Assert.Equal("NoHorseFootTravelReady", scenario.ScenarioName);
-        Assert.Equal(GameDifficulty.Easy, scenario.GameDifficulty);
+        Assert.Equal(GameDifficulty.Easy, session.GameDifficulty);
         Assert.Equal(1250, session.Player.Health);
-        // Transitional: all difficulties now get horse+saddle.
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Horse);
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
@@ -64,19 +52,15 @@ public sealed class BoringScenarioBuilderTests
     }
 
     [Fact]
-    public void HighRiskFoeInterruptRouteUsesTheCachedFixtureAndKeepsTheMountedRouteShape()
+    public void HighRiskFoeScenarioProducesAConnectedWorld()
     {
         var scenario = BoringScenarioBuilder.HighRiskFoeInterruptRoute();
-
-        scenario.AssertReady();
 
         var session = scenario.CreateSession();
         var sessionDto = GameSessionMapper.ToDto(session);
 
         scenario.Fixture.AssertCreatedSession(sessionDto);
 
-        Assert.Equal("HighRiskFoeInterruptRoute", scenario.ScenarioName);
-        Assert.Equal(GameDifficulty.Standard, scenario.GameDifficulty);
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
@@ -92,19 +76,16 @@ public sealed class BoringScenarioBuilderTests
     }
 
     [Fact]
-    public void StartingTownServicesOrWantedPosterReadyKeepsThePublicServiceSurfaceReady()
+    public void StartingTownScenarioStartsWithExpectedResources()
     {
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
 
         var session = scenario.CreateSession();
-        var sessionDto = GameSessionMapper.ToDto(session);
-
-        scenario.Fixture.AssertCreatedSession(sessionDto);
 
         Assert.Equal(25m, session.Player.Wallet.Cash);
         Assert.NotNull(session.Player.Inventory.GetHorseState());
         Assert.Contains(session.Player.Inventory.Items, item => item.Kind == ItemKind.Saddle);
+        Assert.Equal(4, session.Player.Inventory.Items.Single(item => item.Kind == ItemKind.Food).Quantity);
+        Assert.Equal(3, session.Player.Inventory.Items.Single(item => item.Kind == ItemKind.HorseFeed).Quantity);
     }
 }

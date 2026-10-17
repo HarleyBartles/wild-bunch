@@ -16,7 +16,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0023, ADR-0008, ADR-0009
-- `related to`: ADR-0010, ADR-0020, ADR-0021
+- `related to`: ADR-0010, ADR-0020, ADR-0021, ADR-0040
 
 ## Context
 
@@ -24,7 +24,7 @@ Investigative sources can vary in presentation or availability, but the player m
 
 ## Decision
 
-Difficulty may vary pressure, assistance, corroboration and readability. Entropy may vary volatility, presentation, ordering, freshness and noise. Neither axis may rewrite settled truth, invent impossible facts or make an established case unknowable. The axes remain distinct under ADR-0023.
+Difficulty may vary pressure, assistance, corroboration and readability. Entropy may vary volatility, presentation, ordering, freshness and noise. Neither axis may rewrite settled truth, invent impossible facts or make an established case unknowable. The axes remain distinct under ADR-0023 and ADR-0040.
 
 | Source | Lawful difficulty variation | Lawful entropy variation | Stable boundary |
 | --- | --- | --- | --- |

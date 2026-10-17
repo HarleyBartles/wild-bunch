@@ -72,11 +72,12 @@ public sealed class InventoryTests
         Assert.Equal(new DomainHorseTravelState(1, 0, 2), inventory.GetHorseState());
         Assert.Equal(new DomainCanteenState(1, 2), inventory.GetCanteenState());
 
-        var nextHorseState = inventory.AdvanceHorseState(horseFed: false);
+        var nextHorseState = new DomainHorseTravelState(2, 0, 3);
+        inventory.SetHorseState(nextHorseState);
         inventory.SetCanteenState(new DomainCanteenState(0, 2));
 
-        Assert.Equal(new DomainHorseTravelState(2, 0, 3), nextHorseState);
-        Assert.Equal(new DomainHorseTravelState(2, 0, 3), inventory.GetHorseState());
+        Assert.Equal(nextHorseState, inventory.GetHorseState());
+        Assert.Equal(nextHorseState, inventory.Items.Single(item => item.Kind == DomainItemKind.Horse).HorseState);
         Assert.Equal(new DomainCanteenState(0, 2), inventory.GetCanteenState());
     }
 
@@ -90,5 +91,32 @@ public sealed class InventoryTests
         inventory.RemoveQuantity(DomainItemKind.Food, 4);
 
         Assert.Equal(1, inventory.GetQuantity(DomainItemKind.Food));
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(9)]
+    public void AddItemRejectsRetiredRifleKinds(int retiredKindValue)
+    {
+        var inventory = new DomainInventory();
+
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => inventory.AddItem((DomainItemKind)retiredKindValue, 1));
+
+        Assert.Empty(inventory.Items);
+    }
+
+    [Fact]
+    public void RemovingMoreThanOwnedFailsWithoutChangingTheStack()
+    {
+        var inventory = new DomainInventory();
+        inventory.AddItem(DomainItemKind.Food, 2);
+
+        Assert.Throws<InvalidOperationException>(() => inventory.RemoveQuantity(DomainItemKind.Food, 3));
+
+        Assert.Equal(2, inventory.GetQuantity(DomainItemKind.Food));
+        inventory.RemoveQuantity(DomainItemKind.Food, 2);
+        Assert.Equal(0, inventory.GetQuantity(DomainItemKind.Food));
+        Assert.DoesNotContain(inventory.Items, item => item.Quantity < 0);
     }
 }

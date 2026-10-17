@@ -1,131 +1,115 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  acknowledgeTravelArrival,
-  advanceTravelDay,
-  getGame,
-  resolveTravelEncounter,
-} from "../api/wildBunchApi";
-import type { GameSessionDto, GameTurnResultDto } from "../api/types";
+import { advanceTravelDay, resolveTravelEncounter } from "../api/wildBunchApi";
+import type { GameSessionDto } from "../api/types";
 import { getErrorMessage } from "../components/travel/travelShared";
+import { gameSessionQueryOptions } from "../state/gameSessionQuery";
+import { gameSessionQueryKey } from "../state/gameSessionQuery";
+import { refreshGameResources } from "../state/gameResourceQueries";
 
 interface UseTravelPanelStateArgs {
   gameId: string;
   session: GameSessionDto;
   busy: boolean;
-  onTurnResult: (result: GameTurnResultDto) => Promise<void> | void;
 }
 
 interface TravelPanelState {
   session: GameSessionDto;
   busy: boolean;
   refreshing: boolean;
+  message: string | null;
   actionError: string | null;
-  advanceTravelDay: () => Promise<void>;
-  acknowledgeTravelArrival: () => Promise<void>;
+  advanceTravelDay: () => void;
   resolveTravelEncounter: (
     choiceId: string,
     options?: {
       bulletSpend?: number | null;
       bribeAmount?: number | null;
     },
-  ) => Promise<void>;
+  ) => void;
 }
 
-function useTravelMutationState(
-  gameId: string,
-  onTurnResult: UseTravelPanelStateArgs["onTurnResult"],
-) {
+function useTravelMutationState() {
   const queryClient = useQueryClient();
 
   const advanceMutation = useMutation({
-    mutationFn: () => advanceTravelDay(gameId),
-    onSuccess: async (result) => {
-      await onTurnResult(result);
-      await queryClient.invalidateQueries({
-        queryKey: ["travel-session", gameId],
-      });
-    },
-  });
-
-  const acknowledgeMutation = useMutation({
-    mutationFn: () => acknowledgeTravelArrival(gameId),
-    onSuccess: async (result) => {
-      await onTurnResult(result);
-      await queryClient.invalidateQueries({
-        queryKey: ["travel-session", gameId],
-      });
+    mutationFn: ({ gameId }: { gameId: string }) => advanceTravelDay(gameId),
+    onSuccess: async (result, variables) => {
+      const updatedGameId = variables.gameId;
+      queryClient.setQueryData(gameSessionQueryKey(updatedGameId), result.currentSession);
+      await refreshGameResources(queryClient, updatedGameId);
     },
   });
 
   const resolveMutation = useMutation({
     mutationFn: (payload: {
+      gameId: string;
       choiceId: string;
       bulletSpend?: number | null;
       bribeAmount?: number | null;
     }) =>
-      resolveTravelEncounter(gameId, payload.choiceId, {
+      resolveTravelEncounter(payload.gameId, payload.choiceId, {
         bulletSpend: payload.bulletSpend,
         bribeAmount: payload.bribeAmount,
       }),
-    onSuccess: async (result) => {
-      await onTurnResult(result);
-      await queryClient.invalidateQueries({
-        queryKey: ["travel-session", gameId],
-      });
+    onSuccess: async (result, variables) => {
+      const updatedGameId = variables.gameId;
+      queryClient.setQueryData(gameSessionQueryKey(updatedGameId), result.currentSession);
+      await refreshGameResources(queryClient, updatedGameId);
     },
   });
 
-  return { advanceMutation, acknowledgeMutation, resolveMutation };
+  return { advanceMutation, resolveMutation };
 }
 
 export function useTravelPanelState({
   gameId,
   session,
   busy,
-  onTurnResult,
 }: UseTravelPanelStateArgs): TravelPanelState {
   const travelSessionQuery = useQuery({
-    queryKey: ["travel-session", gameId],
-    queryFn: () => getGame(gameId),
+    ...gameSessionQueryOptions(gameId),
     enabled: Boolean(gameId && session.journey),
     initialData: session,
     staleTime: 0,
   });
 
-  const { advanceMutation, acknowledgeMutation, resolveMutation } = useTravelMutationState(
-    gameId,
-    onTurnResult,
-  );
+  const { advanceMutation, resolveMutation } = useTravelMutationState();
 
   const actionError =
-    getErrorMessage(advanceMutation.error) ||
-    getErrorMessage(acknowledgeMutation.error) ||
-    getErrorMessage(resolveMutation.error) ||
+    (advanceMutation.variables?.gameId === gameId && getErrorMessage(advanceMutation.error)) ||
+    (resolveMutation.variables?.gameId === gameId && getErrorMessage(resolveMutation.error)) ||
     getErrorMessage(travelSessionQuery.error);
+
+  const message =
+    (advanceMutation.variables?.gameId === gameId && advanceMutation.data?.message) ||
+    (resolveMutation.variables?.gameId === gameId && resolveMutation.data?.message) ||
+    null;
 
   return {
     session: travelSessionQuery.data ?? session,
     busy:
       busy ||
-      advanceMutation.isPending ||
-      acknowledgeMutation.isPending ||
-      resolveMutation.isPending,
+      (advanceMutation.isPending && advanceMutation.variables?.gameId === gameId) ||
+      (resolveMutation.isPending && resolveMutation.variables?.gameId === gameId),
     refreshing: travelSessionQuery.isFetching,
+    message,
     actionError: actionError || null,
-    advanceTravelDay: async () => {
-      await advanceMutation.mutateAsync();
+    advanceTravelDay: () => {
+      advanceMutation.reset();
+      resolveMutation.reset();
+      advanceMutation.mutate({ gameId });
     },
-    acknowledgeTravelArrival: async () => {
-      await acknowledgeMutation.mutateAsync();
-    },
-    resolveTravelEncounter: async (
+    resolveTravelEncounter: (
       choiceId: string,
       options?: {
         bulletSpend?: number | null;
         bribeAmount?: number | null;
       },
     ) => {
-      await resolveMutation.mutateAsync({
+      advanceMutation.reset();
+      resolveMutation.reset();
+      resolveMutation.mutate({
+        gameId,
         choiceId,
         bulletSpend: options?.bulletSpend ?? null,
         bribeAmount: options?.bribeAmount ?? null,

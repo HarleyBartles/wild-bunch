@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { clearSaloonOverride, forceSaloonOverride, getSaloonDevContext } from "../devApi";
 import type { SaloonSuspectDevDto } from "../types";
+import { gameResourceQueryKeys, refreshGameResources } from "../../state/gameResourceQueries";
 
 const POI_KINDS = ["Suspect", "Citizen", "None"] as const;
 type PoiKind = (typeof POI_KINDS)[number];
@@ -14,6 +15,15 @@ interface SaloonDevPanelProps {
 
 export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelProps) {
   const { gameId } = useGameSession();
+
+  if (!gameId) {
+    return <MutedText>No active session.</MutedText>;
+  }
+
+  return <SaloonDevPanelForGame key={gameId} gameId={gameId} />;
+}
+
+function SaloonDevPanelForGame({ gameId }: { gameId: string }) {
   const queryClient = useQueryClient();
 
   const [forcedKind, setForcedKind] = useState<PoiKind>("Suspect");
@@ -23,8 +33,8 @@ export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelPr
   const [actionPending, setActionPending] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dev-saloon-context", gameId],
-    queryFn: () => getSaloonDevContext(gameId as string),
+    queryKey: gameResourceQueryKeys.devSaloon(gameId),
+    queryFn: () => getSaloonDevContext(gameId),
     enabled: Boolean(gameId),
     retry: false,
   });
@@ -34,15 +44,9 @@ export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelPr
     [data?.suspects],
   );
 
-  if (!gameId) {
-    return <MutedText>No active session.</MutedText>;
-  }
-
   if (isLoading) {
     return <MutedText>Loading saloon context...</MutedText>;
   }
-
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["dev-saloon-context", gameId] });
 
   const handleForce = async () => {
     setError(null);
@@ -55,7 +59,7 @@ export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelPr
         forcedCitizenRoleKey:
           forcedKind === "Citizen" && selectedCitizenRoleKey !== "" ? selectedCitizenRoleKey : null,
       });
-      void refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force override.");
     } finally {
@@ -68,7 +72,7 @@ export function SaloonDevPanel({ expanded: _expanded = false }: SaloonDevPanelPr
     setActionPending(true);
     try {
       await clearSaloonOverride(gameId);
-      void refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear override.");
     } finally {

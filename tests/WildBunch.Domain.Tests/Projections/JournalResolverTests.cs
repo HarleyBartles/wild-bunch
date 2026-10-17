@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -32,7 +31,7 @@ public sealed class JournalResolverTests
         Assert.Equal(session.CaseFile.OpeningLead.Description, result.OpeningLead);
         Assert.Equal(session.CaseFile.KillerReleaseState.IsReleased, result.KillerReleaseState.IsReleased);
         Assert.Equal(session.CaseFile.KillerReleaseState.Progress, result.KillerReleaseState.Progress);
-        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredPublicClues, result.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(session.CaseFile.KillerReleaseState.RequiredGangSettlements, result.KillerReleaseState.RequiredGangSettlements);
         Assert.Equal("Find the culprit before the law closes in.", result.CaseSummary);
         Assert.Empty(result.DiscoveredSuspects);
         Assert.Equal(session.CaseFile.KnownClues.Count, result.KnownClues.Count);
@@ -82,8 +81,8 @@ public sealed class JournalResolverTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         var world = new DomainWorld(
             new[] { pinecross, redmesa },
             new[]

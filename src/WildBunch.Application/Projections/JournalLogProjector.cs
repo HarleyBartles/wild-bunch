@@ -1,3 +1,4 @@
+using WildBunch.Domain.Cases;
 using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 
@@ -52,28 +53,39 @@ public sealed class JournalLogProjector
                     entries.Add(new GameLogEntry(GameLogEntryKind.CaseUpdate, wc.Message, day, turn));
                     break;
 
-                case SheriffTurnInSettled:
-                    // Legacy Apply adds no log entry for sheriff turn-in.
+                case SaloonPersonOfInterestConfronted confrontation:
+                    // Delegated wanted outcomes already have typed narration events; only unique saloon-level results belong here.
+                    if (confrontation.Outcome is SaloonPersonOfInterestConfrontationOutcome.Rejected
+                        or SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration
+                        or SaloonPersonOfInterestConfrontationOutcome.Refused
+                        or SaloonPersonOfInterestConfrontationOutcome.CitizenReleased)
+                    {
+                        entries.Add(new GameLogEntry(GameLogEntryKind.CaseUpdate, confrontation.Message, day, turn));
+                    }
                     break;
 
-                case SaloonPersonOfInterestConfronted:
-                    // No log entry.
+                case SheriffTurnInSettled settlement:
+                    entries.Add(new GameLogEntry(
+                        GameLogEntryKind.CaseUpdate,
+                        settlement.Message,
+                        settlement.Day,
+                        settlement.Turn));
                     break;
 
                 case JourneyStarted js:
                     if (!string.IsNullOrEmpty(js.DiaryMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, js.DiaryMessage, day, turn));
+                        entries.Add(TravelEntry(js.DiaryMessage, day, turn, js.JourneySnapshot.JourneySequence));
                     break;
 
                 case TravelDayAdvanced tda:
                     day = tda.Day;
                     turn = 0;
                     foreach (var narration in tda.AdditionalDiaryMessages)
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, narration, day, turn));
+                        entries.Add(TravelEntry(narration, day, turn, tda.JourneySnapshot.JourneySequence));
                     if (!string.IsNullOrEmpty(tda.DiaryMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, tda.DiaryMessage, day, turn));
-                    if (!string.IsNullOrEmpty(tda.HorseLostMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, tda.HorseLostMessage, day, turn));
+                        entries.Add(TravelEntry(tda.DiaryMessage, day, turn, tda.JourneySnapshot.JourneySequence));
+                    else if (!string.IsNullOrEmpty(tda.HorseLostMessage))
+                        entries.Add(TravelEntry(tda.HorseLostMessage, day, turn, tda.JourneySnapshot.JourneySequence));
                     break;
 
                 case TrailEventApplied tea:
@@ -85,30 +97,38 @@ public sealed class JournalLogProjector
                     if (i + 1 < events.Count && events[i + 1] is TravelDayAdvanced next)
                         trailDay = next.Day;
                     if (!string.IsNullOrEmpty(tea.DiaryMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, tea.DiaryMessage, trailDay, turn));
-                    if (!string.IsNullOrEmpty(tea.HorseLostMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, tea.HorseLostMessage, trailDay, turn));
+                        entries.Add(TravelEntry(tea.DiaryMessage, trailDay, turn, tea.JourneySnapshot.JourneySequence));
+                    else if (!string.IsNullOrEmpty(tea.HorseLostMessage))
+                        entries.Add(TravelEntry(tea.HorseLostMessage, trailDay, turn, tea.JourneySnapshot.JourneySequence));
                     break;
 
                 case JourneyEncounterResolved jer:
                     foreach (var narration in jer.AdditionalDiaryMessages)
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, narration, day, turn));
+                        entries.Add(TravelEntry(narration, day, turn, jer.JourneySnapshot.JourneySequence));
                     if (!string.IsNullOrEmpty(jer.DiaryMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, jer.DiaryMessage, day, turn));
+                        entries.Add(TravelEntry(jer.DiaryMessage, day, turn, jer.JourneySnapshot.JourneySequence));
                     break;
 
                 case JourneyCompleted jc:
                     if (!string.IsNullOrEmpty(jc.DiaryMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, jc.DiaryMessage, day, turn));
+                        entries.Add(TravelEntry(jc.DiaryMessage, day, turn, jc.JourneySnapshot.JourneySequence));
                     break;
 
                 case JourneyArrivalAcknowledged jaa:
                     if (!string.IsNullOrEmpty(jaa.DiaryMessage))
-                        entries.Add(new GameLogEntry(GameLogEntryKind.Travel, jaa.DiaryMessage, day, turn));
+                        entries.Add(TravelEntry(jaa.DiaryMessage, day, turn, jaa.JourneySequence));
+                    break;
+
+                case PlayerDied pd:
+                    if (!string.IsNullOrEmpty(pd.DiaryMessage))
+                        entries.Add(TravelEntry(pd.DiaryMessage, day, turn, pd.JourneySequence ?? 0));
                     break;
             }
         }
 
         return entries;
     }
+
+    private static GameLogEntry TravelEntry(string message, int day, int turn, int journeySequence)
+        => new(GameLogEntryKind.Travel, message, day, turn, journeySequence);
 }

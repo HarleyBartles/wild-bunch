@@ -19,51 +19,18 @@ public sealed class SeedWorldFactoryTests
     }
 
     [Fact]
-    public void CreateCanonicalWorldAppliesHubTelegraphServicesPalette()
-    {
-        var world = SeedWorldFactory.CreateCanonicalWorld();
-        var townsByIndex = world.Towns.OrderBy(t => t.Id.Value, StringComparer.OrdinalIgnoreCase).ToArray();
-
-        // HubTelegraph: only slot 0 has telegraph. But slot assignment is by
-        // position in the derived name list, not by sorted order. We verify
-        // that exactly one town has telegraph.
-        var telegraphTowns = world.Towns.Where(t => t.Services.HasFlag(TownServices.Telegraph)).ToArray();
-        Assert.Single(telegraphTowns);
-    }
-
-    [Fact]
     public void DifferentSeedsCanProduceDifferentTownNames()
     {
         // Different encoded fields produce different name shuffles, so different
         // town name selections. We use two different cash bonus values to get
         // different derivation seeds.
-        var seedA = CreateSeedCode(0, 1, 3, 0, tail: 0);
-        var seedB = CreateSeedCode(0, 1, 3, 3, tail: 0);
+        var seedA = CreateSeedCode(0, 1, 3, 0, highBits: 0);
+        var seedB = CreateSeedCode(0, 1, 3, 3, highBits: 0);
 
         var namesA = string.Join(",", SeedWorldResolver.Resolve(seedA).GetSelectedTownIds().OrderBy(id => id));
         var namesB = string.Join(",", SeedWorldResolver.Resolve(seedB).GetSelectedTownIds().OrderBy(id => id));
 
         Assert.NotEqual(namesA, namesB);
-    }
-
-    [Fact]
-    public void StartingTownPolicyDefaultsToFirstTown()
-    {
-        // Starting town is NOT seed-owned. The safe default from StartingTownPolicy
-        // is the first town in the world (slot 0), which is always present.
-        var canonicalWorld = SeedWorldFactory.CreateCanonicalWorld();
-        var defaultTown = StartingTownPolicy.ResolveStartingTown(canonicalWorld, null);
-        Assert.Contains(canonicalWorld.Towns, t => t.Id.Equals(defaultTown));
-    }
-
-    [Fact]
-    public void StartingTownPolicyAcceptsAnyValidTownChoice()
-    {
-        var world = SeedWorldFactory.CreateCanonicalWorld();
-        var chosenTown = world.Towns.First();
-
-        var resolved = StartingTownPolicy.ResolveStartingTown(world, chosenTown.Id);
-        Assert.Equal(chosenTown.Id, resolved);
     }
 
     [Fact]
@@ -91,8 +58,8 @@ public sealed class SeedWorldFactoryTests
     [Fact]
     public void CreateCanonicalWorldTownsHaveNullLayouts()
     {
-        // The canonical start-screen world does not go through MapGenerator and
-        // must not carry town hub layouts — layouts are gameplay-only.
+        // This deterministic policy-test fixture is not a generated session world,
+        // so it has no town hub layouts.
         var world = SeedWorldFactory.CreateCanonicalWorld();
 
         foreach (var town in world.Towns)
@@ -127,12 +94,12 @@ public sealed class SeedWorldFactoryTests
                     seedWorld.DefaultCulpritIndex,
                     seedWorld.CashBonus,
                     seedWorld.ProsperityPalette,
-                    seedWorld.ServicesPalette);
+                    seedWorld.ReservedTownNameDerivationBits);
 
                 var world = SeedWorldFactory.CreateWorld(
                     seedWorld.WorldVariant,
                     townNames,
-                    seedWorld.ServicesPalette,
+                    seedWorld.ReservedTownNameDerivationBits,
                     seedWorld.ProsperityPalette,
                     Array.Empty<SeedWorldTrail>());
 
@@ -158,6 +125,6 @@ public sealed class SeedWorldFactoryTests
         Assert.Contains(TownProsperity.Destitute, observedTiers);
     }
 
-    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, highBits);
 }

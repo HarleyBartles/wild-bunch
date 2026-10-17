@@ -1,7 +1,7 @@
 namespace WildBunch.Persistence.Versioning;
 
 /// <summary>
-/// Registry of payload upcasters, keyed by (PayloadKind, payloadType).
+/// Registry of event upcasters, keyed by payload type.
 /// Event versions are derived from the count of registered upcasters —
 /// no hand-edited version registry. To bump a version, write and register
 /// an upcaster. The act of bumping IS the act of writing the upcaster.
@@ -9,47 +9,35 @@ namespace WildBunch.Persistence.Versioning;
 /// </summary>
 public sealed class PayloadUpcasterRegistry
 {
-    private readonly Dictionary<(PayloadKind, string), SortedDictionary<int, IPayloadUpcaster>> _upcasters = new();
+    private readonly Dictionary<string, SortedDictionary<int, IEventUpcaster>> _upcasters = new(StringComparer.Ordinal);
 
-    internal PayloadUpcasterRegistry(IEnumerable<IPayloadUpcaster> upcasters)
+    internal PayloadUpcasterRegistry(IEnumerable<IEventUpcaster> upcasters)
     {
         ArgumentNullException.ThrowIfNull(upcasters);
 
         foreach (var upcaster in upcasters)
         {
-            var key = (GetKind(upcaster), upcaster.PayloadType);
+            var key = upcaster.PayloadType;
             if (!_upcasters.TryGetValue(key, out var chain))
             {
-                chain = new SortedDictionary<int, IPayloadUpcaster>();
+                chain = new SortedDictionary<int, IEventUpcaster>();
                 _upcasters[key] = chain;
             }
 
             if (chain.ContainsKey(upcaster.FromVersion))
             {
                 throw new InvalidOperationException(
-                    $"Duplicate upcaster for {key.Item1} '{key.Item2}' at FromVersion={upcaster.FromVersion}.");
+                    $"Duplicate event upcaster for '{key}' at FromVersion={upcaster.FromVersion}.");
             }
 
             chain[upcaster.FromVersion] = upcaster;
         }
 
-        // Validate contiguous chains for event upcasters.
-        foreach (var ((kind, payloadType), chain) in _upcasters)
+        foreach (var (payloadType, chain) in _upcasters)
         {
-            if (kind != PayloadKind.Event)
-                continue;
-
             ValidateContiguousChain(payloadType, chain);
         }
     }
-
-    /// <summary>
-    /// The set of (PayloadKind, payloadType) pairs that have at least one
-    /// registered upcaster. Used by the chain completeness test to verify
-    /// that every IEventUpcaster in the assembly is registered in DI.
-    /// </summary>
-    internal IReadOnlySet<(PayloadKind Kind, string PayloadType)> RegisteredPayloadTypes
-        => _upcasters.Keys.ToHashSet();
 
     /// <summary>
     /// Returns the current version for the given payload type.
@@ -58,8 +46,7 @@ public sealed class PayloadUpcasterRegistry
     /// </summary>
     internal int CurrentVersion(string payloadType)
     {
-        var key = (PayloadKind.Event, payloadType);
-        return _upcasters.TryGetValue(key, out var chain)
+        return _upcasters.TryGetValue(payloadType, out var chain)
             ? chain.Keys.Max() + 1   // highest FromVersion + 1
             : 1;                      // no upcasters -> still at v1
     }
@@ -67,7 +54,7 @@ public sealed class PayloadUpcasterRegistry
     /// <summary>
     /// Upcasts a persisted payload from storedVersion to currentVersion.
     /// Fails closed if storedVersion > current (code is older than data)
-    /// or if the chain is non-contiguous (missing upcaster for a transition).
+    /// or if an event with a non-v1 version has no registered chain.
     /// </summary>
     internal string Upcast(string payloadType, int storedVersion, string payloadJson)
     {
@@ -86,7 +73,7 @@ public sealed class PayloadUpcasterRegistry
         }
 
         // Unknown type with storedVersion != 1: fail closed.
-        if (!_upcasters.TryGetValue((PayloadKind.Event, payloadType), out var chain))
+        if (!_upcasters.TryGetValue(payloadType, out var chain))
         {
             throw new InvalidOperationException(
                 $"{payloadType} stored at v{storedVersion} but no upcasters registered.");
@@ -97,25 +84,15 @@ public sealed class PayloadUpcasterRegistry
         var json = payloadJson;
         while (version < current)
         {
-            if (!chain.TryGetValue(version, out var upcaster))
-            {
-                throw new InvalidOperationException(
-                    $"No {payloadType} upcaster for v{version} -> v{version + 1}.");
-            }
-            json = upcaster.Upcast(json);
+            json = chain[version].Upcast(json);
             version++;
         }
 
         return json;
     }
 
-    private static PayloadKind GetKind(IPayloadUpcaster upcaster)
-        => upcaster is IEventUpcaster ? PayloadKind.Event : PayloadKind.Projection;
-
-    private static void ValidateContiguousChain(string payloadType, SortedDictionary<int, IPayloadUpcaster> chain)
+    private static void ValidateContiguousChain(string payloadType, SortedDictionary<int, IEventUpcaster> chain)
     {
-        // A contiguous chain starts at v1 and goes to v(chain.Count).
-        // If the first upcaster is not at FromVersion=1, the chain is non-contiguous.
         var expectedFromVersion = 1;
         foreach (var (fromVersion, _) in chain)
         {

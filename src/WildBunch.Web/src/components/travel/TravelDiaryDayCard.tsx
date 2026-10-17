@@ -9,6 +9,9 @@ interface TravelDiaryDayCardProps {
 }
 
 export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
+  const resolutionFacts = day.encounterResolution
+    ? renderResolutionFacts(day.encounterResolution)
+    : [];
   const badgeState =
     day.status === JourneyStatus.Completed
       ? "arrival"
@@ -18,7 +21,7 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
           ? "resolved"
           : day.trailEvent
             ? "eventful"
-            : day.openingNarration
+            : day.dayNumber === 1
               ? "departure"
               : "quiet";
   const badgeLabel =
@@ -38,7 +41,7 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
     <DiaryDayCard>
       <DiaryDayHeader>
         <div>
-          <DayTitle>{day.journeyBeat ?? `Day ${day.dayNumber}`}</DayTitle>
+          <DayTitle>Day {day.dayNumber}</DayTitle>
           <DaySubhead>
             {day.originTownName} to {day.destinationTownName} |{" "}
             {formatTravelMode(day.startingTravelMode)} to {formatTravelMode(day.endingTravelMode)} |{" "}
@@ -48,10 +51,8 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
         <DayBadge data-state={badgeState}>{badgeLabel}</DayBadge>
       </DiaryDayHeader>
 
-      <DiaryBody>
-        {day.resourceBeat ? <OpeningNote>{day.resourceBeat}</OpeningNote> : null}
-        {day.openingNarration ? <OpeningNote>{day.openingNarration}</OpeningNote> : null}
-        {day.beatSlots && day.beatSlots.length > 0 && (
+      {day.beatSlots && day.beatSlots.length > 0 ? (
+        <DiaryBody>
           <BeatSlotList>
             {day.beatSlots.map((slot) => (
               <BeatSlotItem
@@ -62,11 +63,8 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
               </BeatSlotItem>
             ))}
           </BeatSlotList>
-        )}
-        {day.entries.map((entry, index) => (
-          <DiaryParagraph key={`${day.dayNumber}-${index}`}>{entry}</DiaryParagraph>
-        ))}
-      </DiaryBody>
+        </DiaryBody>
+      ) : null}
 
       {day.trailEvent ? (
         <TrailNote>
@@ -77,7 +75,9 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
       {day.encounterResolution ? (
         <ResolutionNote>
           <strong>{day.encounterResolution.choiceLabel}</strong>
-          <p>{renderResolutionSummary(day.encounterResolution)}</p>
+          {resolutionFacts.length > 0 ? (
+            <ResolutionFacts>{resolutionFacts.join(" | ")}</ResolutionFacts>
+          ) : null}
         </ResolutionNote>
       ) : null}
 
@@ -86,21 +86,25 @@ export function TravelDiaryDayCard({ day }: TravelDiaryDayCardProps) {
   );
 }
 
-function renderResolutionSummary(
-  resolution: NonNullable<TravelDiaryDayDto["encounterResolution"]>,
-) {
-  switch (resolution.choiceId) {
-    case "run":
-      return "I run for it and keep the trail moving.";
-    case "fight":
-      return resolution.ammoSpent > 0
-        ? "I stand and fight, spending one round to force the rider off the trail."
-        : "I stand and fight with my knife and force the rider off the trail.";
-    case "bribe":
-      return "I pay my way through and keep moving.";
-    default:
-      return `I choose to ${resolution.choiceLabel.toLowerCase()}.`;
+function renderResolutionFacts(resolution: NonNullable<TravelDiaryDayDto["encounterResolution"]>) {
+  const facts: string[] = [];
+  if (resolution.healthDelta !== 0) facts.push(`Health ${formatSigned(resolution.healthDelta)}`);
+  if (resolution.walletDelta !== 0) {
+    facts.push(
+      `Cash ${resolution.walletDelta > 0 ? "+" : "-"}$${Math.abs(resolution.walletDelta).toFixed(2)}`,
+    );
   }
+  if (resolution.ammoSpent !== 0) facts.push(`Ammo spent ${resolution.ammoSpent}`);
+  if (resolution.heatIncrease !== 0) facts.push(`Heat ${formatSigned(resolution.heatIncrease)}`);
+  if (resolution.horseExhaustionDelta !== 0) {
+    facts.push(`Horse exhaustion ${formatSigned(resolution.horseExhaustionDelta)}`);
+  }
+  if (resolution.continuedOnFoot) facts.push("Continued on foot");
+  return facts;
+}
+
+function formatSigned(value: number) {
+  return value > 0 ? `+${value}` : String(value);
 }
 
 function renderDayMeta(day: TravelDiaryDayDto) {
@@ -213,19 +217,6 @@ const DiaryBody = styled.div`
   line-height: 1.65;
 `;
 
-const OpeningNote = styled.p`
-  margin: 0;
-  padding: 12px 14px;
-  border-left: 3px solid color-mix(in srgb, var(--accent-strong) 72%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--accent-strong) 8%, transparent);
-  color: color-mix(in srgb, var(--text) 94%, transparent);
-`;
-
-const DiaryParagraph = styled.p`
-  margin: 0;
-`;
-
 const TrailNote = styled.div`
   display: grid;
   gap: 8px;
@@ -252,6 +243,11 @@ const ResolutionNote = styled.div`
     margin: 0;
     color: color-mix(in srgb, var(--text) 82%, transparent);
   }
+`;
+
+const ResolutionFacts = styled.p`
+  margin: 0;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
 `;
 
 const DayMeta = styled.p`

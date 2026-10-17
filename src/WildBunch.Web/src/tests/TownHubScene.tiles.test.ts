@@ -42,14 +42,7 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   return {
     buildings: [
       { kind: BuildingKind.Store, view: 3, x: 25, y: 5, width: 8, height: 10 },
-      {
-        kind: BuildingKind.Sheriff,
-        view: 0,
-        x: 75,
-        y: 25,
-        width: 8,
-        height: 10,
-      },
+      { kind: BuildingKind.Sheriff, view: 0, x: 75, y: 25, width: 8, height: 10 },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
@@ -119,14 +112,7 @@ describe("TownHubScene tile rendering", () => {
     };
     scene.add = {
       image: (x: number, y: number, key: string) => {
-        const record = {
-          key,
-          x,
-          y,
-          flipX: false,
-          flipY: false,
-          scale: null as number | null,
-        };
+        const record = { key, x, y, flipX: false, flipY: false, scale: null as number | null };
         imageCalls.push(record);
         return {
           setDisplaySize() {
@@ -288,13 +274,8 @@ describe("TownHubScene tile rendering", () => {
       },
     };
 
-    const imageCalls: Array<{
-      key: string;
-      x: number;
-      y: number;
-      flipX: boolean;
-      flipY: boolean;
-    }> = [];
+    const imageCalls: Array<{ key: string; x: number; y: number; flipX: boolean; flipY: boolean }> =
+      [];
     const scene = new TownHubScene(layout, [], vi.fn()) as TownHubScene & {
       add: any;
       textures: any;
@@ -443,13 +424,8 @@ describe("TownHubScene tile rendering", () => {
       },
     };
 
-    const imageCalls: Array<{
-      key: string;
-      x: number;
-      y: number;
-      flipX: boolean;
-      flipY: boolean;
-    }> = [];
+    const imageCalls: Array<{ key: string; x: number; y: number; flipX: boolean; flipY: boolean }> =
+      [];
     const scene = new TownHubScene(layout, [], vi.fn()) as TownHubScene & {
       add: any;
       textures: any;
@@ -581,12 +557,7 @@ describe("TownHubScene tile rendering", () => {
         side: "east" | "west";
         attachesTo: "road" | "spur-above" | "spur-below";
       }>;
-      spurCrossTiles: Array<{
-        row: number;
-        col: number;
-        flipX: boolean;
-        flipY: boolean;
-      }>;
+      spurCrossTiles: Array<{ row: number; col: number; flipX: boolean; flipY: boolean }>;
       spurCrossTileKeys: Set<string>;
     };
 
@@ -617,13 +588,8 @@ describe("TownHubScene tile rendering", () => {
     (scene as any).load = { image: vi.fn() };
     (scene as any).textures = { exists: () => false };
 
-    const imageCalls: Array<{
-      key: string;
-      x: number;
-      y: number;
-      flipX: boolean;
-      flipY: boolean;
-    }> = [];
+    const imageCalls: Array<{ key: string; x: number; y: number; flipX: boolean; flipY: boolean }> =
+      [];
     scene.add = {
       image: (x: number, y: number, key: string) => {
         const record = { key, x, y, flipX: false, flipY: false };

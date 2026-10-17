@@ -31,7 +31,7 @@ public sealed class TurnInToSheriffHandlerTests
         Assert.Equal("Mira Cline", firstResult.TargetName);
         Assert.Equal(WarrantDisposition.DeadOrAlive, firstResult.Disposition);
         Assert.Equal(2500m, firstResult.BountyAmount);
-        Assert.Equal(2525m, firstResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(2525m, firstResult.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Single(repository.Sessions.Single().CaseFile.SheriffTurnInSettlements);
         Assert.True(repository.Sessions.Single().CaseFile.SheriffTurnInSettlements[0].IsAlive);
         Assert.Equal(1, repository.StoreCalls);
@@ -39,7 +39,7 @@ public sealed class TurnInToSheriffHandlerTests
 
         Assert.False(secondResult.Success);
         Assert.Equal(SheriffTurnInOutcome.Rejected, secondResult.Outcome);
-        Assert.Equal(2525m, secondResult.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(2525m, secondResult.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);
@@ -51,7 +51,7 @@ public sealed class TurnInToSheriffHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var world = new DomainWorld(
             new[] { pinecross },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, pinecross.Id, TrailRisk.Low) });
@@ -91,11 +91,11 @@ public sealed class TurnInToSheriffHandlerTests
                         300m,
                         new[] { "The Magpie" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
                         Array.Empty<OutlawGangId>(),
                         null),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));

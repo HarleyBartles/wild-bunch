@@ -2,11 +2,11 @@ using WildBunch.Application.Dev.Commands;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Game;
+using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using Town = WildBunch.Domain.World.Town;
 using TownId = WildBunch.Domain.World.TownId;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 using World = WildBunch.Domain.World.World;
@@ -109,7 +109,7 @@ public sealed class ForceSaloonOverrideHandlerTests
     public async Task HandleAsync_AcceptsTrueCulprit_WhenKillerReleaseGateIsOpen()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSessionWithSaloonSuspect(killerReleaseProgress: 2);
+        var session = CreateSessionWithSaloonSuspect(killerReleaseGateOpen: true);
         repository.Seed(session);
 
         // Verify gate is open
@@ -129,22 +129,22 @@ public sealed class ForceSaloonOverrideHandlerTests
         Assert.Equal("suspect-2", reloaded.PendingDevSaloonOverride.ForcedSuspectId?.Value);
     }
 
-    private static GameSession CreateSessionWithSaloonSuspect(int killerReleaseProgress = 0)
+    private static GameSession CreateSessionWithSaloonSuspect(bool killerReleaseGateOpen = false)
     {
         // Use the domain test factory which creates a session with a confrontable saloon suspect.
         // The Application tests project references WildBunch.Domain.Tests? No - we need to create
         // the session inline here.
         var town = new WildBunch.Domain.World.Town(
-            new TownId("current"), "Current Town", WildBunch.Domain.World.TownServices.None);
+            new TownId("current"), "Current Town");
         var connected = new WildBunch.Domain.World.Town(
-            new TownId("connected"), "Connected Town", WildBunch.Domain.World.TownServices.None);
+            new TownId("connected"), "Connected Town");
         var world = new WildBunch.Domain.World.World(
             new[] { town, connected },
             new[] { new WildBunch.Domain.World.Trail(
                 new WildBunch.Domain.World.TrailId("trail-1"), town.Id, connected.Id,
                 WildBunch.Domain.World.TrailRisk.Low) });
 
-        var suspects = new[]
+        var suspects = new List<Suspect>
         {
             new Suspect(
                 new SuspectId("suspect-1"),
@@ -157,19 +157,58 @@ public sealed class ForceSaloonOverrideHandlerTests
             new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
         };
 
+        var warrants = new List<Warrant>();
+        if (killerReleaseGateOpen)
+        {
+            for (var i = 3; i <= 7; i++)
+            {
+                var suspectId = new SuspectId($"suspect-{i}");
+                suspects.Add(new Suspect(suspectId, $"Gang Member {i}", SuspectTraits.Empty, SuspectStatus.AtLarge));
+                warrants.Add(new Warrant(
+                    new WarrantId($"warrant-{i}"),
+                    $"Gang Member {i}",
+                    new WarrantTerms(
+                        WarrantDisposition.DeadOrAlive,
+                        100m,
+                        Array.Empty<string>(),
+                        Array.Empty<string>(),
+                        "Sheriff",
+                        InvestigationTargetKind.GangMember,
+                        new[] { OutlawGangIds.WildBunch },
+                        OutlawGangIds.WildBunch,
+                        InvestigationSourceKind.SheriffWarrants),
+                    "Wanted for gang activity.",
+                    suspectId));
+            }
+        }
+
         var caseFile = new CaseFile(
             accusation: null, suspects,
             trueCulpritId: new SuspectId("suspect-2"),
             openingLead: CaseOpeningLead.Create("Follow the public leads."),
             knownClues: Array.Empty<Clue>(),
-            killerReleaseThreshold: 2,
-            killerReleaseProgress: killerReleaseProgress,
-            knownWarrants: Array.Empty<Warrant>());
+            killerReleaseThreshold: 5,
+            knownWarrants: warrants);
 
         var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Easy, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed(string.Empty));
         session.ViewPrologue("test-prologue-descriptor");
         session.SelectStartingTown(town.Id);
-        session.CompleteGameStart(WildBunch.Domain.Economy.Wallet.Starting(25m), inventory: null);
+        var inventory = killerReleaseGateOpen
+            ? new Inventory(new[] { new InventoryItem(ItemKind.Revolver, 1) })
+            : null;
+        session.CompleteGameStart(WildBunch.Domain.Economy.Wallet.Starting(25m), inventory);
+        if (killerReleaseGateOpen)
+        {
+            for (var i = 3; i <= 7; i++)
+            {
+                var suspectId = new SuspectId($"suspect-{i}");
+                session.SetWantedSuspectPresenceState(suspectId, WantedSuspectPresenceState.AvailableInTown);
+                session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(suspectId));
+                session.MarkEventsCommitted();
+                session.LookAroundSaloon();
+                session.ConfrontSaloonPersonOfInterest($"warrant-{i}");
+            }
+        }
         session.MarkEventsCommitted();
         return session;
     }

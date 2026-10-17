@@ -1,5 +1,6 @@
 using WildBunch.Domain.Cases;
 using WildBunch.Domain.Economy;
+using WildBunch.Domain.Events;
 using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
@@ -18,6 +19,9 @@ namespace WildBunch.Domain.Tests;
 public sealed class TravelDayPlanGeneratorTests
 {
     private static readonly SaltSource DeterministicSaltSource = SaltSource.CreateFixed(string.Empty);
+    private static readonly string[] FoePressureSeedCorpus = Enumerable.Range(1, 128)
+        .Select(index => $"n16-foe-pressure-{index:D3}")
+        .ToArray();
 
     [Fact]
     public void CreateTravelDayGenerationContextDerivesPressureBandsFromSessionState()
@@ -52,203 +56,189 @@ public sealed class TravelDayPlanGeneratorTests
     }
 
     [Fact]
-    public void GenerateChangesWhenMountedStateChanges()
+    public void GenerateCreatesOnlyHostileChoiceEncountersWithAResolvedFoeProfile()
     {
-        var baselineSession = CreateSeedSensitiveSession(withHorse: true, withSaddle: true);
-        var stressedSession = CreateSeedSensitiveSession(withHorse: false, withSaddle: false);
-        var seeds = new[] { "seed-1", "seed-2", "seed-3", "seed-4", "seed-5", "seed-6" };
-        var foundDifference = false;
-
-        foreach (var seed in seeds)
-        {
-            var baselinePlan = TravelDayPlanGenerator.Generate(baselineSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-3"));
-            var stressedPlan = TravelDayPlanGenerator.Generate(stressedSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-3"));
-
-            if (!PlansAreEquivalent(baselinePlan, stressedPlan))
+        var session = CreateHighRiskEncounterSession();
+        var generatedEncounters = Enumerable.Range(1, 128)
+            .Select(index =>
             {
-                foundDifference = true;
-                break;
-            }
-        }
+                var context = session.CreateTravelDayGenerationContext(
+                    gameSeed: $"retained-encounter-{index}",
+                    scenarioProfileId: "friendly-encounter-retirement") with
+                {
+                    DayNumber = index
+                };
 
-        Assert.True(foundDifference);
+                return TravelDayPlanGenerator.Generate(context).Encounters;
+            })
+            .SelectMany(encounters => encounters)
+            .Where(encounter => encounter.PendingEncounter is not null)
+            .ToArray();
+
+        Assert.NotEmpty(generatedEncounters);
+        Assert.All(generatedEncounters, encounter =>
+        {
+            Assert.Equal(TravelDayEncounterCategory.Foe, encounter.Category);
+            Assert.Equal("foe", encounter.PendingEncounter!.Kind);
+            Assert.NotNull(encounter.PendingEncounter.FoeProfile);
+        });
     }
 
     [Fact]
-    public void GenerateChangesWhenSeedOrScenarioProfileChanges()
+    public void Generate_BrutalDifficultyProducesMoreFoeEncountersThanStandardForFixedHighRiskCorpus()
     {
-        var firstSession = CreateSeedSensitiveSession();
-        var secondSession = CreateSeedSensitiveSession();
+        var session = CreateHighRiskEncounterSession();
+        var baseContext = session.CreateTravelDayGenerationContext(gameSeed: "n16-foe-pressure", scenarioProfileId: "difficulty-pressure");
 
-        var seeds = new[] { ("seed-a", "profile-a"), ("seed-b", "profile-b"), ("seed-c", "profile-c"), ("seed-d", "profile-d") };
-        var foundDifference = false;
+        var standardFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Standard, GameEntropy.Classic);
+        var brutalFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Brutal, GameEntropy.Classic);
 
-        foreach (var (seed, profile) in seeds)
-        {
-            var firstPlan = TravelDayPlanGenerator.Generate(firstSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: profile));
-            var secondPlan = TravelDayPlanGenerator.Generate(secondSession.CreateTravelDayGenerationContext(gameSeed: seed + "-alt", scenarioProfileId: profile + "-alt"));
-
-            if (!PlansAreEquivalent(firstPlan, secondPlan))
-            {
-                foundDifference = true;
-                break;
-            }
-        }
-
-        Assert.True(foundDifference);
+        Assert.True(standardFoeCount > 0, "The fixed Standard/Classic corpus must reach generated Foe encounters.");
+        Assert.True(brutalFoeCount > 0, "The fixed Brutal/Classic corpus must reach generated Foe encounters.");
+        Assert.True(
+            brutalFoeCount > standardFoeCount * 1.1m,
+            $"Brutal should produce at least 10% more actual Foe encounters than Standard over the fixed corpus. Standard: {standardFoeCount}, Brutal: {brutalFoeCount}.");
     }
 
     [Fact]
-    public void GenerateChangesWhenLiveStateChangesBeforeTheJourneyAdvances()
+    public void Generate_WildEntropyDoesNotProduceMoreFoeEncountersThanClassicAtStandardDifficulty()
     {
-        var baselineSession = CreateSeedSensitiveSession();
-        var stressedSession = CreateSeedSensitiveSession();
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(baselineSession.World, baselineSession.Player.CurrentTownId!.Value, new TownId("dryfork"), baselineSession.Player.Inventory, baselineSession.TravelRules).Preview!;
+        var session = CreateHighRiskEncounterSession();
+        var baseContext = session.CreateTravelDayGenerationContext(gameSeed: "n16-foe-pressure", scenarioProfileId: "entropy-pressure");
 
-        baselineSession.StartJourney(preview);
-        stressedSession.StartJourney(preview);
-        stressedSession.Player.Inventory.RemoveQuantity(DomainItemKind.Horse, 1);
-        stressedSession.Player.Inventory.RemoveQuantity(DomainItemKind.Saddle, 1);
+        var classicFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Standard, GameEntropy.Classic);
+        var wildFoeCount = CountFoeEncounters(baseContext, GameDifficulty.Standard, GameEntropy.Wild);
 
-        var seeds = Enumerable.Range(1, 24).Select(index => $"seed-live-{index}");
-        var foundDifference = false;
+        Assert.True(classicFoeCount > 0, "The fixed Standard/Classic corpus must reach generated Foe encounters.");
+        Assert.True(wildFoeCount > 0, "The fixed Standard/Wild corpus must reach generated Foe encounters.");
+        Assert.True(
+            wildFoeCount <= classicFoeCount,
+            $"Wild entropy must not produce more actual Foe encounters than Classic over the fixed corpus. Classic: {classicFoeCount}, Wild: {wildFoeCount}.");
+    }
 
-        foreach (var seed in seeds)
+    [Fact]
+    public void AdvanceJourneyDay_BoringEntropyProducesEquivalentStateAcrossThreeReachedDays()
+    {
+        var firstSession = CreatePressureSession(
+            HorseTravelState.Healthy,
+            food: 10,
+            horseFeed: 10,
+            canteenCharges: 20,
+            wallet: 25m,
+            routeDistance: 6m,
+            gameEntropy: GameEntropy.Boring);
+        var secondSession = CreatePressureSession(
+            HorseTravelState.Healthy,
+            food: 10,
+            horseFeed: 10,
+            canteenCharges: 20,
+            wallet: 25m,
+            routeDistance: 6m,
+            gameEntropy: GameEntropy.Boring);
+
+        Assert.Equal(SaltSourceMode.Fixed, firstSession.SaltSource.Mode);
+        Assert.Equal(SaltSourceMode.Fixed, secondSession.SaltSource.Mode);
+
+        for (var day = 1; day <= 3; day++)
         {
-            var baselinePlan = TravelDayPlanGenerator.Generate(baselineSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-live"));
-            var stressedPlan = TravelDayPlanGenerator.Generate(stressedSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-live"));
+            var firstAdvance = firstSession.AdvanceJourneyDay();
+            var secondAdvance = secondSession.AdvanceJourneyDay();
 
-            if (!PlansAreEquivalent(baselinePlan, stressedPlan))
+            Assert.Equal(firstAdvance.Success, secondAdvance.Success);
+            Assert.Equal(firstAdvance.Status, secondAdvance.Status);
+            Assert.Equal(firstAdvance.Message, secondAdvance.Message);
+            Assert.Equal(firstAdvance.LogMessage, secondAdvance.LogMessage);
+            Assert.Equal(firstAdvance.HeatIncrease, secondAdvance.HeatIncrease);
+            Assert.Equal(firstAdvance.TrailEvent, secondAdvance.TrailEvent);
+            AssertJourneySnapshotsEquivalent(
+                Assert.IsType<TravelJourneySnapshot>(firstAdvance.Journey),
+                Assert.IsType<TravelJourneySnapshot>(secondAdvance.Journey));
+
+            var firstDayEvent = Assert.Single(firstSession.UncommittedEvents.OfType<TravelDayAdvanced>(), item => item.Day == firstSession.Clock.Day);
+            var secondDayEvent = Assert.Single(secondSession.UncommittedEvents.OfType<TravelDayAdvanced>(), item => item.Day == secondSession.Clock.Day);
+            AssertTravelDayAdvancedEquivalent(firstDayEvent, secondDayEvent);
+            Assert.Equal(day, firstDayEvent.JourneySnapshot.DaysTravelled);
+            Assert.Equal(day, secondDayEvent.JourneySnapshot.DaysTravelled);
+            AssertSessionStateEquivalent(firstSession, secondSession);
+
+            var encounterResolutions = 0;
+            while (firstSession.Journey?.PendingEncounter is not null || secondSession.Journey?.PendingEncounter is not null)
             {
-                foundDifference = true;
-                break;
+                Assert.NotNull(firstSession.Journey?.PendingEncounter);
+                Assert.NotNull(secondSession.Journey?.PendingEncounter);
+                Assert.True(ResolutionsAreEquivalent(firstSession.Journey!.PendingEncounter, secondSession.Journey!.PendingEncounter));
+                Assert.True(encounterResolutions++ < 10, "A travel day must not require an unbounded number of encounter resolutions.");
+
+                var firstResolution = firstSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0UL);
+                var secondResolution = secondSession.ResolveJourneyEncounter("run", bulletSpend: null, bribeAmount: null, forcedRoll: 0UL);
+
+                Assert.Equal(firstResolution.Success, secondResolution.Success);
+                Assert.Equal(firstResolution.SessionChanged, secondResolution.SessionChanged);
+                Assert.Equal(firstResolution.Status, secondResolution.Status);
+                Assert.Equal(firstResolution.Message, secondResolution.Message);
+                Assert.Equal(firstResolution.AdditionalDiaryMessages, secondResolution.AdditionalDiaryMessages);
+                AssertJourneySnapshotsEquivalent(
+                    Assert.IsType<TravelJourneySnapshot>(firstResolution.Journey),
+                    Assert.IsType<TravelJourneySnapshot>(secondResolution.Journey));
+                AssertSessionStateEquivalent(firstSession, secondSession);
             }
+
+            Assert.Equal(JourneyStatus.Active, firstSession.Journey!.Status);
+            Assert.Equal(JourneyStatus.Active, secondSession.Journey!.Status);
+            Assert.Equal(day, firstSession.Journey.DaysTravelled);
+            Assert.Equal(day, secondSession.Journey.DaysTravelled);
         }
 
-        Assert.True(foundDifference);
+        Assert.Equal(3, firstSession.Journey!.DaysTravelled);
+        Assert.Equal(3, secondSession.Journey!.DaysTravelled);
     }
+
+
 
     [Fact]
     public void GenerateAvoidsRepeatingLuckyTrailEventsOnConsecutiveDays()
     {
         var session = CreateLuckyCooldownSession();
-        foreach (var seed in new[] { "seed-lucky", "seed-lucky-a", "seed-lucky-b", "seed-lucky-c" })
+        var context = session.CreateTravelDayGenerationContext(gameSeed: "n29-lucky-22", scenarioProfileId: "profile-lucky") with
         {
-            var firstContext = session.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-lucky");
-            var firstPlan = TravelDayPlanGenerator.Generate(firstContext);
-            if (firstPlan.Encounters.Count == 0 || firstPlan.Encounters[0].Category != TravelDayEncounterCategory.Lucky)
-            {
-                continue;
-            }
+            DayNumber = 2,
+            GameEntropy = GameEntropy.Adventurous,
+            RecentTrailEventKinds = Array.Empty<JourneyTrailEventKind>(),
+            RecentTrailEventIds = Array.Empty<JourneyTrailEventId>(),
+            RecentEncounterCategories = Array.Empty<TravelDayEncounterCategory>()
+        };
 
-            var secondContext = firstContext with
-            {
-                DayNumber = firstContext.DayNumber + 1,
-                RecentTrailEventKinds = new[] { JourneyTrailEventKind.Lucky }
-            };
-            var secondPlan = TravelDayPlanGenerator.Generate(secondContext);
-
-            Assert.True(secondPlan.Encounters.Count >= 0);
-            Assert.DoesNotContain(secondPlan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.Lucky);
-            return;
-        }
-
-        throw new Xunit.Sdk.XunitException("Did not find a seeded lucky trail day to validate repeat suppression.");
-    }
-
-    [Fact]
-    public void GenerateReducesImmediateFoeRepetitionOnHighRiskRoutes()
-    {
-        var highRiskSession = CreateHighRiskEncounterSession();
-        var lowRiskSession = CreateLowRiskEncounterSession();
-        // Try multiple seeds to find one that produces foes on the high-risk route.
-        // The difficulty enum rename (Hard -> Challenging) changed the deterministic
-        // seed hash, so the original single seed no longer produces foes.
-        var seeds = Enumerable.Range(1, 20).Select(i => $"seed-high-route-{i}").ToArray();
-        var foundSeed = false;
-        var seed = seeds[0];
-        var highRiskFoes = 0;
-        var lowRiskFoes = 0;
-        var recentHighRiskEncounters = Array.Empty<TravelDayEncounterCategory>();
-
-        foreach (var candidateSeed in seeds)
+        var withoutHistory = TravelDayPlanGenerator.Generate(context);
+        var withLuckyHistory = TravelDayPlanGenerator.Generate(context with
         {
-            highRiskFoes = 0;
-            lowRiskFoes = 0;
-            recentHighRiskEncounters = Array.Empty<TravelDayEncounterCategory>();
-            seed = candidateSeed;
+            RecentTrailEventKinds = new[] { JourneyTrailEventKind.Lucky }
+        });
 
-            for (var day = 1; day <= 8; day++)
-            {
-                var highRiskContext = highRiskSession.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-high") with
-                {
-                    DayNumber = day,
-                    RecentEncounterCategories = recentHighRiskEncounters
-                };
-
-                var highRiskPlan = TravelDayPlanGenerator.Generate(highRiskContext);
-                var lowRiskPlan = TravelDayPlanGenerator.Generate(lowRiskSession.CreateTravelDayGenerationContext(gameSeed: $"{seed}-low-{day}", scenarioProfileId: "profile-low"));
-
-                if (highRiskPlan.Encounters.Count > 0 && highRiskPlan.Encounters[0].Category == TravelDayEncounterCategory.Foe)
-                {
-                    highRiskFoes++;
-                }
-
-                if (lowRiskPlan.Encounters.Count > 0 && lowRiskPlan.Encounters[0].Category == TravelDayEncounterCategory.Foe)
-                {
-                    lowRiskFoes++;
-                }
-
-                recentHighRiskEncounters = recentHighRiskEncounters
-                    .Append(highRiskPlan.Encounters.Count == 0 ? TravelDayEncounterCategory.Quiet : highRiskPlan.Encounters[0].Category)
-                    .TakeLast(3)
-                    .ToArray();
-            }
-
-            if (highRiskFoes > 0)
-            {
-                foundSeed = true;
-                break;
-            }
-        }
-
-        Assert.True(foundSeed, "Could not find a seed that produces foes on the high-risk route within 20 attempts.");
-        Assert.True(highRiskFoes >= lowRiskFoes);
-        Assert.True(highRiskFoes < 8);
+        Assert.Contains(withoutHistory.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.Lucky);
+        Assert.NotEmpty(withLuckyHistory.Encounters);
+        Assert.DoesNotContain(withLuckyHistory.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.Lucky);
     }
 
     [Fact]
     public void GenerateUsesRecentFoeHistoryToBreakUpBackToBackRiderDays()
     {
         var session = CreateHighRiskEncounterSession();
-        var seeds = Enumerable.Range(1, 48).Select(index => $"seed-repeat-{index}").ToArray();
-        var foundReducedFoeSelection = false;
-
-        foreach (var seed in seeds)
+        var baseContext = session.CreateTravelDayGenerationContext(gameSeed: "n46-foe-cooldown-0050", scenarioProfileId: "profile-foe-cooldown");
+        var withoutRecentFoe = baseContext with
         {
-            var baseContext = session.CreateTravelDayGenerationContext(gameSeed: seed, scenarioProfileId: "profile-repeat");
-            var basePlan = TravelDayPlanGenerator.Generate(baseContext);
-            if (basePlan.Encounters[0].Category != TravelDayEncounterCategory.Foe)
-            {
-                continue;
-            }
+            DayNumber = 2,
+            RecentEncounterCategories = Array.Empty<TravelDayEncounterCategory>()
+        };
+        var withRecentFoe = withoutRecentFoe with
+        {
+            RecentEncounterCategories = new[] { TravelDayEncounterCategory.Foe }
+        };
 
-            var cooledContext = baseContext with
-            {
-                DayNumber = baseContext.DayNumber + 1,
-                RecentEncounterCategories = new[] { TravelDayEncounterCategory.Foe }
-            };
-            var cooledPlan = TravelDayPlanGenerator.Generate(cooledContext);
+        var baselinePlan = TravelDayPlanGenerator.Generate(withoutRecentFoe);
+        var cooledPlan = TravelDayPlanGenerator.Generate(withRecentFoe);
 
-            if (cooledPlan.Encounters[0].Category != TravelDayEncounterCategory.Foe)
-            {
-                foundReducedFoeSelection = true;
-                break;
-            }
-        }
-
-        Assert.True(foundReducedFoeSelection);
+        Assert.Equal(TravelDayEncounterCategory.Foe, baselinePlan.Encounters[0].Category);
+        Assert.NotEqual(TravelDayEncounterCategory.Foe, cooledPlan.Encounters[0].Category);
     }
 
     [Fact]
@@ -289,7 +279,7 @@ public sealed class TravelDayPlanGeneratorTests
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
-        var context = session.CreateTravelDayGenerationContext(gameSeed: "seed-no-horse-badluck", scenarioProfileId: "profile-no-horse") with
+        var context = session.CreateTravelDayGenerationContext(gameSeed: "n28-lawful-1", scenarioProfileId: "profile-no-horse") with
         {
             RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
             RecentTrailEventIds = new[] { JourneyTrailEventId.BadLuckWashout },
@@ -299,36 +289,46 @@ public sealed class TravelDayPlanGeneratorTests
         var plan = TravelDayPlanGenerator.Generate(context);
 
         Assert.NotEmpty(plan.Encounters);
-        Assert.All(plan.Encounters, encounter =>
+        var unluckyEncounters = plan.Encounters
+            .Where(encounter => encounter.Category == TravelDayEncounterCategory.Unlucky)
+            .ToArray();
+        Assert.NotEmpty(unluckyEncounters);
+        Assert.All(unluckyEncounters, encounter =>
         {
-            Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, encounter.TrailEvent?.Id);
-            Assert.False(encounter.TrailEvent?.Kind == JourneyTrailEventKind.BadLuck && encounter.TrailEvent.DelayDays > 0);
+            Assert.Equal(JourneyTrailEventId.BadLuckDustStorm, encounter.TrailEvent?.Id);
+            Assert.Equal(JourneyTrailEventKind.BadLuck, encounter.TrailEvent?.Kind);
+            Assert.Equal(0, encounter.TrailEvent?.DelayDays);
         });
     }
 
     [Fact]
-    public void GenerateDoesNotRepeatHardMilesOnConsecutiveTrailDays()
+    public void GenerateDoesNotRepeatBadLuckDustStormWhenItsEventIdWasRecentlyRecorded()
     {
         var session = CreateNoHorseBadLuckSession();
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("holloway"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
-        var firstContext = session.CreateTravelDayGenerationContext(gameSeed: "seed-hard-miles", scenarioProfileId: "profile-hard-miles");
-        var firstPlan = FindPlanWithTrailEvent(firstContext, JourneyTrailEventId.BadLuckDustStorm);
-
-        Assert.Equal(TravelDayEncounterCategory.Unlucky, firstPlan.Encounters[0].Category);
-        Assert.Equal(JourneyTrailEventId.BadLuckDustStorm, firstPlan.Encounters[0].TrailEvent?.Id);
-
-        var secondContext = firstContext with
+        var context = session.CreateTravelDayGenerationContext(gameSeed: "n29-badluck-8", scenarioProfileId: "profile-badluck") with
         {
-            DayNumber = firstContext.DayNumber + 1,
+            DayNumber = 2,
             RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
-            RecentTrailEventIds = new[] { JourneyTrailEventId.BadLuckDustStorm }
+            RecentTrailEventIds = Array.Empty<JourneyTrailEventId>(),
+            RecentEncounterCategories = Array.Empty<TravelDayEncounterCategory>()
         };
-        var secondPlan = TravelDayPlanGenerator.Generate(secondContext);
+        var withoutId = TravelDayPlanGenerator.Generate(context);
+        var withDustStormId = TravelDayPlanGenerator.Generate(context with
+        {
+            RecentTrailEventIds = new[] { JourneyTrailEventId.BadLuckDustStorm }
+        });
 
-        Assert.NotEqual(JourneyTrailEventId.BadLuckDustStorm, secondPlan.Encounters[0].TrailEvent?.Id);
+        var withoutIdUnlucky = withoutId.Encounters.Where(encounter => encounter.Category == TravelDayEncounterCategory.Unlucky).ToArray();
+        var withIdUnlucky = withDustStormId.Encounters.Where(encounter => encounter.Category == TravelDayEncounterCategory.Unlucky).ToArray();
+
+        Assert.NotEmpty(withoutIdUnlucky);
+        Assert.NotEmpty(withIdUnlucky);
+        Assert.Contains(withoutIdUnlucky, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckDustStorm);
+        Assert.DoesNotContain(withIdUnlucky, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckDustStorm);
     }
 
     [Fact]
@@ -348,43 +348,53 @@ public sealed class TravelDayPlanGeneratorTests
         var plan = TravelDayPlanGenerator.Generate(context);
 
         Assert.NotEmpty(plan.Encounters);
-        Assert.All(plan.Encounters, encounter =>
+        var quietEncounters = plan.Encounters
+            .Where(encounter => encounter.Category == TravelDayEncounterCategory.Quiet)
+            .ToArray();
+        Assert.NotEmpty(quietEncounters);
+        Assert.All(quietEncounters, encounter =>
         {
-            Assert.NotEqual(JourneyTrailEventId.BadLuckSpookedHorse, encounter.TrailEvent?.Id);
-            Assert.False(encounter.TrailEvent?.Kind == JourneyTrailEventKind.BadLuck && encounter.TrailEvent.DelayDays > 0);
+            Assert.Null(encounter.TrailEvent);
         });
     }
 
     [Fact]
-    public void GenerateDoesNotSelectHorseOnlyEventsWhenTravelingWithoutAHorse()
+    public void GenerateFallsBackWhenOnlyTheHorseSpecificUnluckyEventRemainsWithoutAHorse()
     {
-        var seeds = Enumerable.Range(1, 12).Select(index => $"seed-no-horse-{index}");
-
-        foreach (var seed in seeds)
+        const string seed = "n32-nohorse-probe-7";
+        var context = CreateHorseTroubleContext(seed, HorseConditionBand.None, TravelMode.Foot) with
         {
-            var context = CreateHorseTroubleContext(seed, HorseConditionBand.None, TravelMode.Foot);
-            var plan = TravelDayPlanGenerator.Generate(context);
+            ScenarioProfileId = "profile-no-horse-unlucky",
+            RecentTrailEventKinds = new[] { JourneyTrailEventKind.BadLuck },
+            RecentTrailEventIds = new[]
+            {
+                JourneyTrailEventId.BadLuckWashout,
+                JourneyTrailEventId.BadLuckFoodLoss,
+                JourneyTrailEventId.BadLuckDustStorm
+            }
+        };
 
-            Assert.DoesNotContain(plan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble);
-            Assert.DoesNotContain(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
-        }
+        var plan = TravelDayPlanGenerator.Generate(context);
+
+        Assert.Contains(plan.Encounters, encounter => encounter.Category == TravelDayEncounterCategory.Quiet && encounter.TrailEvent is null);
+        Assert.DoesNotContain(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
     }
 
     [Fact]
-    public void GenerateCanStillSelectHorseOnlyEventsWhenAHorseIsPresent()
+    public void GenerateAppliesHorseExhaustionToMountedHorseTroubleEvent()
     {
-        foreach (var seed in Enumerable.Range(1, 48).Select(index => $"seed-horse-present-{index}"))
-        {
-            var context = CreateHorseTroubleContext(seed, HorseConditionBand.Worn, TravelMode.Mounted);
-            var plan = TravelDayPlanGenerator.Generate(context);
-            if (plan.Encounters.Any(encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble))
-            {
-                Assert.Contains(plan.Encounters, encounter => encounter.TrailEvent?.Id == JourneyTrailEventId.BadLuckSpookedHorse);
-                return;
-            }
-        }
+        var context = CreateHorseTroubleContext("seed-horse-present-1", HorseConditionBand.Worn, TravelMode.Mounted);
+        var plan = TravelDayPlanGenerator.Generate(context);
+        var horseTroubleEncounters = plan.Encounters
+            .Where(encounter => encounter.Category == TravelDayEncounterCategory.HorseTrouble)
+            .ToArray();
 
-        throw new Xunit.Sdk.XunitException("Did not find a horse-trouble day to validate horse-only selection.");
+        Assert.NotEmpty(horseTroubleEncounters);
+        Assert.All(horseTroubleEncounters, encounter =>
+        {
+            Assert.Equal(JourneyTrailEventId.BadLuckSpookedHorse, encounter.TrailEvent?.Id);
+            Assert.True(encounter.TrailEvent!.HorseExhaustionDelta > 0);
+        });
     }
 
     private static TravelDayGenerationContext CreateHorseTroubleContext(string seed, HorseConditionBand horseConditionBand, TravelMode travelMode)
@@ -415,28 +425,10 @@ public sealed class TravelDayPlanGeneratorTests
             SaltSourceMode.Fixed,
             seed);
 
-    private static TravelDayPlanState FindPlanWithTrailEvent(TravelDayGenerationContext context, JourneyTrailEventId trailEventId)
-    {
-        for (var seedSuffix = 1; seedSuffix <= 128; seedSuffix++)
-        {
-            var plan = TravelDayPlanGenerator.Generate(context with
-            {
-                GameSeed = $"{context.GameSeed}-seed-{seedSuffix}"
-            });
-
-            if (plan.Encounters[0].TrailEvent?.Id == trailEventId)
-            {
-                return plan;
-            }
-        }
-
-        throw new Xunit.Sdk.XunitException($"Did not find a plan with trail event {trailEventId}.");
-    }
-
     private static GameSession CreateNoHorseBadLuckSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var holloway = new Town(new TownId("holloway"), "Holloway");
         var world = new DomainWorld(
             new[] { pinecross, holloway },
             new[]
@@ -464,15 +456,17 @@ public sealed class TravelDayPlanGeneratorTests
         int canteenCharges = 0,
         decimal wallet = 3m,
         bool withHorse = true,
-        bool withSaddle = true)
+        bool withSaddle = true,
+        decimal routeDistance = 3m,
+        GameEntropy gameEntropy = GameEntropy.Classic)
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
             {
-                new Trail(new TrailId("trail-pressure"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, 3m)
+                new Trail(new TrailId("trail-pressure"), pinecross.Id, dryfork.Id, TrailRisk.Low, TrailTerrain.Badlands, WaterFeature.None, routeDistance)
             });
 
         var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
@@ -498,55 +492,18 @@ public sealed class TravelDayPlanGeneratorTests
             items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
         }
 
-        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(wallet), new DomainInventory(items), GameDifficulty.Standard, saltSource: DeterministicSaltSource);
+        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(wallet), new DomainInventory(items), GameDifficulty.Standard, saltSource: DeterministicSaltSource, gameEntropy: gameEntropy);
         var resolver = new TravelResolver();
         var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
         session.StartJourney(preview);
         return session;
     }
 
-    private static GameSession CreateSeedSensitiveSession(bool withHorse = true, bool withSaddle = true)
-    {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
-        var world = new DomainWorld(
-            new[] { pinecross, dryfork },
-            new[]
-            {
-                new Trail(new TrailId("trail-sensitive"), pinecross.Id, dryfork.Id, TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.None, 3m)
-            });
-
-        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var items = new List<DomainInventoryItem>
-        {
-            new DomainInventoryItem(DomainItemKind.Food, 3),
-            new DomainInventoryItem(DomainItemKind.Canteen, 1, canteenState: new CanteenState(3, 4)),
-            new DomainInventoryItem(DomainItemKind.Knife, 1)
-        };
-
-        if (withHorse)
-        {
-            items.Add(new DomainInventoryItem(DomainItemKind.Horse, 1, HorseTravelState.Healthy));
-        }
-
-        if (withSaddle)
-        {
-            items.Add(new DomainInventoryItem(DomainItemKind.Saddle, 1));
-        }
-
-        var inventory = new DomainInventory(items);
-
-        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), inventory, GameDifficulty.Standard, saltSource: DeterministicSaltSource);
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, dryfork.Id, session.Player.Inventory, session.TravelRules).Preview!;
-        session.StartJourney(preview);
-        return session;
-    }
 
     private static GameSession CreateLuckyCooldownSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var creekside = new Town(new TownId("creekside"), "Creekside", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var creekside = new Town(new TownId("creekside"), "Creekside");
         var world = new DomainWorld(
             new[] { pinecross, creekside },
             new[]
@@ -573,8 +530,8 @@ public sealed class TravelDayPlanGeneratorTests
 
     private static GameSession CreateHighRiskEncounterSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]
@@ -599,32 +556,91 @@ public sealed class TravelDayPlanGeneratorTests
         return session;
     }
 
-    private static GameSession CreateLowRiskEncounterSession()
-    {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var creekside = new Town(new TownId("creekside"), "Creekside", TownServices.None);
-        var world = new DomainWorld(
-            new[] { pinecross, creekside },
-            new[]
-            {
-                new Trail(new TrailId("trail-low"), pinecross.Id, creekside.Id, TrailRisk.Low, TrailTerrain.OpenRange, WaterFeature.Creek, 3m)
-            });
-
-        var caseFile = new CaseFile(null, Array.Empty<Suspect>(), new SuspectId("suspect-1"), Array.Empty<Clue>());
-        var items = new List<DomainInventoryItem>
+    private static int CountFoeEncounters(
+        TravelDayGenerationContext baseContext,
+        GameDifficulty difficulty,
+        GameEntropy entropy)
+        => FoePressureSeedCorpus.Sum(gameSeed => TravelDayPlanGenerator.Generate(baseContext with
         {
-            new(DomainItemKind.Food, 4),
-            new(DomainItemKind.Canteen, 1, canteenState: new CanteenState(4, 4)),
-            new(DomainItemKind.Horse, 1, HorseTravelState.Healthy),
-            new(DomainItemKind.Saddle, 1),
-            new(DomainItemKind.Knife, 1)
-        };
+            GameSeed = gameSeed,
+            GameDifficulty = difficulty,
+            GameEntropy = entropy
+        }).Encounters.Count(encounter => encounter.Category == TravelDayEncounterCategory.Foe));
 
-        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, Wallet.Starting(25m), new DomainInventory(items), GameDifficulty.Easy, saltSource: DeterministicSaltSource);
-        var resolver = new TravelResolver();
-        var preview = resolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, creekside.Id, session.Player.Inventory, session.TravelRules).Preview!;
-        session.StartJourney(preview);
-        return session;
+    private static void AssertTravelDayAdvancedEquivalent(TravelDayAdvanced expected, TravelDayAdvanced actual)
+    {
+        Assert.Equal(expected.Day, actual.Day);
+        AssertJourneySnapshotsEquivalent(expected.JourneySnapshot, actual.JourneySnapshot);
+        Assert.Equal(expected.HealthDelta, actual.HealthDelta);
+        Assert.Equal(expected.PursuitHeat, actual.PursuitHeat);
+        Assert.Equal(expected.DayOutcome, actual.DayOutcome);
+        Assert.Equal(expected.DiaryMessage, actual.DiaryMessage);
+        Assert.Equal(expected.HorseLostMessage, actual.HorseLostMessage);
+        Assert.Equal(expected.AdditionalDiaryMessages, actual.AdditionalDiaryMessages);
+        Assert.Equal(expected.DayEntries, actual.DayEntries);
+    }
+
+    private static void AssertJourneySnapshotsEquivalent(TravelJourneySnapshot expected, TravelJourneySnapshot actual)
+    {
+        Assert.Equal(expected.JourneySequence, actual.JourneySequence);
+        Assert.Equal(expected.OriginTownId, actual.OriginTownId);
+        Assert.Equal(expected.DestinationTownId, actual.DestinationTownId);
+        Assert.Equal(expected.OriginTownName, actual.OriginTownName);
+        Assert.Equal(expected.DestinationTownName, actual.DestinationTownName);
+        Assert.Equal(expected.RouteProfile.TrailId, actual.RouteProfile.TrailId);
+        Assert.Equal(expected.RouteProfile.Risk, actual.RouteProfile.Risk);
+        Assert.Equal(expected.RouteProfile.Terrain, actual.RouteProfile.Terrain);
+        Assert.Equal(expected.RouteProfile.WaterFeature, actual.RouteProfile.WaterFeature);
+        Assert.Equal(expected.RouteProfile.RideDayDistance, actual.RouteProfile.RideDayDistance);
+        Assert.Equal(expected.RouteProfile.MountedRideDayProgress, actual.RouteProfile.MountedRideDayProgress);
+        Assert.Equal(expected.RouteProfile.FootRideDayProgress, actual.RouteProfile.FootRideDayProgress);
+        Assert.Equal(expected.RouteProfile.Warnings, actual.RouteProfile.Warnings);
+        Assert.Equal(expected.TravelMode, actual.TravelMode);
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.MountedTravelAvailable, actual.MountedTravelAvailable);
+        Assert.Equal(expected.WaterSecure, actual.WaterSecure);
+        Assert.Equal(expected.RideDayDistance, actual.RideDayDistance);
+        Assert.Equal(expected.RemainingRideDayDistance, actual.RemainingRideDayDistance);
+        Assert.Equal(expected.ExpectedDays, actual.ExpectedDays);
+        Assert.Equal(expected.RemainingDays, actual.RemainingDays);
+        Assert.Equal(expected.CanteenChargesPerDay, actual.CanteenChargesPerDay);
+        Assert.Equal(expected.RequiredCanteenCharges, actual.RequiredCanteenCharges);
+        Assert.Equal(expected.AvailableCanteenCharges, actual.AvailableCanteenCharges);
+        Assert.Equal(expected.CanteenReserveCharges, actual.CanteenReserveCharges);
+        Assert.Equal(expected.DelayMarginDays, actual.DelayMarginDays);
+        Assert.Equal(expected.DelayRisk, actual.DelayRisk);
+        Assert.Equal(expected.RequiredFood, actual.RequiredFood);
+        Assert.Equal(expected.AvailableFood, actual.AvailableFood);
+        Assert.Equal(expected.RequiredHorseFeed, actual.RequiredHorseFeed);
+        Assert.Equal(expected.AvailableHorseFeed, actual.AvailableHorseFeed);
+        Assert.Equal(expected.HorseState, actual.HorseState);
+        Assert.Equal(expected.OpeningNarration, actual.OpeningNarration);
+        Assert.Equal(expected.DaysTravelled, actual.DaysTravelled);
+        Assert.Equal(expected.DelayDays, actual.DelayDays);
+        Assert.Equal(expected.CurrentDayPlan is null, actual.CurrentDayPlan is null);
+        if (expected.CurrentDayPlan is not null && actual.CurrentDayPlan is not null)
+        {
+            Assert.True(PlansAreEquivalent(expected.CurrentDayPlan, actual.CurrentDayPlan));
+        }
+        Assert.True(ResolutionsAreEquivalent(expected.PendingEncounter, actual.PendingEncounter));
+        Assert.Equal(expected.Warnings, actual.Warnings);
+    }
+
+    private static void AssertSessionStateEquivalent(GameSession expected, GameSession actual)
+    {
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.Clock.Day, actual.Clock.Day);
+        Assert.Equal(expected.Clock.Turn, actual.Clock.Turn);
+        Assert.Equal(expected.Player.Health, actual.Player.Health);
+        Assert.Equal(expected.Player.Wallet.Cash, actual.Player.Wallet.Cash);
+        Assert.Equal(expected.Player.CurrentTownId, actual.Player.CurrentTownId);
+        Assert.Equal(expected.Player.GetCanteenState(), actual.Player.GetCanteenState());
+        Assert.Equal(expected.Player.GetHorseState(), actual.Player.GetHorseState());
+        Assert.Equal(
+            expected.Player.Inventory.Items.OrderBy(item => item.Kind).Select(item => (item.Kind, item.Quantity, item.HorseState, item.CanteenState)),
+            actual.Player.Inventory.Items.OrderBy(item => item.Kind).Select(item => (item.Kind, item.Quantity, item.HorseState, item.CanteenState)));
+        Assert.True(expected.Journey is not null && actual.Journey is not null);
+        AssertJourneySnapshotsEquivalent(expected.Journey!.ToSnapshot(expected.TravelRules), actual.Journey!.ToSnapshot(actual.TravelRules));
     }
 
     private static bool PlansAreEquivalent(TravelDayPlanState left, TravelDayPlanState right)

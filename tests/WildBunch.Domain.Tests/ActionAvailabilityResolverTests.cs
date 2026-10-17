@@ -5,7 +5,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -18,10 +17,10 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void TownWithSuppliesExposesBuySuppliesAction()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(CreateContext(session));
 
         Assert.Contains(result, action => action.Kind == AvailableActionKind.Travel);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewMap);
@@ -31,55 +30,60 @@ public sealed class ActionAvailabilityResolverTests
     }
 
     [Fact]
-    public void TownWithTelegraphExposesSendTelegram()
+    public void TownWithTelegraphBuildingDoesNotExposeTelegraphActions()
     {
-        var session = CreateSession(TownServices.Telegraph);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(CreateContext(session));
 
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.SendTelegram);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
+        Assert.Equal(
+            new[]
+            {
+                AvailableActionKind.Travel,
+                AvailableActionKind.ViewMap,
+                AvailableActionKind.ViewJournal,
+                AvailableActionKind.ReadWantedPosters,
+                AvailableActionKind.BuySupplies,
+                AvailableActionKind.GatherLocalGossip,
+                AvailableActionKind.LookAroundSaloon
+            },
+            result.Select(action => action.Kind));
     }
 
     [Fact]
-    public void TownWithNoticeBoardExposesReadWantedPosters()
+    public void TownExposesWantedPostersAndSaloonGossip()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(CreateContext(session));
 
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
     }
 
     [Fact]
-    public void TownWithoutNoticeBoardStillExposesBaselineInvestigationActions()
+    public void TownExposesBaselineInvestigationActions()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var resolver = new ActionAvailabilityResolver();
 
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(CreateContext(session));
 
         // ReadWantedPosters is always available - every town has a sheriff's office.
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
     }
 
     [Fact]
     public void TownWithoutOutgoingTrailsDoesNotExposeTravel()
     {
-        var session = CreateSession(TownServices.None, addTrail: false);
+        var session = CreateSession(addTrail: false);
         var resolver = new ActionAvailabilityResolver();
 
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(CreateContext(session));
 
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.Travel);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ViewMap);
@@ -89,22 +93,19 @@ public sealed class ActionAvailabilityResolverTests
     [Fact]
     public void ActiveJourneyReplacesTravelWithAdvanceTravelDay()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         var travelResolver = new TravelResolver();
         var preview = travelResolver.PreviewJourney(session.World, session.Player.CurrentTownId!.Value, new TownId("connected"), session.Player.Inventory).Preview!;
         session.StartJourney(preview);
 
         var resolver = new ActionAvailabilityResolver();
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(CreateContext(session));
 
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.Travel);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
     }
 
@@ -119,26 +120,73 @@ public sealed class ActionAvailabilityResolverTests
         session.Journey!.MarkInterrupted(CreateFoeEncounter());
 
         var resolver = new ActionAvailabilityResolver();
-        var result = resolver.Resolve(session);
+        var result = resolver.Resolve(CreateContext(session));
 
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.Travel);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ResolveTravelEncounter);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
         Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
     }
+
+    [Fact]
+    public void CompletedJourneyOffersNoFurtherAdvanceUntilArrivalIsAcknowledged()
+    {
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
+        var start = session.StartJourney(preview);
+        Assert.True(start.Success, start.Message);
+
+        while (session.Journey?.Status == JourneyStatus.Active)
+        {
+            var advance = session.AdvanceJourneyDay();
+            Assert.True(advance.Success, advance.Message);
+        }
+
+        Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
+
+        var resolver = new ActionAvailabilityResolver();
+        var arrivalPending = resolver.Resolve(CreateContext(session));
+        Assert.DoesNotContain(arrivalPending, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
+
+        var acknowledgement = session.AcknowledgeJourneyArrival();
+        Assert.True(acknowledgement.Success, acknowledgement.Message);
+
+        var afterArrival = resolver.Resolve(CreateContext(session));
+        Assert.Contains(afterArrival, action => action.Kind == AvailableActionKind.BuySupplies);
+        Assert.Contains(afterArrival, action => action.Kind == AvailableActionKind.ReadWantedPosters);
+        Assert.DoesNotContain(afterArrival, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
+    }
+
+    [Fact]
+    public void SetupWithoutSelectedTownHasNoActions()
+    {
+        var context = new ActionAvailabilityContext(
+            StartFlowPhase.PrologueViewed,
+            new DomainWorld([new Town(new TownId("current"), "Current Town")], []),
+            CurrentTownId: null,
+            Journey: null);
+
+        var result = new ActionAvailabilityResolver().Resolve(context);
+
+        Assert.Empty(result);
+    }
+
+    private static ActionAvailabilityContext CreateContext(GameSession session)
+        => new(
+            session.StartFlowPhase,
+            session.World,
+            session.Player.CurrentTownId,
+            session.Journey?.ToSnapshot(session.TravelRules));
 
     private static JourneyEncounterState CreateFoeEncounter()
         => JourneyEncounterState.CreateFoe(
             "A hard-eyed rider cuts across my path.",
             new JourneyFoeProfile(5, 5, 8m));
 
-    private static GameSession CreateSession(TownServices currentTownServices, bool addTrail = true)
+    private static GameSession CreateSession(bool addTrail = true)
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             addTrail
@@ -159,8 +207,8 @@ public sealed class ActionAvailabilityResolverTests
 
     private static GameSession CreateHighRiskSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new DomainWorld(
             new[] { pinecross, dryfork },
             new[]

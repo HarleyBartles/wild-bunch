@@ -22,10 +22,7 @@ import {
   getTownStoreOffers,
   archiveGame,
   buyStoreItem,
-  checkLocalRecords,
-  followTelegraphLeads,
   gatherLocalGossip,
-  inspectNoticeBoard,
   confrontSaloonPersonOfInterest,
   lookAroundSaloon,
   readWantedPosters,
@@ -40,12 +37,9 @@ vi.mock("../api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
 }));
@@ -66,12 +60,9 @@ const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
 const mockedArchiveGame = vi.mocked(archiveGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
-const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
-const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
-const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 const mockedGetSessionAudit = vi.mocked(getSessionAudit);
@@ -115,8 +106,8 @@ function createSession(): GameSessionDto {
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -125,7 +116,7 @@ function createSession(): GameSessionDto {
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -142,7 +133,6 @@ function createSession(): GameSessionDto {
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },
@@ -167,7 +157,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -180,8 +170,6 @@ function createStoreOffers(): TownStoreOffersDto {
   return {
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   };
 }
@@ -189,10 +177,7 @@ function createStoreOffers(): TownStoreOffersDto {
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    {
-      kind: AvailableActionKind.ReadWantedPosters,
-      label: "Read wanted posters",
-    },
+    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -204,28 +189,12 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedReadWantedPosters.mockResolvedValue({
     success: true,
     message: "Read wanted posters",
     currentJournal: createJournal(),
     wantedPosters: [],
-  });
-  mockedInspectNoticeBoard.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedCheckLocalRecords.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedFollowTelegraphLeads.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
   });
   mockedGatherLocalGossip.mockResolvedValue({
     success: true,
@@ -261,7 +230,6 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
@@ -316,9 +284,7 @@ describe("Start Over regression — player-facing, not dev-only", () => {
 
     // The Game Settings button must live in the HUD banner (player-facing shell),
     // not behind a dev-only surface.
-    const gameSettingsButton = within(hud).getByRole("button", {
-      name: /game settings/i,
-    });
+    const gameSettingsButton = within(hud).getByRole("button", { name: /game settings/i });
     expect(gameSettingsButton).toBeInTheDocument();
     expect(gameSettingsButton).not.toBeDisabled();
   });
@@ -353,9 +319,7 @@ describe("Start Over regression — player-facing, not dev-only", () => {
     // Open the Game Settings overlay from the HUD (player-facing) button.
     await user.click(within(hud).getByRole("button", { name: /game settings/i }));
 
-    const overlay = await screen.findByRole("dialog", {
-      name: /game settings/i,
-    });
+    const overlay = await screen.findByRole("dialog", { name: /game settings/i });
     const scope = within(overlay);
 
     // The Start Over action is reachable inside the player-facing overlay.

@@ -22,7 +22,7 @@ public sealed class ForceTravelOverrideHandlerTests
 
         await handler.HandleAsync(new ForceTravelOverrideCommand(
             session.Id.Value,
-            ForcedCategory: "Foe",
+            ForcedCategory: TravelDayEncounterCategory.Foe,
             FoeSpeed: 5,
             FoeFightStrength: 4,
             FoeMinimumBribe: 8m,
@@ -47,7 +47,7 @@ public sealed class ForceTravelOverrideHandlerTests
 
         await handler.HandleAsync(new ForceTravelOverrideCommand(
             session.Id.Value,
-            ForcedCategory: "Lucky",
+            ForcedCategory: TravelDayEncounterCategory.Lucky,
             FoeSpeed: null,
             FoeFightStrength: null,
             FoeMinimumBribe: null,
@@ -61,9 +61,8 @@ public sealed class ForceTravelOverrideHandlerTests
 
     private static GameSession CreateSessionWithActiveJourney()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross",
-            TownServices.None);
-        var dryfork = new Town(new TownId("dryfork"), "Dry Fork", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var dryfork = new Town(new TownId("dryfork"), "Dry Fork");
         var world = new World(
             new[] { pinecross, dryfork },
             new[]

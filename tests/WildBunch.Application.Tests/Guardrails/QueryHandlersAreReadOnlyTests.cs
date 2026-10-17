@@ -1,4 +1,5 @@
 using WildBunch.Application.Games.Mapping;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Games.Queries;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Cases;
@@ -8,7 +9,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -25,13 +25,20 @@ public sealed class QueryHandlersAreReadOnlyTests
 
         var gameSessionHandler = new GetGameSessionHandler(repository);
         var journalHandler = new GetJournalHandler(repository);
-        var availableActionsHandler = new GetAvailableActionsHandler(repository, new WildBunch.Domain.Actions.ActionAvailabilityResolver());
-        var storeOffersHandler = new GetTownStoreOffersHandler(repository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
+        IGameSessionReadRepository readRepository = repository;
+        var availableActionsHandler = new GetAvailableActionsHandler(readRepository, new WildBunch.Domain.Actions.ActionAvailabilityResolver());
+        var worldMapHandler = new GetWorldMapHandler(readRepository);
+        var storeOffersHandler = new GetTownStoreOffersHandler(readRepository, new WildBunch.Domain.Economy.TownStoreCatalogResolver());
+        var travelPreviewHandler = new PreviewTravelHandler(readRepository, new WildBunch.Domain.Travel.TravelResolver());
+        var prologueHandler = new GetPrologueHandler(readRepository);
 
         _ = await gameSessionHandler.HandleAsync(new GetGameSessionQuery(session.Id.Value));
         _ = await journalHandler.HandleAsync(new GetJournalQuery(session.Id.Value));
         _ = await availableActionsHandler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+        _ = await worldMapHandler.HandleAsync(new GetWorldMapQuery(session.Id.Value));
         _ = await storeOffersHandler.HandleAsync(new GetTownStoreOffersQuery(session.Id.Value, "pinecross"));
+        _ = await travelPreviewHandler.HandleAsync(new PreviewTravelQuery(session.Id.Value, "redmesa"));
+        _ = await prologueHandler.HandleAsync(new GetPrologueQuery(session.Id.Value));
 
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
@@ -41,8 +48,8 @@ public sealed class QueryHandlersAreReadOnlyTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var redmesa = new Town(new TownId("redmesa"), "Red Mesa", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var redmesa = new Town(new TownId("redmesa"), "Red Mesa");
         var world = new DomainWorld(
             new[] { pinecross, redmesa },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, redmesa.Id, TrailRisk.Low) });

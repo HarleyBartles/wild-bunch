@@ -9,6 +9,7 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.GameContent.NewGame;
 using WildBunch.Integration.Tests.TestInfrastructure;
 using WildBunch.Persistence;
 using WildBunch.Persistence.GameSessions;
@@ -34,7 +35,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         services.AddDbContext<WildBunchDbContext>(options => options.UseNpgsql(connectionString));
         services.AddSingleton<GameSessionJsonSerializer>();
         services.AddSingleton<TravelDiaryDayProjector>();
-        services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry([]));
+        services.AddSingleton<PayloadUpcasterRegistry>(_ => new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters()));
         services.AddSingleton<PersistedPayloadLoader>(sp =>
         {
             var eventUpcasters = sp.GetRequiredService<PayloadUpcasterRegistry>();
@@ -44,12 +45,11 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
                 eventUpcasters,
                 serializer,
                 diaryDayProjector,
-                rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+                rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
         });
         services.AddScoped<IGameSessionRepository, EfGameSessionRepository>();
         services.AddScoped<IGameSessionUnitOfWork, EfGameSessionUnitOfWork>();
         services.AddSingleton<HudProjector>();
-        services.AddSingleton<DiaryProjector>();
         services.AddSingleton<FullAuditProjector>();
         var provider = services.BuildServiceProvider();
 
@@ -61,8 +61,8 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite", TownServices.Telegraph);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var quartzsite = new Town(new TownId("quartzsite"), "Quartzsite");
         var world = new DomainWorld(
             new[] { pinecross, quartzsite },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, quartzsite.Id, TrailRisk.Low) });
@@ -119,7 +119,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         // 4. Command: purchase
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(reloaded.World.GetTown(reloaded.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         reloaded.Purchase(offer, 3);
         Assert.Equal(2, reloaded.UncommittedEvents.Count);
         Assert.IsType<TownActionContextEntered>(reloaded.UncommittedEvents[0]);
@@ -144,11 +144,94 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         Assert.Equal(19m, hud.WalletCash); // 25 - 6 = 19
         Assert.Equal(4, hud.InventoryItems.Single(i => i.ItemKind == DomainItemKind.Food).Quantity); // 1 + 3 = 4
 
-        var audit = auditProjector.Project(events);
+        var recordedEvents = await repo.GetRecordedEventStreamAsync(session.Id);
+        var audit = auditProjector.Project(recordedEvents);
         Assert.Equal(8, audit.Entries.Count);
         Assert.Equal("PlayerSetupCompleted", audit.Entries[0].EventType);
         Assert.Equal("TownActionContextEntered", audit.Entries[6].EventType);
         Assert.Equal("StoreItemPurchased", audit.Entries[7].EventType);
+    }
+
+    [Fact]
+    public async Task GeneratedTownLayoutFacts_SurvivePersistenceAndEventReplay()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+
+        var factory = new SeededNewGameFactory(new DeterministicSaltSourceFactory());
+        var seedCode = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorldResolver.CreateCanonicalSeedWorld()));
+        var (world, caseFile, seedCodeText, saltSource) = factory.ResolveWorld(
+            "Ranger Vale",
+            GameDifficulty.Standard,
+            seedCode,
+            GameEntropy.Classic);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, seedCodeText, saltSource);
+        var expectedTown = world.Towns.First();
+        var expectedLayout = expectedTown.Layout!;
+        var expectedSalts = Assert.IsType<LayoutSalts>(expectedLayout.LayoutSalts);
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.BuildingsSalt));
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.RoadsSalt));
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.DirtSalt));
+        Assert.False(string.IsNullOrWhiteSpace(expectedSalts.PropsSalt));
+
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+
+        var persistedEvents = await repo.GetEventStreamAsync(session.Id);
+        var replayed = GameSession.RehydrateFromEvents(session.Id, world, persistedEvents);
+        var replayedTown = replayed.World.GetTown(expectedTown.Id);
+        var replayedLayout = Assert.IsType<TownLayout>(replayedTown.Layout);
+
+        Assert.Equal(expectedTown.Id, replayedTown.Id);
+        Assert.Equal(expectedLayout.Buildings, replayedLayout.Buildings);
+        Assert.Equal(expectedLayout.PlayerSpawnX, replayedLayout.PlayerSpawnX);
+        Assert.Equal(expectedLayout.PlayerSpawnY, replayedLayout.PlayerSpawnY);
+        Assert.Equal(expectedLayout.Prosperity, replayedLayout.Prosperity);
+        Assert.Equal(expectedLayout.Paths, replayedLayout.Paths);
+        Assert.Equal(expectedLayout.TileGrid, replayedLayout.TileGrid);
+        Assert.Equal(expectedLayout.ResolverVersion, replayedLayout.ResolverVersion);
+        var replayedSalts = Assert.IsType<LayoutSalts>(replayedLayout.LayoutSalts);
+        Assert.Equal(expectedSalts.BuildingsSalt, replayedSalts.BuildingsSalt);
+        Assert.Equal(expectedSalts.RoadsSalt, replayedSalts.RoadsSalt);
+        Assert.Equal(expectedSalts.DirtSalt, replayedSalts.DirtSalt);
+        Assert.Equal(expectedSalts.PropsSalt, replayedSalts.PropsSalt);
+    }
+
+    [Fact]
+    public async Task GeneratedWarrantIdentity_SurvivesPostgreSqlEventReplay()
+    {
+        using var database = new PostgreSqlTestDatabase();
+        var services = CreateServices(database.ConnectionString);
+        using var scope = services.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IGameSessionRepository>();
+        var uow = scope.ServiceProvider.GetRequiredService<IGameSessionUnitOfWork>();
+        var factory = new SeededNewGameFactory(new DeterministicSaltSourceFactory());
+        var seedCode = SeedWorldResolver.FormatSeedCode(
+            SeedWorldResolver.CreateRepresentativeSeedCode(SeedWorldResolver.CreateCanonicalSeedWorld()));
+        var (world, caseFile, seedCodeText, saltSource) = factory.ResolveWorld(
+            "Ranger Vale",
+            GameDifficulty.Standard,
+            seedCode,
+            GameEntropy.Classic);
+        var session = GameSession.StartSetup(
+            "Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, seedCodeText, saltSource);
+
+        await repo.StoreAsync(session);
+        await uow.CommitAsync();
+
+        var loadedFromComponents = await repo.GetByIdAsync(session.Id);
+        var persistedEvents = await repo.GetEventStreamAsync(session.Id);
+        var replayed = GameSession.RehydrateFromEvents(session.Id, world, persistedEvents);
+        var expectedSuspectIds = Enumerable.Range(1, caseFile.Suspects.Count).Select(index => $"suspect-{index}");
+
+        Assert.NotNull(loadedFromComponents);
+        Assert.Equal(expectedSuspectIds, loadedFromComponents!.CaseFile.PublicWarrants.Select(warrant => warrant.TargetSuspectId?.Value));
+        Assert.Equal(expectedSuspectIds, replayed.CaseFile.PublicWarrants.Select(warrant => warrant.TargetSuspectId?.Value));
     }
 
     [Fact]
@@ -170,7 +253,7 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         var reloaded = await repo.GetByIdAsync(session.Id);
         var resolver = new TownStoreCatalogResolver();
         var offer = resolver.Resolve(reloaded!.World.GetTown(reloaded.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         reloaded.Purchase(offer, 2);
         await repo.StoreAsync(reloaded);
         await uow.CommitAsync();
@@ -214,14 +297,14 @@ public sealed class EventSourcingEndToEndTests : IClassFixture<PostgreSqlPersist
         // First purchase succeeds
         var resolver = new TownStoreCatalogResolver();
         var offer1 = resolver.Resolve(copy1!.World.GetTown(copy1.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         copy1.Purchase(offer1, 1);
         await repo.StoreAsync(copy1);
         await uow.CommitAsync();
 
         // Second purchase should fail with ConcurrencyException
         var offer2 = resolver.Resolve(copy2!.World.GetTown(copy2.Player.CurrentTownId!.Value))
-            .Offers.Single(o => o.VendorType == StoreVendorType.GeneralStore && o.ItemKind == DomainItemKind.Food);
+            .Offers.Single(o => o.ItemKind == DomainItemKind.Food);
         copy2.Purchase(offer2, 1);
 
         await Assert.ThrowsAsync<Application.Games.Exceptions.ConcurrencyException>(() => repo.StoreAsync(copy2));

@@ -126,4 +126,11 @@ Vite build reads effective MSBuild `Version` and emits `dist/version.json`,
 while the command bus checks SemVer syntax, duplicate npm root versions, and
 generated identity equality after the web build. Development checkpoints,
 release candidates, and stable versions follow ADR-0048 and the joint
-Gitflow/SemVer rules. Focused tests reject malformed and stale identities. `release-verify --check` binds the API and two web build modes produced from one clean full source commit and authored version, and verifies an existing immutable bundle without rebuilding. The output directory names identify build modes; they do not establish public developer-capability isolation. Main's current application retains its existing developer surfaces, and the two modes currently share that application behavior. This tooling adoption makes no claim about the newer develop application's player journeys, release qualification, hosted publication, independent build reproducibility or deployment. The generic Chromium check proves production-preview bootstrap and served version identity; application-specific browser contracts accompany their source changes.
+Gitflow/SemVer rules. Focused tests reject malformed and stale identities;
+`release-verify --check` binds the exact API, public-web, and
+playtest-web artifact trees produced from one clean full source commit and
+authored version, and re-verifies an existing immutable bundle without
+rebuilding. This records the bytes produced by that invocation; it does not
+claim independent builds are reproducible. The browser lane checks built bootstrap and version identity alongside application-specific player contracts. Local source-bound bundles and browser checks do not establish independent
+build reproducibility, hosted release or hotfix behavior, stable publication,
+cloud deployment, or complete feature implementation.

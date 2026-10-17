@@ -25,8 +25,6 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     public List<GameEntropy> RequestedEntropies { get; } = [];
 
-    public List<LayoutSalts?> RequestedDevLayoutSalts { get; } = [];
-
     public GameSession CreatedSession => _sessionToReturn;
 
     public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
@@ -42,21 +40,6 @@ public sealed class StubNewGameFactory : INewGameFactory
         return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000", _sessionToReturn.SaltSource);
     }
 
-    public (World World, CaseFile CaseFile, string SeedCodeText, SaltSource SaltSource) ResolveWorld(
-        string playerName,
-        GameDifficulty gameDifficulty,
-        string? setupSeedCode,
-        GameEntropy gameEntropy,
-        LayoutSalts? devLayoutSalts)
-    {
-        RequestedPlayerNames.Add(playerName);
-        RequestedGameDifficulties.Add(gameDifficulty);
-        RequestedSetupSeedCodes.Add(setupSeedCode);
-        RequestedEntropies.Add(gameEntropy);
-        RequestedDevLayoutSalts.Add(devLayoutSalts);
-        return (_sessionToReturn.World, _sessionToReturn.CaseFile, _sessionToReturn.SeedCode ?? "00000000-0000-0000-0000-000000000000", _sessionToReturn.SaltSource);
-    }
-
     public (Wallet Wallet, Inventory Inventory) ResolveStartingResources(GameDifficulty gameDifficulty)
     {
         return (_sessionToReturn.Player.Wallet, _sessionToReturn.Player.Inventory);
@@ -64,9 +47,9 @@ public sealed class StubNewGameFactory : INewGameFactory
 
     private static GameSession CreateSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
-        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale");
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
+        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge");
 
         var world = new World(
             new[] { dustvale, silvercreek, dryridge },

@@ -2,13 +2,32 @@ using WildBunch.Application.Games.Mapping;
 using WildBunch.Application.Games.Models;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
+using WildBunch.Domain.Game;
 
 namespace WildBunch.Application.Tests.Mappers;
 
 public sealed class TravelDiaryMapperTests
 {
     [Fact]
-    public void ToDtoUsesRendererOwnedDiaryProse()
+    public void ToDtoPreservesRecordedLatestJourneyEntriesWithSharedDayAndMessageValues()
+    {
+        var history = new[]
+        {
+            new GameLogEntry(GameLogEntryKind.Travel, "The trail goes quiet.", 4, 0, 1),
+            new GameLogEntry(GameLogEntryKind.Travel, "The trail goes quiet.", 4, 0, 2),
+            new GameLogEntry(GameLogEntryKind.Travel, "I reach Dust Fork.", 5, 0, 2)
+        };
+
+        var dto = TravelDiaryMapper.ToDto(Array.Empty<TravelDiaryDayState>(), history);
+
+        Assert.NotNull(dto);
+        Assert.Equal(new[] { "The trail goes quiet.", "I reach Dust Fork." }, dto!.JourneyEntries.Select(entry => entry.Message));
+        Assert.All(dto.JourneyEntries, entry => Assert.Equal(GameLogEntryKind.Travel, entry.Kind));
+        Assert.DoesNotContain(dto.JourneyEntries, entry => entry.Day == 3);
+    }
+
+    [Fact]
+    public void ToDtoPreservesStructuredDayFactsWithoutCreatingNarration()
     {
         var day = new TravelDiaryDayState(
             1,
@@ -59,10 +78,7 @@ public sealed class TravelDiaryMapperTests
 
         Assert.NotNull(dto);
         var mappedDay = Assert.Single(dto!.Days);
-        Assert.NotNull(mappedDay.JourneyBeat);
-        Assert.NotNull(mappedDay.ResourceBeat);
-        Assert.Contains(mappedDay.JourneyBeat, mappedDay.Entries);
-        Assert.Contains(mappedDay.ResourceBeat, mappedDay.Entries);
-        Assert.Contains("I found a cache of jerky and trail biscuits and picked up 2 food.", mappedDay.Entries);
+        Assert.Equal(3, mappedDay.CurrentFood);
+        Assert.Equal(1000, mappedDay.CurrentHealth);
     }
 }

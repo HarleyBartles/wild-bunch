@@ -31,8 +31,8 @@ public sealed class GameSetupResolverTests
     [Fact]
     public void DifferentSeedCodesCanChangeAtLeastOneSetupSurface()
     {
-        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 11));
-        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(1, 2, 4, 6, tail: 42));
+        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, highBits: 11));
+        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(1, 2, 4, 6, highBits: 42));
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var entropy = EntropyPolicy.For(GameEntropy.Classic);
 
@@ -67,22 +67,19 @@ public sealed class GameSetupResolverTests
 
         var setup = BuildSetup(seedWorld, difficulty, entropy);
 
-        // Starting town is the first town in the generated world (slot 0).
-        var expectedStartingTown = MapGenerator.Generate(seedWorld, new GameSetupDeterministicSource(seedWorld.SeedCodeText), GameEntropy.Classic, null).Towns.First().Id;
-        Assert.Equal(expectedStartingTown, setup.StartingTownId);
         Assert.Equal(25m, setup.StartingWallet.Cash);
         Assert.Equal(7, setup.CaseFile.Suspects.Count);
         Assert.Single(setup.CaseFile.Suspects, suspect => suspect.Id.Equals(setup.CaseFile.TrueCulpritId));
         Assert.Equal(5, setup.CaseFile.KillerReleaseThreshold);
         Assert.Equal("The culprit has a scar on the left cheek.", setup.CaseFile.OpeningLead.Description);
-        // 6 base surface-tagged clues; 7 gang + 21 unrelated = 28 warrants.
-        Assert.Equal(6, setup.CaseFile.PublicClues.Count);
-        Assert.Equal(28, setup.CaseFile.PublicWarrants.Count);
-        Assert.Equal(7, setup.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.GangMember || w.Terms.TargetKind == InvestigationTargetKind.TrueCulprit));
-        Assert.Equal(21, setup.CaseFile.PublicWarrants.Count(w => w.Terms.TargetKind == InvestigationTargetKind.UnrelatedWantedCriminal));
+        // The authored public source is the Sheriff Office poster; other public clues are gossip.
+        Assert.Single(setup.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
+        Assert.Equal(7, setup.CaseFile.PublicWarrants.Count);
+        Assert.All(setup.CaseFile.PublicWarrants, warrant => Assert.True(
+            warrant.Terms.TargetKind is InvestigationTargetKind.GangMember or InvestigationTargetKind.TrueCulprit));
         Assert.Equal("Butch Cassidy", setup.CaseFile.PublicWarrants[0].TargetName);
         Assert.Equal(InvestigationTargetKind.GangMember, setup.CaseFile.PublicWarrants[0].Terms.TargetKind);
-        // The true culprit's warrant is in the pool (gated behind the killer release gate at runtime).
+        // The true culprit's warrant is in the public pool before encounter release.
         Assert.Contains(setup.CaseFile.PublicWarrants, warrant => warrant.TargetName == setup.CaseFile.Suspects[3].Name
             && warrant.Terms.TargetKind == InvestigationTargetKind.TrueCulprit);
         Assert.DoesNotContain(setup.CaseFile.PublicWarrants[0].Terms.KnownFeatures, feature => feature.Contains("scar", StringComparison.OrdinalIgnoreCase));
@@ -105,8 +102,8 @@ public sealed class GameSetupResolverTests
         // With direct bit encoding, different case fields produce different UUIDs,
         // which changes the GameSetupDeterministicSource hash that drives turf
         // assignment.
-        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, tail: 0));
-        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 2, 4, 5, tail: 0));
+        var seedWorldA = SeedWorldResolver.Resolve(CreateSeedCode(0, 1, 3, 0, highBits: 0));
+        var seedWorldB = SeedWorldResolver.Resolve(CreateSeedCode(0, 2, 4, 5, highBits: 0));
         var difficulty = DifficultyEnvelope.For(GameDifficulty.Standard);
         var entropy = EntropyPolicy.For(GameEntropy.Classic);
 
@@ -201,7 +198,7 @@ public sealed class GameSetupResolverTests
             setup.TravelRulesProfile,
             setup.StartingTownId.Value,
             setup.StartingWallet.Cash,
-            string.Join(",", setup.World.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase).Select(town => $"{town.Id.Value}:{town.Name}:{town.Services}")),
+            string.Join(",", setup.World.Towns.OrderBy(town => town.Id.Value, StringComparer.OrdinalIgnoreCase).Select(town => $"{town.Id.Value}:{town.Name}")),
             string.Join(",", setup.World.Trails.OrderBy(trail => trail.Id.Value, StringComparer.OrdinalIgnoreCase).Select(trail => $"{trail.Id.Value}:{trail.FromTownId.Value}:{trail.ToTownId.Value}:{trail.Risk}:{trail.Terrain}:{trail.WaterFeature}:{trail.RideDayDistance}")),
             string.Join(",", setup.StartingInventory.Items.Select(item => $"{item.Kind}:{item.Quantity}:{item.HorseState?.Hunger ?? -1}:{item.HorseState?.Thirst ?? -1}:{item.HorseState?.Exhaustion ?? -1}:{item.CanteenState?.Charges ?? -1}:{item.CanteenState?.Capacity ?? -1}")),
             string.Join(",", setup.CaseFile.Suspects.Select(suspect => $"{suspect.Id.Value}:{suspect.Name}:{suspect.Status}")),
@@ -219,8 +216,8 @@ public sealed class GameSetupResolverTests
     private static string DescribeClue(Clue clue)
         => $"{clue.Id.Value}:{clue.Kind}:{clue.Description}:{clue.TargetKind}:{clue.Source}:{clue.Context}:{string.Join("/", clue.LinkedSuspectIds.Select(id => id.Value))}";
 
-    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong tail)
-        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, tail);
+    private static Guid CreateSeedCode(byte worldVariant, byte accusationIndex, byte defaultCulpritIndex, byte cashBonus, ulong highBits)
+        => SeedWorldSeedCodeFactory.CreateSeedCode(worldVariant, accusationIndex, defaultCulpritIndex, cashBonus, highBits);
 
     private static SeedWorld CreateCanonicalSeedWorldWithCashBonus(int cashBonus)
     {

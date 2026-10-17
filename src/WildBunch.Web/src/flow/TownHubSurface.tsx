@@ -112,9 +112,10 @@ const NAVIGABLE_BUILDINGS = [
 ];
 
 export function TownHubSurface() {
-  const { session, currentTown, actions } = useGameSession();
+  const { session, currentTown, actions, actionsLoading, actionsError, retryActions } =
+    useGameSession();
   const navigate = useNavigate();
-  const { arrived } = useSearch({ strict: false });
+  const { arrived } = useSearch({ from: "/town" });
 
   // Map AvailableActionDto[] → AvailableActionKind[] and memoize so the
   // Phaser game is not recreated on every parent render (the actions array
@@ -143,6 +144,19 @@ export function TownHubSurface() {
         <h1>{townName}</h1>
         <TownHubLead>Where to next?</TownHubLead>
       </TownHubHeader>
+      {actionsLoading && actions.length === 0 ? (
+        <ResourceStatus role="status" $error={false}>
+          Reading town services...
+        </ResourceStatus>
+      ) : null}
+      {actionsError ? (
+        <ResourceStatus role="alert" $error>
+          <span>{actionsError}</span>
+          <RetryButton type="button" onClick={() => void retryActions()} disabled={actionsLoading}>
+            Try again
+          </RetryButton>
+        </ResourceStatus>
+      ) : null}
       {arrived === "1" ? (
         <ArrivalNotice role="status">
           <span>You've arrived in {townName}. Take a moment to look around.</span>
@@ -172,3 +186,34 @@ export function TownHubSurface() {
     </FlowSurface>
   );
 }
+
+const ResourceStatus = styled.div<{ $error: boolean }>`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid
+    ${(props) =>
+      props.$error ? "color-mix(in srgb, var(--danger) 28%, transparent)" : "var(--border)"};
+  border-radius: 12px;
+  background: ${(props) =>
+    props.$error ? "color-mix(in srgb, var(--danger) 10%, transparent)" : "transparent"};
+  color: var(--text);
+`;
+
+const RetryButton = styled.button`
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+`;

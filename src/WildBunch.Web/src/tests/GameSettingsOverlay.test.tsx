@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
@@ -18,10 +18,7 @@ import {
   getTownStoreOffers,
   archiveGame,
   buyStoreItem,
-  checkLocalRecords,
-  followTelegraphLeads,
   gatherLocalGossip,
-  inspectNoticeBoard,
   confrontSaloonPersonOfInterest,
   lookAroundSaloon,
   readWantedPosters,
@@ -36,12 +33,9 @@ vi.mock("../api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
 }));
@@ -56,12 +50,9 @@ const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
 const mockedArchiveGame = vi.mocked(archiveGame);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
-const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
-const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
-const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 const mockedGetSessionAudit = vi.mocked(getSessionAudit);
@@ -105,8 +96,8 @@ function createSession(): GameSessionDto {
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -115,7 +106,7 @@ function createSession(): GameSessionDto {
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -132,7 +123,6 @@ function createSession(): GameSessionDto {
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },
@@ -157,7 +147,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -170,8 +160,6 @@ function createStoreOffers(): TownStoreOffersDto {
   return {
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   };
 }
@@ -179,10 +167,7 @@ function createStoreOffers(): TownStoreOffersDto {
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    {
-      kind: AvailableActionKind.ReadWantedPosters,
-      label: "Read wanted posters",
-    },
+    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -194,28 +179,12 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedReadWantedPosters.mockResolvedValue({
     success: true,
     message: "Read wanted posters",
     currentJournal: createJournal(),
     wantedPosters: [],
-  });
-  mockedInspectNoticeBoard.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedCheckLocalRecords.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedFollowTelegraphLeads.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
   });
   mockedGatherLocalGossip.mockResolvedValue({
     success: true,
@@ -251,7 +220,6 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
@@ -291,9 +259,7 @@ describe("Game Settings overlay", () => {
 
     await user.click(within(hud).getByRole("button", { name: /game settings/i }));
 
-    const overlay = await screen.findByRole("dialog", {
-      name: /game settings/i,
-    });
+    const overlay = await screen.findByRole("dialog", { name: /game settings/i });
     const scope = within(overlay);
     expect(scope.getByRole("heading", { level: 3, name: /playthrough/i })).toBeInTheDocument();
     expect(scope.getByRole("button", { name: /start over/i })).toBeInTheDocument();
@@ -316,16 +282,12 @@ describe("Game Settings overlay", () => {
     });
 
     await user.click(within(hud).getByRole("button", { name: /game settings/i }));
-    const overlay = await screen.findByRole("dialog", {
-      name: /game settings/i,
-    });
+    const overlay = await screen.findByRole("dialog", { name: /game settings/i });
 
     await user.click(within(overlay).getByRole("button", { name: /start over/i }));
 
     // The ConfirmDialog renders its own dialog role with the title as the accessible name.
-    const confirmDialog = await screen.findByRole("dialog", {
-      name: /start over\?/i,
-    });
+    const confirmDialog = await screen.findByRole("dialog", { name: /start over\?/i });
     const confirmScope = within(confirmDialog);
     expect(
       confirmScope.getByText(
@@ -352,14 +314,10 @@ describe("Game Settings overlay", () => {
     });
 
     await user.click(within(hud).getByRole("button", { name: /game settings/i }));
-    const overlay = await screen.findByRole("dialog", {
-      name: /game settings/i,
-    });
+    const overlay = await screen.findByRole("dialog", { name: /game settings/i });
 
     await user.click(within(overlay).getByRole("button", { name: /start over/i }));
-    const confirmDialog = await screen.findByRole("dialog", {
-      name: /start over\?/i,
-    });
+    const confirmDialog = await screen.findByRole("dialog", { name: /start over\?/i });
 
     await user.click(within(confirmDialog).getByRole("button", { name: /keep riding/i }));
 
@@ -368,6 +326,62 @@ describe("Game Settings overlay", () => {
     });
     // The Game Settings overlay should remain open.
     expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
+  });
+
+  it("handles the confirmation cancel request without closing Game Settings or archiving", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    const settingsButton = within(hud).getByRole("button", { name: /game settings/i });
+    await user.click(settingsButton);
+    const settingsDialog = await screen.findByRole("dialog", { name: /game settings/i });
+    const startOverButton = within(settingsDialog).getByRole("button", { name: /start over/i });
+    await user.click(startOverButton);
+    await screen.findByRole("dialog", { name: /start over\?/i });
+
+    const confirmation = screen.getByRole("dialog", { name: /start over\?/i });
+    const cancelEvent = new Event("cancel", { cancelable: true });
+    fireEvent(confirmation, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
+    expect(startOverButton).toBeInTheDocument();
+    expect(mockedArchiveGame).not.toHaveBeenCalled();
+  });
+
+  it("wraps Tab in Game Settings when focus reaches either edge", async () => {
+    primeMocks();
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    const user = userEvent.setup();
+    const hud = await screen.findByRole("banner", { name: /game status/i });
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenCalledWith("game-1");
+    });
+
+    await user.click(within(hud).getByRole("button", { name: /game settings/i }));
+    const settingsDialog = await screen.findByRole("dialog", { name: /game settings/i });
+    const closeButton = within(settingsDialog).getByRole("button", { name: "Close" });
+    const startOverButton = within(settingsDialog).getByRole("button", { name: /start over/i });
+
+    startOverButton.focus();
+    fireEvent.keyDown(startOverButton, { key: "Tab" });
+    expect(closeButton).toHaveFocus();
+
+    closeButton.focus();
+    fireEvent.keyDown(closeButton, { key: "Tab", shiftKey: true });
+    expect(startOverButton).toHaveFocus();
   });
 
   it("disables the Game Settings button when no session is active", async () => {

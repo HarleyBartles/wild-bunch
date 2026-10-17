@@ -7,41 +7,43 @@ import { createAppRouter } from "../shell/router";
 import { GameSessionProvider } from "../state/GameSessionProvider";
 import {
   AvailableActionKind,
+  GameStatus,
+  StartFlowPhase,
   type GameSessionDto,
   type JournalDto,
   type TownStoreOffersDto,
 } from "../api/types";
 import {
   archiveGame,
+  getPrologue,
   getAvailableActions,
   getGame,
   getJournal,
   getTownStoreOffers,
   buyStoreItem,
-  checkLocalRecords,
-  followTelegraphLeads,
   gatherLocalGossip,
-  inspectNoticeBoard,
   confrontSaloonPersonOfInterest,
   lookAroundSaloon,
   readWantedPosters,
   travel,
 } from "../api/wildBunchApi";
 import { getSessionAudit } from "../dev/devApi";
+import { HttpRequestError } from "../api/httpClient";
 
 vi.mock("../api/wildBunchApi", () => ({
   archiveGame: vi.fn(),
+  getPrologue: vi.fn(),
+  markPrologueViewed: vi.fn(),
+  startGameWithTown: vi.fn(),
+  setupGame: vi.fn(),
   buyStoreItem: vi.fn(),
   getAvailableActions: vi.fn(),
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
 }));
@@ -56,12 +58,9 @@ const mockedGetAvailableActions = vi.mocked(getAvailableActions);
 const mockedGetJournal = vi.mocked(getJournal);
 const mockedGetTownStoreOffers = vi.mocked(getTownStoreOffers);
 const mockedBuyStoreItem = vi.mocked(buyStoreItem);
-const mockedCheckLocalRecords = vi.mocked(checkLocalRecords);
-const mockedInspectNoticeBoard = vi.mocked(inspectNoticeBoard);
 const mockedConfrontSaloonPersonOfInterest = vi.mocked(confrontSaloonPersonOfInterest);
 const mockedLookAroundSaloon = vi.mocked(lookAroundSaloon);
 const mockedReadWantedPosters = vi.mocked(readWantedPosters);
-const mockedFollowTelegraphLeads = vi.mocked(followTelegraphLeads);
 const mockedGatherLocalGossip = vi.mocked(gatherLocalGossip);
 const mockedTravel = vi.mocked(travel);
 const mockedGetSessionAudit = vi.mocked(getSessionAudit);
@@ -105,8 +104,8 @@ function createSession(): GameSessionDto {
     },
     world: {
       towns: [
-        { id: "t-town", name: "Tumbleweed", services: 0 },
-        { id: "dust-fork", name: "Dust Fork", services: 0 },
+        { id: "t-town", name: "Tumbleweed" },
+        { id: "dust-fork", name: "Dust Fork" },
       ],
       trails: [],
     },
@@ -115,7 +114,7 @@ function createSession(): GameSessionDto {
       openingLead: "The trail went cold outside town.",
       caseState: { statusText: "Still chasing leads." },
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
     },
     inventory: {
@@ -132,7 +131,6 @@ function createSession(): GameSessionDto {
         firearmThreatAvailable: false,
         gunfightCapable: false,
         revolverUsable: false,
-        rifleUsable: false,
       },
     },
     clock: { day: 5, turn: 2, timeOfDay: "Morning" },
@@ -157,7 +155,7 @@ function createJournal(): JournalDto {
       caseState: { statusText: "Still chasing leads." },
       caseSummary: "Find the culprit before the law closes in.",
       discoveredSuspects: [],
-      caseBoard: { namedRecords: [], looseLeads: [], evidenceItems: [] },
+      caseBoard: { warrants: [], clues: [] },
       knownClues: [],
       knownWarrants: [],
       wantedPosters: [],
@@ -170,8 +168,6 @@ function createStoreOffers(): TownStoreOffersDto {
   return {
     townId: "t-town",
     townName: "Tumbleweed",
-    available: true,
-    sourceNote: "General store",
     offers: [],
   };
 }
@@ -179,10 +175,7 @@ function createStoreOffers(): TownStoreOffersDto {
 function primeMocks() {
   mockedGetGame.mockResolvedValue(createSession());
   mockedGetAvailableActions.mockResolvedValue([
-    {
-      kind: AvailableActionKind.ReadWantedPosters,
-      label: "Read wanted posters",
-    },
+    { kind: AvailableActionKind.ReadWantedPosters, label: "Read wanted posters" },
   ]);
   mockedGetJournal.mockResolvedValue(createJournal());
   mockedGetTownStoreOffers.mockResolvedValue(createStoreOffers());
@@ -194,28 +187,12 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedReadWantedPosters.mockResolvedValue({
     success: true,
     message: "Read wanted posters",
     currentJournal: createJournal(),
     wantedPosters: [],
-  });
-  mockedInspectNoticeBoard.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedCheckLocalRecords.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
-  });
-  mockedFollowTelegraphLeads.mockResolvedValue({
-    success: true,
-    message: "ok",
-    currentJournal: createJournal(),
   });
   mockedGatherLocalGossip.mockResolvedValue({
     success: true,
@@ -251,7 +228,6 @@ function primeMocks() {
     journeyStatus: null,
     journey: null,
     trailEvent: null,
-    travelDiary: null,
   });
   mockedGetSessionAudit.mockResolvedValue({ sessionId: "game-1", entries: [] });
 }
@@ -272,6 +248,46 @@ async function openConfirmDialog(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("Start Over confirmation", () => {
+  it.each([
+    StartFlowPhase.SetupComplete,
+    StartFlowPhase.PrologueViewed,
+    StartFlowPhase.StartingTownSelected,
+  ])(
+    "can archive a saved setup session in phase %s before first arrival",
+    async (startFlowPhase) => {
+      primeMocks();
+      const session = createSession();
+      vi.mocked(getPrologue).mockResolvedValue({
+        heading: "The story so far",
+        body: "The trail is fresh.",
+        primaryAction: "Ride on",
+        variantId: "variant-1",
+      });
+      mockedGetGame.mockResolvedValue({
+        ...session,
+        startFlowPhase,
+        player: { ...session.player, currentTownId: null, health: null },
+        inventory: null,
+      });
+      window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+      renderShell();
+
+      const user = userEvent.setup();
+      const confirmation = await openConfirmDialog(user);
+      expect(screen.queryByText("Health")).not.toBeInTheDocument();
+      expect(screen.queryByText("Cash")).not.toBeInTheDocument();
+      await user.click(
+        within(confirmation).getByRole("button", { name: /archive and start over/i }),
+      );
+
+      await waitFor(() => expect(mockedArchiveGame).toHaveBeenCalledWith("game-1"));
+      await waitFor(() =>
+        expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull(),
+      );
+      expect(await screen.findByRole("heading", { name: /^wild bunch$/i })).toBeInTheDocument();
+    },
+  );
+
   it("calls archiveGame with the correct game id when Confirm is clicked", async () => {
     primeMocks();
     window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
@@ -282,9 +298,7 @@ describe("Start Over confirmation", () => {
     const confirmDialog = await openConfirmDialog(user);
 
     await user.click(
-      within(confirmDialog).getByRole("button", {
-        name: /archive and start over/i,
-      }),
+      within(confirmDialog).getByRole("button", { name: /archive and start over/i }),
     );
 
     await waitFor(() => {
@@ -302,9 +316,7 @@ describe("Start Over confirmation", () => {
     const confirmDialog = await openConfirmDialog(user);
 
     await user.click(
-      within(confirmDialog).getByRole("button", {
-        name: /archive and start over/i,
-      }),
+      within(confirmDialog).getByRole("button", { name: /archive and start over/i }),
     );
 
     // localStorage key is cleared.
@@ -332,9 +344,7 @@ describe("Start Over confirmation", () => {
     const confirmDialog = await openConfirmDialog(user);
 
     await user.click(
-      within(confirmDialog).getByRole("button", {
-        name: /archive and start over/i,
-      }),
+      within(confirmDialog).getByRole("button", { name: /archive and start over/i }),
     );
 
     await waitFor(() => {
@@ -399,9 +409,7 @@ describe("Start Over confirmation", () => {
     const confirmDialog = await openConfirmDialog(user);
 
     await user.click(
-      within(confirmDialog).getByRole("button", {
-        name: /archive and start over/i,
-      }),
+      within(confirmDialog).getByRole("button", { name: /archive and start over/i }),
     );
 
     // The ConfirmDialog should close.
@@ -413,5 +421,145 @@ describe("Start Over confirmation", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: /game settings/i })).not.toBeInTheDocument();
     });
+  });
+
+  it("reconciles a lost archive response from the archived session state", async () => {
+    primeMocks();
+    mockedGetGame
+      .mockResolvedValueOnce(createSession())
+      .mockResolvedValueOnce({ ...createSession(), status: GameStatus.Archived });
+    mockedArchiveGame.mockRejectedValueOnce(new TypeError("Connection dropped"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+    const user = userEvent.setup();
+    const confirmDialog = await openConfirmDialog(user);
+
+    await user.click(
+      within(confirmDialog).getByRole("button", { name: /archive and start over/i }),
+    );
+
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenNthCalledWith(2, "game-1");
+      expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull();
+    });
+    expect(mockedArchiveGame).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText(
+        "Your old playthrough has been archived. Start a new one when you are ready.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /game settings/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps the saved playthrough when an archive conflict is not confirmed by the server", async () => {
+    primeMocks();
+    mockedGetGame.mockResolvedValueOnce(createSession()).mockResolvedValueOnce(createSession());
+    mockedArchiveGame.mockRejectedValueOnce(new Error("409: already archived"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+    const user = userEvent.setup();
+    const confirmDialog = await openConfirmDialog(user);
+
+    await user.click(
+      within(confirmDialog).getByRole("button", { name: /archive and start over/i }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/still active/i);
+    expect(mockedGetGame).toHaveBeenNthCalledWith(2, "game-1");
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+    expect(screen.getByRole("dialog", { name: /start over\?/i })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
+  });
+
+  it("keeps the saved playthrough when archive reconciliation cannot read server state", async () => {
+    primeMocks();
+    mockedGetGame
+      .mockResolvedValueOnce(createSession())
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    mockedArchiveGame.mockRejectedValueOnce(new TypeError("Connection dropped"));
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+    const user = userEvent.setup();
+    const confirmDialog = await openConfirmDialog(user);
+
+    await user.click(
+      within(confirmDialog).getByRole("button", { name: /archive and start over/i }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/unable to confirm/i);
+    expect(mockedGetGame).toHaveBeenNthCalledWith(2, "game-1");
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+    expect(screen.getByRole("dialog", { name: /start over\?/i })).toBeInTheDocument();
+  });
+
+  it("reconciles an archive retry conflict when the server confirms the archived state", async () => {
+    primeMocks();
+    mockedGetGame
+      .mockResolvedValueOnce(createSession())
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce({ ...createSession(), status: GameStatus.Archived });
+    let rejectRetry!: (reason?: unknown) => void;
+    const retryResponse = new Promise<void>((_, reject) => {
+      rejectRetry = reject;
+    });
+    mockedArchiveGame
+      .mockRejectedValueOnce(new TypeError("Connection dropped"))
+      .mockImplementationOnce(() => retryResponse);
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+    const user = userEvent.setup();
+    const confirmDialog = await openConfirmDialog(user);
+    const confirmButton = within(confirmDialog).getByRole("button", {
+      name: /archive and start over/i,
+    });
+
+    await user.click(confirmButton);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/unable to confirm/i);
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+    expect(screen.getByRole("dialog", { name: /start over\?/i })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /game settings/i })).toBeInTheDocument();
+
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockedArchiveGame).toHaveBeenCalledTimes(2);
+    });
+    expect(confirmButton).toBeDisabled();
+    expect(within(confirmDialog).getByRole("button", { name: /keep riding/i })).toBeDisabled();
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBe("game-1");
+
+    rejectRetry(new HttpRequestError("The playthrough has already been archived.", 409));
+
+    await waitFor(() => {
+      expect(mockedGetGame).toHaveBeenNthCalledWith(3, "game-1");
+      expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull();
+    });
+    expect(await screen.findByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Your old playthrough has been archived. Start a new one when you are ready.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /start over\?/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /game settings/i })).not.toBeInTheDocument();
+  });
+
+  it("returns to setup on reload when the saved session is already archived", async () => {
+    primeMocks();
+    mockedGetGame.mockResolvedValue({ ...createSession(), status: GameStatus.Archived });
+    window.localStorage.setItem("wild-bunch.current-game-id", "game-1");
+
+    renderShell();
+
+    expect(await screen.findByRole("heading", { name: /set up your hunt/i })).toBeInTheDocument();
+    expect(window.localStorage.getItem("wild-bunch.current-game-id")).toBeNull();
+    expect(mockedArchiveGame).not.toHaveBeenCalled();
   });
 });

@@ -11,9 +11,9 @@ These are the binding standards for the Wild Bunch web app under
 - Use SASS (`src/styles/`) for global concerns: design tokens (`_variables.scss`), reset (`_reset.scss`), and base element defaults (`_base.scss`).
 - Do NOT use plain CSS classes in `className`. All component styling must be handled via styled components.
 - Reference design tokens via `var(--token-name)` to stay on-palette.
+- Each component owns its display contract. Parents compose components through supported props and surrounding layout; they do not reach through to child internals with ancestor selectors or equivalent styling coupling.
 - Re-use shared primitives from `src/components/ui/sharedStyled.tsx` for genuine cross-surface patterns (Panel, StatusCard, Button, Grid, ItemCard, etc.).
 - Feature-specific styled components should stay local in the component file that uses them.
-- Enforced by `src/tests/stylingEnforcement.test.ts`.
 
 ## Play-Surface UI
 
@@ -40,7 +40,7 @@ The app uses TanStack Router with a route tree that reflects game state via URL 
 - **Route tree:** Defined in `src/shell/router.tsx`. Routes are lazy-loaded via `React.lazy()` to enable Vite bundle splitting.
 - **URL reflects game state:** `usePhaseRouteSync` reconciles the URL with the backend-derived game phase. `useDevSurfaceSync` maps phase + URL to the dev surface context.
 - **Town place routes are flat siblings under rootRoute, NOT children of townRoute.** `TownHubSurface` renders the hub directly (no `<Outlet />`), so child routes would not render. Place routes (`/town/store`, `/town/sheriff`, `/town/saloon`, `/town/trailhead`) are siblings of `/town` under the root route.
-- **Search params:** The `/town` route uses `validateSearch` to parse the optional `arrived` query param (`?arrived=1`). The validateSearch function must return `{}` when the param is absent, not `{ arrived: undefined }` — the latter makes TanStack Router type the param as required, breaking `navigate({ to: "/town" })` calls that don't pass search.
+- **Search params:** `/town?arrived=1` is the only value that displays the arrival notice. TanStack Router preserves unknown raw search parameters, so unrelated query values must not be mistaken for arrival. The `/town` `validateSearch` result keeps `arrived` optional; returning `{}` when absent lets real `navigate({ to: "/town" })` calls type-check without a search object.
 - **Suspense:** Lazy-loaded route components are wrapped in `<Suspense>` with `<RouteLoading>` as the fallback (defined in `src/shell/RouteLoading.tsx`).
 - **Testing:** Tests that render through `RouterProvider` must use the `createAppRouter()` factory, not the shared `router` singleton. The shared router retains internal state between tests (TanStack Router doesn't react to `window.history.replaceState`), causing test ordering flakes. See `.agents/doctrine/validation-policy.md` for the local test lanes.
-- **Enforcement:** Routing conventions (lazy-loaded components, flat town place routes, validateSearch returns `{}`, `createAppRouter` factory exists) are enforced by `src/tests/routingConventions.test.ts`. If you add or change a route, this test will catch violations.
+- **Behavior coverage:** `src/tests/AppShell.test.tsx` exercises supported URLs through the real router and shell, including direct town-place routes and arrival notice behavior. Tests that render through `RouterProvider` create a fresh router with `createAppRouter()`. Application type checking covers route search typing through actual navigation calls; tests do not inspect route source spelling or assert that router objects merely have different identities.

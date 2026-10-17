@@ -23,6 +23,39 @@ public sealed class JournalLogProjectorTests
         GameEntropy = GameEntropy.Classic
     };
 
+    private static TravelJourneySnapshot JourneySnapshot(int sequence) => new(
+        JourneySequence: sequence,
+        OriginTownId: new TownId("pinecross"),
+        DestinationTownId: new TownId("dustfork"),
+        OriginTownName: "Pinecross",
+        DestinationTownName: "Dust Fork",
+        RouteProfile: new TravelRouteProfile("pinecross-dustfork", TrailRisk.Moderate, TrailTerrain.OpenRange, WaterFeature.Creek, 6m, 3m, 2m, []),
+        TravelMode: TravelMode.Mounted,
+        Status: JourneyStatus.Active,
+        MountedTravelAvailable: true,
+        WaterSecure: true,
+        RideDayDistance: 6m,
+        RemainingRideDayDistance: 3m,
+        ExpectedDays: 3,
+        RemainingDays: 2,
+        CanteenChargesPerDay: 1,
+        RequiredCanteenCharges: 2,
+        AvailableCanteenCharges: 4,
+        CanteenReserveCharges: 1,
+        DelayMarginDays: 0,
+        DelayRisk: false,
+        RequiredFood: 2,
+        AvailableFood: 5,
+        RequiredHorseFeed: 1,
+        AvailableHorseFeed: 3,
+        HorseState: null,
+        OpeningNarration: "The long road east waits.",
+        DaysTravelled: 1,
+        DelayDays: 0,
+        CurrentDayPlan: null,
+        PendingEncounter: null,
+        Warnings: []);
+
     [Fact]
     public void GameStarted_ProducesSingleOpeningEntryWithLegacyText()
     {
@@ -34,6 +67,20 @@ public sealed class JournalLogProjectorTests
         Assert.Equal("The hunt begins in Pinecross.", log[0].Message);
         Assert.Equal(1, log[0].Day);
         Assert.Equal(0, log[0].Turn);
+    }
+
+    [Fact]
+    public void PlayerDied_AddsOneTravelEntryToTheCurrentJourney()
+    {
+        var log = new JournalLogProjector().Project(
+        [
+            GameStartedEvent(),
+            new PlayerDied { JourneySequence = 4, DiaryMessage = "I died on the trail." }
+        ]);
+
+        var deathEntry = Assert.Single(log, entry => entry.Message == "I died on the trail.");
+        Assert.Equal(GameLogEntryKind.Travel, deathEntry.Kind);
+        Assert.Equal(4, deathEntry.JourneySequence);
     }
 
     [Fact]
@@ -90,7 +137,7 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
-    public void SheriffTurnInSettled_ProducesNoLogEntry_MatchingLegacyApply()
+    public void SheriffTurnInSettled_AddsPlayerMessageAtRecordedDayAndTurn()
     {
         var projector = new JournalLogProjector();
         var events = new IDomainEvent[]
@@ -104,13 +151,225 @@ public sealed class JournalLogProjectorTests
                 IsAlive = true,
                 BountyAmount = 50m,
                 Message = "You turn Jesse Roe in for the bounty.",
-                Day = 1,
-                Turn = 0
+                Day = 4,
+                Turn = 2
             }
         };
         var log = projector.Project(events);
 
-        Assert.Single(log); // opening only; sheriff turn-in adds no legacy log entry
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("You turn Jesse Roe in for the bounty.", log[1].Message);
+        Assert.Equal(4, log[1].Day);
+        Assert.Equal(2, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestConfronted_CitizenFineAndRelease_IsRecordedAtEnteredActionTime()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 3,
+                Turn = 2,
+                TimeOfDay = TimeOfDay.Evening,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestConfronted
+            {
+                Message = "The butcher comes quietly. The sheriff releases him and fines you $5.00.",
+                TargetName = "the butcher",
+                PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.CitizenReleased,
+                IsCitizen = true,
+                FineAmount = 5m
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("The butcher comes quietly. The sheriff releases him and fines you $5.00.", log[1].Message);
+        Assert.Equal(3, log[1].Day);
+        Assert.Equal(2, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestConfronted_RejectedAttempt_IsRecordedAtEnteredActionTime()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 3,
+                Turn = 2,
+                TimeOfDay = TimeOfDay.Evening,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestConfronted
+            {
+                Message = "There is no wanted notice for the rancher.",
+                TargetName = "the rancher",
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Rejected
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal("There is no wanted notice for the rancher.", log[1].Message);
+        Assert.Equal(3, log[1].Day);
+        Assert.Equal(2, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestConfronted_WhenWantedOutcomeHasDetailedEvents_DoesNotDuplicateSummary()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new WantedSuspectConfronted
+            {
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                Choice = WantedSuspectConfrontationChoice.Surrendered,
+                Outcome = WantedSuspectConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true,
+                Message = "Cole Tanner gives up without a fight."
+            },
+            new SheriffTurnInSettled
+            {
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                IsAlive = true,
+                BountyAmount = 50m,
+                Message = "The sheriff pays you $50.00.",
+                Day = 1,
+                Turn = 1
+            },
+            new SaloonPersonOfInterestConfronted
+            {
+                Message = "Cole Tanner gives up without a fight. The sheriff pays you $50.00.",
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                PersonOfInterestKind = SaloonPersonOfInterestKind.WantedSuspect,
+                Outcome = SaloonPersonOfInterestConfrontationOutcome.Surrendered,
+                IsCitizen = false
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(3, log.Count);
+        Assert.Contains(log, entry => entry.Message == "Cole Tanner gives up without a fight.");
+        Assert.Contains(log, entry => entry.Message == "The sheriff pays you $50.00.");
+        Assert.DoesNotContain(log, entry => entry.Message.Contains("Cole Tanner gives up without a fight. The sheriff pays"));
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestSpotted_WhenRecordLogIsTrue_AddsCaseUpdate()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 2,
+                Turn = 1,
+                TimeOfDay = TimeOfDay.Afternoon,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = new TownId("pinecross"),
+                Message = "You spot a shady figure in the saloon.",
+                RecordLog = true
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("You spot a shady figure in the saloon.", log[1].Message);
+        Assert.Equal(2, log[1].Day);
+        Assert.Equal(1, log[1].Turn);
+    }
+
+    [Fact]
+    public void SaloonPersonOfInterestSpotted_WhenRecordLogIsFalse_DoesNotAddJournalEntry()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new TownActionContextEntered
+            {
+                Context = TownActionContext.Saloon,
+                TownId = new TownId("pinecross"),
+                Day = 2,
+                Turn = 1,
+                TimeOfDay = TimeOfDay.Afternoon,
+                PursuitHeat = 0
+            },
+            new SaloonPersonOfInterestSpotted
+            {
+                SourceKind = InvestigationSourceKind.SaloonLookAround,
+                TownId = new TownId("pinecross"),
+                Message = "You spot a townsfolk in the saloon.",
+                RecordLog = false
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Single(log);
+    }
+
+    [Fact]
+    public void WantedSuspectConfronted_AddsRecordedPlayerMessage()
+    {
+        var projector = new JournalLogProjector();
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new WantedSuspectConfronted
+            {
+                TargetSuspectId = new SuspectId("suspect-1"),
+                TargetName = "Cole Tanner",
+                Disposition = WarrantDisposition.DeadOrAlive,
+                Choice = WantedSuspectConfrontationChoice.Surrendered,
+                Outcome = WantedSuspectConfrontationOutcome.Surrendered,
+                IsAlive = true,
+                IsSecured = true,
+                Message = "Cole Tanner gives up without a fight."
+            }
+        };
+
+        var log = projector.Project(events);
+
+        Assert.Equal(2, log.Count);
+        Assert.Equal(GameLogEntryKind.CaseUpdate, log[1].Kind);
+        Assert.Equal("Cole Tanner gives up without a fight.", log[1].Message);
     }
 
     [Fact]
@@ -144,11 +403,11 @@ public sealed class JournalLogProjectorTests
         var events = new IDomainEvent[]
         {
             GameStartedEvent(),
-            new JourneyStarted { JourneySnapshot = null!, DiaryMessage = "You set out.", PursuitHeat = 0 },
+            new JourneyStarted { JourneySnapshot = JourneySnapshot(1), DiaryMessage = "You set out.", PursuitHeat = 0 },
             new TravelDayAdvanced
             {
                 Day = 2,
-                JourneySnapshot = null!,
+                JourneySnapshot = JourneySnapshot(1),
                 HealthDelta = 0,
                 PursuitHeat = 0,
                 DayOutcome = TravelDayOutcome.Ongoing,
@@ -183,6 +442,196 @@ public sealed class JournalLogProjectorTests
     }
 
     [Fact]
+    public void TrailEventApplied_BeforeTravelDayAdvanced_UsesAdvancedDayInJournal()
+    {
+        var journey = JourneySnapshot(1);
+        IDomainEvent[] events =
+        [
+            GameStartedEvent(),
+            new JourneyStarted { JourneySnapshot = journey, DiaryMessage = "The road opens.", PursuitHeat = 0 },
+            new TrailEventApplied
+            {
+                JourneySnapshot = journey,
+                TrailEventKind = JourneyTrailEventKind.Lucky,
+                TrailEventId = JourneyTrailEventId.LuckyCoinCache,
+                Title = "A forgotten cache",
+                Message = "I find biscuits beside the trail.",
+                WalletDelta = 0m,
+                WalletCash = 25m,
+                FoodDelta = 0,
+                CanteenChargeDelta = 0,
+                HorseHungerDelta = 0,
+                HorseThirstDelta = 0,
+                HorseExhaustionDelta = 0,
+                DelayDays = 0,
+                HeatIncrease = 0,
+                PursuitHeat = 0,
+                TravelModeChangedTo = null,
+                DiaryMessage = "I find biscuits beside the trail.",
+                HorseLostMessage = string.Empty
+            },
+            new TravelDayAdvanced
+            {
+                Day = 2,
+                JourneySnapshot = journey,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Ongoing,
+                DiaryMessage = "Another day on the trail.",
+                HorseLostMessage = string.Empty
+            }
+        ];
+
+        var entries = new JournalLogProjector().Project(events);
+
+        Assert.Equal(
+            new GameLogEntry[]
+            {
+                new(GameLogEntryKind.Opening, "The hunt begins in Pinecross.", 1, 0),
+                new(GameLogEntryKind.Travel, "The road opens.", 1, 0, 1),
+                new(GameLogEntryKind.Travel, "I find biscuits beside the trail.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "Another day on the trail.", 2, 0, 1)
+            },
+            entries);
+    }
+
+    [Fact]
+    public void TravelEntries_KeepTheirRecordedJourneySequenceAcrossMultipleJourneys()
+    {
+        var firstJourney = JourneySnapshot(1);
+        var secondJourney = JourneySnapshot(2);
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new JourneyStarted { JourneySnapshot = firstJourney, DiaryMessage = "The first road begins.", PursuitHeat = 0 },
+            new TravelDayAdvanced
+            {
+                Day = 2,
+                JourneySnapshot = firstJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Ongoing,
+                DiaryMessage = "I cross the first ridge.",
+                HorseLostMessage = string.Empty
+            },
+            new JourneyStarted { JourneySnapshot = secondJourney, DiaryMessage = "The second road begins.", PursuitHeat = 0 },
+            new TravelDayAdvanced
+            {
+                Day = 4,
+                JourneySnapshot = secondJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Ongoing,
+                DiaryMessage = "I cross the second ridge.",
+                HorseLostMessage = string.Empty
+            }
+        };
+
+        var entries = new JournalLogProjector().Project(events);
+
+        Assert.Null(entries.Single(entry => entry.Kind == GameLogEntryKind.Opening).JourneySequence);
+        Assert.Equal(
+            new[] { ("The first road begins.", (int?)1), ("I cross the first ridge.", (int?)1), ("The second road begins.", (int?)2), ("I cross the second ridge.", (int?)2) },
+            entries.Where(entry => entry.Kind == GameLogEntryKind.Travel)
+                .Select(entry => (entry.Message, entry.JourneySequence)));
+    }
+
+    [Fact]
+    public void Project_CompletedJourneyWithEncounterResolution_EmitsExactJournalSequence()
+    {
+        var journey = JourneySnapshot(1);
+        var interruptedJourney = journey with
+        {
+            Status = JourneyStatus.Interrupted,
+            PendingEncounter = JourneyEncounterState.CreateChoiceEncounter(
+                "foe",
+                "A rider blocked the trail.",
+                [new JourneyEncounterChoiceState("run", "Run")])
+        };
+        var completedJourney = journey with
+        {
+            Status = JourneyStatus.Completed,
+            RemainingDays = 0,
+            RemainingRideDayDistance = 0
+        };
+        var events = new IDomainEvent[]
+        {
+            GameStartedEvent(),
+            new JourneyStarted { JourneySnapshot = journey, DiaryMessage = "The road opens.", PursuitHeat = 0 },
+            new TravelDayAdvanced
+            {
+                Day = 2,
+                JourneySnapshot = interruptedJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Interrupted,
+                AdditionalDiaryMessages = ["A rider's horse kicked up dust."],
+                DiaryMessage = "A rider blocked the trail.",
+                HorseLostMessage = string.Empty
+            },
+            new JourneyEncounterResolved
+            {
+                ChoiceId = "run",
+                ChoiceLabel = "Run",
+                Resolved = true,
+                PlayerHealth = 100,
+                WalletCash = 25m,
+                AmmoSpent = 0,
+                StolenItemKind = null,
+                StolenItemQuantity = 0,
+                PursuitHeat = 0,
+                HorseExhaustionDelta = 0,
+                ContinuedOnFoot = false,
+                JourneySnapshot = journey,
+                DiaryMessage = "The rider fled before I could learn more.",
+                DayCompleted = true,
+                JourneyCompleted = false,
+                AdditionalDiaryMessages = ["I pass a broken wagon."]
+            },
+            new TravelDayAdvanced
+            {
+                Day = 3,
+                JourneySnapshot = completedJourney,
+                HealthDelta = 0,
+                PursuitHeat = 0,
+                DayOutcome = TravelDayOutcome.Completed,
+                DiaryMessage = "The final stretch opens.",
+                HorseLostMessage = string.Empty
+            },
+            new JourneyCompleted
+            {
+                DestinationTownId = new TownId("dustfork"),
+                DestinationTownName = "Dust Fork",
+                JourneySnapshot = completedJourney,
+                DiaryMessage = "Dust Fork appears at sundown."
+            },
+            new JourneyArrivalAcknowledged
+            {
+                JourneySequence = 1,
+                JourneySnapshot = completedJourney,
+                DiaryMessage = "I ride into Dust Fork."
+            }
+        };
+
+        var entries = new JournalLogProjector().Project(events);
+
+        Assert.Equal(
+            new GameLogEntry[]
+            {
+                new(GameLogEntryKind.Opening, "The hunt begins in Pinecross.", 1, 0),
+                new(GameLogEntryKind.Travel, "The road opens.", 1, 0, 1),
+                new(GameLogEntryKind.Travel, "A rider's horse kicked up dust.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "A rider blocked the trail.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "I pass a broken wagon.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "The rider fled before I could learn more.", 2, 0, 1),
+                new(GameLogEntryKind.Travel, "The final stretch opens.", 3, 0, 1),
+                new(GameLogEntryKind.Travel, "Dust Fork appears at sundown.", 3, 0, 1),
+                new(GameLogEntryKind.Travel, "I ride into Dust Fork.", 3, 0, 1)
+            },
+            entries);
+    }
+
+    [Fact]
     public void EmptyMessagesAndHorseLostMessage_AreSkippedOrEmittedExactlyAsLegacy()
     {
         var projector = new JournalLogProjector();
@@ -192,7 +641,7 @@ public sealed class JournalLogProjectorTests
             new TravelDayAdvanced
             {
                 Day = 2,
-                JourneySnapshot = null!,
+                JourneySnapshot = JourneySnapshot(1),
                 HealthDelta = 0,
                 PursuitHeat = 0,
                 DayOutcome = TravelDayOutcome.Ongoing,

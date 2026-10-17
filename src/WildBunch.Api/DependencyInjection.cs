@@ -50,17 +50,14 @@ public static class DependencyInjection
         services.AddScoped<ViewPrologueHandler>();
         services.AddScoped<CompleteGameStartHandler>();
         services.AddScoped<GetGameSessionHandler>();
-        services.AddScoped<GetStartingTownsHandler>();
-        services.AddScoped<GetStartingTownMapHandler>();
+        services.AddScoped<GetHudProjectionHandler>();
+        services.AddScoped<GetWorldMapHandler>();
         services.AddScoped<GetPrologueHandler>();
         services.AddScoped<GetAvailableActionsHandler>();
         services.AddScoped<GetJournalHandler>();
         services.AddScoped<GetTownStoreOffersHandler>();
         services.AddScoped<PurchaseStoreItemHandler>();
         services.AddScoped<ReadWantedPostersHandler>();
-        services.AddScoped<InspectNoticeBoardHandler>();
-        services.AddScoped<CheckSheriffRecordsHandler>();
-        services.AddScoped<FollowTelegraphLeadsHandler>();
         services.AddScoped<GatherLocalGossipHandler>();
         services.AddScoped<LookAroundSaloonHandler>();
         services.AddScoped<ConfrontWantedSuspectHandler>();
@@ -77,7 +74,6 @@ public static class DependencyInjection
         // Only HUD and diary are exposed through the player-facing API.
         // FullAuditProjector is a developer/replay surface, not player-facing.
         services.AddSingleton<HudProjector>();
-        services.AddSingleton<DiaryProjector>();
         services.AddSingleton<FullAuditProjector>();
 
         // Dev-only services (gated by DevRoleGuard, separated from player-facing APIs)
@@ -90,8 +86,6 @@ public static class DependencyInjection
         services.AddScoped<ForceSaloonOverrideHandler>();
         services.AddScoped<ClearSaloonOverrideHandler>();
         services.AddScoped<GetSessionDevContextHandler>();
-        services.AddScoped<ForceDevSaltSourceHandler>();
-        services.AddScoped<ClearDevSaltSourceHandler>();
         services.AddScoped<ForceDevDifficultyHandler>();
         services.AddScoped<SetDevEntropyHandler>();
 

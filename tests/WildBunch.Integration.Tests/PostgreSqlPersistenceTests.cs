@@ -77,7 +77,7 @@ public sealed class PostgreSqlPersistenceTests
         await using (var verificationContext = new WildBunchDbContext(options))
         {
             Assert.Equal(1, await verificationContext.GameSessions.CountAsync());
-            Assert.Equal(11, await verificationContext.GameSessionComponents.CountAsync());
+            Assert.Equal(10, await verificationContext.GameSessionComponents.CountAsync());
             Assert.Equal(session.TravelDiaryDays.Count, await verificationContext.GameSessionDiaryDays.CountAsync());
         }
     }
@@ -223,8 +223,8 @@ public sealed class PostgreSqlPersistenceTests
 
     private static GameSession CreateCompletedTravelSession()
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
-        var holloway = new Town(new TownId("holloway"), "Holloway", TownServices.None);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale");
+        var holloway = new Town(new TownId("holloway"), "Holloway");
         var world = new World(
             new[] { dustvale, holloway },
             new[]
@@ -310,6 +310,6 @@ public sealed class PostgreSqlPersistenceTests
             new PayloadUpcasterRegistry([]),
             serializer,
             new TravelDiaryDayProjector(),
-            rebuildSessionFromEvents: events => SessionRebuilder.RebuildFromEvents(events, serializer));
+            rebuildSessionFromEvents: SessionRebuilder.RebuildForComponentCache);
     }
 }

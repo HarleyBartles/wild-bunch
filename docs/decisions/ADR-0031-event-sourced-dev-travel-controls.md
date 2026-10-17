@@ -15,7 +15,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0028, ADR-0030
-- `related to`: ADR-0007, ADR-0032, ADR-0036
+- `related to`: ADR-0007, ADR-0032, ADR-0036, ADR-0041
 
 ## Context
 
@@ -25,7 +25,7 @@ Playtesting needs a way to choose the next travel encounter without changing ord
 
 Developer travel overrides are recorded as domain events. Forcing an override, clearing a pending override, and consuming it are distinct recorded facts. The next travel-day generation consumes a pending override once; later days use ordinary generation unless another override is forced. The generated result then follows the normal travel event and state path.
 
-The override is a developer capability under ADR-0030. It does not alter the ordinary player command contract or disclose hidden case truth through player reads. The developer travel-context endpoint may expose journey and override internals, but must also exclude hidden culprit truth; guarded developer access does not waive that travel-specific boundary.
+The override is a developer capability under ADR-0030 and ADR-0041. It does not alter the ordinary player command contract or disclose hidden case truth through player reads. The developer travel-context endpoint may expose journey and override internals, but must also exclude hidden culprit truth; guarded developer access does not waive that travel-specific boundary.
 
 ## Rationale and Alternatives
 

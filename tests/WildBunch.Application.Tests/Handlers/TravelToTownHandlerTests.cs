@@ -23,7 +23,7 @@ public sealed class TravelToTownHandlerTests
         var session = CreateSession();
         repository.Seed(session);
         var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
@@ -32,7 +32,7 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(1, repository.StoreCalls);
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(1, result.CurrentSession.Clock.Day);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
@@ -54,7 +54,7 @@ public sealed class TravelToTownHandlerTests
         session.MarkEventsCommitted();
         repository.Seed(session);
         var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "dryridge"));
 
@@ -63,7 +63,7 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(0, repository.StoreCalls);
         Assert.Equal(0, repository.CommitCalls);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.Equal(0, result.CurrentSession.PursuitState.Heat);
     }
@@ -75,7 +75,7 @@ public sealed class TravelToTownHandlerTests
         var session = CreateSession(emptyInventory: true);
         repository.Seed(session);
         var handler = new TravelToTownHandler(repository, repository, new TravelResolver(),
-            new HudProjector(), new DiaryProjector());
+            new HudProjector());
 
         var result = await handler.HandleAsync(new TravelToTownCommand(session.Id.Value, "silvercreek"));
 
@@ -84,7 +84,7 @@ public sealed class TravelToTownHandlerTests
         Assert.Equal(1, repository.CommitCalls);
         Assert.Equal(WildBunch.Domain.Travel.JourneyStatus.Active, result.JourneyStatus);
         Assert.Equal("dustvale", result.CurrentSession.Player.CurrentTownId);
-        Assert.Equal(25m, result.CurrentSession.Inventory.Wallet.Cash);
+        Assert.Equal(25m, result.CurrentSession.Inventory!.Wallet.Cash);
         Assert.Equal(1, result.CurrentSession.Clock.Day);
         Assert.Equal(0, result.CurrentSession.Clock.Turn);
         Assert.NotNull(result.CurrentSession.Journey);
@@ -92,9 +92,9 @@ public sealed class TravelToTownHandlerTests
 
     private static GameSession CreateSession(bool emptyInventory = false)
     {
-        var dustvale = new Town(new TownId("dustvale"), "Dustvale", TownServices.None);
-        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek", TownServices.None);
-        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge", TownServices.None);
+        var dustvale = new Town(new TownId("dustvale"), "Dustvale");
+        var silvercreek = new Town(new TownId("silvercreek"), "Silver Creek");
+        var dryridge = new Town(new TownId("dryridge"), "Dry Ridge");
 
         var world = new World(
             new[] { dustvale, silvercreek, dryridge },

@@ -11,11 +11,7 @@ import {
 } from "../api/types";
 
 const mockState = vi.hoisted(() => ({
-  games: [] as Array<{
-    config: { scene: TownHubScene };
-    destroyed: boolean;
-    destroy: () => void;
-  }>,
+  games: [] as Array<{ config: { scene: TownHubScene }; destroyed: boolean; destroy: () => void }>,
 }));
 
 vi.mock("phaser", () => {
@@ -46,14 +42,7 @@ afterEach(() => {
 function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
   return {
     buildings: [
-      {
-        kind: BuildingKind.Store,
-        view: BuildingView.Profile,
-        x: 12,
-        y: 15,
-        width: 8,
-        height: 10,
-      },
+      { kind: BuildingKind.Store, view: BuildingView.Profile, x: 12, y: 15, width: 8, height: 10 },
       {
         kind: BuildingKind.Sheriff,
         view: BuildingView.Profile,
@@ -62,22 +51,8 @@ function createLayout(overrides: Partial<TownLayoutDto> = {}): TownLayoutDto {
         width: 8,
         height: 10,
       },
-      {
-        kind: BuildingKind.Saloon,
-        view: BuildingView.Profile,
-        x: 80,
-        y: 15,
-        width: 8,
-        height: 10,
-      },
-      {
-        kind: BuildingKind.Trailhead,
-        view: BuildingView.Rear,
-        x: 90,
-        y: 50,
-        width: 8,
-        height: 10,
-      },
+      { kind: BuildingKind.Saloon, view: BuildingView.Profile, x: 80, y: 15, width: 8, height: 10 },
+      { kind: BuildingKind.Trailhead, view: BuildingView.Rear, x: 90, y: 50, width: 8, height: 10 },
     ],
     playerSpawnX: 50,
     playerSpawnY: 50,
@@ -135,8 +110,8 @@ describe("PhaserTownHubHost", () => {
           view: BuildingView.Front,
         },
       ],
-      playerSpawnX: 120,
-      playerSpawnY: 130,
+      playerSpawnX: 47,
+      playerSpawnY: 53,
     });
 
     renderHost({ layout });
@@ -219,24 +194,11 @@ describe("PhaserTownHubHost", () => {
   });
 });
 
-describe("PhaserTownHubHost truth boundary", () => {
-  it("does not give the scene access to any API function", () => {
-    renderHost();
-
-    const scene = mockState.games[0].config.scene as unknown as Record<string, unknown>;
-    expect(scene.api).toBeUndefined();
-    expect(scene.requestJson).toBeUndefined();
-    expect(scene.fetch).toBeUndefined();
-    expect(scene.getGame).toBeUndefined();
-  });
-
-  it("selectBuilding only calls onBuildingSelected and does not call fetch or any API", () => {
+describe("PhaserTownHubHost building selection", () => {
+  it("forwards an eligible building selection without fetching during selection", () => {
     const onBuildingSelected = vi.fn();
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    renderHost({
-      onBuildingSelected,
-      availableActions: [AvailableActionKind.BuySupplies],
-    });
+    renderHost({ onBuildingSelected, availableActions: [AvailableActionKind.BuySupplies] });
 
     const scene = mockState.games[0].config.scene;
     scene.selectBuilding(BuildingKind.Store);

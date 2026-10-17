@@ -66,16 +66,14 @@ public sealed class TravelResourceTrackingCharacterizationTests
         Assert.Equal(1250, session.Player.Health);
     }
 
-    // Heat no longer affects trail events or encounters, so the deterministic
-    // rolls now produce a different outcome for the same route profile: the
-    // EasyShortJourney is interrupted by an NPC encounter on day 1 instead of
-    // completing quietly with a LuckyCoinCache. The wallet is therefore
-    // unchanged. See ADR-0029.
+    // Use the event-backed developer override to keep the wallet assertion about
+    // resource tracking independent from generated encounter selection.
     [Fact]
     public void AdvanceJourneyDay_InterruptedByEncounter_LeavesWalletUnchanged()
     {
         var (session, preview) = TravelTestFactory.CreateEasyShortJourney();
         session.StartJourney(preview);
+        TravelTestFactory.ForceNextEncounterToFoe(session);
         Assert.Equal(25m, session.Player.Wallet.Cash);
 
         var result = session.AdvanceJourneyDay();
@@ -85,9 +83,9 @@ public sealed class TravelResourceTrackingCharacterizationTests
     }
 
     [Fact]
-    public void SixDayQuietJourney_CompletesWithExactState()
+    public void FourDayQuietJourney_CompletesWithExactState()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
         TravelJourneyStepResult result;
@@ -102,9 +100,9 @@ public sealed class TravelResourceTrackingCharacterizationTests
         Assert.Equal(JourneyStatus.Completed, session.Journey!.Status);
         Assert.Equal(4, session.Journey.DaysTravelled);
         Assert.Equal(1250, session.Player.Health);
-        Assert.Equal(25m, session.Player.Wallet.Cash);
-        Assert.Equal(4, session.Journey.FoodRemaining);
-        Assert.Equal(4, session.Player.Inventory.GetQuantity(ItemKind.Food));
+        Assert.Equal(29m, session.Player.Wallet.Cash);
+        Assert.Equal(6, session.Journey.FoodRemaining);
+        Assert.Equal(6, session.Player.Inventory.GetQuantity(ItemKind.Food));
         Assert.Equal(5, session.Clock.Day);
         Assert.Equal(0, session.Clock.Turn);
         Assert.Equal(0, session.PursuitState.Heat);
@@ -115,7 +113,7 @@ public sealed class TravelResourceTrackingCharacterizationTests
     [Fact]
     public void AcknowledgeJourneyArrival_ClearsJourneyAndChangesTown()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
         var destinationTown = preview.DestinationTownId;
         Assert.Equal(new TownId("o2"), session.Player.CurrentTownId);
@@ -140,17 +138,17 @@ public sealed class TravelResourceTrackingCharacterizationTests
     [Fact]
     public void FullJourneyCycle_ExactStateAtEachStep()
     {
-        var (session, preview) = TravelTestFactory.CreateSixDayQuietJourney();
+        var (session, preview) = TravelTestFactory.CreateFourDayQuietJourney();
         session.StartJourney(preview);
 
-        // Per-day captured values for CreateSixDayQuietJourney.
+        // Per-day captured values for CreateFourDayQuietJourney.
         // Indexed by day number (1-based). The journey completes on day 4.
-        var expectedFoodRemaining = new[] { 7, 6, 5, 4 };
+        var expectedFoodRemaining = new[] { 9, 8, 7, 6 };
         var expectedHealth = new[] { 1250, 1250, 1250, 1250 };
         // Heat stays 0 — travel no longer raises heat from route risk. See ADR-0029.
         var expectedHeat = new[] { 0, 0, 0, 0 };
         var expectedClockDay = new[] { 2, 3, 4, 5 };
-        var expectedCash = new[] { 25m, 25m, 25m, 25m };
+        var expectedCash = new[] { 25m, 25m, 29m, 29m };
         var expectedTravelDiaryDays = new[] { 1, 2, 3, 4 };
         var expectedStatus = new[]
         {
@@ -181,11 +179,11 @@ public sealed class TravelResourceTrackingCharacterizationTests
         Assert.Equal(JourneyStatus.Completed, result.Status);
         Assert.Equal(4, dayCount);
         Assert.Equal(4, session.Journey!.DaysTravelled);
-        Assert.Equal(4, session.Journey.FoodRemaining);
+        Assert.Equal(6, session.Journey.FoodRemaining);
         Assert.Equal(1250, session.Player.Health);
         Assert.Equal(0, session.PursuitState.Heat);
         Assert.Equal(5, session.Clock.Day);
-        Assert.Equal(25m, session.Player.Wallet.Cash);
+        Assert.Equal(29m, session.Player.Wallet.Cash);
         Assert.Equal(4, session.TravelDiaryDays.Count);
 
         var ackResult = session.AcknowledgeJourneyArrival();

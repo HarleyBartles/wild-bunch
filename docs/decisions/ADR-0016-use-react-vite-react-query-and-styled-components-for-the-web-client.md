@@ -16,7 +16,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0015
-- `partially superseded by`: ADR-0027, ADR-0030
+- `partially superseded by`: ADR-0027, ADR-0030, ADR-0039
 - `related to`: ADR-0019, ADR-0035
 
 ## Context
@@ -33,8 +33,8 @@ Scattered fetch logic makes loading, errors, and refresh behavior inconsistent. 
 
 ## Consequences
 
-Queries and mutations must keep client views aligned with server results. Component styling remains close to its display contract. The original cockpit and routing direction is replaced in part by ADR-0027 and ADR-0030; the stack decision survives.
+Queries and mutations must keep client views aligned with server results. Component styling remains close to its display contract. The original cockpit and routing direction is replaced in part by ADR-0027 and the later setup-flow decision in ADR-0039; the stack decision survives.
 
 ## Successors and Surviving Scope
 
-ADR-0027 and ADR-0030 supersede the original route and cockpit assumptions. React, Vite, TanStack React Query, and styled-components remain the selected client stack.
+ADR-0027, ADR-0030, and ADR-0039 supersede the original route and cockpit assumptions. React, Vite, TanStack React Query, and styled-components remain the selected client stack.

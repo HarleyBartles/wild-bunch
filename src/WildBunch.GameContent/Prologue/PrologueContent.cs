@@ -37,7 +37,7 @@ public static class PrologueContent
     public const string StartOverSuccessCopy = "Your old playthrough has been archived. Start a new one when you are ready.";
 
     // Body copy variants — flavour-only wording, same starting facts preserved.
-    // The {trueCulpritMainIdentifier} placeholder is substituted by Task 2.4's endpoint.
+    // The {trueCulpritMainIdentifier} placeholder is substituted from the settled session case.
     public static IReadOnlyList<PrologueVariant> Variants { get; } =
     [
         new PrologueVariant(

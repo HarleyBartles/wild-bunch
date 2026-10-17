@@ -43,8 +43,8 @@ public sealed class ConfrontWantedSuspectHandlerTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
+        var connected = new Town(new TownId("connected"), "Connected");
         var world = new DomainWorld(
             new[] { pinecross, connected },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, connected.Id, TrailRisk.Low) });

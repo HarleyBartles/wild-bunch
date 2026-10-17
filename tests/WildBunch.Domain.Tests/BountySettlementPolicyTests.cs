@@ -64,7 +64,7 @@ public sealed class BountySettlementPolicyTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var world = new DomainWorld(
             new[] { pinecross },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, pinecross.Id, TrailRisk.Low) });
@@ -104,11 +104,11 @@ public sealed class BountySettlementPolicyTests
                         300m,
                         new[] { "The Magpie" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
-                        Array.Empty<OutlawGangId>(),
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
+                        [OutlawGangIds.WildBunch],
                         null),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);

@@ -18,7 +18,6 @@ public sealed record WorldSnapshot(IReadOnlyList<TownSnapshot> Towns, IReadOnlyL
 public sealed record TownSnapshot(
     string Id,
     string Name,
-    TownServices Services,
     TownProsperity Prosperity,
     int MapX,
     int MapY,
@@ -26,10 +25,10 @@ public sealed record TownSnapshot(
     TownLayout? Layout = null)
 {
     public static TownSnapshot FromDomain(Town town)
-        => new(town.Id.Value, town.Name, town.Services, town.Prosperity, town.MapX, town.MapY, town.IsOutlier, town.Layout);
+        => new(town.Id.Value, town.Name, town.Prosperity, town.MapX, town.MapY, town.IsOutlier, town.Layout);
 
     public Town ToDomain()
-        => new(new TownId(Id), Name, Services, Prosperity, MapX: MapX, MapY: MapY, IsOutlier: IsOutlier, Layout: Layout);
+        => new(new TownId(Id), Name, Prosperity, MapX: MapX, MapY: MapY, IsOutlier: IsOutlier, Layout: Layout);
 }
 
 public sealed record TrailSnapshot(

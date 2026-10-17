@@ -26,11 +26,11 @@ export const PanelHead = styled.header`
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+`;
 
-  h2 {
-    margin-bottom: 0;
-    font-size: 1.1rem;
-  }
+export const PanelHeading = styled.h2`
+  margin-bottom: 0;
+  font-size: 1.1rem;
 `;
 
 export const PanelSubtitle = styled.p`
@@ -110,11 +110,7 @@ export const Error = styled.div`
   border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
 `;
 
-export const Grid = styled.div<{
-  $cols?: number;
-  $tabletCols?: number;
-  $mobileCols?: number;
-}>`
+export const Grid = styled.div<{ $cols?: number; $tabletCols?: number; $mobileCols?: number }>`
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(${({ $cols }) => $cols ?? 2}, minmax(0, 1fr));
@@ -141,11 +137,11 @@ export const StatusCard = styled.section`
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
+`;
 
-  h3 {
-    margin-bottom: 12px;
-    font-size: 1rem;
-  }
+export const StatusCardHeading = styled.h3`
+  margin-bottom: 12px;
+  font-size: 1rem;
 `;
 
 export const StatList = styled.dl`
@@ -168,29 +164,6 @@ export const StatList = styled.dl`
   dd {
     margin: 3px 0 0;
     font-weight: 600;
-  }
-`;
-
-export const Field = styled.div`
-  display: grid;
-  gap: 4px;
-
-  label,
-  span {
-    font-size: 0.82rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  select,
-  input {
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border-strong);
-    background: rgba(0, 0, 0, 0.25);
-    color: var(--text);
-    font-size: 0.94rem;
   }
 `;
 

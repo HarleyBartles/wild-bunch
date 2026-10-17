@@ -7,19 +7,6 @@ namespace WildBunch.GameContent.Tests;
 public sealed class SeedWorldResolverCodecTests
 {
     [Fact]
-    public void ResolverContractVersion_IsV17()
-    {
-        Assert.Equal("resolver-v17", SeedWorldResolver.ResolverContractVersion);
-    }
-
-    [Fact]
-    public void TownCount_Bounds_Are5To10()
-    {
-        Assert.Equal(5, SeedWorldResolver.MinTownCount);
-        Assert.Equal(10, SeedWorldResolver.MaxTownCount);
-    }
-
-    [Fact]
     public void RoundTrip_PreservesTownCount()
     {
         for (var townCount = SeedWorldResolver.MinTownCount; townCount <= SeedWorldResolver.MaxTownCount; townCount++)
@@ -46,67 +33,46 @@ public sealed class SeedWorldResolverCodecTests
         Assert.Equal(original.DefaultCulpritIndex, resolved.DefaultCulpritIndex);
         Assert.Equal(original.CashBonus, resolved.CashBonus);
         Assert.Equal(original.ProsperityPalette, resolved.ProsperityPalette);
-        Assert.Equal(original.ServicesPalette, resolved.ServicesPalette);
+        Assert.Equal(original.ReservedTownNameDerivationBits, resolved.ReservedTownNameDerivationBits);
         Assert.Equal(original.ClusterCount, resolved.ClusterCount);
         Assert.Equal(original.GraphDensity, resolved.GraphDensity);
         Assert.Equal(original.OutlierSlotType, resolved.OutlierSlotType);
     }
 
     [Fact]
-    public void TownCount_ModuloWrapping_ClampsToDefinedRange()
+    public void Resolve_DecodesFixedSeedWorldFixture()
     {
-        // Create a seed with townCount value 15 (outside defined range 5-10)
-        var bytes = new byte[16];
-        var seedCode = new Guid(bytes);
+        var seedCode = Guid.Parse("2020c0c4-0000-0000-0000-000000000000");
+        var expected = new SeedWorld(
+            seedCode,
+            SeedWorldVariant.Canonical,
+            8,
+            1,
+            ProsperityPalette.UniformProsperous,
+            1,
+            GraphDensity.Sparse,
+            1,
+            3,
+            0,
+            0,
+            BuildingLayoutPalette.NoSpurs_ClusterMiddle);
 
-        // Set bits 14-17 to 15 (binary 1111)
-        var low = BitConverter.ToUInt64(bytes, 0);
-        low |= 0xFUL << 14;
-        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
-        seedCode = new Guid(bytes);
-
-        var resolved = SeedWorldResolver.Resolve(seedCode);
-
-        // Should wrap to 5 + ((15 + 5 - 5) % 6) = 5 + (15 % 6) = 5 + 3 = 8
-        Assert.Equal(8, resolved.TownCount);
+        Assert.Equal(expected, SeedWorldResolver.Resolve(seedCode));
     }
 
     [Fact]
-    public void ProsperityPalette_ModuloWrapping_ClampsToDefinedRange()
+    public void ReservedTownNameDerivationBits_RoundTripAcrossEncodedRange()
     {
-        // Create a seed with prosperityPalette value 7 (within range 0-7)
-        var bytes = new byte[16];
-        var seedCode = new Guid(bytes);
+        for (var bits = 0; bits < 8; bits++)
+        {
+            var original = SeedWorldResolver.CreateCanonicalSeedWorld() with
+            {
+                ReservedTownNameDerivationBits = bits,
+            };
+            var resolved = SeedWorldResolver.Resolve(SeedWorldResolver.CreateRepresentativeSeedCode(original));
 
-        // Set bits 18-20 to 7
-        var low = BitConverter.ToUInt64(bytes, 0);
-        low |= 0x7UL << 18;
-        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
-        seedCode = new Guid(bytes);
-
-        var resolved = SeedWorldResolver.Resolve(seedCode);
-
-        // Should wrap to 7 % 8 = 7 (within range)
-        Assert.Equal((ProsperityPalette)7, resolved.ProsperityPalette);
-    }
-
-    [Fact]
-    public void ServicesPalette_ModuloWrapping_ClampsToDefinedRange()
-    {
-        // Create a seed with servicesPalette value 7 (within range 0-7)
-        var bytes = new byte[16];
-        var seedCode = new Guid(bytes);
-
-        // Set bits 21-23 to 7
-        var low = BitConverter.ToUInt64(bytes, 0);
-        low |= 0x7UL << 21;
-        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
-        seedCode = new Guid(bytes);
-
-        var resolved = SeedWorldResolver.Resolve(seedCode);
-
-        // Should wrap to 7 % 8 = 7 (within range)
-        Assert.Equal((ServicesPalette)7, resolved.ServicesPalette);
+            Assert.Equal(bits, resolved.ReservedTownNameDerivationBits);
+        }
     }
 
     [Fact]
@@ -153,19 +119,4 @@ public sealed class SeedWorldResolverCodecTests
         Assert.Contains("Outlier slot type must be 0 (no outlier) or 1 (simple outlier)", validation.ErrorMessage);
     }
 
-    [Fact]
-    public void OutlierSlotType_BitPosition_Is27_28()
-    {
-        // Create a seed with OutlierSlotType = 1 by setting bits 27-28
-        var bytes = new byte[16];
-        var seedCode = new Guid(bytes);
-
-        var low = BitConverter.ToUInt64(bytes, 0);
-        low |= 0x1UL << 27; // Set bit 27
-        BitConverter.TryWriteBytes(bytes.AsSpan(0), low);
-        seedCode = new Guid(bytes);
-
-        var resolved = SeedWorldResolver.Resolve(seedCode);
-        Assert.Equal(1, resolved.OutlierSlotType);
-    }
 }

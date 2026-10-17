@@ -7,6 +7,7 @@
 ## Dated History
 
 - `2026-06-01` - Chose to keep the case file and its case-local invariants within the live session rather than create a separate command root or repository.
+- `2026-10-08` - Editorial clarification: the session's command and event consistency protocol is stated in ADR-0038; this record describes the case ownership boundary.
 
 ## Decision Type
 
@@ -15,7 +16,7 @@
 ## Related ADRs
 
 - `depends on`: ADR-0002
-- `related to`: ADR-0006, ADR-0007
+- `related to`: ADR-0006, ADR-0007, ADR-0038
 
 ## Context
 

@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using Town = WildBunch.Domain.World.Town;
 using TownId = WildBunch.Domain.World.TownId;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 using World = WildBunch.Domain.World.World;
@@ -53,9 +52,9 @@ public sealed class ClearSaloonOverrideHandlerTests
     private static GameSession CreateSessionWithSaloonSuspect()
     {
         var town = new WildBunch.Domain.World.Town(
-            new TownId("current"), "Current Town", WildBunch.Domain.World.TownServices.None);
+            new TownId("current"), "Current Town");
         var connected = new WildBunch.Domain.World.Town(
-            new TownId("connected"), "Connected Town", WildBunch.Domain.World.TownServices.None);
+            new TownId("connected"), "Connected Town");
         var world = new WildBunch.Domain.World.World(
             new[] { town, connected },
             new[] { new WildBunch.Domain.World.Trail(

@@ -50,4 +50,9 @@ public sealed record SheriffTurnInSettlementState(
     bool IsAlive,
     decimal BountyAmount,
     int Day,
-    int Turn);
+    int Turn)
+{
+    public decimal BountyAmount { get; } = BountyAmount >= 0
+        ? BountyAmount
+        : throw new ArgumentOutOfRangeException(nameof(BountyAmount));
+}

@@ -1,17 +1,21 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Outlet } from "@tanstack/react-router";
 import styled from "styled-components";
 import { Hud } from "./Hud";
 import { GlobalOverlays, type OverlayKind } from "../flow/GlobalOverlays";
-import { DevOverlay } from "../dev/DevOverlay";
-import { DevSurfaceProvider } from "../dev/DevSurfaceContext";
 import { usePhaseRouteSync } from "./usePhaseRouteSync";
-import { useDevSurfaceSync } from "./useDevSurfaceSync";
 import { RouteLoading } from "./RouteLoading";
+import { useGameSession } from "../state/useGameSession";
+import { SessionRecoverySurface } from "../components/session-recovery/SessionRecoverySurface";
 
-function ShellChrome() {
+export interface ShellChromeSlots {
+  toolbar?: ReactNode;
+  renderOverlay?: (top: number) => ReactNode;
+}
+
+export function ShellChrome({ toolbar, renderOverlay }: ShellChromeSlots = {}) {
+  const { sessionRestoreStatus, retrySessionRestore, abandonMissingSession } = useGameSession();
   const [openOverlay, setOpenOverlay] = useState<OverlayKind>(null);
-  const [devOverlayOpen, setDevOverlayOpen] = useState(false);
   const chromeBarRef = useRef<HTMLDivElement>(null);
   const [chromeBarHeight, setChromeBarHeight] = useState(0);
 
@@ -19,10 +23,23 @@ function ShellChrome() {
     if (chromeBarRef.current) {
       setChromeBarHeight(chromeBarRef.current.offsetHeight);
     }
-  }, [devOverlayOpen]);
+  }, [toolbar]);
 
   usePhaseRouteSync();
-  useDevSurfaceSync();
+
+  if (sessionRestoreStatus === "loading") {
+    return <RouteLoading role="status">Opening your saved game...</RouteLoading>;
+  }
+
+  if (sessionRestoreStatus === "failed" || sessionRestoreStatus === "missing") {
+    return (
+      <SessionRecoverySurface
+        missing={sessionRestoreStatus === "missing"}
+        onRetry={retrySessionRestore}
+        onStartNewGame={abandonMissingSession}
+      />
+    );
+  }
 
   return (
     <Shell>
@@ -33,16 +50,7 @@ function ShellChrome() {
         />
         <OverlayBar>
           <GlobalOverlays openOverlay={openOverlay} onOpenOverlay={setOpenOverlay} />
-          <DevNav aria-label="Developer tools">
-            <DevToggleButton
-              type="button"
-              $active={devOverlayOpen}
-              onClick={() => setDevOverlayOpen((prev) => !prev)}
-              aria-expanded={devOverlayOpen}
-            >
-              {devOverlayOpen ? "Hide dev" : "Dev"}
-            </DevToggleButton>
-          </DevNav>
+          {toolbar}
         </OverlayBar>
       </ChromeBar>
       <RouteOutlet aria-live="polite">
@@ -52,21 +60,13 @@ function ShellChrome() {
           </Suspense>
         </Route>
       </RouteOutlet>
-      <DevOverlay
-        open={devOverlayOpen}
-        onClose={() => setDevOverlayOpen(false)}
-        top={chromeBarHeight}
-      />
+      {renderOverlay?.(chromeBarHeight)}
     </Shell>
   );
 }
 
 export function AppShell() {
-  return (
-    <DevSurfaceProvider>
-      <ShellChrome />
-    </DevSurfaceProvider>
-  );
+  return <ShellChrome />;
 }
 
 const Shell = styled.div`
@@ -94,50 +94,6 @@ const OverlayBar = styled.div`
 
   @media (max-width: 640px) {
     padding: 6px 14px;
-  }
-`;
-
-const DevNav = styled.nav`
-  display: flex;
-  gap: 6px;
-`;
-
-const DevToggleButton = styled.button<{ $active: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid ${(props) => (props.$active ? "var(--accent)" : "var(--border-strong)")};
-  background: ${(props) => (props.$active ? "rgba(223, 159, 79, 0.14)" : "rgba(255, 255, 255, 0.03)")};
-  color: ${(props) => (props.$active ? "var(--accent-strong)" : "var(--text)")};
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  min-height: 32px;
-  cursor: pointer;
-  transition-property: background-color, border-color, color;
-  transition-duration: 120ms;
-  transition-timing-function: ease-out;
-
-  &::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: ${(props) => (props.$active ? "var(--accent)" : "var(--muted)")};
-    flex-shrink: 0;
-  }
-
-  &:hover {
-    border-color: var(--accent);
-    background: ${(props) => (props.$active ? "rgba(223, 159, 79, 0.2)" : "rgba(223, 159, 79, 0.08)")};
-    color: ${(props) => (props.$active ? "var(--accent-strong)" : "var(--accent-strong)")};
-  }
-
-  &:active {
-    transform: scale(0.97);
   }
 `;
 

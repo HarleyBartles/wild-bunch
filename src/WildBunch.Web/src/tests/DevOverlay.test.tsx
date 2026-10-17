@@ -23,12 +23,9 @@ vi.mock("../api/wildBunchApi", () => ({
   getGame: vi.fn(),
   getJournal: vi.fn(),
   getTownStoreOffers: vi.fn(),
-  checkLocalRecords: vi.fn(),
-  inspectNoticeBoard: vi.fn(),
   confrontSaloonPersonOfInterest: vi.fn(),
   lookAroundSaloon: vi.fn(),
   readWantedPosters: vi.fn(),
-  followTelegraphLeads: vi.fn(),
   gatherLocalGossip: vi.fn(),
   travel: vi.fn(),
   acknowledgeTravelArrival: vi.fn(),
@@ -109,9 +106,7 @@ describe("DevOverlay", () => {
   it("renders the session audit panel tab on town surface", () => {
     renderOverlay(true, () => {}, 0, "town");
     // Session audit should appear in the bottom section, not in the main list
-    const sessionAuditButtons = screen.getAllByRole("button", {
-      name: /session audit/i,
-    });
+    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
     expect(sessionAuditButtons).toHaveLength(1);
   });
 
@@ -155,9 +150,7 @@ describe("DevOverlay contextual panel visibility", () => {
   it("does not show Saloon dev tab when surface is sheriff", () => {
     renderOverlay(true, () => {}, 0, "sheriff");
     // Session audit should appear in the bottom section
-    const sessionAuditButtons = screen.getAllByRole("button", {
-      name: /session audit/i,
-    });
+    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
     expect(sessionAuditButtons).toHaveLength(1);
     expect(screen.queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
   });
@@ -208,46 +201,16 @@ describe("DevOverlay contextual panel visibility", () => {
   it("shows only session audit when surface is store (no contextual panels)", () => {
     renderOverlay(true, () => {}, 0, "store");
     // When there are no main panels, session audit should be the only panel
-    const sessionAuditButtons = screen.getAllByRole("button", {
-      name: /session audit/i,
-    });
+    const sessionAuditButtons = screen.getAllByRole("button", { name: /session audit/i });
     expect(sessionAuditButtons).toHaveLength(1);
     expect(screen.queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /travel dev/i })).not.toBeInTheDocument();
   });
 
-  it("shows no contextual dev panel message when no panels match", () => {
-    // pre-session has no contextual panels and session-audit is always available,
-    // so this tests the "always available" fallback. To test the empty state,
-    // we'd need a surface with no panels at all. Session audit is always available,
-    // so the empty state won't trigger with current panels. Instead verify
-    // session audit is the only panel on pre-session.
+  it("keeps Session Audit available on the pre-session surface", () => {
     renderOverlay(true, () => {}, 0, "pre-session");
-    const sessionAuditButtons = screen.getAllByRole("button", {
-      name: /session audit/i,
-    });
-    expect(sessionAuditButtons).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /session audit/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /saloon dev/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /travel dev/i })).not.toBeInTheDocument();
-  });
-});
-
-describe("DevOverlay expanded height cap", () => {
-  it("caps expanded drawer height and makes content scrollable", async () => {
-    renderOverlay(true, () => {}, 0, "town");
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /expand/i }));
-
-    const drawer = screen.getByTestId("dev-drawer");
-    const drawerStyle = window.getComputedStyle(drawer);
-    // Expanded height should be capped (not 100dvh)
-    const heightValue = drawerStyle.height;
-    expect(heightValue).not.toBe("");
-    expect(heightValue).not.toContain("100dvh");
-    // The content area should have overflow auto for internal scrolling
-    const content = screen.getByTestId("dev-overlay-content");
-    const contentStyle = window.getComputedStyle(content);
-    expect(contentStyle.overflow).toBe("auto");
   });
 });

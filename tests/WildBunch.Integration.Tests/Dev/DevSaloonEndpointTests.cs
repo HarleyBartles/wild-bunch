@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using WildBunch.Api.Dev;
 using WildBunch.Api.Games;
 using WildBunch.Application.Dev.Models;
 using WildBunch.Application.Games.Models;
@@ -193,8 +194,7 @@ public sealed class DevSaloonEndpointTests
 
     private static async Task<Guid> CreateSessionAsync(HttpClient client)
     {
-        var scenario = BoringScenarioBuilder.StartingTownServicesOrWantedPosterReady();
-        scenario.AssertReady();
+        var scenario = BoringScenarioBuilder.StartingTownReady();
 
         var created = await client.CreateStartedGameAsync(scenario, "Ranger Vale");
         return created.Id;

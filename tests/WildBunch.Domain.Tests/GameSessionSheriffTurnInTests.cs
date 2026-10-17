@@ -124,6 +124,9 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.True(firstResult.SessionChanged);
         Assert.Equal(2525m, session.Player.Wallet.Cash);
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
+        Assert.DoesNotContain(session.CaseFile.GetDiscoveredSuspects(), suspect =>
+            suspect.Status == SuspectStatus.Captured);
         Assert.True(session.CaseFile.TryGetSheriffTurnInSettlementState(new SuspectId("suspect-1"), out var settlementState));
         Assert.Equal("Mira Cline", settlementState.TargetName);
         Assert.False(settlementState.IsAlive);
@@ -133,7 +136,43 @@ public sealed class GameSessionSheriffTurnInTests
         Assert.Equal(SheriffTurnInOutcome.Rejected, secondResult.Outcome);
         Assert.Equal(2525m, session.Player.Wallet.Cash);
         Assert.Single(session.CaseFile.SheriffTurnInSettlements);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
         Assert.Contains("already been paid", secondResult.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SettledLivingSuspectIsDiscoveredAndCapturedOnCommandAndEventReplay()
+    {
+        var session = CreateSession();
+        var targetId = new SuspectId("suspect-1");
+        session.EnterActionContext(TownActionContext.Saloon);
+        session.CurrentTownVisit.CurrentTownState.SetActiveSaloonWantedSuspect(targetId);
+        session.ResolveWantedSuspectConfrontation(targetId, WantedSuspectConfrontationChoice.Surrendered);
+
+        var result = session.SettleSheriffTurnIn(targetId, isAlive: true);
+
+        Assert.True(result.Success);
+        Assert.Contains(session.CaseFile.GetDiscoveredSuspects(), suspect =>
+            suspect.Id == targetId && suspect.Status == SuspectStatus.Captured);
+
+        var replayed = GameSession.RehydrateFromEvents(session.Id, session.World, session.AllEvents);
+
+        Assert.Contains(replayed.CaseFile.GetDiscoveredSuspects(), suspect =>
+            suspect.Id == targetId && suspect.Status == SuspectStatus.Captured);
+        Assert.Single(replayed.CaseFile.SheriffTurnInSettlements);
+
+        var snapshot = CaseFileSnapshot.FromDomain(session.CaseFile);
+        var staleSnapshot = snapshot with
+        {
+            Suspects = snapshot.Suspects
+                .Select(suspect => suspect.Id == targetId.Value ? suspect with { Status = nameof(SuspectStatus.AtLarge) } : suspect)
+                .ToArray(),
+            DiscoveredSuspectIds = Array.Empty<string>()
+        };
+        var restored = staleSnapshot.ToDomain();
+
+        Assert.Contains(restored.GetDiscoveredSuspects(), suspect =>
+            suspect.Id == targetId && suspect.Status == SuspectStatus.Captured);
     }
 
     [Fact]
@@ -172,6 +211,7 @@ public sealed class GameSessionSheriffTurnInTests
 
         // No SheriffTurnInSettled event should be produced for a rejected turn-in
         Assert.DoesNotContain(session.UncommittedEvents, e => e is SheriffTurnInSettled);
+        Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
@@ -197,7 +237,7 @@ public sealed class GameSessionSheriffTurnInTests
 
     private static GameSession CreateSession()
     {
-        var pinecross = new Town(new TownId("pinecross"), "Pinecross", TownServices.None);
+        var pinecross = new Town(new TownId("pinecross"), "Pinecross");
         var world = new DomainWorld(
             new[] { pinecross },
             new[] { new Trail(new TrailId("trail-1"), pinecross.Id, pinecross.Id, TrailRisk.Low) });
@@ -237,11 +277,11 @@ public sealed class GameSessionSheriffTurnInTests
                         300m,
                         new[] { "The Magpie" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
                         Array.Empty<OutlawGangId>(),
                         null),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, pinecross.Id, gameDifficulty: GameDifficulty.Standard);

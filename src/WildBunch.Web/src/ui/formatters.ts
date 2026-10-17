@@ -38,20 +38,12 @@ export function formatActionKind(kind: number) {
       return "View journal";
     case 3:
       return "Buy supplies";
-    case 4:
-      return "Send telegram";
     case 5:
       return "Read wanted posters";
     case 6:
       return "Advance travel day";
     case 7:
       return "Resolve travel encounter";
-    case 8:
-      return "Inspect notice board";
-    case 9:
-      return "Check local records";
-    case 10:
-      return "Follow telegraph leads";
     case 11:
       return "Gather local gossip";
     case 12:
@@ -130,12 +122,6 @@ export function formatWaterFeature(feature: number) {
   }
 }
 
-export function formatServices(services: number) {
-  const labels: string[] = [];
-  if (services & 1) labels.push("Telegraph");
-  return labels.length > 0 ? labels.join(", ") : "None";
-}
-
 export function formatClueKind(kind: number) {
   switch (kind) {
     case 0:
@@ -162,38 +148,6 @@ export function formatClueKind(kind: number) {
       return "Context";
     default:
       return `Clue ${kind}`;
-  }
-}
-
-export function formatCaseIdentityKind(kind: number) {
-  switch (kind) {
-    case 0:
-      return "Known name";
-    case 1:
-      return "Known name";
-    case 2:
-      return "Feature lead";
-    case 3:
-      return "Route lead";
-    case 4:
-      return "Wanted target";
-    default:
-      return `Identity ${kind}`;
-  }
-}
-
-export function formatCaseIdentityStatus(status: number) {
-  switch (status) {
-    case 0:
-      return "Unresolved";
-    case 1:
-      return "Possible match";
-    case 2:
-      return "Resolved";
-    case 3:
-      return "Captured";
-    default:
-      return `Status ${status}`;
   }
 }
 
@@ -239,10 +193,6 @@ export function formatItemKind(kind: number) {
       return "Revolver";
     case 7:
       return "Revolver ammo";
-    case 8:
-      return "Rifle";
-    case 9:
-      return "Rifle ammo";
     default:
       return `Item ${kind}`;
   }
@@ -320,8 +270,6 @@ export function formatCapabilityLabel(label: keyof InventoryCapabilitiesDto) {
       return "Gunfight capable";
     case "revolverUsable":
       return "Revolver usable";
-    case "rifleUsable":
-      return "Rifle usable";
     default:
       return label;
   }

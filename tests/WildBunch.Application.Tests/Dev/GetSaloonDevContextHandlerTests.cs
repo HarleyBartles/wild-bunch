@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using Town = WildBunch.Domain.World.Town;
 using TownId = WildBunch.Domain.World.TownId;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 using World = WildBunch.Domain.World.World;
@@ -154,30 +153,12 @@ public sealed class GetSaloonDevContextHandlerTests
         Assert.Equal("Mira Cline", result.PendingDevOverride.ForcedSuspectName);
     }
 
-    [Fact]
-    public async Task HandleAsync_HiddenTruthDoesNotLeakIntoPlayerDtoSerialization()
-    {
-        var repository = new InMemoryGameSessionRepository();
-        var session = CreateSessionWithSaloonSuspect();
-        repository.Seed(session);
-
-        var handler = new GetSaloonDevContextHandler(repository);
-
-        var result = await handler.HandleAsync(new GetSaloonDevContextQuery(session.Id.Value));
-
-        // The dev DTO deliberately contains hidden truth. Verify it's present in dev DTO.
-        Assert.NotNull(result.HiddenTruth);
-        // This test documents the boundary: the dev DTO is separate from player DTOs.
-        // Player DTOs (GameSessionDto, JournalDto) must NOT contain trueCulpritId.
-        // That boundary is enforced by the GameSessionMapper and JournalResolver tests.
-    }
-
     private static GameSession CreateSessionWithSaloonSuspect()
     {
         var town = new WildBunch.Domain.World.Town(
-            new TownId("current"), "Current Town", WildBunch.Domain.World.TownServices.None);
+            new TownId("current"), "Current Town");
         var connected = new WildBunch.Domain.World.Town(
-            new TownId("connected"), "Connected Town", WildBunch.Domain.World.TownServices.None);
+            new TownId("connected"), "Connected Town");
         var world = new WildBunch.Domain.World.World(
             new[] { town, connected },
             new[] { new WildBunch.Domain.World.Trail(

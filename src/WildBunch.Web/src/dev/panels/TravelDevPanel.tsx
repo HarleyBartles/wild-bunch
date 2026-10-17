@@ -3,10 +3,10 @@ import styled from "styled-components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGameSession } from "../../state/useGameSession";
 import { clearTravelOverride, forceTravelOverride, getTravelDevContext } from "../devApi";
+import { gameResourceQueryKeys, refreshGameResources } from "../../state/gameResourceQueries";
 
 const ENCOUNTER_CATEGORIES = [
   "Foe",
-  "Npc",
   "Lucky",
   "Unlucky",
   "Environmental",
@@ -17,6 +17,15 @@ const ENCOUNTER_CATEGORIES = [
 
 export function TravelDevPanel() {
   const { gameId } = useGameSession();
+
+  if (!gameId) {
+    return <MutedText>No active session.</MutedText>;
+  }
+
+  return <TravelDevPanelForGame key={gameId} gameId={gameId} />;
+}
+
+function TravelDevPanelForGame({ gameId }: { gameId: string }) {
   const queryClient = useQueryClient();
 
   const [category, setCategory] = useState<string>("Foe");
@@ -28,21 +37,15 @@ export function TravelDevPanel() {
   const [actionPending, setActionPending] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dev-travel-context", gameId],
-    queryFn: () => getTravelDevContext(gameId as string),
+    queryKey: gameResourceQueryKeys.devTravel(gameId),
+    queryFn: () => getTravelDevContext(gameId),
     enabled: Boolean(gameId),
     retry: false,
   });
 
-  if (!gameId) {
-    return <MutedText>No active session.</MutedText>;
-  }
-
   if (isLoading) {
     return <MutedText>Loading travel context...</MutedText>;
   }
-
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["dev-travel-context", gameId] });
 
   const handleForce = async () => {
     setError(null);
@@ -55,7 +58,7 @@ export function TravelDevPanel() {
         foeMinimumBribe: foeBribe.trim() === "" ? null : Number(foeBribe),
         encounterMessage: message.trim() === "" ? null : message,
       });
-      void refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to force override.");
     } finally {
@@ -68,7 +71,7 @@ export function TravelDevPanel() {
     setActionPending(true);
     try {
       await clearTravelOverride(gameId);
-      void refresh();
+      await refreshGameResources(queryClient, gameId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear override.");
     } finally {

@@ -39,13 +39,9 @@ public sealed partial class GameSession
             throw new ArgumentException("Cannot rehydrate a session from an empty event stream.", nameof(events));
         }
 
-        // The first event may be PlayerSetupCompleted (start flow) or GameStarted (legacy/direct start).
-        // For setup-phase sessions, we use the PlayerSetupCompleted event to construct a placeholder.
-        // For GameStarted sessions, we use the GameStarted event as before.
-        var firstEvent = events[0];
-
         var gameStarted = events.OfType<GameStarted>().FirstOrDefault();
         var setupCompleted = events.OfType<PlayerSetupCompleted>().FirstOrDefault();
+        var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
 
         if (gameStarted is null && setupCompleted is null)
         {
@@ -53,13 +49,17 @@ public sealed partial class GameSession
                 "Event stream must contain a PlayerSetupCompleted or GameStarted event.", nameof(events));
         }
 
+        if (setupCompleted is not null && worldGenerated is null)
+        {
+            throw new InvalidOperationException(
+                "Cannot replay player setup without a WorldGenerated event.");
+        }
+
         // Use GameStarted if available (it has the starting town), otherwise use PlayerSetupCompleted.
         // For setup-phase sessions (no GameStarted), the salt source comes from the WorldGenerated
         // event — not a runtime fallback. Apply(WorldGenerated) will also restore it during replay,
         // but the constructor needs the correct value upfront so CompleteGameStart() reads the right
         // salt before any Apply runs.
-        var worldGenerated = events.OfType<WorldGenerated>().FirstOrDefault();
-
         var playerName = gameStarted?.PlayerName ?? setupCompleted!.PlayerName;
         var startingTownId = gameStarted?.StartingTownId ?? world.Towns.First().Id;
         var startingHealth = gameStarted?.StartingHealth ?? 100; // Placeholder for setup-phase sessions
@@ -67,7 +67,8 @@ public sealed partial class GameSession
         var gameDifficulty = gameStarted?.GameDifficulty ?? setupCompleted!.GameDifficulty;
         var saltSource = gameStarted?.SaltSource
             ?? worldGenerated?.SaltSource
-            ?? SaltSource.CreateRuntime();
+            ?? throw new InvalidOperationException(
+                "Cannot replay a session without a recorded salt source.");
         var gameEntropy = gameStarted?.GameEntropy
             ?? worldGenerated?.GameEntropy
             ?? setupCompleted!.GameEntropy;
@@ -105,7 +106,7 @@ public sealed partial class GameSession
         // Replay all events through Apply
         foreach (var e in events)
         {
-            ApplyEvent(session, e);
+            session.ApplyEvent(e);
         }
 
         var missingCaseFileWorldIndex = events.ToList().FindIndex(
@@ -117,20 +118,6 @@ public sealed partial class GameSession
                 "Cannot replay a legacy WorldGenerated event without a CaseFileGenerated event.");
         }
 
-        // Rebuild the UnrelatedCriminalLedger from the final CaseFile state.
-        // The constructor builds the ledger from a placeholder CaseFile (0 suspects),
-        // and Apply(CaseFileGenerated) only sets CaseFile — it does not rebuild the
-        // BountyLoop. Without this, the full replay path produces a no-op ledger
-        // while the snapshot path correctly restores it via RestoreBountyLoopState.
-        // BuildUnrelatedCriminalLedger replays persisted gang take-ins from
-        // caseFile.SheriffTurnInSettlements, and post-snapshot take-ins are already
-        // replayed via Apply(SheriffTurnInSettled). See ADR-0028.
-        if (session.CaseFile is not null)
-        {
-            var rebuiltLedger = BuildUnrelatedCriminalLedger(session.CaseFile);
-            session.RestoreBountyLoopState(rebuiltLedger, pendingDevSaloonOverride: null);
-        }
-
         // Loaded events are committed history, not uncommitted
         session.MarkEventsCommitted();
         return session;
@@ -140,105 +127,96 @@ public sealed partial class GameSession
     /// Dispatches a typed domain event to the appropriate Apply method.
     /// Throws for unknown event types to prevent silent data loss.
     /// </summary>
-    private static void ApplyEvent(GameSession session, IDomainEvent e)
+    private void ApplyEvent(IDomainEvent e)
     {
         switch (e)
         {
             case GameStarted gs:
-                session.Apply(gs);
+                Apply(gs);
                 break;
             case PlayerSetupCompleted psc:
-                session.Apply(psc);
+                Apply(psc);
                 break;
             case WorldGenerated wg:
-                session.Apply(wg);
+                Apply(wg);
                 break;
             case CaseFileGenerated cfg:
-                session.Apply(cfg);
+                Apply(cfg);
                 break;
             case StartingTownSelected sts:
-                session.Apply(sts);
+                Apply(sts);
                 break;
             case PrologueViewed pv:
-                session.Apply(pv);
+                Apply(pv);
                 break;
             case PlaythroughArchived pa:
-                session.Apply(pa);
+                Apply(pa);
+                break;
+            case PlayerDied pd:
+                Apply(pd);
                 break;
             case StoreItemPurchased p:
-                session.Apply(p);
+                Apply(p);
                 break;
             case InvestigationPerformed ip:
-                session.Apply(ip);
+                Apply(ip);
                 break;
             case TownActionContextEntered tc:
-                session.Apply(tc);
+                Apply(tc);
                 break;
             case SaloonPersonOfInterestSpotted sp:
-                session.Apply(sp);
+                Apply(sp);
                 break;
             case WantedSuspectConfronted wc:
-                session.Apply(wc);
+                Apply(wc);
                 break;
             case SheriffTurnInSettled ts:
-                session.Apply(ts);
-                break;
-            case UnrelatedCriminalTurnInSettled ucts:
-                session.Apply(ucts);
+                Apply(ts);
                 break;
             case SaloonPersonOfInterestConfronted sc:
-                session.Apply(sc);
+                Apply(sc);
                 break;
             case JourneyStarted js:
-                session.Apply(js);
+                Apply(js);
                 break;
             case TravelDayAdvanced tda:
-                session.Apply(tda);
+                Apply(tda);
                 break;
             case TrailEventApplied tea:
-                session.Apply(tea);
+                Apply(tea);
                 break;
             case JourneyEncounterResolved jer:
-                session.Apply(jer);
+                Apply(jer);
                 break;
             case JourneyCompleted jc:
-                session.Apply(jc);
+                Apply(jc);
                 break;
             case JourneyArrivalAcknowledged jaa:
-                session.Apply(jaa);
+                Apply(jaa);
                 break;
             case DevTravelOverrideForced dtf:
-                session.Apply(dtf);
+                Apply(dtf);
                 break;
             case DevTravelOverrideCleared dtc:
-                session.Apply(dtc);
+                Apply(dtc);
                 break;
             case DevTravelOverrideConsumed dtc2:
-                session.Apply(dtc2);
+                Apply(dtc2);
                 break;
             case DevSaloonOverrideForced dsf:
-                session.Apply(dsf);
+                Apply(dsf);
                 break;
             case DevSaloonOverrideCleared dsc:
-                session.Apply(dsc);
+                Apply(dsc);
                 break;
             case DevSaloonOverrideConsumed dsc2:
-                session.Apply(dsc2);
-                break;
-            case DevSaltSourceForced dsf:
-                session.Apply(dsf);
-                break;
-            case DevSaltSourceCleared dsc:
-                session.Apply(dsc);
+                Apply(dsc2);
                 break;
             case DevDifficultyForced ddf:
-                session.Apply(ddf);
+                Apply(ddf);
                 break;
             case DevEntropyChanged dec:
-                session.Apply(dec);
-                break;
-            case DevLayoutSaltsForced dlsf:
-                session.Apply(dlsf);
+                Apply(dec);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown domain event type: {e.GetType().Name}");
@@ -256,7 +234,7 @@ public sealed partial class GameSession
         ArgumentNullException.ThrowIfNull(events);
         foreach (var e in events)
         {
-            ApplyEvent(this, e);
+            ApplyEvent(e);
         }
     }
 }

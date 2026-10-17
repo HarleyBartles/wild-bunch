@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useId, useLayoutEffect, useRef } from "react";
 import styled, { keyframes } from "styled-components";
 import { Button } from "./ui/sharedStyled";
+import { wrapDialogTabNavigation } from "./dialogTabBoundary";
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -12,17 +13,32 @@ const scaleIn = keyframes`
   to { opacity: 1; transform: translateY(0) scale(1); }
 `;
 
-const Backdrop = styled.div`
+const Backdrop = styled.dialog`
   position: fixed;
   inset: 0;
-  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(7, 8, 11, 0.78);
-  backdrop-filter: blur(8px);
-  animation: ${fadeIn} 120ms ease-out;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+
+  &:not([open]) {
+    display: none;
+  }
+
+  &::backdrop {
+    background: rgba(7, 8, 11, 0.78);
+    backdrop-filter: blur(8px);
+    animation: ${fadeIn} 120ms ease-out;
+  }
 `;
 
 const Dialog = styled.section`
@@ -54,6 +70,13 @@ const DialogBody = styled.p`
   color: var(--muted);
   line-height: 1.5;
   white-space: pre-wrap;
+`;
+
+const DialogError = styled.p`
+  margin: 0;
+  padding: 0 22px 20px;
+  color: var(--danger-text);
+  line-height: 1.5;
 `;
 
 const DialogFooter = styled.footer`
@@ -91,6 +114,7 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
   onConfirm: () => void;
   busy?: boolean;
+  errorMessage?: string;
 }
 
 export function ConfirmDialog({
@@ -102,88 +126,77 @@ export function ConfirmDialog({
   onCancel,
   onConfirm,
   busy = false,
+  errorMessage,
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLElement | null>(null);
+  const id = useId();
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    if (!open) {
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
       return;
     }
 
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    // Focus the confirm button on open — the primary action.
+    if (!open) {
+      if (dialog.open) {
+        if (typeof dialog.close === "function") {
+          dialog.close();
+        } else {
+          dialog.removeAttribute("open");
+        }
+      }
+      return;
+    }
+
+    if (dialog.open) {
+      return;
+    }
+
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+    }
     confirmButtonRef.current?.focus();
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+    return () => {
+      if (!dialog.open) {
+        return;
+      }
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
+    };
+  }, [open]);
+
+  return (
+    <Backdrop
+      ref={dialogRef}
+      aria-modal="true"
+      aria-labelledby={`${id}-title`}
+      aria-describedby={`${id}-body`}
+      onCancel={(event) => {
         event.preventDefault();
         if (!busy) {
           onCancel();
         }
-        return;
-      }
-
-      // Focus trap: Tab cycles within the dialog.
-      if (event.key === "Tab" && dialogRef.current) {
-        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        );
-        if (focusable.length === 0) {
-          event.preventDefault();
-          return;
-        }
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        const active = document.activeElement;
-
-        if (event.shiftKey) {
-          if (active === first || !dialogRef.current?.contains(active)) {
-            event.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (active === last || !dialogRef.current?.contains(active)) {
-            event.preventDefault();
-            first.focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      previousFocusRef.current?.focus();
-    };
-  }, [open, onCancel, busy]);
-
-  if (!open) {
-    return null;
-  }
-
-  return (
-    <Backdrop
+      }}
+      onKeyDown={wrapDialogTabNavigation}
       onClick={(event) => {
         if (event.target === event.currentTarget && !busy) {
           onCancel();
         }
       }}
     >
-      <Dialog
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-body"
-      >
+      <Dialog>
         <DialogHeader>
-          <h2 id="confirm-dialog-title">{title}</h2>
+          <h2 id={`${id}-title`}>{title}</h2>
         </DialogHeader>
-        <DialogBody id="confirm-dialog-body">{body}</DialogBody>
+        <DialogBody id={`${id}-body`}>{body}</DialogBody>
+        {errorMessage ? <DialogError role="alert">{errorMessage}</DialogError> : null}
         <DialogFooter>
           <Button
             type="button"

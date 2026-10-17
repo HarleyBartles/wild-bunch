@@ -50,16 +50,12 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
 
                 case StoreItemPurchased sp:
                     wallet = sp.WalletAfter;
-                    if (sp.ItemKind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo)
+                    if (sp.ItemKind is ItemKind.RevolverAmmo)
                         ammo += sp.Quantity;
                     break;
 
                 case SheriffTurnInSettled sts:
                     wallet += sts.BountyAmount;
-                    break;
-
-                case UnrelatedCriminalTurnInSettled ucts:
-                    wallet += ucts.BountyAmount;
                     break;
 
                 case SaloonPersonOfInterestConfronted spoc:
@@ -119,7 +115,7 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
                     health = jer.PlayerHealth;
                     wallet = jer.WalletCash;
                     ammo -= jer.AmmoSpent;
-                    if (jer.StolenItemKind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo && jer.StolenItemQuantity > 0)
+                    if (jer.StolenItemKind is ItemKind.RevolverAmmo && jer.StolenItemQuantity > 0)
                         ammo -= jer.StolenItemQuantity;
                     heat = jer.PursuitHeat;
                     currentSnapshot = jer.JourneySnapshot;
@@ -178,7 +174,7 @@ public sealed class TravelDiaryDayProjector : IDomainEventProjector<TravelDiaryD
         var total = 0;
         foreach (var item in items)
         {
-            if (item.Kind is ItemKind.RevolverAmmo or ItemKind.RifleAmmo)
+            if (item.Kind is ItemKind.RevolverAmmo)
                 total += item.Quantity;
         }
         return total;

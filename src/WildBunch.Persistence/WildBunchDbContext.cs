@@ -18,6 +18,8 @@ public sealed class WildBunchDbContext : DbContext
 
     public DbSet<StoredEventEntity> StoredEvents => Set<StoredEventEntity>();
 
+    public DbSet<StartupOperationEntity> StartupOperations => Set<StartupOperationEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(WildBunchDbContext).Assembly);

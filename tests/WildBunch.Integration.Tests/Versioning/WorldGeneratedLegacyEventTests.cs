@@ -8,7 +8,7 @@ namespace WildBunch.Integration.Tests.Versioning;
 public sealed class WorldGeneratedLegacyEventTests
 {
     [Fact]
-    public void Upcast_AddsOnlyMissingCaseFile_And_RegistryAdvancesToV2()
+    public void Upcast_AddsOnlyMissingCaseFile_And_RegistryAdvancesToV3()
     {
         var upcaster = new WorldGeneratedV1ToV2Upcaster();
         var registry = new PayloadUpcasterRegistry(DependencyInjection.CreateDefaultUpcasters());
@@ -19,7 +19,7 @@ public sealed class WorldGeneratedLegacyEventTests
 
         Assert.True(result.ContainsKey("caseFile"));
         Assert.Null(result["caseFile"]);
-        Assert.Equal(2, registry.CurrentVersion("WorldGenerated"));
+        Assert.Equal(3, registry.CurrentVersion("WorldGenerated"));
         Assert.Equal(1, upcaster.FromVersion);
         Assert.Equal("WorldGenerated", upcaster.PayloadType);
     }

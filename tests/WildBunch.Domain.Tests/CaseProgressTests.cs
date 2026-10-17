@@ -12,7 +12,7 @@ public sealed class CaseProgressTests
         Assert.Equal("A rider bears a pale scar across the left cheek.", caseFile.OpeningLead.Description);
         Assert.False(caseFile.KillerReleaseState.IsReleased);
         Assert.Equal(0, caseFile.KillerReleaseState.Progress);
-        Assert.Equal(2, caseFile.KillerReleaseState.RequiredPublicClues);
+        Assert.Equal(5, caseFile.KillerReleaseState.RequiredGangSettlements);
     }
 
     [Fact]
@@ -110,7 +110,6 @@ public sealed class CaseProgressTests
                     "A wanted poster shows a rider with a red feather pin.",
                     new[] { new SuspectId("suspect-2") }),
                 new Clue(new ClueId("clue-public-2"), ClueKind.Record, "A notice records a rider near the river crossing.")
-            },
-            killerReleaseThreshold: 2);
+            });
     }
 }

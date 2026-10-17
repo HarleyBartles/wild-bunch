@@ -52,7 +52,6 @@ public static class GameSessionMapper
             session.TravelDiaryDays,
             logEntries,
             activeSaloonPoi,
-            null,
             null);
     }
 
@@ -81,7 +80,6 @@ public static class GameSessionMapper
                     session.TownVisitState.CurrentTownState.ResolveActiveSaloonPersonOfInterestKind(),
                     session.CaseFile)
                 : null,
-            null,
             null);
     }
 
@@ -100,33 +98,33 @@ public static class GameSessionMapper
         IReadOnlyList<DomainTravelDiaryDayState> travelDiaryDays,
         IReadOnlyList<DomainGameLogEntry> logEntries,
         ActiveSaloonPersonOfInterestDto? activeSaloonPersonOfInterest,
-        WildBunch.Application.Projections.HudProjection? hudProjection = null,
-        WildBunch.Application.Projections.DiaryProjection? diaryProjection = null)
+        WildBunch.Application.Projections.HudProjection? hudProjection = null)
         => new(
             id,
             status,
             gameDifficulty,
             entropy,
             startFlowPhase,
-            ToDto(player),
+            ToDto(player, startFlowPhase >= StartFlowPhase.GameStarted),
             ToDto(world),
             ToDto(caseFile),
-            InventoryMapper.ToDto(player, TravelRulesProfile.For(gameDifficulty)),
+            startFlowPhase >= StartFlowPhase.GameStarted
+                ? InventoryMapper.ToDto(player, TravelRulesProfile.For(gameDifficulty))
+                : null,
             new GameClockDto(clock.Day, clock.Turn, clock.TimeOfDay.ToString(), BeatLabelRenderer.Render(clock.TimeOfDay, clock.Day)),
             new PursuitStateDto(pursuitState.Heat),
             journey,
-            TravelDiaryMapper.ToDto(travelDiaryDays, TravelRulesProfile.For(gameDifficulty)),
+            TravelDiaryMapper.ToDto(travelDiaryDays, logEntries, TravelRulesProfile.For(gameDifficulty)),
             logEntries.Select(ToDto).ToArray(),
             activeSaloonPersonOfInterest,
             caseFile.KnownWarrants.Count > 0 ? WantedPosterMapper.ToDto(caseFile.KnownWarrants) : Array.Empty<WantedPosterDto>(),
-            hudProjection,
-            diaryProjection);
+            hudProjection);
 
-    private static PlayerDto ToDto(DomainPlayer player)
+    private static PlayerDto ToDto(DomainPlayer player, bool gameStarted)
         => new(
             player.Name,
             player.CurrentTownId?.Value,
-            player.Health);
+            gameStarted ? player.Health : null);
 
     internal static WorldDto ToDto(DomainWorld world)
         => new(
@@ -137,7 +135,6 @@ public static class GameSessionMapper
         => new(
             town.Id.Value,
             town.Name,
-            town.Services,
             town.MapX,
             town.MapY,
             TownLayoutMapper.ToDto(town.Layout));
@@ -162,16 +159,11 @@ public static class GameSessionMapper
 
     private static DiscoveredSuspectDto ToDto(DomainSuspect suspect)
         => new(
-            suspect.Id.Value,
             suspect.Name,
             suspect.Status);
 
     private static GameLogEntryDto ToDto(DomainGameLogEntry logEntry)
-        => new(
-            logEntry.Kind,
-            logEntry.Message,
-            logEntry.Day,
-            logEntry.Turn);
+        => JournalMapper.ToEntryDto(logEntry);
 
     private static ActiveSaloonPersonOfInterestDto? ToActiveSaloonPersonOfInterestDto(
         SuspectId? activeSaloonPersonOfInterestId,

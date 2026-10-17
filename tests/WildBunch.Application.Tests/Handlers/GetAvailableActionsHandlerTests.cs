@@ -1,5 +1,6 @@
 using WildBunch.Application.Games.Exceptions;
 using WildBunch.Application.Games.Queries;
+using WildBunch.Application.Abstractions;
 using WildBunch.Application.Tests.TestDoubles;
 using WildBunch.Domain.Actions;
 using WildBunch.Domain.Cases;
@@ -8,7 +9,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -20,7 +20,7 @@ public sealed class GetAvailableActionsHandlerTests
     public async Task GetAvailableActionsLoadsSessionAndReturnsExpectedActions()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
 
@@ -33,22 +33,62 @@ public sealed class GetAvailableActionsHandlerTests
     }
 
     [Fact]
-    public async Task GetAvailableActionsExposesBaselineInvestigationSourcesEvenWithoutTownServices()
+    public async Task GetAvailableActionsExposesEveryCoreTownAction()
     {
         var repository = new InMemoryGameSessionRepository();
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         repository.Seed(session);
         var handler = new GetAvailableActionsHandler(repository, new ActionAvailabilityResolver());
 
         var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
 
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.InspectNoticeBoard);
-        Assert.Contains(result, action => action.Kind == AvailableActionKind.CheckSheriffRecords);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.GatherLocalGossip);
         Assert.Contains(result, action => action.Kind == AvailableActionKind.LookAroundSaloon);
         // ReadWantedPosters is always available - every town has a sheriff's office.
         Assert.Contains(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
-        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.FollowTelegraphLeads);
+    }
+
+    [Fact]
+    public async Task GetAvailableActionsReturnsEmptyDuringSetup()
+    {
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var world = new DomainWorld(new[] { currentTown }, Array.Empty<Trail>());
+        var suspects = new[]
+        {
+            new Suspect(new SuspectId("suspect-1"), "Ira Flint", SuspectTraits.FromTags(SuspectTraitTags.Local, SuspectTraitTags.Desperate), SuspectStatus.AtLarge)
+        };
+        var caseFile = new CaseFile(null, suspects, new SuspectId("suspect-1"), Array.Empty<Clue>());
+        var session = GameSession.StartSetup("Ranger Vale", world, caseFile, GameDifficulty.Standard, GameEntropy.Classic, "test-seed", SaltSource.CreateFixed("test"));
+        var repository = new InMemoryGameSessionRepository();
+        repository.Seed(session);
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetAvailableActionsHandler(readRepository, new ActionAvailabilityResolver());
+
+        var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAvailableActionsUsesReadModelJourneyToSuppressTownActions()
+    {
+        var repository = new InMemoryGameSessionRepository();
+        var session = CreateSession();
+        repository.Seed(session);
+        var preview = new TravelResolver().PreviewJourney(
+            session.World,
+            session.Player.CurrentTownId!.Value,
+            new TownId("connected"),
+            session.Player.Inventory).Preview!;
+        session.StartJourney(preview);
+        IGameSessionReadRepository readRepository = repository;
+        var handler = new GetAvailableActionsHandler(readRepository, new ActionAvailabilityResolver());
+
+        var result = await handler.HandleAsync(new GetAvailableActionsQuery(session.Id.Value));
+
+        Assert.Contains(result, action => action.Kind == AvailableActionKind.AdvanceTravelDay);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.BuySupplies);
+        Assert.DoesNotContain(result, action => action.Kind == AvailableActionKind.ReadWantedPosters);
     }
 
     [Fact]
@@ -62,10 +102,10 @@ public sealed class GetAvailableActionsHandlerTests
         Assert.Contains("was not found", exception.Message);
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices)
+    private static GameSession CreateSession()
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]

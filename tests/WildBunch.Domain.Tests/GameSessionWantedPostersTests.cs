@@ -6,7 +6,6 @@ using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
 using DomainWorld = WildBunch.Domain.World.World;
 using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
 using Trail = WildBunch.Domain.World.Trail;
 using TrailId = WildBunch.Domain.World.TrailId;
 
@@ -17,7 +16,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersInSupportedTownAddsPublicClueAndLogEntry()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
 
         var result = session.ReadWantedPosters();
 
@@ -25,10 +24,9 @@ public sealed class GameSessionWantedPostersTests
         Assert.True(result.SessionChanged);
         Assert.Equal(1, session.Clock.Turn);
         Assert.Equal(2, GameSessionLogProjection.Project(session).Count);
-        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant behind
-        // the killer-release gate, so the unrelated warrant surfaces first.
+        // This deterministic visit selects a gang-member warrant; culprit identity is eligible too.
         Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
+        Assert.Equal("Ira Flint", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Single(session.CaseFile.PublicWarrants);
@@ -42,7 +40,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersTwiceDoesNotDuplicateTheSameClue()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
 
         var first = session.ReadWantedPosters();
         var second = session.ReadWantedPosters();
@@ -62,7 +60,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersSkipsTelegraphAndGossipClues()
     {
-        var session = CreateSession(TownServices.None, includeSourceSpecificClues: true);
+        var session = CreateSession(includeSourceSpecificClues: true);
 
         var first = session.ReadWantedPosters();
 
@@ -72,30 +70,25 @@ public sealed class GameSessionWantedPostersTests
         Assert.Single(session.CaseFile.KnownWarrants);
         Assert.Single(session.CaseFile.KnownClues, clue => clue.SourceKind == InvestigationSourceKind.SheriffWarrants);
         Assert.Equal(2, session.CaseFile.PublicClues.Count);
-        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.TelegraphLead);
+        Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Contains(session.CaseFile.PublicClues, clue => clue.SourceKind == InvestigationSourceKind.LocalGossip);
         Assert.Equal(0, session.CaseFile.KillerReleaseProgress);
     }
 
     [Fact]
-    public void ReadingWantedPostersInTownWithoutNoticeBoardStillSucceeds()
+    public void ReadingWantedPostersSucceedsInTown()
     {
-        // Every town has a sheriff's office. ReadWantedPosters is always available,
-        // even in a town with TownServices.None. The action should succeed and
-        // reveal the same warrants/clues as in a town with NoticeBoard.
-        var session = CreateSession(TownServices.None);
-
-        // Prove the precondition: the town carries no services (TownServices.None).
-        Assert.Equal(TownServices.None, session.CurrentTown.Services);
+        // Every town has a sheriff's office. ReadWantedPosters is always available
+        // and reveals its warrants and clues.
+        var session = CreateSession();
 
         var result = session.ReadWantedPosters();
 
         Assert.True(result.Success);
         Assert.True(result.SessionChanged);
-        // BUNCH-107: the WantedPosterResolver gates the true-culprit warrant, so the
-        // unrelated warrant ("Reno Pike") surfaces first.
+        // This deterministic visit selects the gang-member warrant from the public pool.
         Assert.Single(session.CaseFile.KnownWarrants);
-        Assert.Equal("Reno Pike", session.CaseFile.KnownWarrants[0].TargetName);
+        Assert.Equal("Ira Flint", session.CaseFile.KnownWarrants[0].TargetName);
         Assert.Single(session.CaseFile.KnownClues);
         Assert.Empty(session.CaseFile.PublicClues);
         Assert.Single(session.CaseFile.PublicWarrants);
@@ -106,7 +99,7 @@ public sealed class GameSessionWantedPostersTests
     [Fact]
     public void ReadingWantedPostersWhileJourneyAwaitingAcknowledgementFailsWithoutMutation()
     {
-        var session = CreateSession(TownServices.None);
+        var session = CreateSession();
         StartJourney(session);
         session.Journey!.MarkCompleted();
 
@@ -124,10 +117,10 @@ public sealed class GameSessionWantedPostersTests
         Assert.Equal(JourneyStatus.Completed, session.Journey.Status);
     }
 
-    private static GameSession CreateSession(TownServices currentTownServices, bool includeSourceSpecificClues = false)
+    private static GameSession CreateSession(bool includeSourceSpecificClues = false)
     {
-        var currentTown = new Town(new TownId("current"), "Current Town", currentTownServices);
-        var connectedTown = new Town(new TownId("connected"), "Connected Town", TownServices.None);
+        var currentTown = new Town(new TownId("current"), "Current Town");
+        var connectedTown = new Town(new TownId("connected"), "Connected Town");
         var world = new DomainWorld(
             new[] { currentTown, connectedTown },
             new[]
@@ -156,7 +149,7 @@ public sealed class GameSessionWantedPostersTests
                     new[] { new SuspectId("suspect-1") },
                     InvestigationTargetKind.GangMember,
                     InvestigationSourceKind.SheriffWarrants,
-                    source: "notice board",
+                    source: "sheriff office",
                     context: "Public wanted poster")
             }.Concat(includeSourceSpecificClues
                 ? new[]
@@ -167,7 +160,7 @@ public sealed class GameSessionWantedPostersTests
                         "A telegraph clerk filed a name in shorthand.",
                         new[] { new SuspectId("suspect-2") },
                         InvestigationTargetKind.Suspected,
-                        InvestigationSourceKind.TelegraphLead,
+                        InvestigationSourceKind.LocalGossip,
                         source: "telegraph clerk",
                         context: "Telegraph lead"),
                     new Clue(
@@ -199,18 +192,18 @@ public sealed class GameSessionWantedPostersTests
                     "Wanted for a Wild Bunch robbery."),
                 new Warrant(
                     new WarrantId("warrant-public-2"),
-                    "Reno Pike",
+                    "Ira Flint",
                     new WarrantTerms(
                         WarrantDisposition.AliveOnly,
                         300m,
                         new[] { "The Magpie", "R. Pike" },
                         new[] { "Mismatched spurs" },
-                        "Silver Creek Sheriff",
-                        InvestigationTargetKind.UnrelatedWantedCriminal,
-                        Array.Empty<OutlawGangId>(),
+                        "Dodge City Marshal",
+                        InvestigationTargetKind.GangMember,
+                        [OutlawGangIds.WildBunch],
                         null,
                         InvestigationSourceKind.SheriffWarrants),
-                    "Wanted for cattle theft.")
+                    "Wanted as a member of the Wild Bunch.")
             });
 
         return TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, currentTown.Id, gameDifficulty: GameDifficulty.Standard);

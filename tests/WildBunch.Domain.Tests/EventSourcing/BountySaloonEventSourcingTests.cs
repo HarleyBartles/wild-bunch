@@ -5,12 +5,6 @@ using WildBunch.Domain.Game;
 using WildBunch.Domain.Inventory;
 using WildBunch.Domain.Travel;
 using WildBunch.Domain.World;
-using DomainWorld = WildBunch.Domain.World.World;
-using DomainInventory = WildBunch.Domain.Inventory.Inventory;
-using Town = WildBunch.Domain.World.Town;
-using TownServices = WildBunch.Domain.World.TownServices;
-using Trail = WildBunch.Domain.World.Trail;
-using TrailId = WildBunch.Domain.World.TrailId;
 
 namespace WildBunch.Domain.Tests.EventSourcing;
 
@@ -88,61 +82,37 @@ public sealed class BountySaloonEventSourcingTests
     }
 
     [Fact]
-    public void Replay_SaloonPersonOfInterestSpotted_ReconstructsActivePersonOfInterest()
+    public void Replay_ForcedWantedSaloonPersonOfInterest_ReconstructsActivePersonOfInterest()
     {
-        // Build the session inline to capture the setup events before MarkEventsCommitted.
-        var session = CreateConfrontableSaloonSessionWithUncommittedGameStarted(out var setupEvents);
-        session.MarkEventsCommitted();
+        var session = TestSessionFactory.CreateWithConfrontableSaloonSuspect();
+        var expectedSuspectId = new SuspectId("suspect-1");
+        session.ForceDevSaloonOverride(DevSaloonOverride.ForSuspect(expectedSuspectId));
 
-        session.LookAroundSaloon();
-        var events = setupEvents.Concat(session.UncommittedEvents).ToList();
+        var result = session.LookAroundSaloon();
+        Assert.True(result.Success, result.Message);
+
+        var spotted = Assert.Single(session.UncommittedEvents.OfType<SaloonPersonOfInterestSpotted>());
+        Assert.Equal(expectedSuspectId, spotted.SuspectId);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect, spotted.PersonOfInterestKind);
+
         var activePoiIdAfterCommand = session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId;
+        Assert.Equal(expectedSuspectId, activePoiIdAfterCommand);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect,
+            session.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
         var contextAfterCommand = session.CurrentActionContext;
         var turnAfterCommand = session.Clock.Turn;
+        var events = session.AllEvents.ToArray();
 
         var replayed = GameSession.RehydrateFromEvents(
             session.Id, session.World,
             events);
 
-        Assert.Equal(activePoiIdAfterCommand, replayed.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Equal(expectedSuspectId, replayed.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestId);
+        Assert.Equal(SaloonPersonOfInterestKind.WantedSuspect,
+            replayed.CurrentTownVisit.CurrentTownState.ActiveSaloonPersonOfInterestKind);
         Assert.Equal(contextAfterCommand, replayed.CurrentActionContext);
         Assert.Equal(turnAfterCommand, replayed.Clock.Turn);
-    }
-
-    private static GameSession CreateConfrontableSaloonSessionWithUncommittedGameStarted(out IReadOnlyList<IDomainEvent> setupEvents)
-    {
-        var town = new Town(new TownId("current"), "Current Town", TownServices.None);
-        var connected = new Town(new TownId("connected"), "Connected Town", TownServices.None);
-        var world = new DomainWorld(
-            new[] { town, connected },
-            new[] { new Trail(new TrailId("trail-1"), town.Id, connected.Id, TrailRisk.Low) });
-
-        var suspects = new[]
-        {
-            new Suspect(
-                new SuspectId("suspect-1"),
-                "Mira Cline",
-                new SuspectProfile(
-                    Array.Empty<SuspectAlias>(),
-                    new[] { new SuspectIdentityFact(FeatureLanguage.Raw("Has a scar on the left cheek.", "a scar on the left cheek", "has a scar on the left cheek")) }),
-                SuspectTraits.Empty,
-                SuspectStatus.AtLarge),
-            new Suspect(new SuspectId("suspect-2"), "Reno Pike", SuspectTraits.Empty, SuspectStatus.AtLarge)
-        };
-
-        var caseFile = new CaseFile(
-            accusation: null,
-            suspects,
-            trueCulpritId: new SuspectId("suspect-2"),
-            openingLead: CaseOpeningLead.Create("Follow the public leads and look for a signature mark."),
-            knownClues: Array.Empty<Clue>(),
-            knownWarrants: Array.Empty<Warrant>());
-
-        var session = TestSessionFactory.StartGameCanonical("Ranger Vale", world, caseFile, town.Id,
-            Wallet.Starting(25m), inventory: null, GameDifficulty.Easy,
-            SaltSource.CreateFixed(string.Empty));
-        setupEvents = session.UncommittedEvents.ToList();
-        return session;
+        Assert.Equal(session.Version, replayed.Version);
     }
 
     // --- Task 3: WantedSuspectConfronted event + ResolveWantedSuspectConfrontation ---
@@ -285,7 +255,7 @@ public sealed class BountySaloonEventSourcingTests
     public void ConfrontCitizenWithWrongDeclarationProducesConfrontedEvent()
     {
         var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
-        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+        var result = session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "warrant-1");
 
         Assert.True(result.Success);
         var confrontedEvent = session.UncommittedEvents.OfType<SaloonPersonOfInterestConfronted>().Single();
@@ -311,7 +281,7 @@ public sealed class BountySaloonEventSourcingTests
         var session = TestSessionFactory.CreateWithActiveCitizenSaloonPerson();
         var turnAfterLookAround = session.Clock.Turn;
 
-        session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "wrong-handle");
+        session.ConfrontSaloonPersonOfInterest(declaredWantedIdentityHandle: "warrant-1");
 
         Assert.Equal(turnAfterLookAround, session.Clock.Turn);
     }
@@ -365,7 +335,7 @@ public sealed class BountySaloonEventSourcingTests
             new SaloonPersonOfInterestSpotted { SourceKind = InvestigationSourceKind.SaloonLookAround, TownId = new TownId("current"), Message = "test", RecordLog = true },
             new WantedSuspectConfronted { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, Choice = WantedSuspectConfrontationChoice.Surrendered, Outcome = WantedSuspectConfrontationOutcome.Surrendered, IsAlive = true, IsSecured = true, Message = "test" },
             new SheriffTurnInSettled { TargetSuspectId = new SuspectId("s1"), TargetName = "Test", Disposition = WarrantDisposition.DeadOrAlive, IsAlive = true, BountyAmount = 50m, Message = "test", Day = 1, Turn = 1 },
-            new SaloonPersonOfInterestConfronted { Message = "test", TargetName = "stranger", PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen, Outcome = SaloonPersonOfInterestConfrontationOutcome.WrongWantedDeclaration, IsCitizen = true }
+            new SaloonPersonOfInterestConfronted { Message = "test", TargetName = "stranger", PersonOfInterestKind = SaloonPersonOfInterestKind.Citizen, Outcome = SaloonPersonOfInterestConfrontationOutcome.CitizenReleased, IsCitizen = true }
         };
 
         foreach (var e in events)
